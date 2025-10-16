@@ -1,0 +1,183 @@
+const { Client, Collection, GatewayIntentBits, Partials } = require('discord.js')
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildExpressions,
+    GatewayIntentBits.GuildIntegrations,
+    GatewayIntentBits.GuildWebhooks,
+    GatewayIntentBits.GuildInvites,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.GuildMessageTyping,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.DirectMessageReactions,
+    GatewayIntentBits.DirectMessageTyping,
+    GatewayIntentBits.MessageContent
+  ],
+  allowedMentions: { parse: ['users', 'roles'] },
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction]
+})
+const config = require('./config/setup');
+const permissions = require('./utils/permissions');
+const WebhookErrorLogger = require('./events/dev/errorLogger');
+
+// Legacy command processor - kept for backward compatibility
+async function processCommand(message) {
+  // Use new command processor
+  const { processCommand: newProcessCommand } = require('./utils/commandProcessor');
+  await newProcessCommand(message, false);
+}
+
+client.commands = new Collection();
+client.aliases = new Collection();
+client.processCommand = processCommand;
+
+// Attach permissions utilities to client
+client.permissions = permissions;
+
+// Initialize error logger
+let errorLogger;
+
+// Load commands and events
+const { readdirSync, statSync } = require('fs');
+const path = require('path');
+
+function loadCommandsFromDirectory(dirPath, relativePath = '') {
+  const items = readdirSync(dirPath);
+  let commandCount = 0;
+  let failedCommands = [];
+
+  for (const item of items) {
+    const fullPath = path.join(dirPath, item);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      const result = loadCommandsFromDirectory(fullPath, path.join(relativePath, item));
+      commandCount += result.commandCount || result;
+      if (result.failedCommands) {
+        failedCommands = failedCommands.concat(result.failedCommands);
+      }
+    } else if (item.endsWith('.js')) {
+      try {
+        const commandPath = path.resolve(fullPath);
+        let pull = require(commandPath);
+
+        if (pull.name) {
+          client.commands.set(pull.name, pull);
+          commandCount++;
+        } else {
+          // Command file exists but has no name property
+          const errorMsg = `Command file ${relativePath}/${item} has no name property`;
+          console.log(`⚠️  ${errorMsg}`);
+          failedCommands.push(`${relativePath}/${item} - No name property`);
+        }
+
+        if (pull.aliases && Array.isArray(pull.aliases)) {
+          pull.aliases.forEach(alias => client.aliases.set(alias, pull.name));
+        }
+      } catch (error) {
+        const errorMsg = `Failed to load command: ${relativePath}/${item} - ${error.message}`;
+        console.log(`❌ ${errorMsg}`);
+        failedCommands.push(`${relativePath}/${item} - ${error.message}`);
+
+        if (errorLogger) {
+          errorLogger.log(error, `Command Loading: ${relativePath}/${item}`, {
+            command: `Loading ${item}`,
+            args: `File: ${fullPath}`,
+            error: error.message
+          });
+        }
+      }
+    }
+  }
+
+  return { commandCount, failedCommands };
+}
+
+const commandResult = loadCommandsFromDirectory('./commands/');
+const commandCount = commandResult.commandCount || commandResult;
+const failedCommands = commandResult.failedCommands || [];
+client.commandCount = commandCount;
+client.failedCommands = failedCommands;
+
+require('./handlers/events')(client);
+
+
+
+// Initialize webhook error logger early (before ready event)
+errorLogger = new WebhookErrorLogger();
+client.errorLogger = errorLogger;
+
+
+
+// Load finder utilities and attach to client
+const { findRole, findUser, findChannel, findGuild } = require('./handlers/finder');
+client.findRole = findRole;
+client.findUser = findUser;
+client.findChannel = findChannel;
+client.findGuild = findGuild;
+
+// Graceful shutdown handlers
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Shutting down bot...');
+
+  // Close Discord client
+  client.destroy();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
+
+  // Close Discord client
+  client.destroy();
+  process.exit(0);
+});
+
+// Global error handlers
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  if (errorLogger) {
+    errorLogger.log(error, 'Uncaught Exception', {
+      command: 'Process Error',
+      args: 'Main Process'
+    });
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  if (errorLogger) {
+    errorLogger.log(reason?.toString() || 'Unknown reason', 'Unhandled Promise Rejection', {
+      command: 'Process Error',
+      args: 'Main Process'
+    });
+  }
+});
+
+// Discord.js error events
+client.on('error', (error) => {
+  console.error('Discord.js Client Error:', error);
+  if (errorLogger) {
+    errorLogger.log(error, 'Discord.js Client Error', {
+      command: 'Discord.js Client',
+      args: `Status: ${client.readyAt ? 'Ready' : 'Not Ready'} | Guilds: ${client.guilds.cache.size}`
+    });
+  }
+});
+
+client.on('warn', (warning) => {
+  console.warn('Discord.js Client Warning:', warning);
+  if (errorLogger) {
+    errorLogger.log(warning, 'Discord.js Client Warning', {
+      command: 'Discord.js Client',
+      args: `Status: ${client.readyAt ? 'Ready' : 'Not Ready'}`
+    });
+  }
+});
+
+client.login(config.bot.token)

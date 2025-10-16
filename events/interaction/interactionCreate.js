@@ -1,0 +1,920 @@
+const { EmbedBuilder, ChannelType, PermissionFlagsBits, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ensureGuildData } = require('../../database');
+const { colors, emojis } = require('../../config/setup');
+const guildCache = require('../../database/cache/models/guild');
+const { embeds } = require('../../core/embeds');
+const voiceManagerButtons = require('./voiceManagerButtons');
+
+/**
+ * Safely respond to an interaction, handling expired/invalid interactions
+ * @param {Interaction} interaction - The interaction to respond to
+ * @param {Object} options - Response options
+ * @param {string} method - Method to use ('reply', 'update', 'editReply', 'followUp')
+ * @returns {Promise<boolean>} - Whether the response was successful
+ */
+async function safeInteractionResponse(interaction, options, method = 'reply') {
+  try {
+    // Check if interaction is still valid
+    if (!interaction.isRepliable()) {
+      // Silent fail for non-repliable interactions
+      return false;
+    }
+
+    // Check if interaction is expired
+    const interactionAge = Date.now() - interaction.createdTimestamp;
+    if (interactionAge > 14 * 60 * 1000) { // 14 minutes
+      console.warn('Interaction expired, cannot respond:', interaction.customId);
+      return false;
+    }
+
+    // Check interaction state and use appropriate method
+    if (method === 'reply' && (interaction.replied || interaction.deferred)) {
+      console.warn('Interaction already replied/deferred, using editReply instead');
+      method = 'editReply';
+    }
+
+    switch (method) {
+      case 'reply':
+        await interaction.reply(options);
+        break;
+      case 'update':
+        await interaction.update(options);
+        break;
+      case 'editReply':
+        await interaction.editReply(options);
+        break;
+      case 'followUp':
+        await interaction.followUp(options);
+        break;
+      default:
+        await interaction.reply(options);
+    }
+
+    return true;
+  } catch (error) {
+    // Handle specific Discord API errors
+    if (error.code === 10062) { // Unknown interaction
+      // Silent fail for expired interactions
+    } else if (error.code === 40060) { // Interaction has already been acknowledged
+      // Silent fail for already acknowledged interactions
+    } else {
+      // Send error to webhook for other interaction errors
+      if (interaction.client?.errorLogger) {
+        interaction.client.errorLogger.log(error, 'Interaction Response', {
+          command: 'Interaction Response',
+          args: `CustomId: ${interaction.customId || 'Unknown'}`,
+          user: interaction.user,
+          guild: interaction.guild,
+          channel: interaction.channel
+        });
+      }
+    }
+    return false;
+  }
+}
+
+module.exports = {
+  name: 'interactionCreate',
+  async execute(interaction) {
+    try {
+      // Check if interaction is still valid (not expired)
+      if (interaction.isRepliable() && (interaction.replied || interaction.deferred)) {
+        // Silent fail for already handled interactions
+        return;
+      }
+
+      // Check if interaction is expired (older than 14 minutes to be safe)
+      const interactionAge = Date.now() - interaction.createdTimestamp;
+      if (interactionAge > 14 * 60 * 1000) { // 14 minutes in milliseconds
+        // Silent fail for expired interactions
+        return;
+      }
+
+      // Handle button interactions
+      if (interaction.isButton()) {
+        // Handle voice manager buttons
+        if (interaction.customId.startsWith('vm_')) {
+          return voiceManagerButtons.handleVMButton(interaction);
+        }
+
+        // Handle ticket creation button
+        if (interaction.customId === 'create_ticket') {
+          return handleCreateTicket(interaction);
+        }
+
+        // Handle ticket close button
+        if (interaction.customId.startsWith('ticket_close_')) {
+          return handleTicketClose(interaction);
+        }
+
+        // Handle ticket delete button
+        if (interaction.customId.startsWith('ticket_delete_')) {
+          return handleTicketDelete(interaction);
+        }
+
+        // Handle delete confirmation buttons
+        if (interaction.customId.startsWith('confirm_delete_')) {
+          return handleConfirmDelete(interaction);
+        }
+
+        if (interaction.customId.startsWith('cancel_delete_')) {
+          return handleCancelDelete(interaction);
+        }
+
+        // Handle booster role share buttons
+        if (interaction.customId.startsWith('br_accept_') || interaction.customId.startsWith('br_decline_')) {
+          return handleBoosterRoleShare(interaction);
+        }
+
+        // Handle boost tracking buttons
+        if (interaction.customId === 'boosters_new_refresh' || interaction.customId === 'boosters_lost_refresh') {
+          // These are handled by their respective command collectors
+          return;
+        }
+      }
+
+      // Handle modal interactions
+      if (interaction.isModalSubmit()) {
+        if (interaction.customId === 'vm_rename_modal') {
+          return handleVMRenameModal(interaction);
+        }
+      }
+    } catch (error) {
+      // Send error to webhook instead of console
+      if (interaction.client?.errorLogger) {
+        interaction.client.errorLogger.log(error, 'Interaction Create', {
+          command: 'Interaction Create',
+          args: `CustomId: ${interaction.customId || 'Unknown'}`,
+          user: interaction.user,
+          guild: interaction.guild,
+          channel: interaction.channel
+        });
+      }
+
+      // Try to respond with an error message using safe response
+      await safeInteractionResponse(interaction, {
+        content: '❌ An error occurred while processing your interaction. Please try again.',
+        flags: MessageFlags.Ephemeral
+      });
+    }
+  },
+};
+
+async function handleCreateTicket(interaction) {
+  try {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const guild = interaction.guild;
+    const user = interaction.user;
+
+    // Ensure guild data exists
+    await ensureGuildData(guild.id);
+
+    // Get ticket system configuration
+    const ticketSystem = await guildCache.getTicketSystem(guild.id);
+
+    if (!ticketSystem.enabled) {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: user.id },
+        guild: { id: guild.id },
+        channel: {
+          send: async (options) => {
+            return await interaction.editReply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'The ticket system is not enabled on this server.');
+    }
+
+    // Check if user already has an open ticket
+    const existingTickets = await guildCache.getUserTickets(guild.id, user.id);
+    if (existingTickets.length > 0) {
+      const ticketChannel = guild.channels.cache.get(existingTickets[0].channelId);
+      if (ticketChannel) {
+        // Create a fake message object for embeds.deny
+        const fakeMessage = {
+          author: { id: user.id },
+          guild: { id: guild.id },
+          channel: {
+            send: async (options) => {
+              return await interaction.editReply(options);
+            }
+          }
+        };
+
+        return embeds.deny(fakeMessage, `You already have an open ticket: ${ticketChannel}\n\nPlease use your existing ticket or close it before creating a new one.`);
+      } else {
+        // Clean up orphaned ticket data
+        await guildCache.removeTicket(guild.id, existingTickets[0].channelId);
+      }
+    }
+
+    // Create the ticket channel
+    const ticketNumber = ticketSystem.ticketCounter + 1;
+    const channelName = `ticket-${user.username.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+    // Set up channel permissions
+    const channelPermissions = [
+      {
+        id: guild.id, // @everyone
+        deny: [PermissionFlagsBits.ViewChannel],
+      },
+      {
+        id: user.id, // Ticket creator
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+          PermissionFlagsBits.AttachFiles,
+          PermissionFlagsBits.EmbedLinks,
+        ],
+      },
+      {
+        id: interaction.client.user.id, // Bot
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+          PermissionFlagsBits.ManageMessages,
+          PermissionFlagsBits.AttachFiles,
+          PermissionFlagsBits.EmbedLinks,
+        ],
+      },
+    ];
+
+    // Add support role permissions if configured
+    if (ticketSystem.supportRoleId) {
+      const supportRole = guild.roles.cache.get(ticketSystem.supportRoleId);
+      if (supportRole) {
+        channelPermissions.push({
+          id: supportRole.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.AttachFiles,
+            PermissionFlagsBits.EmbedLinks,
+          ],
+        });
+      }
+    }
+
+    // Create the channel
+    const ticketChannel = await guild.channels.create({
+      name: channelName,
+      type: ChannelType.GuildText,
+      parent: ticketSystem.categoryId,
+      permissionOverwrites: channelPermissions,
+      topic: `Ticket #${ticketNumber} - Created by ${user.tag}`,
+    });
+
+    // Create ticket in database
+    await guildCache.createTicket(guild.id, user.id, ticketChannel.id);
+
+    // Create welcome embed for the ticket
+    const welcomeEmbed = new EmbedBuilder()
+      .setDescription(
+        `-# Thank you for creating a ticket, we will be with you shortly.\n` +
+        `> Please describe your **issue or question** in detail while we wait for staff to assist you with it and avoid pinging them.`
+      )
+      .setColor(colors.info);
+
+    // Create ticket management buttons
+    const ticketButtons = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`ticket_close_${ticketChannel.id}`)
+          .setLabel('Close')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId(`ticket_delete_${ticketChannel.id}`)
+          .setLabel('Delete')
+          .setStyle(ButtonStyle.Danger)
+      );
+
+    // Send welcome message with user mention outside embed
+    await ticketChannel.send({
+      content: `${user}${ticketSystem.supportRoleId ? ` <@&${ticketSystem.supportRoleId}>` : ''}`,
+      embeds: [welcomeEmbed],
+      components: [ticketButtons]
+    });
+
+    // Reply to the interaction with success message
+    // Create a fake message object for embeds.success
+    const fakeMessage = {
+      author: { id: user.id },
+      guild: { id: guild.id },
+      channel: {
+        send: async (options) => {
+          return await interaction.editReply(options);
+        }
+      }
+    };
+
+    return embeds.success(fakeMessage, `Your ticket has been created: ${ticketChannel}`);
+
+  } catch (error) {
+    console.error('Error creating ticket:', error);
+
+    // Create a fake message object for embeds.deny
+    const fakeMessage = {
+      author: { id: interaction.user.id },
+      guild: { id: interaction.guild.id },
+      channel: {
+        send: async (options) => {
+          return await interaction.editReply(options);
+        }
+      }
+    };
+
+    try {
+      return embeds.deny(fakeMessage, 'An error occurred while creating your ticket. Please try again or contact an administrator.');
+    } catch (replyError) {
+      // If we can't edit the reply, try to follow up
+      try {
+        const fakeFollowMessage = {
+          author: { id: interaction.user.id },
+          guild: { id: interaction.guild.id },
+          channel: {
+            send: async (options) => {
+              options.flags = MessageFlags.Ephemeral;
+              return await interaction.followUp(options);
+            }
+          }
+        };
+        return embeds.deny(fakeFollowMessage, 'An error occurred while creating your ticket. Please try again or contact an administrator.');
+      } catch (followUpError) {
+        // Silent fail for follow-up error message
+      }
+    }
+  }
+}
+
+async function handleTicketClose(interaction) {
+  try {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const channelId = interaction.customId.split('_')[2];
+    const guild = interaction.guild;
+    const user = interaction.user;
+
+    // Get ticket data
+    const ticket = await guildCache.getTicket(guild.id, channelId);
+    if (!ticket) {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: user.id },
+        guild: { id: guild.id },
+        channel: {
+          send: async (options) => {
+            return await interaction.editReply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'This is not a valid ticket channel.');
+    }
+
+    // Get ticket system configuration
+    const ticketSystem = await guildCache.getTicketSystem(guild.id);
+
+    // Check permissions
+    const isTicketOwner = ticket.userId === user.id;
+    const hasAdminPerms = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+    const hasSupportRole = ticketSystem.supportRoleId && interaction.member.roles.cache.has(ticketSystem.supportRoleId);
+
+    if (!isTicketOwner && !hasAdminPerms && !hasSupportRole) {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: user.id },
+        guild: { id: guild.id },
+        channel: {
+          send: async (options) => {
+            return await interaction.editReply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'You don\'t have permission to close this ticket.');
+    }
+
+    if (ticket.status === 'closed') {
+      // Reopen the ticket
+      await guildCache.reopenTicket(guild.id, channelId);
+
+      // Add ticket creator back to channel
+      await interaction.channel.permissionOverwrites.edit(ticket.userId, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+        AttachFiles: true,
+        EmbedLinks: true
+      });
+
+      // Update button to show "Close"
+      const updatedButtons = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId(`ticket_close_${channelId}`)
+            .setLabel('Close')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId(`ticket_delete_${channelId}`)
+            .setLabel('Delete')
+            .setStyle(ButtonStyle.Danger)
+        );
+
+      // Update the original message
+      const messages = await interaction.channel.messages.fetch({ limit: 50 });
+      const welcomeMessage = messages.find(msg => msg.embeds.length > 0 && msg.components.length > 0);
+      if (welcomeMessage) {
+        await welcomeMessage.edit({ components: [updatedButtons] });
+      }
+
+      // Create a fake message object for embeds.success
+      const fakeMessage = {
+        author: { id: user.id },
+        guild: { id: guild.id },
+        channel: {
+          send: async (options) => {
+            return await interaction.editReply(options);
+          }
+        }
+      };
+
+      return embeds.success(fakeMessage, 'Ticket has been reopened. The ticket creator has been added back to the channel.');
+
+    } else {
+      // Close the ticket
+      await guildCache.closeTicket(guild.id, channelId, user.id);
+
+      // Remove ticket creator from channel completely
+      await interaction.channel.permissionOverwrites.edit(ticket.userId, {
+        ViewChannel: false,
+        SendMessages: false,
+        ReadMessageHistory: false,
+        AttachFiles: false,
+        EmbedLinks: false
+      });
+
+      // Update button to show "Open"
+      const updatedButtons = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId(`ticket_close_${channelId}`)
+            .setLabel('Open')
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId(`ticket_delete_${channelId}`)
+            .setLabel('Delete')
+            .setStyle(ButtonStyle.Danger)
+        );
+
+      // Update the original message
+      const messages = await interaction.channel.messages.fetch({ limit: 50 });
+      const welcomeMessage = messages.find(msg => msg.embeds.length > 0 && msg.components.length > 0);
+      if (welcomeMessage) {
+        await welcomeMessage.edit({ components: [updatedButtons] });
+      }
+
+      // Create a fake message object for embeds.success
+      const fakeMessage = {
+        author: { id: user.id },
+        guild: { id: guild.id },
+        channel: {
+          send: async (options) => {
+            return await interaction.editReply(options);
+          }
+        }
+      };
+
+      return embeds.success(fakeMessage, 'Ticket has been closed. The ticket creator has been removed from the channel.');
+    }
+
+  } catch (error) {
+    // Send error to webhook instead of console
+    if (interaction.client?.errorLogger) {
+      interaction.client.errorLogger.log(error, 'Ticket Close Handler', {
+        command: 'Ticket Close',
+        args: `Channel: ${interaction.channel?.name || 'Unknown'}`,
+        user: interaction.user,
+        guild: interaction.guild,
+        channel: interaction.channel
+      });
+    }
+    try {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: interaction.user.id },
+        guild: { id: interaction.guild.id },
+        channel: {
+          send: async (options) => {
+            return await interaction.editReply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'An error occurred while managing the ticket. Please try again.');
+    } catch (replyError) {
+      // Silent fail for reply error
+    }
+  }
+}
+
+async function handleTicketDelete(interaction) {
+  try {
+    const channelId = interaction.customId.split('_')[2];
+    const guild = interaction.guild;
+    const user = interaction.user;
+
+    // Get ticket data
+    const ticket = await guildCache.getTicket(guild.id, channelId);
+    if (!ticket) {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: interaction.user.id },
+        guild: { id: guild.id },
+        channel: {
+          send: async (options) => {
+            options.flags = MessageFlags.Ephemeral;
+            return await interaction.reply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'This is not a valid ticket channel.');
+    }
+
+    // Get ticket system configuration
+    const ticketSystem = await guildCache.getTicketSystem(guild.id);
+
+    // Check permissions (only support role or admin can delete)
+    const hasAdminPerms = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+    const hasSupportRole = ticketSystem.supportRoleId && interaction.member.roles.cache.has(ticketSystem.supportRoleId);
+
+    if (!hasAdminPerms && !hasSupportRole) {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: interaction.user.id },
+        guild: { id: guild.id },
+        channel: {
+          send: async (options) => {
+            options.flags = MessageFlags.Ephemeral;
+            return await interaction.reply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'You don\'t have permission to delete this ticket. Only administrators and support staff can delete tickets.');
+    }
+
+    // Create a fake message object for embeds.warn
+    const fakeMessage = {
+      author: { id: interaction.user.id },
+      guild: { id: guild.id },
+      channel: {
+        send: async (options) => {
+          // Add confirmation buttons to the options
+          const confirmButtons = new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId(`confirm_delete_${channelId}`)
+                .setLabel('Delete')
+                .setStyle(ButtonStyle.Danger),
+              new ButtonBuilder()
+                .setCustomId(`cancel_delete_${channelId}`)
+                .setLabel('Cancel')
+                .setStyle(ButtonStyle.Secondary)
+            );
+
+          options.components = [confirmButtons];
+          options.flags = MessageFlags.Ephemeral;
+
+          return await interaction.reply(options);
+        }
+      }
+    };
+
+    return embeds.warn(fakeMessage, 'Are you sure you want to **permanently delete** this ticket?\n\nThis action cannot be undone.');
+
+  } catch (error) {
+    console.error('Error handling ticket delete:', error);
+    try {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: interaction.user.id },
+        guild: { id: interaction.guild.id },
+        channel: {
+          send: async (options) => {
+            options.flags = MessageFlags.Ephemeral;
+            return await interaction.reply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'An error occurred while deleting the ticket. Please try again.');
+    } catch (replyError) {
+      console.error('Failed to send error message:', replyError);
+    }
+  }
+}
+
+async function handleConfirmDelete(interaction) {
+  try {
+    const channelId = interaction.customId.split('_')[2];
+
+    // Respond to the interaction first before deleting the channel
+    await interaction.update({
+      content: '🗑️ **Ticket is being deleted...**',
+      embeds: [],
+      components: []
+    });
+
+    // Remove ticket from database
+    await guildCache.removeTicket(interaction.guild.id, channelId);
+
+    // Delete the channel after a short delay to ensure the response is sent
+    setTimeout(async () => {
+      try {
+        await interaction.channel.delete();
+      } catch (deleteError) {
+        console.error('Error deleting channel:', deleteError);
+      }
+    }, 1000);
+
+  } catch (error) {
+    // Send error to webhook instead of console
+    if (interaction.client?.errorLogger) {
+      interaction.client.errorLogger.log(error, 'Ticket Delete Confirm', {
+        command: 'Ticket Delete Confirm',
+        args: `Channel: ${interaction.channel?.name || 'Unknown'}`,
+        user: interaction.user,
+        guild: interaction.guild,
+        channel: interaction.channel
+      });
+    }
+    try {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: interaction.user.id },
+        guild: { id: interaction.guild.id },
+        channel: {
+          send: async (options) => {
+            options.flags = MessageFlags.Ephemeral;
+            return await interaction.reply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'An error occurred while deleting the ticket. Please try again.');
+    } catch (replyError) {
+      // Silent fail for reply error
+    }
+  }
+}
+
+async function handleCancelDelete(interaction) {
+  try {
+    // Create a fake message object for embeds.success
+    const fakeMessage = {
+      author: { id: interaction.user.id },
+      guild: { id: interaction.guild.id },
+      channel: {
+        send: async (options) => {
+          options.embeds = options.embeds || [];
+          options.components = [];
+          return await interaction.update(options);
+        }
+      }
+    };
+
+    return embeds.success(fakeMessage, 'Ticket deletion cancelled.');
+
+  } catch (error) {
+    // Send error to webhook instead of console
+    if (interaction.client?.errorLogger) {
+      interaction.client.errorLogger.log(error, 'Ticket Delete Cancel', {
+        command: 'Ticket Delete Cancel',
+        args: `Channel: ${interaction.channel?.name || 'Unknown'}`,
+        user: interaction.user,
+        guild: interaction.guild,
+        channel: interaction.channel
+      });
+    }
+    try {
+      // Create a fake message object for embeds.deny
+      const fakeMessage = {
+        author: { id: interaction.user.id },
+        guild: { id: interaction.guild.id },
+        channel: {
+          send: async (options) => {
+            options.flags = MessageFlags.Ephemeral;
+            return await interaction.reply(options);
+          }
+        }
+      };
+
+      return embeds.deny(fakeMessage, 'An error occurred. Please try again.');
+    } catch (replyError) {
+      // Silent fail for reply error
+    }
+  }
+}
+
+async function handleBoosterRoleShare(interaction) {
+  try {
+    const isAccept = interaction.customId.startsWith('br_accept_');
+    const parts = interaction.customId.split('_');
+    const boosterRoleId = parseInt(parts[2]);
+    const targetUserId = parts[3];
+
+    // Check if the user clicking is the target user
+    if (interaction.user.id !== targetUserId) {
+      const config = require('../../config/setup');
+      const warnEmbed = new EmbedBuilder()
+        .setColor(config.colors.warn)
+        .setDescription(`${config.emojis.warn} <@${interaction.user.id}>: This button is **NOT** for you`);
+
+      return await safeInteractionResponse(interaction, {
+        embeds: [warnEmbed],
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    // Ensure cache writes are enabled before lookup
+    const { getCacheManager } = require('../../database/cache/core/CacheManager');
+    const cacheManager = getCacheManager();
+    if (!cacheManager.guildCache.areWritesEnabled()) {
+      cacheManager.enableWrites();
+    }
+
+    // Get the booster role data
+    const boosterRole = await guildCache.getBoosterRole(interaction.guild.id, boosterRoleId);
+    if (!boosterRole) {
+      console.error(`Booster role not found: guildId=${interaction.guild.id}, boosterRoleId=${boosterRoleId}`);
+
+      // Try to get all booster roles for debugging
+      const allBoosterRoles = await guildCache.getBoosterRoles(interaction.guild.id);
+      console.error(`Available booster roles:`, allBoosterRoles.map(br => ({ id: br.id, roleId: br.roleId, ownerId: br.ownerId })));
+
+      const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Booster role not found. The role may have been deleted or there was a database error.');
+      return await safeInteractionResponse(interaction, {
+        embeds: [embed],
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    // Initialize missing properties for older booster roles
+    if (!boosterRole.pendingShares) boosterRole.pendingShares = [];
+    if (!boosterRole.sharedWith) boosterRole.sharedWith = [];
+
+    // Check if there's a pending share for this user
+    const pendingShare = boosterRole.pendingShares.find(ps => ps.userId === targetUserId);
+    if (!pendingShare) {
+      const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'No pending share request found.');
+      return await safeInteractionResponse(interaction, {
+        embeds: [embed],
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    const config = require('../../config/setup');
+
+    if (isAccept) {
+      // Check if already shared with this user
+      if (boosterRole.sharedWith.find(s => s.userId === targetUserId)) {
+        const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'You already have access to this booster role.');
+        return await safeInteractionResponse(interaction, {
+          embeds: [embed],
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+      // Check if at sharing limit
+      if (boosterRole.sharedWith.length >= 5) {
+        const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'This booster role has reached the sharing limit (5 people).');
+        return await safeInteractionResponse(interaction, {
+          embeds: [embed],
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+      // Add the role to the user
+      const discordRole = interaction.guild.roles.cache.get(boosterRole.roleId);
+      if (!discordRole) {
+        const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Booster role was deleted.');
+        return await safeInteractionResponse(interaction, {
+          embeds: [embed],
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+      try {
+        await interaction.member.roles.add(discordRole);
+
+        // Ensure cache writes are enabled before saving
+        const { getCacheManager } = require('../../database/cache/core/CacheManager');
+        const cacheManager = getCacheManager();
+        if (!cacheManager.guildCache.areWritesEnabled()) {
+          cacheManager.enableWrites();
+        }
+
+        // Add to shared list in database
+        await guildCache.addBoosterRoleShare(interaction.guild.id, boosterRoleId, targetUserId);
+
+        // Remove from pending shares
+        await guildCache.removeBoosterRolePendingShare(interaction.guild.id, boosterRoleId, targetUserId);
+
+        // Update the message using prebuilt embed
+        const acceptedEmbed = embeds.createSuccess(
+          { author: { id: interaction.user.id } },
+          `**${interaction.user.username}** accepted the booster role share for ${discordRole}!`
+        );
+
+        await interaction.update({ embeds: [acceptedEmbed], components: [] });
+
+        // DM notifications removed per user request
+
+      } catch (error) {
+        console.error('Error adding booster role:', error);
+        const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to add booster role. Please check bot permissions.');
+        return await safeInteractionResponse(interaction, {
+          embeds: [embed],
+          flags: MessageFlags.Ephemeral
+        });
+      }
+
+    } else {
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.guildCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
+      // Decline the share
+      await guildCache.removeBoosterRolePendingShare(interaction.guild.id, boosterRoleId, targetUserId);
+
+      // Update the message using prebuilt embed
+      const declinedEmbed = embeds.createWarn(
+        { author: { id: interaction.user.id } },
+        `**${interaction.user.username}** declined the booster role share for <@&${boosterRole.roleId}>.`
+      );
+
+      await interaction.update({ embeds: [declinedEmbed], components: [] });
+
+      // DM notifications removed per user request
+    }
+
+  } catch (error) {
+    console.error('Error handling booster role share:', error);
+    const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'An error occurred while processing the share request.');
+    return await safeInteractionResponse(interaction, {
+      embeds: [embed],
+      flags: MessageFlags.Ephemeral
+    });
+  }
+}
+
+async function handleVMRenameModal(interaction) {
+  try {
+    const member = interaction.member;
+    if (!member.voice.channel) {
+      const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'You need to be in a voice channel to use this command');
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    }
+
+    const tempChannel = await guildCache.getTempVoiceChannel(interaction.guild.id, member.voice.channel.id);
+    if (!tempChannel || tempChannel.ownerId !== member.id) {
+      const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'You can only rename your own voice channel');
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    }
+
+    const newName = interaction.fields.getTextInputValue('channel_name');
+
+    if (newName.length > 100) {
+      const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Channel name must be 100 characters or less');
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    }
+
+    try {
+      await member.voice.channel.setName(newName);
+      await guildCache.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
+        customName: newName
+      });
+
+      const embed = embeds.createSuccess({ author: { id: interaction.user.id } }, `Voice channel name changed to: **${newName}**`);
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    } catch (error) {
+      const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to change channel name. Please check my permissions.');
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    }
+
+  } catch (error) {
+    console.error('Error handling VM rename modal:', error);
+    const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'An error occurred while renaming the channel.');
+    return await interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+}

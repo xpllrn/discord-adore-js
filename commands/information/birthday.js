@@ -1,0 +1,228 @@
+const { EmbedBuilder } = require('discord.js');
+const { embeds } = require('../../core/embeds');
+const { hasPermissionLevel } = require('../../utils/permissions');
+const { runHelpCommand } = require('../../utils/commandProcessor');
+const { findUser } = require('../../handlers/finder');
+const { ensureUserData } = require('../../database');
+const { createConfirmation } = require('../../core/buttons');
+const userCache = require('../../database/cache/models/user');
+
+module.exports = {
+  name: "bday",
+  aliases: ['birthday'],
+  description: `manage birthday settings`,
+  usage: `{guildprefix}bday
+{guildprefix}bday [user]
+{guildprefix}bday set [day] [month]`,
+  run: async(client, message, args) => {
+    
+    if (args[0] === 'set') {
+      // Set birthday (universal)
+      if (!args[1] || !args[2]) {
+        return runHelpCommand(message, 'bday');
+      }
+
+      const day = parseInt(args[1]);
+      const monthInput = args[2].toLowerCase();
+
+      // Validate day
+      if (isNaN(day) || day < 1 || day > 31) {
+        return embeds.warn(message, 'Day must be a number between **1** and **31**');
+      }
+
+      // Parse month (accept both numbers and names)
+      let month;
+      const monthNames = [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december'
+      ];
+      const monthShort = [
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+      ];
+
+      if (!isNaN(monthInput)) {
+        month = parseInt(monthInput);
+        if (month < 1 || month > 12) {
+          return embeds.warn(message, 'Month must be a number between **1** and **12**');
+        }
+      } else {
+        const monthIndex = monthNames.indexOf(monthInput) !== -1 ? 
+          monthNames.indexOf(monthInput) : 
+          monthShort.indexOf(monthInput);
+        
+        if (monthIndex === -1) {
+          return embeds.warn(message, 'Invalid month. Use month name (e.g., March) or number (1-12)');
+        }
+        month = monthIndex + 1;
+      }
+
+      // Validate day for specific month (basic validation)
+      if ((month === 2 && day > 29) || 
+          ([4, 6, 9, 11].includes(month) && day > 30)) {
+        return embeds.warn(message, 'Invalid day for the specified month');
+      }
+
+      // Ensure user data exists
+      await ensureUserData(message.author.id);
+
+      try {
+        // Check if user already has a birthday set
+        const existingBirthday = await userCache.getBirthday(message.author.id);
+
+        if (existingBirthday && existingBirthday.day && existingBirthday.month) {
+          const formattedBirthday = await userCache.getFormattedBirthday(message.author.id);
+          return embeds.warn(message, `You already have a birthday set to **${formattedBirthday}**. Birthdays cannot be changed once set.`);
+        }
+
+        await userCache.setBirthday(message.author.id, day, month);
+        const formattedBirthday = await userCache.getFormattedBirthday(message.author.id);
+        return embeds.success(message, `Set your birthday to **${formattedBirthday}**`);
+      } catch (error) {
+        console.error('Error setting birthday:', error);
+        return embeds.deny(message, 'Failed to set birthday');
+      }
+
+    } else if (args[0] === 'reset') {
+      // Reset user's birthday (dev only)
+      if (!await hasPermissionLevel(message, 'dev')) return;
+
+      if (!args[1]) {
+        return runHelpCommand(message, 'bday');
+      }
+
+      // Find the target user
+      const userResult = await findUser(message.guild, args[1], client);
+      
+      if (!userResult.found) {
+        return embeds.warn(message, userResult.error || 'User not found');
+      }
+
+      let targetUser, targetMember;
+      if (userResult.isGlobal) {
+        targetUser = userResult.user;
+        targetMember = null;
+      } else {
+        targetUser = userResult.user.user || userResult.user;
+        targetMember = userResult.user;
+      }
+
+      // Ensure user data exists
+      await ensureUserData(targetUser.id);
+
+      try {
+        const currentBirthday = await userCache.getBirthday(targetUser.id);
+
+        if (!currentBirthday || !currentBirthday.day || !currentBirthday.month) {
+          const username = targetMember ? targetMember.displayName : targetUser.username;
+          return embeds.warn(message, `**${username}** has no birthday set`);
+        }
+
+        const username = targetMember ? targetMember.displayName : targetUser.username;
+
+        // Show confirmation dialog
+        await createConfirmation(
+          message,
+          `Are you sure you want to **reset the birthday** for **${username}**?`,
+          async (interaction) => {
+            // On approve: clear birthday
+            await userCache.clearBirthday(targetUser.id);
+
+            // Edit the confirmation embed to show success message
+            const successEmbed = embeds.createSuccess(message, `Reset birthday for **${username}**`);
+
+            await interaction.editReply({ embeds: [successEmbed], components: [] });
+          }
+        );
+      } catch (error) {
+        console.error('Error resetting birthday:', error);
+        return embeds.deny(message, 'Failed to reset birthday');
+      }
+
+    } else if (args[0]) {
+      // Show specific user's birthday
+      const userResult = await findUser(message.guild, args[0], client);
+      
+      if (!userResult.found) {
+        return embeds.warn(message, userResult.error || 'User not found');
+      }
+
+      let targetUser, targetMember;
+      if (userResult.isGlobal) {
+        targetUser = userResult.user;
+        targetMember = null;
+      } else {
+        targetUser = userResult.user.user || userResult.user;
+        targetMember = userResult.user;
+      }
+
+      try {
+        const formattedBirthday = await userCache.getFormattedBirthday(targetUser.id);
+        const username = targetMember ? targetMember.displayName : targetUser.username;
+        
+        if (!formattedBirthday) {
+          return embeds.info(message, `🎂 **${username}** has no birthday set`);
+        }
+
+        const isBirthdayToday = await userCache.isBirthday(targetUser.id);
+
+        if (isBirthdayToday) {
+          const birthdayText = `🎂 **${username}**'s birthday is **${formattedBirthday}** (Today!)`;
+          return embeds.info(message, birthdayText);
+        } else {
+          const nextBirthdayTimestamp = await getNextBirthdayTimestamp(targetUser.id);
+          const birthdayText = `🎂 **${username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
+          return embeds.info(message, birthdayText);
+        }
+      } catch (error) {
+        console.error('Error getting birthday:', error);
+        return embeds.deny(message, 'Failed to get birthday');
+      }
+
+    } else {
+      // Show user's own birthday
+      try {
+        const formattedBirthday = await userCache.getFormattedBirthday(message.author.id);
+        
+        if (!formattedBirthday) {
+          return embeds.info(message, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`);
+        }
+
+        const isBirthdayToday = await userCache.isBirthday(message.author.id);
+
+        if (isBirthdayToday) {
+          const birthdayText = `🎂 Your birthday is **${formattedBirthday}** (Today!)`;
+          return embeds.info(message, birthdayText);
+        } else {
+          const nextBirthdayTimestamp = await getNextBirthdayTimestamp(message.author.id);
+          const birthdayText = `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
+          return embeds.info(message, birthdayText);
+        }
+      } catch (error) {
+        console.error('Error getting birthday:', error);
+        return embeds.deny(message, 'Failed to get birthday');
+      }
+    }
+  }
+}
+
+// Helper function to calculate next birthday timestamp
+async function getNextBirthdayTimestamp(userId) {
+  const birthday = await userCache.getBirthday(userId);
+
+  if (!birthday) return null;
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  // Create birthday date for this year
+  let nextBirthday = new Date(currentYear, birthday.month - 1, birthday.day);
+
+  // If birthday already passed this year, use next year
+  if (nextBirthday <= now) {
+    nextBirthday = new Date(currentYear + 1, birthday.month - 1, birthday.day);
+  }
+
+  // Return Unix timestamp (seconds)
+  return Math.floor(nextBirthday.getTime() / 1000);
+}

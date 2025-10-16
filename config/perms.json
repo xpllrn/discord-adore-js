@@ -1,0 +1,17 @@
+{
+  "premium": {
+    "name": "Premium",
+    "description": "Users with premium role in dev server",
+    "roleId": "FROM_ENV",
+    "checkFunction": "hasDevServerRole",
+    "customMessage": "You need to buy **premium/boost** Adore app server for this feature!"
+  },
+  "dev": {
+    "name": "Developer",
+    "description": "Bot developer or dev role in dev server",
+    "userId": "FROM_ENV",
+    "roleId": "FROM_ENV",
+    "checkFunction": "isDevUserOrRole",
+    "customMessage": "This command is restricted to **developers** only!"
+  }
+}

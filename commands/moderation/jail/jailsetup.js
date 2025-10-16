@@ -1,0 +1,157 @@
+const { ChannelType, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { hasDiscordPermission } = require('../../../utils/permissions');
+const { embeds } = require('../../../core/embeds');
+const { colors, emojis } = require('../../../config/setup');
+const { findRole, findChannel } = require('../../../handlers/finder');
+
+module.exports = {
+  name: "jailsetup",
+  aliases: ['setup'],
+  description: `automatically setup jail role and channel with proper permissions`,
+  usage: '{guildprefix}jailsetup',
+  permission: 'Administrator',
+  cooldown: 900000, // 15 minutes in milliseconds
+  run: async(client, message, args) => {
+
+    // Permission checks first - Admin only
+    if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
+
+    if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
+      return embeds.deny(message, 'I need **Manage Roles** permission to use this command');
+    }
+
+    if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageChannels)) {
+      return embeds.deny(message, 'I need **Manage Channels** permission to use this command');
+    }
+
+    // Send loading embed
+    const loadingEmbed = new EmbedBuilder()
+      .setColor(colors.info)
+      .setDescription(`${emojis.loading} <@${message.author.id}>: Setting up jail system for you, please wait!`);
+
+    const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
+
+    try {
+      // Check if jail role already exists using universal finder
+      const jailRoleResult = findRole(message.guild, 'jailed');
+      let jailRole = jailRoleResult.found ? jailRoleResult.role : null;
+      let roleCreated = false;
+
+      if (!jailRole) {
+        // Create jail role with no color
+        jailRole = await message.guild.roles.create({
+          name: 'jailed',
+          reason: `Jail setup by ${message.author.tag}`
+        });
+        roleCreated = true;
+      }
+
+      // Check if jail channel already exists using universal finder
+      const jailChannelResult = findChannel(message.guild, 'jail');
+      let jailChannel = jailChannelResult.found ? jailChannelResult.channel : null;
+      let channelCreated = false;
+
+      if (!jailChannel) {
+        // Create jail channel
+        jailChannel = await message.guild.channels.create({
+          name: 'jail',
+          type: ChannelType.GuildText,
+          permissionOverwrites: [
+            {
+              id: message.guild.id, // @everyone
+              deny: [PermissionFlagsBits.ViewChannel],
+            },
+            {
+              id: jailRole.id,
+              allow: [
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.ReadMessageHistory
+              ],
+              deny: [
+                PermissionFlagsBits.MentionEveryone,
+                PermissionFlagsBits.AttachFiles,
+                PermissionFlagsBits.EmbedLinks,
+                PermissionFlagsBits.AddReactions
+              ]
+            }
+          ],
+          reason: `Jail setup by ${message.author.tag}`
+        });
+
+        // Move jail channel to top
+        await jailChannel.setPosition(0);
+        channelCreated = true;
+      }
+
+      const allChannels = message.guild.channels.cache.filter(channel =>
+        channel.id !== jailChannel.id
+      );
+
+      let permissionUpdates = 0;
+      for (const [, channel] of allChannels) {
+        try {
+          const permissions = {
+            ViewChannel: false
+          };
+
+          // Add specific permissions based on channel type
+          if (channel.type === ChannelType.GuildText ||
+              channel.type === ChannelType.GuildAnnouncement ||
+              channel.type === ChannelType.GuildForum ||
+              channel.type === ChannelType.GuildMedia) {
+            // Text-based channels
+            permissions.SendMessages = false;
+            permissions.AddReactions = false;
+            permissions.CreatePublicThreads = false;
+            permissions.CreatePrivateThreads = false;
+            permissions.SendMessagesInThreads = false;
+          }
+
+          if (channel.type === ChannelType.GuildVoice ||
+              channel.type === ChannelType.GuildStageVoice) {
+            // Voice channels
+            permissions.Connect = false;
+            permissions.Speak = false;
+            permissions.Stream = false;
+            permissions.UseVAD = false;
+          }
+
+          await channel.permissionOverwrites.edit(jailRole, permissions);
+          permissionUpdates++;
+        } catch (error) {
+          // Ignore permission errors for individual channels
+        }
+      }
+
+      // Send jail channel welcome message only if channel was just created
+      if (jailChannel && channelCreated) {
+        const jailWelcomeEmbed = new EmbedBuilder()
+          .setColor('#415159')
+          .setTitle('Welcome to the basement')
+          .setDescription('> If you\'ve been **locked** here, Please wait here **patiently** for a staff member to discuss your **punishment**')
+          .setFooter({ text: 'Please do not mention, let lead to increase in punishment' })
+          .setThumbnail('https://media.discordapp.net/attachments/1379150778354372678/1380449503366221895/pngwing.com_1.png?ex=6843eb49&is=684299c9&hm=114f359ef41a695ea8799a2931654295eadee44b48d13add93e394c1be706117&=&format=webp&quality=lossless&width=1706&height=1706');
+
+        await jailChannel.send({ embeds: [jailWelcomeEmbed] });
+      }
+
+      // Save jail role and channel IDs to database using cache
+      const guildCache = require('../../../database/cache/models/guild');
+
+      try {
+        await guildCache.setJail(message.guild.id, jailRole.id, jailChannel.id);
+      } catch (error) {
+        console.error('Error saving jail setup to database:', error);
+      }
+
+      await loadingMessage.delete();
+      embeds.success(message, 'Jail system setup complete!');
+
+    } catch (error) {
+      // Update loading message with error
+      await loadingMessage.delete();
+      embeds.deny(message, `An error occurred during jail setup: ${error.message}`);
+    }
+  }
+}
