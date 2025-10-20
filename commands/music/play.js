@@ -59,6 +59,16 @@ module.exports = {
       });
     }
 
+    if (client.lavalink.manager.nodes.size === 0) {
+      return message.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor('Red')
+            .setDescription('The music service is not available right now. Please try again later.'),
+        ],
+      });
+    }
+
     const player =
       client.lavalink.manager.create({
         guild: message.guild.id,
