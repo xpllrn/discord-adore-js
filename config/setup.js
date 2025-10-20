@@ -14,7 +14,13 @@ const recommendedEnvVars = [
   'ERROR_WEBHOOK_URL',
   'GUILD_WEBHOOK_URL',
   'PREMIUM_ROLE_ID',
-  'DEV_ROLE_ID'
+  'DEV_ROLE_ID',
+  'SPOTIFY_CLIENT_ID',
+  'SPOTIFY_CLIENT_SECRET',
+  'LAVALINK_HOST',
+  'LAVALINK_PORT',
+  'LAVALINK_PASSWORD',
+  'LAVALINK_SECURE'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
@@ -54,6 +60,18 @@ module.exports = {
   apis: {
     lastfm: process.env.LASTFM_API_KEY,
     deepinfra: process.env.DEEP_API
+  },
+
+  spotify: {
+    clientId: process.env.SPOTIFY_CLIENT_ID,
+    clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+  },
+
+  lavalink: {
+    host: process.env.LAVALINK_HOST,
+    port: process.env.LAVALINK_PORT,
+    password: process.env.LAVALINK_PASSWORD,
+    secure: process.env.LAVALINK_SECURE
   },
 
   logging: {
