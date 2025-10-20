@@ -97,6 +97,11 @@ module.exports = {
           return voiceManagerButtons.handleVMButton(interaction);
         }
 
+        // Handle music panel buttons
+        if (interaction.customId.startsWith('music_')) {
+          return handleMusicButton(interaction);
+        }
+
         // Handle ticket creation button
         if (interaction.customId === 'create_ticket') {
           return handleCreateTicket(interaction);
@@ -349,6 +354,56 @@ async function handleCreateTicket(interaction) {
         // Silent fail for follow-up error message
       }
     }
+  }
+}
+async function handleMusicButton(interaction) {
+  const player = interaction.client.lavalink.manager.players.get(interaction.guild.id);
+  if (!player) {
+    return interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor('Red')
+          .setDescription('The music player is not active.'),
+      ],
+      ephemeral: true,
+    });
+  }
+
+  const { channel } = interaction.member.voice;
+  if (!channel || channel.id !== player.voiceChannel) {
+    return interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor('Red')
+          .setDescription('You must be in the same voice channel as the bot to use these buttons.'),
+      ],
+      ephemeral: true,
+    });
+  }
+
+  const [action] = interaction.customId.split('_').slice(1);
+
+  switch (action) {
+    case 'playpause':
+      if (player.paused) {
+        player.pause(false);
+        await interaction.reply({ content: 'Resumed the music.', ephemeral: true });
+      } else {
+        player.pause(true);
+        await interaction.reply({ content: 'Paused the music.', ephemeral: true });
+      }
+      break;
+    case 'skip':
+      if (!player.queue.current) {
+        return interaction.reply({ content: 'There is nothing to skip.', ephemeral: true });
+      }
+      player.stop();
+      await interaction.reply({ content: 'Skipped the current song.', ephemeral: true });
+      break;
+    case 'stop':
+      player.destroy();
+      await interaction.reply({ content: 'Stopped the music and cleared the queue.', ephemeral: true });
+      break;
   }
 }
 
