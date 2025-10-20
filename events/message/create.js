@@ -1,4 +1,5 @@
 // Message handler for command processing, autoreact, and autoresponder
+const { processCommand } = require('../../utils/commandProcessor');
 
 module.exports = {
   name: 'messageCreate',
@@ -38,7 +39,7 @@ module.exports = {
     await processLevelSystem(message);
 
     // Process commands last
-    await processCommand(message);
+    await processCommand(message, false);
   },
 };
 
@@ -177,16 +178,6 @@ async function processAutoresponder(message) {
     }
   } catch (error) {
     // Silent fail for autoresponder system
-  }
-}
-
-async function processCommand(message) {
-  try {
-    // Process commands with new prefix system
-    const { processCommand } = require('../../utils/commandProcessor');
-    await processCommand(message, false);
-  } catch (error) {
-    // Silent fail for commands
   }
 }
 
@@ -500,5 +491,3 @@ async function assignLevelRoles(message, newLevel) {
     // Silent fail for role assignment
   }
 }
-
-
