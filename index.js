@@ -26,16 +26,8 @@ const permissions = require('./utils/permissions');
 const WebhookErrorLogger = require('./events/dev/errorLogger');
 const LavalinkManager = require('./handlers/LavalinkManager');
 
-// Legacy command processor - kept for backward compatibility
-async function processCommand(message) {
-  // Use new command processor
-  const { processCommand: newProcessCommand } = require('./utils/commandProcessor');
-  await newProcessCommand(message, false);
-}
-
 client.commands = new Collection();
 client.aliases = new Collection();
-client.processCommand = processCommand;
 client.lavalink = new LavalinkManager(client);
 
 // Attach permissions utilities to client
