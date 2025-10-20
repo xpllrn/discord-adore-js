@@ -6,6 +6,7 @@ module.exports = {
   name: 'ready',
   once: true,
   async execute(client) {
+    client.lavalink.manager.init(client.user.id);
     const startTime = Date.now();
 
   console.log('');
