@@ -2,6 +2,7 @@ const { Manager } = require("erela.js");
 const Spotify = require("erela.js-spotify");
 const { lavalink, spotify, bot } = require("../config/setup");
 const chalk = require('chalk');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 class LavalinkManager {
   constructor(client) {
@@ -41,16 +42,54 @@ class LavalinkManager {
         console.error(error);
       }
       )
-      .on("trackStart", (player, track) => {
+      .on("trackStart", async (player, track) => {
         const channel = this.client.channels.cache.get(player.textChannel);
-        if (channel) {
+        if (!channel) return;
+
+        if (player.panelId) {
+          const panelMessage = await channel.messages.fetch(player.panelId).catch(() => null);
+          if (panelMessage) {
+            const embed = new EmbedBuilder()
+              .setColor('Blue')
+              .setTitle(track.title)
+              .setURL(track.uri)
+              .setAuthor({ name: 'Now Playing' })
+              .setDescription(`Requested by ${track.requester}`)
+              .setThumbnail(track.thumbnail)
+              .addFields(
+                { name: 'Author', value: track.author, inline: true },
+                { name: 'Duration', value: `${new Date(track.duration).toISOString().slice(11, -5)}`, inline: true }
+              );
+
+            const row = new ActionRowBuilder()
+              .addComponents(
+                new ButtonBuilder()
+                  .setCustomId('music_playpause')
+                  .setLabel(player.paused ? '▶️ Play' : '⏸️ Pause')
+                  .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                  .setCustomId('music_skip')
+                  .setLabel('⏭️ Skip')
+                  .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
+                  .setCustomId('music_stop')
+                  .setLabel('⏹️ Stop')
+                  .setStyle(ButtonStyle.Danger)
+              );
+
+            panelMessage.edit({ embeds: [embed], components: [row] });
+          }
+        } else {
           channel.send(`Now playing: \`${track.title}\``);
         }
       })
-      .on("queueEnd", (player) => {
+      .on("queueEnd", async (player) => {
         const channel = this.client.channels.cache.get(player.textChannel);
-        if (channel) {
-          channel.send("Queue has ended.");
+        if (channel && player.panelId) {
+          const panelMessage = await channel.messages.fetch(player.panelId).catch(() => null);
+          if (panelMessage) {
+            panelMessage.delete().catch(() => {});
+          }
         }
         player.destroy();
       });
