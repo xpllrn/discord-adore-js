@@ -40,7 +40,7 @@ module.exports = {
 
     defaultPrefix: ',',
     supportServer: 'https://discord.gg/QT2gZv264Q',
-    inviteLink: `https://discord.com/oauth2/authorize?client_id=1427958895250378762&permissions=8&integration_type=0&scope=bot+applications.commands` || '1378983071650680872'}&permissions=8&scope=bot`
+    inviteLink: `https://discord.com/oauth2/authorize?client_id=${process.env.CLIENT_ID || '1427958895250378762'}&permissions=8&integration_type=0&scope=bot+applications.commands`
   },
 
   database: {
