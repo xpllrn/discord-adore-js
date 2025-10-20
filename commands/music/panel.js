@@ -2,51 +2,96 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 
 module.exports = {
   name: 'panel',
-  description: 'Creates a music control panel',
+  description: 'Creates a voice channel control panel',
   usage: '{guildprefix}panel',
   async run(client, message, args) {
-    const player = client.lavalink.manager.players.get(message.guild.id);
-    if (!player || !player.queue.current) {
+    if (!message.member.voice.channel) {
       return message.reply({
         embeds: [
           new EmbedBuilder()
             .setColor('Red')
-            .setDescription('There is no music currently playing.'),
+            .setDescription('You must be in a voice channel to use this command.'),
         ],
       });
     }
 
-    const track = player.queue.current;
-
     const embed = new EmbedBuilder()
-      .setColor('Blue')
-      .setTitle(track.title)
-      .setURL(track.uri)
-      .setAuthor({ name: 'Now Playing' })
-      .setDescription(`Requested by ${track.requester}`)
-      .setThumbnail(track.thumbnail)
-      .addFields(
-        { name: 'Author', value: track.author, inline: true },
-        { name: 'Duration', value: `${new Date(track.duration).toISOString().slice(11, -5)}`, inline: true }
-      );
+      .setTitle('VoiceMaster Interface')
+      .setDescription('Use the buttons below to control your voice channel.')
+      .addFields({
+        name: 'Button Usage',
+        value:
+`🔒 — Lock the voice channel
+🔓 — Unlock the voice channel
+👁️‍🗨️ — Ghost the voice channel
+👁️ — Reveal the voice channel
+🎤 — Claim the voice channel
+🔗 — Disconnect a member
+🎮 — Start an activity
+ℹ️ — View channel information
+➕ — Increase the user limit
+➖ — Decrease the user limit`,
+      })
+      .setColor('Blue');
 
-    const row = new ActionRowBuilder()
+    const row1 = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
-          .setCustomId('music_playpause')
-          .setLabel('▶️ Pause')
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId('music_skip')
-          .setLabel('⏭️ Skip')
+          .setCustomId('panel_lock')
+          .setLabel('Lock')
+          .setEmoji('🔒')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
-          .setCustomId('music_stop')
-          .setLabel('⏹️ Stop')
-          .setStyle(ButtonStyle.Danger)
+          .setCustomId('panel_unlock')
+          .setLabel('Unlock')
+          .setEmoji('🔓')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('panel_ghost')
+          .setLabel('Ghost')
+          .setEmoji('👁️‍🗨️')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('panel_reveal')
+          .setLabel('Reveal')
+          .setEmoji('👁️')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('panel_claim')
+          .setLabel('Claim')
+          .setEmoji('🎤')
+          .setStyle(ButtonStyle.Secondary)
       );
 
-    const panelMessage = await message.channel.send({ embeds: [embed], components: [row] });
-    player.panelId = panelMessage.id;
+      const row2 = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('panel_disconnect')
+          .setLabel('Disconnect')
+          .setEmoji('🔗')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('panel_start_activity')
+          .setLabel('Start Activity')
+          .setEmoji('🎮')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('panel_info')
+          .setLabel('Info')
+          .setEmoji('ℹ️')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('panel_increase_limit')
+          .setLabel('Increase Limit')
+          .setEmoji('➕')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('panel_decrease_limit')
+          .setLabel('Decrease Limit')
+          .setEmoji('➖')
+          .setStyle(ButtonStyle.Secondary)
+      );
+
+    await message.channel.send({ embeds: [embed], components: [row1, row2] });
   },
 };
