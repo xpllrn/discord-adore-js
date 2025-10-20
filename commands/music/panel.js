@@ -23,7 +23,7 @@ module.exports = {
         value:
 `🔒 — Lock the voice channel
 🔓 — Unlock the voice channel
-👁️‍🗨️ — Ghost the voice channel
+👻 — Ghost the voice channel
 👁️ — Reveal the voice channel
 🎤 — Claim the voice channel
 🔗 — Disconnect a member
@@ -49,7 +49,7 @@ module.exports = {
         new ButtonBuilder()
           .setCustomId('panel_ghost')
           .setLabel('Ghost')
-          .setEmoji('👁️‍🗨️')
+          .setEmoji('👻')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('panel_reveal')
