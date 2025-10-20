@@ -102,6 +102,15 @@ module.exports = {
           return handleMusicButton(interaction);
         }
 
+        if (interaction.customId.startsWith('panel_')) {
+          const commandParts = interaction.customId.split('_').slice(1);
+          const commandName = commandParts.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+          return interaction.reply({
+            content: `✅ You have used the ${commandName} command.`,
+            ephemeral: true,
+          });
+        }
+
         // Handle ticket creation button
         if (interaction.customId === 'create_ticket') {
           return handleCreateTicket(interaction);
