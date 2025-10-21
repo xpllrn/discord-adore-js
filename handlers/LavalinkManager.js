@@ -1,4 +1,4 @@
-const { Kazagumo, Plugins } = require('kazagumo');
+const { Kazagumo, Plugins, Connectors } = require('kazagumo');
 const Spotify = require('kazagumo-spotify');
 const { lavalink, spotify } = require('../config/setup');
 const chalk = require('chalk');
@@ -33,9 +33,7 @@ class LavalinkManager {
         const guild = this.client.guilds.cache.get(guildId);
         if (guild) guild.shard.send(payload);
       },
-    },
-    new (require('discord.js').Collection)(),
-    [nodeOptions]);
+    }, new Connectors.DiscordJS(this.client), [nodeOptions]);
 
     this.kazagumo.shoukaku.on('ready', (name) => console.log(chalk.green(`   [+] Lavalink node "${name}" connected.`)));
     this.kazagumo.shoukaku.on('error', (name, error) => {
