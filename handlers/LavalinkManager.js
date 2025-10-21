@@ -1,6 +1,7 @@
-const { Manager } = require("erela.js");
-const Spotify = require("erela.js-spotify");
-const { lavalink, spotify, bot } = require("../config/setup");
+const { Kazagumo, Plugins } = require('kazagumo');
+const { Connectors } = require('shoukaku');
+const Spotify = require('kazagumo-spotify');
+const { lavalink, spotify } = require('../config/setup');
 const chalk = require('chalk');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
@@ -9,92 +10,89 @@ class LavalinkManager {
     this.client = client;
 
     const nodeOptions = {
-      host: lavalink.host,
-      port: parseInt(lavalink.port),
-      password: lavalink.password,
+      name: lavalink.host,
+      url: `${lavalink.host}:${lavalink.port}`,
+      auth: lavalink.password,
       secure: lavalink.secure === 'true',
     };
 
     console.log(chalk.white('>> Lavalink Configuration'));
-    console.log(chalk.cyan(`   [i] Host: ${nodeOptions.host}`));
-    console.log(chalk.cyan(`   [i] Port: ${nodeOptions.port}`));
+    console.log(chalk.cyan(`   [i] Host: ${nodeOptions.url}`));
     console.log(chalk.cyan(`   [i] Secure: ${nodeOptions.secure}`));
 
-
-    this.manager = new Manager({
-      nodes: [nodeOptions],
+    this.kazagumo = new Kazagumo({
+      defaultSearchEngine: 'youtube',
       plugins: [
+        new Plugins.PlayerMoved(this.client),
         new Spotify({
-          clientID: spotify.clientId,
+          clientId: spotify.clientId,
           clientSecret: spotify.clientSecret,
+          market: 'US',
         }),
       ],
-      send: (id, payload) => {
-        const guild = this.client.guilds.cache.get(id);
+      send: (guildId, payload) => {
+        const guild = this.client.guilds.cache.get(guildId);
         if (guild) guild.shard.send(payload);
       },
-    })
-      .on("nodeConnect", (node) =>
-        console.log(chalk.green(`   [+] Lavalink node "${node.options.identifier}" connected.`))
-      )
-      .on("nodeError", (node, error) => {
-        console.log(chalk.red(`   [!] Lavalink node "${node.options.identifier}" encountered an error.`));
-        console.error(error);
+    }, new Connectors.DiscordJS(this.client), [nodeOptions]);
+
+    this.kazagumo.shoukaku.on('ready', (name) => console.log(chalk.green(`   [+] Lavalink node "${name}" connected.`)));
+    this.kazagumo.shoukaku.on('error', (name, error) => {
+      console.log(chalk.red(`   [!] Lavalink node "${name}" encountered an error.`));
+      console.error(error);
+    });
+
+    this.kazagumo.on('playerStart', async (player, track) => {
+      const channel = this.client.channels.cache.get(player.textId);
+      if (!channel) return;
+
+      if (player.panelId) {
+        const panelMessage = await channel.messages.fetch(player.panelId).catch(() => null);
+        if (panelMessage) {
+          const embed = new EmbedBuilder()
+            .setColor('Blue')
+            .setTitle(track.title)
+            .setURL(track.uri)
+            .setAuthor({ name: 'Now Playing' })
+            .setDescription(`Requested by ${track.requester.tag}`)
+            .setThumbnail(track.thumbnail)
+            .addFields(
+              { name: 'Author', value: track.author, inline: true },
+              { name: 'Duration', value: `${new Date(track.length).toISOString().slice(11, -5)}`, inline: true }
+            );
+
+          const row = new ActionRowBuilder()
+            .addComponents(
+              new ButtonBuilder()
+                .setCustomId('music_playpause')
+                .setLabel(player.paused ? '▶️ Play' : '⏸️ Pause')
+                .setStyle(ButtonStyle.Primary),
+              new ButtonBuilder()
+                .setCustomId('music_skip')
+                .setLabel('⏭️ Skip')
+                .setStyle(ButtonStyle.Secondary),
+              new ButtonBuilder()
+                .setCustomId('music_stop')
+                .setLabel('⏹️ Stop')
+                .setStyle(ButtonStyle.Danger)
+            );
+
+          panelMessage.edit({ embeds: [embed], components: [row] });
+        }
+      } else {
+        channel.send(`Now playing: \`${track.title}\``);
       }
-      )
-      .on("trackStart", async (player, track) => {
-        const channel = this.client.channels.cache.get(player.textChannel);
-        if (!channel) return;
+    });
 
-        if (player.panelId) {
-          const panelMessage = await channel.messages.fetch(player.panelId).catch(() => null);
-          if (panelMessage) {
-            const embed = new EmbedBuilder()
-              .setColor('Blue')
-              .setTitle(track.title)
-              .setURL(track.uri)
-              .setAuthor({ name: 'Now Playing' })
-              .setDescription(`Requested by ${track.requester}`)
-              .setThumbnail(track.thumbnail)
-              .addFields(
-                { name: 'Author', value: track.author, inline: true },
-                { name: 'Duration', value: `${new Date(track.duration).toISOString().slice(11, -5)}`, inline: true }
-              );
-
-            const row = new ActionRowBuilder()
-              .addComponents(
-                new ButtonBuilder()
-                  .setCustomId('music_playpause')
-                  .setLabel(player.paused ? '▶️ Play' : '⏸️ Pause')
-                  .setStyle(ButtonStyle.Primary),
-                new ButtonBuilder()
-                  .setCustomId('music_skip')
-                  .setLabel('⏭️ Skip')
-                  .setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder()
-                  .setCustomId('music_stop')
-                  .setLabel('⏹️ Stop')
-                  .setStyle(ButtonStyle.Danger)
-              );
-
-            panelMessage.edit({ embeds: [embed], components: [row] });
-          }
-        } else {
-          channel.send(`Now playing: \`${track.title}\``);
-        }
-      })
-      .on("queueEnd", async (player) => {
-        const channel = this.client.channels.cache.get(player.textChannel);
+    this.kazagumo.on('playerEnd', async (player) => {
+        const channel = this.client.channels.cache.get(player.textId);
         if (channel && player.panelId) {
-          const panelMessage = await channel.messages.fetch(player.panelId).catch(() => null);
-          if (panelMessage) {
-            panelMessage.delete().catch(() => {});
-          }
+            const panelMessage = await channel.messages.fetch(player.panelId).catch(() => null);
+            if (panelMessage) {
+                panelMessage.delete().catch(() => {});
+            }
         }
-        player.destroy();
-      });
-
-    this.client.on("raw", (d) => this.manager.updateVoiceState(d));
+    });
   }
 }
 
