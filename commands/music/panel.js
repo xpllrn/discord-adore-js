@@ -33,11 +33,12 @@ module.exports = {
         });
     }
 
-    await guildCache.updateVoiceManager(message.guild.id, {
-      enabled: true,
-      joinChannelId: voiceChannel.id,
-      categoryId: category.id,
-    });
+    const voiceManager = await guildCache.getVoiceManager(message.guild.id);
+    voiceManager.enabled = true;
+    voiceManager.joinChannelId = voiceChannel.id;
+    voiceManager.categoryId = category.id;
+
+    await guildCache.setVoiceManager(message.guild.id, voiceManager);
 
     return message.reply({
       embeds: [
