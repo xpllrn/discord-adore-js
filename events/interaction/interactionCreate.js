@@ -92,7 +92,7 @@ module.exports = {
 
       // Handle button interactions
       if (interaction.isButton()) {
-        // Handle voice manager buttons
+        // Handle voice manager buttons, logic is in ./voiceManagerButtons.js
         if (interaction.customId.startsWith('vm_')) {
           return voiceManagerButtons.handleVMButton(interaction);
         }
@@ -380,30 +380,7 @@ async function handleMusicButton(interaction) {
   }
 
   const { channel } = interaction.member.voice;
-  if (!channel) {
-    return interaction.editReply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor('Red')
-          .setDescription('You must be in a voice channel to use these buttons.'),
-      ],
-    });
-  }
-
-  const voiceManager = await guildCache.getVoiceManager(interaction.guild.id);
-  const isTempChannel = voiceManager.enabled && voiceManager.tempChannels.some(tc => tc.channelId === channel.id);
-
-  if (!isTempChannel) {
-    return interaction.editReply({
-        embeds: [
-            new EmbedBuilder()
-                .setColor('Red')
-                .setDescription('You can only use music controls inside a temporary voice channel.'),
-        ],
-    });
-  }
-
-  if (channel.id !== player.voiceId) {
+  if (!channel || channel.id !== player.voiceId) {
     return interaction.editReply({
       embeds: [
         new EmbedBuilder()

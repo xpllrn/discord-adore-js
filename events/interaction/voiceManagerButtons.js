@@ -78,6 +78,7 @@ module.exports = {
   name: 'voiceManagerButtons',
   
   async handleVMButton(interaction) {
+    // This function handles all button interactions with the customId prefix 'vm_'.
     try {
       if (!interaction.customId.startsWith('vm_')) return false;
 
