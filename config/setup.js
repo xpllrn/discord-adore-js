@@ -111,7 +111,7 @@ module.exports = {
     leave: '<:error:1379296270438371419>',
     cross: '<:x:1382101646598738111>',
     circle: '<:o:1382101649732014080>',
-    ticket: '<:Ticket:1385950797895958618>',
+    ticket: '🎫',
 
     // Voice Manager Emojis
     vmLock: '<:lock:1386222503999049838>',
