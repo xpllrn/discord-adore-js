@@ -3,7 +3,7 @@ const { embeds } = require('../core/embeds');
 const config = require('../config/setup');
 const permsConfig = require('../config/perms.json');
 
-const devServerID = config.bot.devServerId;
+const devServerIDs = config.bot.devServerIds;
 
 // Build permission levels from environment variables and perms.json
 const PERMISSION_LEVELS = {
@@ -43,40 +43,48 @@ async function hasPermissionLevel(message, level) {
 
     // Check if user has dev role in dev server
     try {
-      if (!devServerID || !PERMISSION_LEVELS.dev?.roleId) {
-        return false;
-      }
+        if (!devServerIDs || devServerIDs.length === 0 || !PERMISSION_LEVELS.dev?.roleId) {
+            return false;
+        }
 
-      const devServer = message.client.guilds.cache.get(devServerID);
-      if (!devServer) {
-        return false;
-      }
+        for (const serverId of devServerIDs) {
+            const devServer = message.client.guilds.cache.get(serverId);
+            if (!devServer) {
+                continue;
+            }
 
-      const member = await devServer.members.fetch(userId).catch(() => null);
-      if (!member) {
-        return false;
-      }
+            const member = await devServer.members.fetch(userId).catch(() => null);
+            if (member && member.roles.cache.has(PERMISSION_LEVELS.dev.roleId)) {
+                return true;
+            }
+        }
 
-      return member.roles.cache.has(PERMISSION_LEVELS.dev.roleId);
+        return false;
     } catch (error) {
-      return false;
+        return false;
     }
   }
 
   // Check if it's premium level
   if (level === 'premium') {
     try {
-      if (!devServerID || !PERMISSION_LEVELS.premium?.roleId) return false;
+        if (!devServerIDs || devServerIDs.length === 0 || !PERMISSION_LEVELS.premium?.roleId) return false;
 
-      const devServer = message.client.guilds.cache.get(devServerID);
-      if (!devServer) return false;
+        for (const serverId of devServerIDs) {
+            const devServer = message.client.guilds.cache.get(serverId);
+            if (!devServer) {
+                continue;
+            }
 
-      const member = await devServer.members.fetch(userId).catch(() => null);
-      if (!member) return false;
+            const member = await devServer.members.fetch(userId).catch(() => null);
+            if (member && member.roles.cache.has(PERMISSION_LEVELS.premium.roleId)) {
+                return true;
+            }
+        }
 
-      return member.roles.cache.has(PERMISSION_LEVELS.premium.roleId);
+        return false;
     } catch (error) {
-      return false;
+        return false;
     }
   }
 
