@@ -77,8 +77,8 @@ module.exports = {
   name: 'interactionCreate',
   async execute(interaction) {
     try {
-      // Check if interaction is still valid (not expired)
-      if (interaction.isRepliable() && (interaction.replied || interaction.deferred)) {
+      // Check if interaction has already been handled
+      if (interaction.replied || interaction.deferred) {
         // Silent fail for already handled interactions
         return;
       }
