@@ -1016,7 +1016,21 @@ const guildSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  Counting: {
+    channelId: {
+      type: String,
+      default: null
+    },
+    currentCount: {
+      type: Number,
+      default: 0
+    },
+    lastCounterId: {
+        type: String,
+        default: null
+    }
+  }
 }, {
   timestamps: true
 });

@@ -1966,6 +1966,19 @@ class Guild {
       lastDisabled
     };
   }
+
+  // ===== COUNTING METHODS =====
+  async getCounting(guildId) {
+    return await this.cache.getField(guildId, 'Counting') || {
+      channelId: null,
+      currentCount: 0,
+      lastCounterId: null
+    };
+  }
+
+  async setCounting(guildId, countingData) {
+    return await this.cache.setField(guildId, 'Counting', countingData);
+  }
 }
 
 module.exports = new Guild();

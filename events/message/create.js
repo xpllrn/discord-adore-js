@@ -38,10 +38,41 @@ module.exports = {
     // Process level system (XP gaining)
     await processLevelSystem(message);
 
+    // Process counting game
+    await processCounting(message);
+
     // Process commands last
     await processCommand(message, false);
   },
 };
+
+async function processCounting(message) {
+    try {
+        const guildCache = require('../../database/cache/models/guild');
+        const countingData = await guildCache.getCounting(message.guild.id);
+
+        if (message.channel.id === countingData.channelId) {
+            const num = parseInt(message.content);
+
+            if (isNaN(num)) {
+                return message.delete();
+            }
+
+            if (num === countingData.currentCount + 1 && message.author.id !== countingData.lastCounterId) {
+                countingData.currentCount++;
+                countingData.lastCounterId = message.author.id;
+                await guildCache.setCounting(message.guild.id, countingData);
+                message.react('✅');
+            } else {
+                message.delete();
+                const warning = await message.channel.send(`${message.author}, you broke the count! The next number was ${countingData.currentCount + 1}.`);
+                setTimeout(() => warning.delete(), 5000);
+            }
+        }
+    } catch (error) {
+        // silent fail
+    }
+}
 
 async function processAutoreact(message) {
   try {
