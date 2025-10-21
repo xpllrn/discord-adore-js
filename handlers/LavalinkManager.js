@@ -1,4 +1,5 @@
-const { Kazagumo, Plugins, Connectors } = require('kazagumo');
+const { Kazagumo, Plugins } = require('kazagumo');
+const { Connectors } = require('shoukaku');
 const Spotify = require('kazagumo-spotify');
 const { lavalink, spotify } = require('../config/setup');
 const chalk = require('chalk');
