@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
   name: 'play',
@@ -101,18 +101,59 @@ module.exports = {
         });
       }
 
-      player.queue.add(res.tracks[0]);
+      const track = res.tracks[0];
+      const wasPlaying = player.playing;
+      player.queue.add(track);
 
-      if (!player.playing && !player.paused) {
+      if (!wasPlaying && !player.paused) {
         player.play();
       }
 
+      const embed = new EmbedBuilder()
+        .setColor('Green')
+        .setDescription(`[${track.title}](${track.uri})`)
+        .addFields(
+          { name: 'Author', value: track.author, inline: true },
+          { name: 'Duration', value: `\`${new Date(track.duration).toISOString().slice(11, 19)}\``, inline: true }
+        )
+        .setThumbnail(track.thumbnail)
+        .setTimestamp()
+        .setFooter({ text: `Requested by ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
+
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('music_playpause')
+            .setLabel('⏯️')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId('music_skip')
+            .setLabel('⏭️')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId('music_stop')
+            .setLabel('⏹️')
+            .setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setCustomId('music_volume_down')
+            .setLabel('🔉')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId('music_volume_up')
+            .setLabel('🔊')
+            .setStyle(ButtonStyle.Secondary)
+        );
+
+      if (!wasPlaying) {
+          embed.setTitle('Now Playing');
+      } else {
+          embed.setTitle('Enqueued Song');
+          embed.addFields({ name: 'Position in queue', value: `\`${player.queue.size}\``, inline: true });
+      }
+
       return message.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor('Green')
-            .setDescription(`Enqueued \`${res.tracks[0].title}\`.`),
-        ],
+        embeds: [embed],
+        components: [row],
       });
 
     } catch (err) {

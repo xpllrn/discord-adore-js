@@ -390,7 +390,7 @@ async function handleMusicButton(interaction) {
     });
   }
 
-  const [action] = interaction.customId.split('_').slice(1);
+  const action = interaction.customId.substring('music_'.length);
 
   switch (action) {
     case 'playpause':
@@ -403,15 +403,25 @@ async function handleMusicButton(interaction) {
       }
       break;
     case 'skip':
-      if (player.queue.isEmpty) {
+      if (!player.queue.current) {
         return interaction.reply({ content: 'There is nothing to skip.', ephemeral: true });
       }
-      player.skip();
+      player.stop();
       await interaction.reply({ content: 'Skipped the current song.', ephemeral: true });
       break;
     case 'stop':
       player.destroy();
       await interaction.reply({ content: 'Stopped the music and cleared the queue.', ephemeral: true });
+      break;
+    case 'volume_down':
+      const newVolumeDown = Math.max(0, player.volume - 10);
+      player.setVolume(newVolumeDown);
+      await interaction.reply({ content: `Volume set to ${newVolumeDown}%.`, ephemeral: true });
+      break;
+    case 'volume_up':
+      const newVolumeUp = Math.min(100, player.volume + 10);
+      player.setVolume(newVolumeUp);
+      await interaction.reply({ content: `Volume set to ${newVolumeUp}%.`, ephemeral: true });
       break;
   }
 }
