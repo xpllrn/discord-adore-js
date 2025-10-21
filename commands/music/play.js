@@ -1,5 +1,24 @@
 const { EmbedBuilder, PermissionsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
+function formatDuration(ms) {
+  if (typeof ms !== 'number' || !isFinite(ms) || ms <= 0) {
+    return '00:00';
+  }
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const paddedSeconds = seconds.toString().padStart(2, '0');
+  const paddedMinutes = minutes.toString().padStart(2, '0');
+
+  if (hours > 0) {
+    const paddedHours = hours.toString().padStart(2, '0');
+    return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
+  }
+  return `${paddedMinutes}:${paddedSeconds}`;
+}
+
 module.exports = {
   name: 'play',
   aliases: ['p'],
@@ -114,7 +133,7 @@ module.exports = {
         .setDescription(`[${track.title}](${track.uri})`)
         .addFields(
           { name: 'Author', value: track.author, inline: true },
-          { name: 'Duration', value: `\`${new Date(track.duration).toISOString().slice(11, 19)}\``, inline: true }
+          { name: 'Duration', value: track.isStream ? '`Live`' : `\`${formatDuration(track.duration)}\``, inline: true }
         )
         .setThumbnail(track.thumbnail)
         .setTimestamp()
