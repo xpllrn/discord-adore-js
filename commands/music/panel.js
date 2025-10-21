@@ -1,97 +1,50 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, PermissionsBitField, ChannelType } = require('discord.js');
+const guildCache = require('../../database/cache/models/guild');
 
 module.exports = {
   name: 'panel',
-  description: 'Creates a voice channel control panel',
-  usage: '{guildprefix}panel',
+  description: 'Sets the voice channel hub for creating temporary VCs.',
+  usage: '{guildprefix}panel <vc_id>',
   async run(client, message, args) {
-    if (!message.member.voice.channel) {
+    if (!message.member.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
       return message.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor('Red')
-            .setDescription('You must be in a voice channel to use this command.'),
-        ],
+        embeds: [new EmbedBuilder().setColor('Red').setDescription('You need the `Manage Server` permission to use this command.')],
       });
     }
 
-    const embed = new EmbedBuilder()
-      .setTitle('VoiceMaster Interface')
-      .setDescription('Use the buttons below to control your voice channel.')
-      .addFields({
-        name: 'Button Usage',
-        value:
-`🔒 — Lock the voice channel
-🔓 — Unlock the voice channel
-👻 — Ghost the voice channel
-👁️ — Reveal the voice channel
-🎤 — Claim the voice channel
-🔗 — Disconnect a member
-🎮 — Start an activity
-ℹ️ — View channel information
-➕ — Increase the user limit
-➖ — Decrease the user limit`,
-      })
-      .setColor('Blue');
+    const voiceChannelId = args[0];
+    if (!voiceChannelId) {
+      return message.reply({
+        embeds: [new EmbedBuilder().setColor('Red').setDescription('Please provide the ID of the voice channel to set as the hub.')],
+      });
+    }
 
-    const row1 = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('panel_lock')
-          .setLabel('Lock')
-          .setEmoji('🔒')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('panel_unlock')
-          .setLabel('Unlock')
-          .setEmoji('🔓')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('panel_ghost')
-          .setLabel('Ghost')
-          .setEmoji('👻')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('panel_reveal')
-          .setLabel('Reveal')
-          .setEmoji('👁️')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('panel_claim')
-          .setLabel('Claim')
-          .setEmoji('🎤')
-          .setStyle(ButtonStyle.Secondary)
-      );
+    const voiceChannel = message.guild.channels.cache.get(voiceChannelId);
+    if (!voiceChannel || voiceChannel.type !== ChannelType.GuildVoice) {
+      return message.reply({
+        embeds: [new EmbedBuilder().setColor('Red').setDescription('Invalid voice channel ID provided.')],
+      });
+    }
 
-      const row2 = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('panel_disconnect')
-          .setLabel('Disconnect')
-          .setEmoji('🔗')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('panel_start_activity')
-          .setLabel('Start Activity')
-          .setEmoji('🎮')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('panel_info')
-          .setLabel('Info')
-          .setEmoji('ℹ️')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('panel_increase_limit')
-          .setLabel('Increase Limit')
-          .setEmoji('➕')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('panel_decrease_limit')
-          .setLabel('Decrease Limit')
-          .setEmoji('➖')
-          .setStyle(ButtonStyle.Secondary)
-      );
+    const category = voiceChannel.parent;
+    if (!category) {
+        return message.reply({
+            embeds: [new EmbedBuilder().setColor('Red').setDescription('The selected voice channel must be in a category.')],
+        });
+    }
 
-    await message.channel.send({ embeds: [embed], components: [row1, row2] });
+    await guildCache.updateVoiceManager(message.guild.id, {
+      enabled: true,
+      joinChannelId: voiceChannel.id,
+      categoryId: category.id,
+    });
+
+    return message.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor('Green')
+          .setDescription(`Successfully set ${voiceChannel} as the hub for creating temporary voice channels.`),
+      ],
+    });
   },
 };
