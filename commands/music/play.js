@@ -1,4 +1,5 @@
-const { EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
+const { PermissionsBitField } = require('discord.js');
 
 module.exports = {
   name: 'play',
@@ -17,21 +18,33 @@ module.exports = {
       });
     }
 
-    if (!channel.permissionsFor(client.user).has(PermissionsBitField.Flags.Connect)) {
+    if (
+      !channel
+        .permissionsFor(client.user)
+        .has(PermissionsBitField.Flags.Connect)
+    ) {
       return message.reply({
         embeds: [
           new EmbedBuilder()
             .setColor('Red')
-            .setDescription("I don't have permission to connect to your voice channel."),
+            .setDescription(
+              "I don't have permission to connect to your voice channel."
+            ),
         ],
       });
     }
-    if (!channel.permissionsFor(client.user).has(PermissionsBitField.Flags.Speak)) {
+    if (
+      !channel
+        .permissionsFor(client.user)
+        .has(PermissionsBitField.Flags.Speak)
+    ) {
       return message.reply({
         embeds: [
           new EmbedBuilder()
             .setColor('Red')
-            .setDescription("I don't have permission to speak in your voice channel."),
+            .setDescription(
+              "I don't have permission to speak in your voice channel."
+            ),
         ],
       });
     }
@@ -46,7 +59,7 @@ module.exports = {
       });
     }
 
-    if (!client.lavalink.shoukaku.nodes.size) {
+    if (client.lavalink.manager.nodes.size === 0) {
       return message.reply({
         embeds: [
           new EmbedBuilder()
@@ -56,65 +69,75 @@ module.exports = {
       });
     }
 
-    let player;
-    try {
-      player = await client.lavalink.createPlayer({
-        guildId: message.guild.id,
-        voiceId: channel.id,
-        textId: message.channel.id,
-        deaf: true,
+    const player =
+      client.lavalink.manager.create({
+        guild: message.guild.id,
+        voiceChannel: channel.id,
+        textChannel: message.channel.id,
+        selfDeafen: true,
       });
-    } catch (err) {
-      console.error(err);
-      return message.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor('Red')
-            .setDescription('An error occurred while trying to create the player.'),
-        ],
-      });
-    }
+
+    if (player.state !== 'CONNECTED') player.connect();
 
     try {
-      const res = await client.lavalink.search(query, { requester: message.author });
+      const res = await client.lavalink.manager.search(
+        query,
+        message.author
+      );
 
-      if (res.type === 'EMPTY' || !res.tracks.length) {
-        if (player) player.destroy();
-        return message.reply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor('Red')
-              .setDescription('No results found.'),
-          ],
-        });
+      if (res.loadType === 'LOAD_FAILED') {
+        if (!player.queue.current) player.destroy();
+        throw new Error(res.exception.message);
       }
 
-      if (res.type === 'PLAYLIST') {
-        for (const track of res.tracks) player.queue.add(track);
-        if (!player.playing && !player.paused) player.play();
-        return message.reply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor('Green')
-              .setDescription(`Enqueued playlist \`${res.playlistName}\` with ${res.tracks.length} tracks.`),
-          ],
-        });
+      switch (res.loadType) {
+        case 'NO_MATCHES':
+          if (!player.queue.current) player.destroy();
+          return message.reply({
+            embeds: [
+              new EmbedBuilder()
+                .setColor('Red')
+                .setDescription('No results found.'),
+            ],
+          });
+        case 'TRACK_LOADED':
+        case 'SEARCH_RESULT':
+          player.queue.add(res.tracks[0]);
+
+          if (!player.playing && !player.paused && !player.queue.size) {
+            player.play();
+          }
+
+          return message.reply({
+            embeds: [
+              new EmbedBuilder()
+                .setColor('Green')
+                .setDescription(
+                  `Enqueued \`${res.tracks[0].title}\`.`
+                ),
+            ],
+          });
+        case 'PLAYLIST_LOADED':
+          player.queue.add(res.tracks);
+
+          if (
+            !player.playing &&
+            !player.paused &&
+            player.queue.totalSize === res.tracks.length
+          ) {
+            player.play();
+          }
+
+          return message.reply({
+            embeds: [
+              new EmbedBuilder()
+                .setColor('Green')
+                .setDescription(
+                  `Enqueued playlist \`${res.playlist.name}\` with ${res.tracks.length} tracks.`
+                ),
+            ],
+          });
       }
-
-      player.queue.add(res.tracks[0]);
-
-      if (!player.playing && !player.paused) {
-        player.play();
-      }
-
-      return message.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor('Green')
-            .setDescription(`Enqueued \`${res.tracks[0].title}\`.`),
-        ],
-      });
-
     } catch (err) {
       if (player) player.destroy();
       console.error(err);
@@ -122,7 +145,9 @@ module.exports = {
         embeds: [
           new EmbedBuilder()
             .setColor('Red')
-            .setDescription('An error occurred while trying to play the song.'),
+            .setDescription(
+              'An error occurred while trying to play the song.'
+            ),
         ],
       });
     }
