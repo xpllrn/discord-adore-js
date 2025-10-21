@@ -366,7 +366,7 @@ async function handleCreateTicket(interaction) {
   }
 }
 async function handleMusicButton(interaction) {
-  const player = interaction.client.lavalink.manager.players.get(interaction.guild.id);
+  const player = interaction.client.lavalink.getPlayer(interaction.guild.id);
   if (!player) {
     return interaction.reply({
       embeds: [
@@ -379,7 +379,7 @@ async function handleMusicButton(interaction) {
   }
 
   const { channel } = interaction.member.voice;
-  if (!channel || channel.id !== player.voiceChannel) {
+  if (!channel || channel.id !== player.voiceId) {
     return interaction.reply({
       embeds: [
         new EmbedBuilder()
@@ -403,10 +403,10 @@ async function handleMusicButton(interaction) {
       }
       break;
     case 'skip':
-      if (!player.queue.current) {
+      if (player.queue.isEmpty) {
         return interaction.reply({ content: 'There is nothing to skip.', ephemeral: true });
       }
-      player.stop();
+      player.skip();
       await interaction.reply({ content: 'Skipped the current song.', ephemeral: true });
       break;
     case 'stop':

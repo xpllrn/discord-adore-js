@@ -28,7 +28,7 @@ const LavalinkManager = require('./handlers/LavalinkManager');
 
 client.commands = new Collection();
 client.aliases = new Collection();
-client.lavalink = new LavalinkManager(client);
+client.lavalink = new LavalinkManager(client).kazagumo;
 
 // Attach permissions utilities to client
 client.permissions = permissions;
