@@ -42,6 +42,7 @@ module.exports = {
 // Handle user joining the "Join 2 create" channel
 async function handleJoinToCreate(guild, member, voiceManager) {
   try {
+    console.log(`User ${member.displayName} joined hub channel ${voiceManager.joinChannelId}. Attempting to create temporary channel.`);
     // Check if user already has a temporary channel
     const existingChannel = voiceManager.tempChannels.find(ch => ch.ownerId === member.id);
     if (existingChannel) {
