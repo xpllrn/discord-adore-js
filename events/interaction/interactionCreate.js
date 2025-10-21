@@ -366,27 +366,27 @@ async function handleCreateTicket(interaction) {
   }
 }
 async function handleMusicButton(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+
   const player = interaction.client.lavalink.getPlayer(interaction.guild.id);
   if (!player) {
-    return interaction.reply({
+    return interaction.editReply({
       embeds: [
         new EmbedBuilder()
           .setColor('Red')
           .setDescription('The music player is not active.'),
       ],
-      ephemeral: true,
     });
   }
 
   const { channel } = interaction.member.voice;
   if (!channel || channel.id !== player.voiceId) {
-    return interaction.reply({
+    return interaction.editReply({
       embeds: [
         new EmbedBuilder()
           .setColor('Red')
           .setDescription('You must be in the same voice channel as the bot to use these buttons.'),
       ],
-      ephemeral: true,
     });
   }
 
@@ -396,32 +396,32 @@ async function handleMusicButton(interaction) {
     case 'playpause':
       if (player.paused) {
         player.pause(false);
-        await interaction.reply({ content: 'Resumed the music.', ephemeral: true });
+        await interaction.editReply({ content: 'Resumed the music.' });
       } else {
         player.pause(true);
-        await interaction.reply({ content: 'Paused the music.', ephemeral: true });
+        await interaction.editReply({ content: 'Paused the music.' });
       }
       break;
     case 'skip':
       if (!player.queue.current) {
-        return interaction.reply({ content: 'There is nothing to skip.', ephemeral: true });
+        return interaction.editReply({ content: 'There is nothing to skip.' });
       }
       player.stop();
-      await interaction.reply({ content: 'Skipped the current song.', ephemeral: true });
+      await interaction.editReply({ content: 'Skipped the current song.' });
       break;
     case 'stop':
       player.destroy();
-      await interaction.reply({ content: 'Stopped the music and cleared the queue.', ephemeral: true });
+      await interaction.editReply({ content: 'Stopped the music and cleared the queue.' });
       break;
     case 'volume_down':
       const newVolumeDown = Math.max(0, player.volume - 10);
       player.setVolume(newVolumeDown);
-      await interaction.reply({ content: `Volume set to ${newVolumeDown}%.`, ephemeral: true });
+      await interaction.editReply({ content: `Volume set to ${newVolumeDown}%.` });
       break;
     case 'volume_up':
       const newVolumeUp = Math.min(100, player.volume + 10);
       player.setVolume(newVolumeUp);
-      await interaction.reply({ content: `Volume set to ${newVolumeUp}%.`, ephemeral: true });
+      await interaction.editReply({ content: `Volume set to ${newVolumeUp}%.` });
       break;
   }
 }
