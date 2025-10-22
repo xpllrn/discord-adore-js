@@ -90,11 +90,7 @@ const systemSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }],
-  whitelistedGuilds: {
-    type: [String],
-    default: []
-  }
+  }]
 }, {
   timestamps: true
 });

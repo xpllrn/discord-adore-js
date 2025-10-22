@@ -35,33 +35,24 @@ async function hasPermissionLevel(message, level) {
 
   // Check if it's the dev user or has dev role
   if (level === 'dev') {
-
     if (userId === PERMISSION_LEVELS.dev?.userId) {
       return true;
     }
 
     // Check if user has dev role in dev server
     try {
-        const { System } = database;
-        if (!System) return false;
-
-        const systemData = await System.findOne({ _id: 'system' });
-        const whitelistedGuilds = systemData ? systemData.whitelistedGuilds : [];
-
-        if (whitelistedGuilds.length === 0 || !PERMISSION_LEVELS.dev?.roleId) {
+        if (!PERMISSION_LEVELS.dev?.roleId || !config.bot.devServerId) {
             return false;
         }
 
-        for (const serverId of whitelistedGuilds) {
-            const devServer = message.client.guilds.cache.get(serverId);
-            if (!devServer) {
-                continue;
-            }
+        const devServer = message.client.guilds.cache.get(config.bot.devServerId);
+        if (!devServer) {
+            return false;
+        }
 
-            const member = await devServer.members.fetch(userId).catch(() => null);
-            if (member && member.roles.cache.has(PERMISSION_LEVELS.dev.roleId)) {
-                return true;
-            }
+        const member = await devServer.members.fetch(userId).catch(() => null);
+        if (member && member.roles.cache.has(PERMISSION_LEVELS.dev.roleId)) {
+            return true;
         }
 
         return false;
@@ -73,24 +64,18 @@ async function hasPermissionLevel(message, level) {
   // Check if it's premium level
   if (level === 'premium') {
     try {
-        const { System } = database;
-        if (!System) return false;
+        if (!PERMISSION_LEVELS.premium?.roleId || !config.bot.devServerId) {
+            return false;
+        }
 
-        const systemData = await System.findOne({ _id: 'system' });
-        const whitelistedGuilds = systemData ? systemData.whitelistedGuilds : [];
+        const devServer = message.client.guilds.cache.get(config.bot.devServerId);
+        if (!devServer) {
+            return false;
+        }
 
-        if (whitelistedGuilds.length === 0 || !PERMISSION_LEVELS.premium?.roleId) return false;
-
-        for (const serverId of whitelistedGuilds) {
-            const devServer = message.client.guilds.cache.get(serverId);
-            if (!devServer) {
-                continue;
-            }
-
-            const member = await devServer.members.fetch(userId).catch(() => null);
-            if (member && member.roles.cache.has(PERMISSION_LEVELS.premium.roleId)) {
-                return true;
-            }
+        const member = await devServer.members.fetch(userId).catch(() => null);
+        if (member && member.roles.cache.has(PERMISSION_LEVELS.premium.roleId)) {
+            return true;
         }
 
         return false;

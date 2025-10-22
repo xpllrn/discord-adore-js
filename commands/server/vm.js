@@ -70,7 +70,7 @@ module.exports = {
     // All other commands require the user to be in a voice channel
     const member = message.member;
     if (!member.voice.channel) {
-      return embeds.warn(message, 'You need to be in a voice channel to use this command');
+      return embeds.warn(message, 'You must be in a voice channel to use this command');
     }
 
     const voiceManager = await guildCache.getVoiceManager(message.guild.id);
@@ -80,7 +80,7 @@ module.exports = {
 
     const tempChannel = await guildCache.getTempVoiceChannel(message.guild.id, member.voice.channel.id);
     if (!tempChannel) {
-      return embeds.warn(message, 'You can only use voice manager commands in temporary voice channels');
+      return embeds.warn(message, 'You can only use this command in a temporary voice channel created by the bot');
     }
 
     // Check if user is the owner of the channel (except for claim command)
@@ -150,6 +150,11 @@ async function handleSetupCommand(message, client) {
   const voiceManager = await guildCache.getVoiceManager(message.guild.id);
   if (voiceManager.enabled) {
     return embeds.warn(message, 'Voice manager is already setup in this server. Use `,vm reset` to recreate.');
+  }
+
+  // Check if user is in a voice channel for setup
+  if (!message.member.voice.channel) {
+    return embeds.warn(message, 'You must be in a voice channel to use this command');
   }
 
   try {
@@ -268,7 +273,7 @@ async function createVoiceManagerPanel(client, channel) {
       `${emojis.vmUnhide} — **Reveal** the voice channel\n` +
       `${emojis.vmIncrease} — **Increase** the user limit\n` +
       `${emojis.vmDecrease} — **Decrease** the user limit\n` +
-      `📝 — **Rename** the voice channel\n` +
+      `${emojis.vmDisconnect} — **Rename** the voice channel\n` +
       `${emojis.vmInfo} — **View** channel information`
     )
     .setColor(colors.embed)
@@ -279,19 +284,19 @@ async function createVoiceManagerPanel(client, channel) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_lock')
-        .setEmoji(emojis.vmLock.replace(/[<>]/g, '').split(':')[1])
+        .setEmoji('1430503055752953887')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_unlock')
-        .setEmoji(emojis.vmUnlock.replace(/[<>]/g, '').split(':')[1])
+        .setEmoji('1430503064808198184')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_hide')
-        .setEmoji(emojis.vmHide.replace(/[<>]/g, '').split(':')[1])
+        .setEmoji('1430503073565900961')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_unhide')
-        .setEmoji(emojis.vmUnhide.replace(/[<>]/g, '').split(':')[1])
+        .setEmoji('1430503081925279754')
         .setStyle(ButtonStyle.Secondary)
     );
 
@@ -299,19 +304,19 @@ async function createVoiceManagerPanel(client, channel) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_increase')
-        .setEmoji(emojis.vmIncrease.replace(/[<>]/g, '').split(':')[1])
+        .setEmoji('1430503123159482544')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_decrease')
-        .setEmoji(emojis.vmDecrease.replace(/[<>]/g, '').split(':')[1])
+        .setEmoji('1430503131346895001')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_rename')
-        .setEmoji('📝')
+        .setEmoji('1430503098043859086')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_info')
-        .setEmoji(emojis.vmInfo.replace(/[<>]/g, '').split(':')[1])
+        .setEmoji('1430503114879799356')
         .setStyle(ButtonStyle.Secondary)
     );
 
@@ -323,24 +328,24 @@ async function createVoiceManagerPanel(client, channel) {
     console.log('Voice manager panel created successfully');
   } catch (error) {
     console.error('Error creating voice manager panel:', error);
-    // Fallback without custom emojis
+    // Fallback with labels if emojis fail
     const fallbackRow1 = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
           .setCustomId('vm_lock')
-          .setLabel('Lock')
+          .setLabel('🔒')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_unlock')
-          .setLabel('Unlock')
+          .setLabel('🔓')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_hide')
-          .setLabel('Hide')
+          .setLabel('👻')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_unhide')
-          .setLabel('Unhide')
+          .setLabel('👁️')
           .setStyle(ButtonStyle.Secondary)
       );
 
@@ -348,19 +353,19 @@ async function createVoiceManagerPanel(client, channel) {
       .addComponents(
         new ButtonBuilder()
           .setCustomId('vm_increase')
-          .setLabel('Increase')
+          .setLabel('➕')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_decrease')
-          .setLabel('Decrease')
+          .setLabel('➖')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_rename')
-          .setEmoji('📝')
+          .setLabel('📝')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_info')
-          .setLabel('Info')
+          .setLabel('ℹ️')
           .setStyle(ButtonStyle.Secondary)
       );
 
