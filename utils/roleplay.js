@@ -1,4 +1,4 @@
-itconst fetch = require('node-fetch');
+const fetch = require('node-fetch');
 const { EmbedBuilder } = require('discord.js');
 const { colors } = require('../config/setup');
 const userCache = require('../database/cache/models/user');

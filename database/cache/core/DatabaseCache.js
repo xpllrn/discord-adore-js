@@ -27,11 +27,11 @@ class DatabaseCache extends TTLCache {
     try {
       const { getModels } = require('../../index');
       const models = getModels();
-      
+
       if (!models) {
         return null;
       }
-      
+
       return models[this.modelName];
     } catch (error) {
       return null;
@@ -131,10 +131,10 @@ class DatabaseCache extends TTLCache {
   async delete(key) {
     // Remove from cache
     const existed = super.delete(key);
-    
+
     // Remove from write queue
     this.writeQueue.delete(key);
-    
+
     // Delete from database
     try {
       const Model = this.getModel();
@@ -146,7 +146,7 @@ class DatabaseCache extends TTLCache {
     } catch (error) {
       console.error(`DatabaseCache: Error deleting ${this.modelName} with ${this.keyField}=${key}:`, error.message);
     }
-    
+
     return existed;
   }
 
