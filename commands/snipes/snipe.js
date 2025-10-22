@@ -15,13 +15,13 @@ function getRelativeTime(timestamp) {
   const days = Math.floor(hours / 24);
 
   if (days > 0) {
-    return `deleted ${days} day${days > 1 ? 's' : ''} ago`;
+    return `removed ${days} day${days > 1 ? 's' : ''} ago`;
   } else if (hours > 0) {
-    return `deleted ${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return `removed ${hours} hour${hours > 1 ? 's' : ''} ago`;
   } else if (minutes > 0) {
-    return `deleted ${minutes} min${minutes > 1 ? 's' : ''} ago`;
+    return `removed ${minutes} min${minutes > 1 ? 's' : ''} ago`;
   } else {
-    return `deleted ${seconds} sec${seconds > 1 ? 's' : ''} ago`;
+    return `removed ${seconds} sec${seconds > 1 ? 's' : ''} ago`;
   }
 }
 

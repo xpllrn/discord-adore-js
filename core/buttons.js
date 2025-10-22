@@ -24,7 +24,7 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
         const startIndex = (page - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const pageItems = items.slice(startIndex, endIndex);
-        
+
         return formatPage(pageItems, page, totalPages);
     };
 
@@ -38,19 +38,19 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(disabled || page === 1),
                 new ButtonBuilder()
+                    .setCustomId('pagination_cancel')
+                    .setEmoji(emojis.cancel)
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(disabled),
+                new ButtonBuilder()
                     .setCustomId('pagination_right')
                     .setEmoji(emojis.right)
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(disabled || page === totalPages),
                 new ButtonBuilder()
-                    .setCustomId('pagination_cancel')
-                    .setEmoji(emojis.cancel)
-                    .setStyle(ButtonStyle.Danger)
-                    .setDisabled(disabled),
-                new ButtonBuilder()
                     .setCustomId('pagination_move')
                     .setEmoji(emojis.choose)
-                    .setStyle(ButtonStyle.Primary)
+                    .setStyle(ButtonStyle.Secondary)
                     .setDisabled(disabled || totalPages === 1)
             );
         return row;
@@ -59,9 +59,9 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
     // Send initial message
     const embed = createEmbed(currentPage);
     const buttons = createButtons(currentPage);
-    const sentMessage = await message.channel.send({ 
-        embeds: [embed], 
-        components: [buttons] 
+    const sentMessage = await message.channel.send({
+        embeds: [embed],
+        components: [buttons]
     });
 
     // Only create collector if there are multiple pages
@@ -147,7 +147,7 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                     }
                 }
                 collector.stop();
-                
+
             } else if (interaction.customId === 'pagination_move') {
                 const infoEmbed = new EmbedBuilder()
                     .setColor(colors.info)
@@ -199,10 +199,10 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                     }
                 });
             }
-            
+
             // Reset collector timer
             collector.resetTimer();
-            
+
         } catch (error) {
             console.error('Error handling pagination interaction:', error);
         }
@@ -211,8 +211,8 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
     collector.on('end', async () => {
         try {
             const disabledButtons = createButtons(currentPage, true);
-            await sentMessage.edit({ 
-                components: [disabledButtons] 
+            await sentMessage.edit({
+                components: [disabledButtons]
             });
         } catch (error) {
             // Message might have been deleted

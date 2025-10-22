@@ -14,13 +14,7 @@ const recommendedEnvVars = [
   'ERROR_WEBHOOK_URL',
   'GUILD_WEBHOOK_URL',
   'PREMIUM_ROLE_ID',
-  'DEV_ROLE_ID',
-  'SPOTIFY_CLIENT_ID',
-  'SPOTIFY_CLIENT_SECRET',
-  'LAVALINK_HOST',
-  'LAVALINK_PORT',
-  'LAVALINK_PASSWORD',
-  'LAVALINK_SECURE'
+  'DEV_ROLE_ID'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
@@ -62,18 +56,6 @@ module.exports = {
     deepinfra: process.env.DEEP_API
   },
 
-  spotify: {
-    clientId: process.env.SPOTIFY_CLIENT_ID,
-    clientSecret: process.env.SPOTIFY_CLIENT_SECRET
-  },
-
-  lavalink: {
-    host: process.env.LAVALINK_HOST,
-    port: process.env.LAVALINK_PORT,
-    password: process.env.LAVALINK_PASSWORD,
-    secure: process.env.LAVALINK_SECURE
-  },
-
   logging: {
     errorWebhookUrl: process.env.ERROR_WEBHOOK_URL || null,
     guildWebhookUrl: process.env.GUILD_WEBHOOK_URL || null
@@ -104,7 +86,7 @@ module.exports = {
     left: '<:left:1430425122166280304>',
     right: '<:right:1430425080638345317>',
     cancel: '<:cancel:1430500787481743494>',
-    choose: '<:p_discrim:1430425048828739626>',
+    choose: '<:skipto:1430425092340322427>',
     loading: '<a:loading:1430501187748368574>',
     lastfm: '<:p_lastfm:1430425060904009771>',
     join: '<:online:1430425074850332722>',

@@ -36,8 +36,6 @@
     "ioredis": "^5.6.1",
     "jimp": "^0.22.12",
     "js-base64": "^3.7.2",
-    "kazagumo": "^3.3.0",
-    "kazagumo-spotify": "^2.1.1",
     "luxon": "^3.6.1",
     "moment": "^2.29.4",
     "mongodb": "^6.17.0",

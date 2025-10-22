@@ -24,11 +24,9 @@ const client = new Client({
 const config = require('./config/setup');
 const permissions = require('./utils/permissions');
 const WebhookErrorLogger = require('./events/dev/errorLogger');
-const LavalinkManager = require('./handlers/LavalinkManager');
 
 client.commands = new Collection();
 client.aliases = new Collection();
-client.lavalink = new LavalinkManager(client).kazagumo;
 
 // Attach permissions utilities to client
 client.permissions = permissions;

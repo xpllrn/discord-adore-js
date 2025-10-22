@@ -97,11 +97,6 @@ module.exports = {
           return voiceManagerButtons.handleVMButton(interaction);
         }
 
-        // Handle music panel buttons
-        if (interaction.customId.startsWith('music_')) {
-          return handleMusicButton(interaction);
-        }
-
         if (interaction.customId.startsWith('panel_')) {
           const commandParts = interaction.customId.split('_').slice(1);
           const commandName = commandParts.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -363,66 +358,6 @@ async function handleCreateTicket(interaction) {
         // Silent fail for follow-up error message
       }
     }
-  }
-}
-async function handleMusicButton(interaction) {
-  await interaction.deferReply({ ephemeral: true });
-
-  const player = interaction.client.lavalink.getPlayer(interaction.guild.id);
-  if (!player) {
-    return interaction.editReply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor('Red')
-          .setDescription('The music player is not active.'),
-      ],
-    });
-  }
-
-  const { channel } = interaction.member.voice;
-  if (!channel || channel.id !== player.voiceId) {
-    return interaction.editReply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor('Red')
-          .setDescription('You must be in the same voice channel as the bot to use these buttons.'),
-      ],
-    });
-  }
-
-  const action = interaction.customId.substring('music_'.length);
-
-  switch (action) {
-    case 'playpause':
-      if (player.paused) {
-        player.pause(false);
-        await interaction.editReply({ content: 'Resumed the music.' });
-      } else {
-        player.pause(true);
-        await interaction.editReply({ content: 'Paused the music.' });
-      }
-      break;
-    case 'skip':
-      if (!player.queue.current) {
-        return interaction.editReply({ content: 'There is nothing to skip.' });
-      }
-      player.stop();
-      await interaction.editReply({ content: 'Skipped the current song.' });
-      break;
-    case 'stop':
-      player.destroy();
-      await interaction.editReply({ content: 'Stopped the music and cleared the queue.' });
-      break;
-    case 'volume_down':
-      const newVolumeDown = Math.max(0, player.volume - 10);
-      player.setVolume(newVolumeDown);
-      await interaction.editReply({ content: `Volume set to ${newVolumeDown}%.` });
-      break;
-    case 'volume_up':
-      const newVolumeUp = Math.min(100, player.volume + 10);
-      player.setVolume(newVolumeUp);
-      await interaction.editReply({ content: `Volume set to ${newVolumeUp}%.` });
-      break;
   }
 }
 
