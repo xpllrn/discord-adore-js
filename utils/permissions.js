@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { embeds } = require('../core/embeds');
 const config = require('../config/setup');
 const permsConfig = require('../config/perms.json');
-const { System } = require('../database');
+const database = require('../database');
 
 // Build permission levels from environment variables and perms.json
 const PERMISSION_LEVELS = {
@@ -42,6 +42,9 @@ async function hasPermissionLevel(message, level) {
 
     // Check if user has dev role in dev server
     try {
+        const { System } = database;
+        if (!System) return false;
+
         const systemData = await System.findOne({ _id: 'system' });
         const whitelistedGuilds = systemData ? systemData.whitelistedGuilds : [];
 
@@ -70,6 +73,9 @@ async function hasPermissionLevel(message, level) {
   // Check if it's premium level
   if (level === 'premium') {
     try {
+        const { System } = database;
+        if (!System) return false;
+
         const systemData = await System.findOne({ _id: 'system' });
         const whitelistedGuilds = systemData ? systemData.whitelistedGuilds : [];
 
@@ -104,7 +110,9 @@ async function hasInstancePermission(userId, permission) {
     // DEV_ID user has access to ALL instance permissions
     if (userId === config.bot.ownerId) return true;
 
-    const { System } = require('../database');
+    const { System } = database;
+    if (!System) return false;
+
     const instanceId = process.env.INSTANCE_ID;
 
     if (!instanceId) return false;

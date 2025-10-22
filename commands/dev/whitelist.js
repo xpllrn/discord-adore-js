@@ -1,6 +1,6 @@
-const { System } = require('../../database');
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
+const database = require('../../database');
 
 module.exports = {
   name: 'whitelist',
@@ -14,6 +14,9 @@ module.exports = {
 
     const subcommand = args[0] ? args[0].toLowerCase() : 'list';
     const serverId = args[1];
+
+    const { System } = database;
+    if (!System) return embeds.error(message, 'Database is not yet ready, please try again.');
 
     let systemData = await System.findOne({ _id: 'system' });
     if (!systemData) {
