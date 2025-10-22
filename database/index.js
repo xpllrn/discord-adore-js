@@ -303,7 +303,8 @@ async function ensureSystemData() {
           Blacklist: {
             users: [],
             servers: []
-          }
+          },
+          whitelistedGuilds: []
         }
       },
       {

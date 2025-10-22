@@ -70,7 +70,7 @@ async function processCounting(message) {
             }
         }
     } catch (error) {
-        // silent fail
+        console.error('Error processing count:', error);
     }
 }
 

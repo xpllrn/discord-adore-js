@@ -2,8 +2,7 @@ const { PermissionFlagsBits } = require('discord.js');
 const { embeds } = require('../core/embeds');
 const config = require('../config/setup');
 const permsConfig = require('../config/perms.json');
-
-const devServerIDs = config.bot.devServerIds;
+const { System } = require('../database');
 
 // Build permission levels from environment variables and perms.json
 const PERMISSION_LEVELS = {
@@ -43,11 +42,14 @@ async function hasPermissionLevel(message, level) {
 
     // Check if user has dev role in dev server
     try {
-        if (!devServerIDs || devServerIDs.length === 0 || !PERMISSION_LEVELS.dev?.roleId) {
+        const systemData = await System.findOne({ _id: 'system' });
+        const whitelistedGuilds = systemData ? systemData.whitelistedGuilds : [];
+
+        if (whitelistedGuilds.length === 0 || !PERMISSION_LEVELS.dev?.roleId) {
             return false;
         }
 
-        for (const serverId of devServerIDs) {
+        for (const serverId of whitelistedGuilds) {
             const devServer = message.client.guilds.cache.get(serverId);
             if (!devServer) {
                 continue;
@@ -68,9 +70,12 @@ async function hasPermissionLevel(message, level) {
   // Check if it's premium level
   if (level === 'premium') {
     try {
-        if (!devServerIDs || devServerIDs.length === 0 || !PERMISSION_LEVELS.premium?.roleId) return false;
+        const systemData = await System.findOne({ _id: 'system' });
+        const whitelistedGuilds = systemData ? systemData.whitelistedGuilds : [];
 
-        for (const serverId of devServerIDs) {
+        if (whitelistedGuilds.length === 0 || !PERMISSION_LEVELS.premium?.roleId) return false;
+
+        for (const serverId of whitelistedGuilds) {
             const devServer = message.client.guilds.cache.get(serverId);
             if (!devServer) {
                 continue;

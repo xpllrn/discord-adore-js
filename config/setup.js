@@ -41,7 +41,7 @@ module.exports = {
   bot: {
     token: process.env.BOT_TOKEN,
     ownerId: process.env.DEV_ID,
-    devServerIds: process.env.SERVER_ID ? process.env.SERVER_ID.split(',').map(id => id.trim()) : [],
+    devServerId: process.env.SERVER_ID,
     clientId: process.env.CLIENT_ID,
 
     defaultPrefix: ',',
