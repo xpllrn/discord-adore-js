@@ -16,7 +16,7 @@ module.exports = {
     const serverId = args[1];
 
     const { System } = database;
-    if (!System) return embeds.error(message, 'Database is not yet ready, please try again.');
+    if (!System) return embeds.deny(message, 'Database is not yet ready, please try again.');
 
     let systemData = await System.findOne({ _id: 'system' });
     if (!systemData) {
@@ -26,7 +26,7 @@ module.exports = {
     switch (subcommand) {
       case 'add':
         if (!serverId) {
-          return embeds.error(message, 'Please provide a server ID to add.');
+          return embeds.deny(message, 'Please provide a server ID to add.');
         }
         if (systemData.whitelistedGuilds.includes(serverId)) {
           return embeds.warn(message, 'That server is already whitelisted.');
@@ -36,7 +36,7 @@ module.exports = {
         return embeds.success(message, `Server \`${serverId}\` has been whitelisted.`);
       case 'remove':
         if (!serverId) {
-          return embeds.error(message, 'Please provide a server ID to remove.');
+          return embeds.deny(message, 'Please provide a server ID to remove.');
         }
         if (!systemData.whitelistedGuilds.includes(serverId)) {
           return embeds.warn(message, 'That server is not whitelisted.');
@@ -50,7 +50,7 @@ module.exports = {
         }
         return embeds.info(message, `Whitelisted servers: \`\`\`${systemData.whitelistedGuilds.join('\n')}\`\`\``);
       default:
-        return embeds.error(message, 'Invalid subcommand. Use `add`, `remove`, or `list`.');
+        return embeds.deny(message, 'Invalid subcommand. Use `add`, `remove`, or `list`.');
     }
   }
 };
