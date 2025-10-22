@@ -76,13 +76,18 @@ module.exports = {
         }
       }
 
-      // Check for emotes (custom emojis)
+      // Check for emotes (custom emojis) in message content
       const emojiRegex = /<a?:(\w+):(\d+)>/g;
+      const foundEmojis = new Set(); // Track found emojis to avoid duplicates
+      
+      // Extract emojis from message content
       const emojiMatches = referencedMessage.content.match(emojiRegex);
       
       if (emojiMatches) {
         for (const emojiMatch of emojiMatches) {
           const [, name, id] = emojiMatch.match(/<a?:(\w+):(\d+)>/);
+          foundEmojis.add(id); // Track this emoji
+          
           const isAnimated = emojiMatch.startsWith('<a:');
           
           // Check if emoji already exists in the guild
@@ -102,6 +107,61 @@ module.exports = {
             id: id,
             animated: isAnimated
           });
+        }
+      }
+
+      // Check for emotes in embeds
+      if (referencedMessage.embeds && referencedMessage.embeds.length > 0) {
+        for (const embed of referencedMessage.embeds) {
+          // Collect all text fields from the embed
+          const embedTexts = [];
+          
+          if (embed.title) embedTexts.push(embed.title);
+          if (embed.description) embedTexts.push(embed.description);
+          if (embed.footer?.text) embedTexts.push(embed.footer.text);
+          if (embed.author?.name) embedTexts.push(embed.author.name);
+          
+          if (embed.fields) {
+            for (const field of embed.fields) {
+              if (field.name) embedTexts.push(field.name);
+              if (field.value) embedTexts.push(field.value);
+            }
+          }
+          
+          // Search for emojis in all embed text
+          for (const text of embedTexts) {
+            const embedEmojiMatches = text.match(emojiRegex);
+            
+            if (embedEmojiMatches) {
+              for (const emojiMatch of embedEmojiMatches) {
+                const [, name, id] = emojiMatch.match(/<a?:(\w+):(\d+)>/);
+                
+                // Skip if we already found this emoji
+                if (foundEmojis.has(id)) continue;
+                foundEmojis.add(id);
+                
+                const isAnimated = emojiMatch.startsWith('<a:');
+                
+                // Check if emoji already exists in the guild
+                const existingEmoji = message.guild.emojis.cache.get(id);
+                if (existingEmoji) {
+                  failedItems.push({
+                    type: 'emoji',
+                    name: name,
+                    reason: 'Already exists in this server'
+                  });
+                  continue;
+                }
+
+                itemsToSteal.push({
+                  type: 'emoji',
+                  name: name,
+                  id: id,
+                  animated: isAnimated
+                });
+              }
+            }
+          }
         }
       }
 
