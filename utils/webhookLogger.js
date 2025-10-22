@@ -95,10 +95,8 @@ class WebhookLogger {
     try {
       const guildCache = require('../database/cache/models/guild');
 
-      // Get the Discord client from the webhook URL (we need guild access)
-      const { Client } = require('discord.js');
-      const client = require('../index'); // Assuming main client is exported from index
-
+      // Get the Discord client from global client reference (avoid circular dependency)
+      const client = global.discordClient;
       if (!client || !client.guilds) return;
 
       const guild = client.guilds.cache.get(guildId);

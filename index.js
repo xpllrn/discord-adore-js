@@ -37,6 +37,9 @@ const client = new Client({
   allowedMentions: { parse: ['users', 'roles'] },
   partials: [Partials.Message, Partials.Channel, Partials.Reaction]
 })
+
+// Set global client reference to avoid circular dependencies
+global.discordClient = client;
 const config = require('./config/setup');
 const permissions = require('./utils/permissions');
 const WebhookErrorLogger = require('./events/dev/errorLogger');
@@ -221,3 +224,6 @@ client.on('warn', (warning) => {
 });
 
 client.login(config.bot.token)
+
+// Export client for modules that need it (avoid circular dependencies by using global reference)
+module.exports = client;
