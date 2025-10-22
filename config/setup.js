@@ -97,12 +97,12 @@ module.exports = {
 
   // Emojis Configuration
   emojis: {
-    cooldown: '<:cooldown:1379296257746538677>',
-    success: '<:success:1379289220606070834>',
-    error: '<:error:1379296270438371419>',
-    warn: '<:warn:1379296346334433316>',
-    left: '<:left:1380275840004132864>',
-    right: '<:right:1379296316081045595>',
+    cooldown: '<:warning:1430425136351416421>',
+    success: '<:approve:1430425024006848534>',
+    error: '<:deny:1430425037004869682>',
+    warn: '<:warning:1430425136351416421>',
+    left: '<:left:1430425122166280304>',
+    right: '<:right:1430425080638345317>',
     cancel: '<:cancel:1379296264008634486>',
     choose: '<:choose:1379296334321942690>',
     loading: '<a:loading:1379296276356665364>',
