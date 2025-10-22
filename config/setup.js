@@ -108,12 +108,12 @@ module.exports = {
     vmInfo: '<:infomation:1386222501498978456>',
 
     // Level Progress Bar Emojis
-    blueLeftRounded: '<:blue_left_rounded:1386722842002985082>',
-    blue: '<:blue:1386722849007468544>',
-    blueRightRounded: '<:blue_right_rounded:1386722855038750892>',
-    whiteLeftRounded: '<:white_left_rounded:1386722861833650388>',
-    white: '<:white:1386722868062060598>',
-    whiteRightRounded: '<:white_right_rounded:1386722874554847293>',
+    blueLeftRounded: '<:blue_left_rounded:1430514041599819837>',
+    blue: '<:blue:1430514035572342784>',
+    blueRightRounded: '<:blue_right_rounded:1430514028924375051>',
+    whiteLeftRounded: '<:white_left_rounded:1430514053620699198>',
+    white: '<:white:1430514047853527091>',
+    whiteRightRounded: '<:white_right_rounded:1430514060054630420>',
 
     // Custom Emojis
     naaILovedick: '<:0069_heh:1428025640598372573>',

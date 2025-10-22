@@ -18,7 +18,7 @@ module.exports = {
 {guildprefix}remind list
 {guildprefix}remind remove [id]
 {guildprefix}remind reset`,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     // Ensure user data exists in the database
     await ensureUserData(message.author.id);
@@ -27,7 +27,7 @@ module.exports = {
       // List user's reminders
       try {
         const reminders = await userCache.getReminders(message.author.id);
-        
+
         if (!reminders || reminders.length === 0) {
           return embeds.info(message, 'You have no active reminders');
         }
@@ -51,7 +51,7 @@ module.exports = {
             .setColor(config.colors.embed)
             .setTitle('Your Reminders')
             .setDescription(remindersList)
-            .setFooter({ text: `${sortedReminders.length} reminders • Page ${currentPage}/${totalPages} • 🔄 = Daily` });
+            .setFooter({ text: `${sortedReminders.length} reminders • Page ${currentPage}/${totalPages}` });
         };
 
         await createPagination(message, sortedReminders, formatPage, 10, 'Reminders');
@@ -70,7 +70,7 @@ module.exports = {
 
       try {
         const removedReminder = await userCache.removeReminder(message.author.id, reminderId);
-        
+
         if (removedReminder) {
           return embeds.success(message, `Removed reminder **#${reminderId}**`);
         } else {
@@ -148,11 +148,11 @@ module.exports = {
       // Validate duration (minimum 1 minute, maximum 1 year)
       const minDuration = ms('1m');
       const maxDuration = ms('365d');
-      
+
       if (duration < minDuration) {
         return embeds.warn(message, 'Reminder duration must be at least **1 minute**');
       }
-      
+
       if (duration > maxDuration) {
         return embeds.warn(message, 'Reminder duration cannot exceed **1 year**');
       }
