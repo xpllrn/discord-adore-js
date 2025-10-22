@@ -7,7 +7,7 @@ module.exports = {
   name: 'ts',
   description: 'Transcribe voice messages to text using AI',
   usage: `{guildprefix}ts (reply to a voice note)`,
-  permission: 'Premium',
+
 
   run: async (client, message) => {
     if (!config.apis.deepinfra) {

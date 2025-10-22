@@ -152,11 +152,6 @@ async function handleSetupCommand(message, client) {
     return embeds.warn(message, 'Voice manager is already setup in this server. Use `,vm reset` to recreate.');
   }
 
-  // Check if user is in a voice channel for setup
-  if (!message.member.voice.channel) {
-    return embeds.warn(message, 'You must be in a voice channel to use this command');
-  }
-
   try {
     // Create voice category
     const category = await message.guild.channels.create({
@@ -267,14 +262,14 @@ async function createVoiceManagerPanel(client, channel) {
     .setDescription(
       'Use the buttons below to control your voice channel.\n\n' +
       '**Button Usage:**\n' +
-      `${emojis.vmLock} — **Lock** the voice channel\n` +
-      `${emojis.vmUnlock} — **Unlock** the voice channel\n` +
-      `${emojis.vmHide} — **Ghost** the voice channel\n` +
-      `${emojis.vmUnhide} — **Reveal** the voice channel\n` +
-      `${emojis.vmIncrease} — **Increase** the user limit\n` +
-      `${emojis.vmDecrease} — **Decrease** the user limit\n` +
-      `${emojis.vmDisconnect} — **Rename** the voice channel\n` +
-      `${emojis.vmInfo} — **View** channel information`
+      `<:lock:1430503055752953887> — **Lock** the voice channel\n` +
+      `<:unlock:1430503064808198184> — **Unlock** the voice channel\n` +
+      `<:ghost:1430503073565900961> — **Ghost** the voice channel\n` +
+      `<:reveal:1430503081925279754> — **Reveal** the voice channel\n` +
+      `<:increase:1430503123159482544> — **Increase** the user limit\n` +
+      `<:decrease:1430503131346895001> — **Decrease** the user limit\n` +
+      `<:rename:1430503098043859086> — **Rename** the voice channel\n` +
+      `<:info:1430503114879799356> — **View** channel information`
     )
     .setColor(colors.embed)
     .setThumbnail(client.user.displayAvatarURL());

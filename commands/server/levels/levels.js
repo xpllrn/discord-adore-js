@@ -15,8 +15,8 @@ module.exports = {
   usage: `{guildprefix}levels [@user]
 {guildprefix}levels leaderboard
 
-{guildprefix}levels unlock
-{guildprefix}levels lock
+{guildprefix}levels unlock / enable
+{guildprefix}levels lock / disable
 {guildprefix}levels add [@role] [level]
 {guildprefix}levels remove [level]
 {guildprefix}levels set [@user] [level]
@@ -37,7 +37,7 @@ module.exports = {
       const subcommand = args[0].toLowerCase();
 
       // Handle subcommands that require Manage Guild permissions
-      if (['unlock', 'lock', 'add', 'remove', 'set', 'sync', 'messagemode'].includes(subcommand)) {
+      if (['unlock', 'enable', 'lock', 'disable', 'add', 'remove', 'set', 'sync', 'messagemode'].includes(subcommand)) {
         if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
       }
 
@@ -48,8 +48,10 @@ module.exports = {
 
       switch (subcommand) {
         case 'unlock':
+        case 'enable':
           return await handleUnlock(client, message, args);
         case 'lock':
+        case 'disable':
           return await handleLock(client, message, args);
         case 'reset':
           return await handleReset(client, message, args);
@@ -372,7 +374,7 @@ async function handleSetLevel(client, message, args) {
   // Check if level system is enabled
   const isEnabled = await guildCache.isLevelSystemEnabled(message.guild.id);
   if (!isEnabled) {
-    return embeds.warn(message, 'Leveling system is **disabled** in this server. Use `levels unlock` to enable it.');
+    return embeds.warn(message, 'Leveling system is **disabled** in this server. Use `levels unlock` or `levels enable` to enable it.');
   }
 
   // Find the target user

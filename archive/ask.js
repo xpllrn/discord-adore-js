@@ -12,7 +12,7 @@ module.exports = {
 {guildprefix}ask remind me to water plants in 4 hours
 {guildprefix}ask ban this user @user
 {guildprefix}ask show my past names`,
-  permission: "Premium",
+
 
   run: async (client, message, args) => {
 
@@ -41,7 +41,7 @@ Context:
 - User: ${message.author.tag} (ID: ${message.author.id})
 - Guild: ${message.guild.name} (ID: ${message.guild.id})
 - Channel: ${message.channel.name}
-- User has Premium permission level
+- User has access to all commands
 
 Analyze this request and determine the best command to execute. Respond with ONLY the command and arguments in this exact format:
 COMMAND: [command_name] [arguments]

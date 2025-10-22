@@ -41,46 +41,46 @@ async function hasPermissionLevel(message, level) {
 
     // Check if user has dev role in dev server
     try {
-        if (!PERMISSION_LEVELS.dev?.roleId || !config.bot.devServerId) {
-            return false;
-        }
-
-        const devServer = message.client.guilds.cache.get(config.bot.devServerId);
-        if (!devServer) {
-            return false;
-        }
-
-        const member = await devServer.members.fetch(userId).catch(() => null);
-        if (member && member.roles.cache.has(PERMISSION_LEVELS.dev.roleId)) {
-            return true;
-        }
-
+      if (!PERMISSION_LEVELS.dev?.roleId || !config.bot.devServerId) {
         return false;
+      }
+
+      const devServer = message.client.guilds.cache.get(config.bot.devServerId);
+      if (!devServer) {
+        return false;
+      }
+
+      const member = await devServer.members.fetch(userId).catch(() => null);
+      if (member && member.roles.cache.has(PERMISSION_LEVELS.dev.roleId)) {
+        return true;
+      }
+
+      return false;
     } catch (error) {
-        return false;
+      return false;
     }
   }
 
   // Check if it's premium level
   if (level === 'premium') {
     try {
-        if (!PERMISSION_LEVELS.premium?.roleId || !config.bot.devServerId) {
-            return false;
-        }
-
-        const devServer = message.client.guilds.cache.get(config.bot.devServerId);
-        if (!devServer) {
-            return false;
-        }
-
-        const member = await devServer.members.fetch(userId).catch(() => null);
-        if (member && member.roles.cache.has(PERMISSION_LEVELS.premium.roleId)) {
-            return true;
-        }
-
+      if (!PERMISSION_LEVELS.premium?.roleId || !config.bot.devServerId) {
         return false;
+      }
+
+      const devServer = message.client.guilds.cache.get(config.bot.devServerId);
+      if (!devServer) {
+        return false;
+      }
+
+      const member = await devServer.members.fetch(userId).catch(() => null);
+      if (member && member.roles.cache.has(PERMISSION_LEVELS.premium.roleId)) {
+        return true;
+      }
+
+      return false;
     } catch (error) {
-        return false;
+      return false;
     }
   }
 
