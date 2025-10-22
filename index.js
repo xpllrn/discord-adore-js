@@ -1,4 +1,20 @@
 const { Client, Collection, GatewayIntentBits, Partials } = require('discord.js')
+
+// Protect against stdout/stderr write errors
+process.stdout.on('error', (err) => {
+  if (err.code === 'EIO' || err.code === 'EPIPE') {
+    // Ignore broken pipe errors
+    return;
+  }
+});
+
+process.stderr.on('error', (err) => {
+  if (err.code === 'EIO' || err.code === 'EPIPE') {
+    // Ignore broken pipe errors
+    return;
+  }
+});
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -132,43 +148,75 @@ process.on('SIGTERM', async () => {
 
 // Global error handlers
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  // Handle write EIO errors gracefully (broken pipe/stream errors)
+  if (error.code === 'EIO' && error.syscall === 'write') {
+    // Silently ignore write errors to prevent crash loops
+    // These occur when stdout/stderr is closed or piped to a closed process
+    return;
+  }
+
+  // Try to log to console, but wrap in try-catch in case streams are broken
+  try {
+    console.error('Uncaught Exception:', error);
+  } catch (consoleError) {
+    // Console is broken, can't log
+  }
+
   if (errorLogger) {
     errorLogger.log(error, 'Uncaught Exception', {
       command: 'Process Error',
       args: 'Main Process'
+    }).catch(() => {
+      // Webhook logging failed, nothing we can do
     });
   }
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  try {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  } catch (consoleError) {
+    // Console is broken, can't log
+  }
+
   if (errorLogger) {
     errorLogger.log(reason?.toString() || 'Unknown reason', 'Unhandled Promise Rejection', {
       command: 'Process Error',
       args: 'Main Process'
+    }).catch(() => {
+      // Webhook logging failed, nothing we can do
     });
   }
 });
 
 // Discord.js error events
 client.on('error', (error) => {
-  console.error('Discord.js Client Error:', error);
+  try {
+    console.error('Discord.js Client Error:', error);
+  } catch (consoleError) {
+    // Console is broken, can't log
+  }
+
   if (errorLogger) {
     errorLogger.log(error, 'Discord.js Client Error', {
       command: 'Discord.js Client',
       args: `Status: ${client.readyAt ? 'Ready' : 'Not Ready'} | Guilds: ${client.guilds.cache.size}`
-    });
+    }).catch(() => {});
   }
 });
 
 client.on('warn', (warning) => {
-  console.warn('Discord.js Client Warning:', warning);
+  try {
+    console.warn('Discord.js Client Warning:', warning);
+  } catch (consoleError) {
+    // Console is broken, can't log
+  }
+
   if (errorLogger) {
     errorLogger.log(warning, 'Discord.js Client Warning', {
       command: 'Discord.js Client',
       args: `Status: ${client.readyAt ? 'Ready' : 'Not Ready'}`
-    });
+    }).catch(() => {});
   }
 });
 

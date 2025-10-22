@@ -29,7 +29,7 @@ module.exports = {
   aliases: ['es'],
   description: `snipes edited messages`,
   usage: `{guildprefix}editsnipe [number]`,
-  run: async(_, message, args) => {
+  run: async (_, message, args) => {
 
     const editsnipes = snipeCache.getEditedMessages(message.channel.id);
 
