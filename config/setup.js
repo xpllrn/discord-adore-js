@@ -104,13 +104,13 @@ module.exports = {
     left: '<:left:1430425122166280304>',
     right: '<:right:1430425080638345317>',
     cancel: '<:cancel:1379296264008634486>',
-    choose: '<:choose:1379296334321942690>',
-    loading: '<a:loading:1379296276356665364>',
-    lastfm: '<:lastfm:1379296282690195496>',
-    join: '<:success:1379289220606070834>',
-    leave: '<:error:1379296270438371419>',
-    cross: '<:x:1382101646598738111>',
-    circle: '<:o:1382101649732014080>',
+    choose: '<:p_discrim:1430425048828739626>',
+    loading: '<:aired:1430425030218481696>',
+    lastfm: '<:p_lastfm:1430425060904009771>',
+    join: '<:online:1430425074850332722>',
+    leave: '<:offline:1430425068957073408>',
+    cross: '<:deny:1430425037004869682>',
+    circle: '<:staff:1430425098657202258>',
     ticket: '🎫',
 
     // Voice Manager Emojis
@@ -134,8 +134,8 @@ module.exports = {
     whiteRightRounded: '<:white_right_rounded:1386722874554847293>',
 
     // Custom Emojis
-    naaILovedick: '<:naa_iLovedick:1385809601102090400>',
-    google: '<:Google:1385950785975746684>'
+    naaILovedick: '<:0069_heh:1428025640598372573>',
+    google: '<:CodeXPray:1428026399049908246>'
 
   },
 
