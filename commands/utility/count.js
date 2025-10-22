@@ -31,7 +31,7 @@ module.exports = {
 
     const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]);
     if (!channel) {
-      return embeds.error(message, 'Invalid channel provided.');
+      return embeds.deny(message, 'Invalid channel provided.');
     }
 
     await guildCache.setCounting(message.guild.id, {
