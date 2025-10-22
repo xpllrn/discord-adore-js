@@ -76,6 +76,13 @@ module.exports = {
         amount = 100000;
       }
 
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       // Deduct the bet amount first
       await userCache.updateWalletBalance(message.author.id, -amount);
 

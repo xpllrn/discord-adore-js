@@ -109,6 +109,13 @@ async function checkReminders(client) {
                   components: components
                 });
 
+                // Ensure cache writes are enabled before updating
+                const { getCacheManager } = require('../../database/cache/core/CacheManager');
+                const cacheManager = getCacheManager();
+                if (!cacheManager.userCache.areWritesEnabled()) {
+                  cacheManager.enableWrites();
+                }
+
                 if (reminder.isDaily) {
                   // Update next trigger for daily reminder
                   const nextTrigger = new Date(now.getTime() + reminder.duration);

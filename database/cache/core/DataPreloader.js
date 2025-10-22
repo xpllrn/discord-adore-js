@@ -101,13 +101,21 @@ class DataPreloader {
         return;
       }
       
-      const users = await models.User.find({}).lean();
+      // Load users sorted by updatedAt descending to get the most recent version of each user
+      const users = await models.User.find({}).sort({ updatedAt: -1 }).lean();
 
       let loaded = 0;
+      const loadedUserIds = new Set();
+      
       for (const user of users) {
         const key = user.UserID || user._id.toString();
-        this.cacheManager.userCache.set(key, user, 45 * 60 * 1000); // 45 minutes TTL
-        loaded++;
+        
+        // Only load the first (most recent) document for each user ID
+        if (!loadedUserIds.has(key)) {
+          this.cacheManager.userCache.set(key, user, 45 * 60 * 1000); // 45 minutes TTL
+          loadedUserIds.add(key);
+          loaded++;
+        }
       }
 
       this.loadStats.collections.users = loaded;

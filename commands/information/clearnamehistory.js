@@ -58,6 +58,13 @@ module.exports = {
         message,
         `Are you sure you want to **clear all name history** for **${username}**?`,
         async (interaction) => {
+          // Ensure cache writes are enabled before clearing
+          const { getCacheManager } = require('../../database/cache/core/CacheManager');
+          const cacheManager = getCacheManager();
+          if (!cacheManager.userCache.areWritesEnabled()) {
+            cacheManager.enableWrites();
+          }
+
           // On approve: clear all name history
           await userCache.clearAllNameHistory(targetUser.id);
 

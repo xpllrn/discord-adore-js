@@ -15,6 +15,13 @@ module.exports = {
       // Ensure user data exists
       await ensureUserData(newUser.id);
 
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       // Track username changes
       if (oldUser.username !== newUser.username) {
         await userCache.addNameChange(

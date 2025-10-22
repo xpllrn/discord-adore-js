@@ -85,6 +85,13 @@ module.exports = {
       
       const randomMessage = begMessages[Math.floor(Math.random() * begMessages.length)];
       
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       // Update user's wallet and beg cooldown
       await userCache.updateWalletBalance(message.author.id, begAmount);
       await userCache.updateBegCooldown(message.author.id);

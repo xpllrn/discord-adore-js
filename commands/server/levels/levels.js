@@ -99,6 +99,13 @@ async function handleUnlock(client, message, args) {
     return embeds.warn(message, 'Leveling system is already **enabled**');
   }
 
+  // Ensure cache writes are enabled before saving
+  const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+  const cacheManager = getCacheManager();
+  if (!cacheManager.guildCache.areWritesEnabled()) {
+    cacheManager.enableWrites();
+  }
+
   await guildCache.enableLevelSystem(message.guild.id);
   return embeds.success(message, 'Leveling system has been **enabled**');
 }
@@ -109,6 +116,13 @@ async function handleLock(client, message, args) {
   
   if (!isEnabled) {
     return embeds.warn(message, 'Leveling system is already **disabled**');
+  }
+
+  // Ensure cache writes are enabled before saving
+  const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+  const cacheManager = getCacheManager();
+  if (!cacheManager.guildCache.areWritesEnabled()) {
+    cacheManager.enableWrites();
   }
 
   await guildCache.disableLevelSystem(message.guild.id);
@@ -181,6 +195,13 @@ async function handleReset(client, message, args) {
     message,
     'Are you sure you want to **reset all members\' level and XP data**? This action cannot be undone.',
     async (interaction) => {
+      // Ensure cache writes are enabled before resetting
+      const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.guildCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       await guildCache.resetAllUserLevels(message.guild.id);
 
       const successEmbed = new EmbedBuilder()
@@ -194,6 +215,13 @@ async function handleReset(client, message, args) {
 
 // Cleanup subcommand
 async function handleCleanup(client, message, args) {
+  // Ensure cache writes are enabled before cleanup
+  const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+  const cacheManager = getCacheManager();
+  if (!cacheManager.guildCache.areWritesEnabled()) {
+    cacheManager.enableWrites();
+  }
+
   const userLevels = await guildCache.getUserLeaderboard(message.guild.id, 1000);
   let removedCount = 0;
 
@@ -340,6 +368,13 @@ async function handleAddRole(client, message, args) {
     return embeds.deny(message, 'You cannot manage this role due to role hierarchy');
   }
 
+  // Ensure cache writes are enabled before saving
+  const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+  const cacheManager = getCacheManager();
+  if (!cacheManager.guildCache.areWritesEnabled()) {
+    cacheManager.enableWrites();
+  }
+
   await guildCache.addLevelRole(message.guild.id, level, role.id);
   return embeds.success(message, `Added **${role.name}** as level **${level}** role`);
 }
@@ -354,6 +389,13 @@ async function handleRemoveRole(client, message, args) {
 
   if (isNaN(level) || level < 1) {
     return embeds.deny(message, 'Please provide a valid level number');
+  }
+
+  // Ensure cache writes are enabled before removing
+  const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+  const cacheManager = getCacheManager();
+  if (!cacheManager.guildCache.areWritesEnabled()) {
+    cacheManager.enableWrites();
   }
 
   const removed = await guildCache.removeLevelRole(message.guild.id, level);
@@ -388,6 +430,13 @@ async function handleSetLevel(client, message, args) {
 
   if (isNaN(level) || level < 1 || level > 1000) {
     return embeds.deny(message, 'Level must be a number between **1** and **1000**');
+  }
+
+  // Ensure cache writes are enabled before setting level
+  const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+  const cacheManager = getCacheManager();
+  if (!cacheManager.guildCache.areWritesEnabled()) {
+    cacheManager.enableWrites();
   }
 
   // Set the user's level
@@ -436,6 +485,13 @@ async function handleSync(client, message, args) {
     }
   }
 
+  // Ensure cache writes are enabled before updating sync time
+  const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+  const cacheManager = getCacheManager();
+  if (!cacheManager.guildCache.areWritesEnabled()) {
+    cacheManager.enableWrites();
+  }
+
   await guildCache.updateLastSyncTime(message.guild.id);
   return embeds.success(message, `Synced level roles for **${syncedCount}** members`);
 }
@@ -451,6 +507,13 @@ async function handleMessageMode(client, message, args) {
 
   if (!['none', 'channel', 'context'].includes(mode)) {
     return embeds.deny(message, 'Invalid mode. Use: **none**, **channel**, or **context**');
+  }
+
+  // Ensure cache writes are enabled before setting message mode
+  const { getCacheManager } = require('../../../database/cache/core/CacheManager');
+  const cacheManager = getCacheManager();
+  if (!cacheManager.guildCache.areWritesEnabled()) {
+    cacheManager.enableWrites();
   }
 
   await guildCache.setLevelMessageMode(message.guild.id, mode);

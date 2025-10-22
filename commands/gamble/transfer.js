@@ -111,6 +111,13 @@ module.exports = {
         return embeds.deny(message, 'Minimum transfer amount is 10 coins');
       }
       
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       // Transfer money
       await userCache.updateWalletBalance(message.author.id, -amount);
       await userCache.updateWalletBalance(targetUser.id, amount);

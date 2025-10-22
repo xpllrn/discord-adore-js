@@ -39,6 +39,13 @@ module.exports = {
         totalLost: 0
       };
       
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       await userCache.setGamblingData(message.author.id, newAccountData);
       
       // Send success message

@@ -427,6 +427,13 @@ async function processLevelSystem(message) {
     // Cap at 25 XP maximum (prevents abuse while allowing good progression)
     xpGain = Math.min(xpGain, 25);
 
+    // Ensure cache writes are enabled before adding XP
+    const { getCacheManager } = require('../../database/cache/core/CacheManager');
+    const cacheManager = getCacheManager();
+    if (!cacheManager.guildCache.areWritesEnabled()) {
+      cacheManager.enableWrites();
+    }
+
     // Add XP and check for level up
     const result = await guildCache.addUserExperience(message.guild.id, message.author.id, xpGain);
 

@@ -106,6 +106,13 @@ module.exports = {
             }
 
             if (String(args[1]).toLowerCase() === 'none') {
+                // Ensure cache writes are enabled before saving
+                const { getCacheManager } = require('../../database/cache/core/CacheManager');
+                const cacheManager = getCacheManager();
+                if (!cacheManager.userCache.areWritesEnabled()) {
+                    cacheManager.enableWrites();
+                }
+
                 await userCache.setLastFMUsername(message.author.id, null);
                 await userCache.setLastFMLibrary(message.author.id, null);
                 return embeds.success(message, `Your **Last.fm** profile has been **unlinked**`);
@@ -132,6 +139,13 @@ module.exports = {
                 const currentUsername = await userCache.getLastFMUsername(message.author.id);
                 if (currentUsername === results.user.name) {
                     return embeds.warn(message, `Your **Last.fm** username is already set as [**${results.user.name}**](https://last.fm/user/${results.user.name}).`);
+                }
+
+                // Ensure cache writes are enabled before saving
+                const { getCacheManager } = require('../../database/cache/core/CacheManager');
+                const cacheManager = getCacheManager();
+                if (!cacheManager.userCache.areWritesEnabled()) {
+                    cacheManager.enableWrites();
                 }
 
                 // Update user data using cache system
@@ -503,6 +517,13 @@ class Library {
     }
 
     async saveUserLibrary() {
+        // Ensure cache writes are enabled before saving
+        const { getCacheManager } = require('../../database/cache/core/CacheManager');
+        const cacheManager = getCacheManager();
+        if (!cacheManager.userCache.areWritesEnabled()) {
+            cacheManager.enableWrites();
+        }
+
         const libraryData = {
             artists: this.artists.map(({ name, playcount }) => ({
                 name: name,

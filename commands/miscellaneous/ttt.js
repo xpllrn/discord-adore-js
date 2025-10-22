@@ -415,6 +415,13 @@ async function endGame(interaction, board, players, playerSymbols, winner, isDra
 
   // Update database stats for all game outcomes
   try {
+    // Ensure cache writes are enabled before saving
+    const { getCacheManager } = require('../../database/cache/core/CacheManager');
+    const cacheManager = getCacheManager();
+    if (!cacheManager.userCache.areWritesEnabled()) {
+      cacheManager.enableWrites();
+    }
+
     if (isDraw) {
       // Draw game - update both players (or just human player for AI games)
       if (isAI) {

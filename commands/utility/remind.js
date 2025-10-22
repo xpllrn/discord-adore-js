@@ -94,6 +94,13 @@ module.exports = {
           message,
           `Are you sure you want to **remove all ${reminders.length} reminders**?`,
           async (interaction) => {
+            // Ensure cache writes are enabled before clearing
+            const { getCacheManager } = require('../../database/cache/core/CacheManager');
+            const cacheManager = getCacheManager();
+            if (!cacheManager.userCache.areWritesEnabled()) {
+              cacheManager.enableWrites();
+            }
+
             await userCache.clearReminders(message.author.id);
             const successEmbed = embeds.createSuccess(message, 'Cleared all your reminders');
             await interaction.editReply({ embeds: [successEmbed], components: [] });
@@ -158,6 +165,13 @@ module.exports = {
       }
 
       try {
+        // Ensure cache writes are enabled before saving
+        const { getCacheManager } = require('../../database/cache/core/CacheManager');
+        const cacheManager = getCacheManager();
+        if (!cacheManager.userCache.areWritesEnabled()) {
+          cacheManager.enableWrites();
+        }
+
         const newReminder = await userCache.addReminder(
           message.author.id,
           content,

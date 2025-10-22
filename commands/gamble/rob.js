@@ -122,6 +122,13 @@ module.exports = {
         return embeds.deny(message, `**${targetUser.displayName || targetUser.username || 'User'}** doesn't have enough **money** to rob (minimum **500** coins)`);
       }
       
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       // Update rob cooldown
       await userCache.updateRobCooldown(message.author.id);
       

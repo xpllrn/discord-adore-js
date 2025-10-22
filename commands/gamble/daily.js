@@ -79,6 +79,13 @@ module.exports = {
       const newStreak = claimCheck.streak + 1;
       const reward = calculateDailyReward(newStreak);
       
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       // Update user's wallet and daily claim
       await userCache.updateWalletBalance(message.author.id, reward);
       await userCache.updateDailyClaim(message.author.id, newStreak);

@@ -85,6 +85,13 @@ module.exports = {
       const job = jobs[Math.floor(Math.random() * jobs.length)];
       const finalEarnings = Math.floor(baseEarnings * job.multiplier);
       
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       // Update user's wallet and work timestamp
       await userCache.updateWalletBalance(message.author.id, finalEarnings);
       await userCache.updateWorkTimestamp(message.author.id);

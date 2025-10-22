@@ -96,6 +96,13 @@ module.exports = {
 
       const won = userChoice === coinResult;
 
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       let description, color;
 
       if (won) {

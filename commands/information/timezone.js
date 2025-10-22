@@ -108,6 +108,13 @@ async function setUserTimezone(message, cityName) {
       return embeds.deny(message, `Invalid timezone data for **${cityName}**. Please try a **different** city.`);
     }
 
+    // Ensure cache writes are enabled before saving
+    const { getCacheManager } = require('../../database/cache/core/CacheManager');
+    const cacheManager = getCacheManager();
+    if (!cacheManager.userCache.areWritesEnabled()) {
+      cacheManager.enableWrites();
+    }
+
     // Update user timezone using cache system
     await userCache.setTimezone(message.author.id, timezoneId);
 

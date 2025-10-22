@@ -114,6 +114,13 @@ async function handleNicknameChanges(oldMember, newMember) {
       const oldNickname = oldMember.nickname || oldMember.user.username;
       const newNickname = newMember.nickname || newMember.user.username;
 
+      // Ensure cache writes are enabled before saving
+      const { getCacheManager } = require('../../database/cache/core/CacheManager');
+      const cacheManager = getCacheManager();
+      if (!cacheManager.userCache.areWritesEnabled()) {
+        cacheManager.enableWrites();
+      }
+
       await userCache.addNameChange(
         newMember.user.id,
         'nickname',

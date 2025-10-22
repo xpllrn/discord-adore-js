@@ -37,6 +37,13 @@ module.exports = {
       }
 
       try {
+        // Ensure cache writes are enabled before saving
+        const { getCacheManager } = require('../../database/cache/core/CacheManager');
+        const cacheManager = getCacheManager();
+        if (!cacheManager.userCache.areWritesEnabled()) {
+          cacheManager.enableWrites();
+        }
+
         const newNote = await userCache.addNote(message.author.id, content);
         return embeds.success(message, `Created note **#${newNote.id}**: ${content.length > 50 ? content.substring(0, 50) + '...' : content}`);
       } catch (error) {
@@ -116,6 +123,13 @@ module.exports = {
             message,
             'Are you sure you want to **remove all notes**?',
             async (interaction) => {
+              // Ensure cache writes are enabled before clearing
+              const { getCacheManager } = require('../../database/cache/core/CacheManager');
+              const cacheManager = getCacheManager();
+              if (!cacheManager.userCache.areWritesEnabled()) {
+                cacheManager.enableWrites();
+              }
+
               // On approve: delete all notes
               await userCache.clearAllNotes(message.author.id);
 

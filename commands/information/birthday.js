@@ -4,8 +4,9 @@ const { hasPermissionLevel } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
 const { ensureUserData } = require('../../database');
-const { createConfirmation } = require('../../core/buttons');
+const { createConfirmation, createPagination } = require('../../core/buttons');
 const userCache = require('../../database/cache/models/user');
+const config = require('../../config/setup');
 
 module.exports = {
   name: "bday",
@@ -13,7 +14,8 @@ module.exports = {
   description: `manage birthday settings`,
   usage: `{guildprefix}bday
 {guildprefix}bday [user]
-{guildprefix}bday set [day] [month]`,
+{guildprefix}bday set [day] [month]
+{guildprefix}bday list`,
   run: async(client, message, args) => {
     
     if (args[0] === 'set') {
@@ -67,6 +69,13 @@ module.exports = {
       await ensureUserData(message.author.id);
 
       try {
+        // Ensure cache writes are enabled before saving
+        const { getCacheManager } = require('../../database/cache/core/CacheManager');
+        const cacheManager = getCacheManager();
+        if (!cacheManager.userCache.areWritesEnabled()) {
+          cacheManager.enableWrites();
+        }
+
         // Check if user already has a birthday set
         const existingBirthday = await userCache.getBirthday(message.author.id);
 
@@ -111,6 +120,13 @@ module.exports = {
       await ensureUserData(targetUser.id);
 
       try {
+        // Ensure cache writes are enabled before operations
+        const { getCacheManager } = require('../../database/cache/core/CacheManager');
+        const cacheManager = getCacheManager();
+        if (!cacheManager.userCache.areWritesEnabled()) {
+          cacheManager.enableWrites();
+        }
+
         const currentBirthday = await userCache.getBirthday(targetUser.id);
 
         if (!currentBirthday || !currentBirthday.day || !currentBirthday.month) {
@@ -137,6 +153,95 @@ module.exports = {
       } catch (error) {
         console.error('Error resetting birthday:', error);
         return embeds.deny(message, 'Failed to reset birthday');
+      }
+
+    } else if (args[0] === 'list') {
+      // List all birthdays in the server
+      try {
+        const guildMembers = await message.guild.members.fetch();
+        const birthdayData = [];
+
+        // Get birthday data for all guild members
+        for (const [userId, member] of guildMembers) {
+          try {
+            const birthday = await userCache.getBirthday(userId);
+            if (birthday && birthday.day && birthday.month) {
+              const formattedBirthday = await userCache.getFormattedBirthday(userId);
+              const isBirthdayToday = await userCache.isBirthday(userId);
+              const nextBirthdayTimestamp = await getNextBirthdayTimestamp(userId);
+
+              birthdayData.push({
+                member,
+                birthday,
+                formattedBirthday,
+                isBirthdayToday,
+                nextBirthdayTimestamp,
+                sortKey: `${birthday.month.toString().padStart(2, '0')}-${birthday.day.toString().padStart(2, '0')}`
+              });
+            }
+          } catch (error) {
+            // Skip users with birthday fetch errors
+            continue;
+          }
+        }
+
+        if (birthdayData.length === 0) {
+          return embeds.warn(message, 'No birthdays found in this server');
+        }
+
+        // Sort by month and day (upcoming birthdays first)
+        const today = new Date();
+        const currentMonth = today.getMonth() + 1;
+        const currentDay = today.getDate();
+        const currentSortKey = `${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
+
+        birthdayData.sort((a, b) => {
+          // Put today's birthdays first
+          if (a.isBirthdayToday && !b.isBirthdayToday) return -1;
+          if (!a.isBirthdayToday && b.isBirthdayToday) return 1;
+          if (a.isBirthdayToday && b.isBirthdayToday) return 0;
+
+          // Then sort by upcoming birthdays
+          const aIsUpcoming = a.sortKey >= currentSortKey;
+          const bIsUpcoming = b.sortKey >= currentSortKey;
+
+          if (aIsUpcoming && !bIsUpcoming) return -1;
+          if (!aIsUpcoming && bIsUpcoming) return 1;
+
+          // Within the same category, sort by date
+          return a.sortKey.localeCompare(b.sortKey);
+        });
+
+        // Format page function for pagination
+        const formatPage = (pageBirthdays, currentPage, totalPages) => {
+          const startIndex = (currentPage - 1) * 10;
+
+          const birthdayList = pageBirthdays.map((data, index) => {
+            const number = (startIndex + index + 1).toString().padStart(2, '0');
+            const displayName = data.member.displayName;
+            
+            if (data.isBirthdayToday) {
+              return `\`${number}\` 🎂 **${displayName}** - ${data.formattedBirthday} **(Today!)**`;
+            } else {
+              return `\`${number}\` **${displayName}** - \`${data.formattedBirthday}\` (<t:${data.nextBirthdayTimestamp}:R>)`;
+            }
+          }).join('\n');
+
+          const entryText = birthdayData.length === 1 ? 'birthday' : 'birthdays';
+
+          return new EmbedBuilder()
+            .setColor(config.colors.embed)
+            .setTitle('🎂 Server Birthdays')
+            .setDescription(birthdayList)
+            .setFooter({ text: `${birthdayData.length} ${entryText} || page ${currentPage}/${totalPages}` });
+        };
+
+        // Use pagination system with 10 items per page
+        await createPagination(message, birthdayData, formatPage, 10, 'Server Birthdays');
+
+      } catch (error) {
+        console.error('Error listing birthdays:', error);
+        return embeds.deny(message, 'Failed to list birthdays');
       }
 
     } else if (args[0]) {
