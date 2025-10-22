@@ -129,14 +129,10 @@ module.exports = {
           return await handleHide(interaction, tempChannel);
         case 'unhide':
           return await handleUnhide(interaction, tempChannel);
-        case 'claim':
-          return await handleClaim(interaction, tempChannel);
         case 'increase':
           return await handleIncrease(interaction, tempChannel);
         case 'decrease':
           return await handleDecrease(interaction, tempChannel);
-        case 'delete':
-          return await handleDelete(interaction, tempChannel);
         case 'info':
           return await handleInfo(interaction, tempChannel);
         default:
@@ -373,6 +369,134 @@ async function handleDecrease(interaction, tempChannel) {
     const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to decrease user limit. Please check my permissions.');
     return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   }
+}
+
+async function handleDisconnect(interaction, tempChannel) {
+  const channel = interaction.member.voice.channel;
+  const members = channel.members.filter(m => m.id !== interaction.user.id && !m.user.bot);
+
+  if (members.size === 0) {
+    const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'There are no members to disconnect from your voice channel');
+    return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+  }
+
+  // Create a list of members to disconnect
+  const memberList = members.map((m, i) => `${i + 1}. ${m.displayName}`).join('\n');
+  const embed = new EmbedBuilder()
+    .setColor(colors.info)
+    .setDescription(`${emojis.warn} <@${interaction.user.id}>: Reply with the number of the member you want to disconnect:\n\n${memberList}\n\nType \`cancel\` to cancel.`)
+    .setFooter({ text: 'You have 30 seconds to respond' });
+
+  await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+
+  // Create message collector
+  const filter = m => m.author.id === interaction.user.id && m.channel.id === interaction.channel.id;
+  const collector = interaction.channel.createMessageCollector({ filter, time: 30000, max: 1 });
+
+  collector.on('collect', async (msg) => {
+    try {
+      await msg.delete().catch(() => {});
+
+      if (msg.content.toLowerCase() === 'cancel') {
+        const cancelEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Disconnect cancelled');
+        return await interaction.editReply({ embeds: [cancelEmbed] });
+      }
+
+      const index = parseInt(msg.content) - 1;
+      if (isNaN(index) || index < 0 || index >= members.size) {
+        const errorEmbed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Invalid number. Please try again.');
+        return await interaction.editReply({ embeds: [errorEmbed] });
+      }
+
+      const targetMember = Array.from(members.values())[index];
+      await targetMember.voice.disconnect('Disconnected by channel owner');
+
+      const successEmbed = embeds.createSuccess({ author: { id: interaction.user.id } }, `Disconnected **${targetMember.displayName}** from your voice channel`);
+      await interaction.editReply({ embeds: [successEmbed] });
+    } catch (error) {
+      const errorEmbed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to disconnect the member');
+      await interaction.editReply({ embeds: [errorEmbed] });
+    }
+  });
+
+  collector.on('end', async (collected) => {
+    if (collected.size === 0) {
+      const timeoutEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Disconnect timed out');
+      await interaction.editReply({ embeds: [timeoutEmbed] }).catch(() => {});
+    }
+  });
+}
+
+async function handleActivity(interaction, tempChannel) {
+  const activities = [
+    { name: 'Watch Together', value: '880218394199220334' },
+    { name: 'Poker Night', value: '755827207812677713' },
+    { name: 'Betrayal.io', value: '773336526917861400' },
+    { name: 'Fishington.io', value: '814288819477020702' },
+    { name: 'Chess In The Park', value: '832012774040141894' },
+    { name: 'Sketch Heads', value: '902271654783242291' },
+    { name: 'Blazing 8s', value: '832025144389533716' },
+    { name: 'Land-io', value: '903769130790969345' },
+    { name: 'Putt Party', value: '945737671223947305' },
+    { name: 'Bobble League', value: '947957217959759964' }
+  ];
+
+  const activityList = activities.map((a, i) => `${i + 1}. ${a.name}`).join('\n');
+  const embed = new EmbedBuilder()
+    .setColor(colors.info)
+    .setDescription(`${emojis.warn} <@${interaction.user.id}>: Reply with the number of the activity you want to start:\n\n${activityList}\n\nType \`cancel\` to cancel.`)
+    .setFooter({ text: 'You have 30 seconds to respond' });
+
+  await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+
+  // Create message collector
+  const filter = m => m.author.id === interaction.user.id && m.channel.id === interaction.channel.id;
+  const collector = interaction.channel.createMessageCollector({ filter, time: 30000, max: 1 });
+
+  collector.on('collect', async (msg) => {
+    try {
+      await msg.delete().catch(() => {});
+
+      if (msg.content.toLowerCase() === 'cancel') {
+        const cancelEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Activity cancelled');
+        return await interaction.editReply({ embeds: [cancelEmbed] });
+      }
+
+      const index = parseInt(msg.content) - 1;
+      if (isNaN(index) || index < 0 || index >= activities.length) {
+        const errorEmbed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Invalid number. Please try again.');
+        return await interaction.editReply({ embeds: [errorEmbed] });
+      }
+
+      const activity = activities[index];
+      const channel = interaction.member.voice.channel;
+
+      // Create activity invite
+      const invite = await channel.createInvite({
+        maxAge: 0,
+        maxUses: 0,
+        targetApplication: activity.value,
+        targetType: 2
+      });
+
+      const successEmbed = new EmbedBuilder()
+        .setColor(colors.success)
+        .setDescription(`${emojis.success} <@${interaction.user.id}>: Started **${activity.name}**!\n\n[Click here to join](${invite.url})`);
+
+      await interaction.editReply({ embeds: [successEmbed] });
+    } catch (error) {
+      console.error('Activity error:', error);
+      const errorEmbed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to start the activity. Make sure I have the correct permissions.');
+      await interaction.editReply({ embeds: [errorEmbed] });
+    }
+  });
+
+  collector.on('end', async (collected) => {
+    if (collected.size === 0) {
+      const timeoutEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Activity selection timed out');
+      await interaction.editReply({ embeds: [timeoutEmbed] }).catch(() => {});
+    }
+  });
 }
 
 async function handleDelete(interaction, tempChannel) {
