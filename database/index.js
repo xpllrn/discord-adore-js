@@ -65,24 +65,37 @@ async function _performInitialization(connectionStrings) {
     // Mark database as fully ready
     isDatabaseFullyReady = true;
 
-    // Trigger cache preloading now that models are ready
+    // Initialize cache system (preloading will be handled by ready event)
     try {
-      const { getCacheManager } = require('./cache/core/CacheManager');
+      const { getCacheManager, initializeCacheManager } = require('./cache/core/CacheManager');
+      
+      // Initialize cache manager first
+      const initSuccess = await initializeCacheManager();
+      console.log(`🔧 Cache manager initialization: ${initSuccess ? 'success' : 'failed'}`);
+      
       const cacheManager = getCacheManager();
-      if (cacheManager.initialized && !cacheManager.preloader.isLoaded()) {
-        // Preload data in background
-        cacheManager.preloader.preloadAllData().catch(() => {});
-
-        // Fallback: Enable writes after 10 seconds regardless of preloading status
-        setTimeout(() => {
-          if (!cacheManager.guildCache.areWritesEnabled()) {
-            console.log('⚠️ Enabling cache writes via fallback timeout');
-            cacheManager.enableWrites();
-          }
-        }, 10000); // 10 second timeout
+      
+      // Start preloading but don't wait for it here - the ready event will handle waiting
+      if (cacheManager.initialized) {
+        // Start preloading in background - ready event will wait for completion
+        cacheManager.preloader.preloadAllData().catch((error) => {
+          console.log('⚠️ Cache preloading failed:', error.message);
+          // Enable writes anyway as fallback
+          cacheManager.enableWrites();
+        });
       }
+      
     } catch (error) {
-      // Silently ignore cache errors
+      console.error('❌ Cache system initialization failed:', error.message);
+      // Try to enable writes anyway as emergency fallback
+      try {
+        const { getCacheManager } = require('./cache/core/CacheManager');
+        const cacheManager = getCacheManager();
+        cacheManager.enableWrites();
+        console.log('⚠️ Enabled cache writes despite initialization failure');
+      } catch (fallbackError) {
+        console.error('❌ Failed to enable cache writes as fallback:', fallbackError.message);
+      }
     }
 
     // Initialize graceful shutdown system

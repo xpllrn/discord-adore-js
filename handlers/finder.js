@@ -173,8 +173,8 @@ function findChannel(guild, channelInput) {
   channel = guild.channels.cache.find(ch => {
     const channelName = ch.name.toLowerCase();
     return (channelName.includes(input) || input.includes(channelName)) &&
-           ch.type !== 2 && // Not voice channel
-           ch.type !== 4;   // Not category channel
+      ch.type !== 2 && // Not voice channel
+      ch.type !== 4;   // Not category channel
   });
   if (channel) return { found: true, channel };
 

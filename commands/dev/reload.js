@@ -1,5 +1,6 @@
 const config = require('../../config/setup');
 const { embeds } = require('../../core/embeds');
+const { checkPermissionLevel } = require('../../utils/permissions');
 const glob = require("glob");
 
 module.exports = {
@@ -7,10 +8,11 @@ module.exports = {
   description: 'Reloads all commands',
   usage: `{guildprefix}reload`,
   cooldowns: 3600,
+  permissions: 'dev',
 
   run: async (client, message) => {
-    if (message.author.id !== config.bot.ownerId) {
-      return embeds.warn(message, 'You need to be the **Bot Owner** to use this command!');
+    if (!(await checkPermissionLevel(message, 'dev'))) {
+      return;
     }
 
     try {

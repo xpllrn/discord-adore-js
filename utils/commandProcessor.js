@@ -32,6 +32,21 @@ async function processCommand(message, isEdit = false) {
     return;
   }
 
+  // Check if cache system is ready before processing commands
+  if (!client.cacheReady) {
+    // Send a one-time message if cache is not ready (to avoid spam)
+    if (!client.cacheNotReadyMessageSent) {
+      console.log(`⏳ Cache not ready, skipping command from ${message.author.tag}`);
+      client.cacheNotReadyMessageSent = true;
+      
+      // Clear the flag after 30 seconds to allow occasional status updates
+      setTimeout(() => {
+        client.cacheNotReadyMessageSent = false;
+      }, 30000);
+    }
+    return;
+  }
+
   // Check for valid prefix
   const prefixResult = await prefixCache.checkPrefixes(message);
   if (!prefixResult) return;

@@ -21,7 +21,7 @@ module.exports = {
 {guildprefix}levels remove [level]
 {guildprefix}levels set [@user] [level]
 {guildprefix}levels sync
-{guildprefix}levels messagemode [none/channel/context]
+{guildprefix}levels messagemode [none/channel #channel/context]
 
 {guildprefix}levels reset
 {guildprefix}levels cleanup`,
@@ -509,6 +509,11 @@ async function handleMessageMode(client, message, args) {
     return embeds.deny(message, 'Invalid mode. Use: **none**, **channel**, or **context**');
   }
 
+  // If mode is 'channel' but no channel is provided, show help
+  if (mode === 'channel' && !args[2]) {
+    return runHelpCommand(message, 'levels');
+  }
+
   // Ensure cache writes are enabled before setting message mode
   const { getCacheManager } = require('../../../database/cache/core/CacheManager');
   const cacheManager = getCacheManager();
@@ -516,19 +521,44 @@ async function handleMessageMode(client, message, args) {
     cacheManager.enableWrites();
   }
 
-  await guildCache.setLevelMessageMode(message.guild.id, mode);
-
   let description;
-  switch (mode) {
-    case 'none':
-      description = 'Level up messages are now **disabled**';
-      break;
-    case 'channel':
-      description = 'Level up messages will be sent in a **specific channel** (use `levels channel` to set)';
-      break;
-    case 'context':
-      description = 'Level up messages will be sent **where the user is talking**';
-      break;
+  
+  if (mode === 'channel') {
+    // Find the target channel
+    const targetChannel = message.mentions.channels.first() || 
+                         message.guild.channels.cache.get(args[2]) ||
+                         message.guild.channels.cache.find(ch => ch.name.toLowerCase() === args[2].toLowerCase());
+
+    if (!targetChannel) {
+      return embeds.deny(message, 'Channel not found! Please mention a valid channel or provide a valid channel ID/name.');
+    }
+
+    if (!targetChannel.isTextBased()) {
+      return embeds.deny(message, 'Please select a text channel for level up messages.');
+    }
+
+    // Check if bot has permission to send messages in that channel
+    if (!targetChannel.permissionsFor(message.guild.members.me).has(['SendMessages', 'EmbedLinks'])) {
+      return embeds.deny(message, `I don't have permission to send messages in ${targetChannel}. Please ensure I have **Send Messages** and **Embed Links** permissions.`);
+    }
+
+    // Set both the mode and the channel
+    await guildCache.setLevelMessageMode(message.guild.id, mode);
+    await guildCache.setLevelUpChannel(message.guild.id, targetChannel.id);
+    
+    description = `Level up messages will now be sent in ${targetChannel}`;
+  } else {
+    // For 'none' and 'context' modes
+    await guildCache.setLevelMessageMode(message.guild.id, mode);
+    
+    switch (mode) {
+      case 'none':
+        description = 'Level up messages are now **disabled**';
+        break;
+      case 'context':
+        description = 'Level up messages will be sent **where the user is talking**';
+        break;
+    }
   }
 
   return embeds.success(message, description);

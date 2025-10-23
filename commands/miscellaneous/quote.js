@@ -1,6 +1,9 @@
-const { createCanvas, loadImage, registerFont } = require('canvas');
+const sharp = require('sharp');
 const { AttachmentBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
+const fs = require('fs');
+const path = require('path');
+const https = require('https');
 
 module.exports = {
   name: "quote",
@@ -38,7 +41,7 @@ module.exports = {
       else if (message.mentions.users.size > 0) {
         targetUser = message.mentions.users.first();
         quoteText = args.slice(1).join(' ');
-        
+
         if (!quoteText) {
           return embeds.warn(message, 'Please provide text to quote after mentioning the user.');
         }
@@ -59,9 +62,9 @@ module.exports = {
 
       // Create the quote image
       const buffer = await createQuoteImage(targetUser, quoteText);
-      
-      const attachment = new AttachmentBuilder(buffer, { 
-        name: `quote-${targetUser.username}.png` 
+
+      const attachment = new AttachmentBuilder(buffer, {
+        name: `quote-${targetUser.username}.png`
       });
 
       await message.channel.send({ files: [attachment] });
@@ -74,132 +77,171 @@ module.exports = {
 };
 
 async function createQuoteImage(user, text) {
-  const width = 1200;
-  const height = 630;
-  
-  // Create canvas
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
+  const width = 1000;
+  const height = 400;
 
-  // Fill entire background with pure black
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, 0, width, height);
-
-  // Calculate sections: 50% for PFP, 50% for text (but curve will cover 10% of PFP)
-  const pfpSection = width * 0.5;  // 600px - PFP takes full 50%
-  const textSection = width * 0.5; // 600px - Text area
-
-  // Load and draw profile picture (rectangular, not circular)
   try {
-    const avatarUrl = user.displayAvatarURL({ extension: 'png', size: 512 });
-    const avatar = await loadImage(avatarUrl);
-    
-    // Profile picture fills the full left 50% section
-    const pfpWidth = pfpSection;
-    const pfpHeight = height;
-    const pfpX = 0;
-    const pfpY = 0;
 
-    // Draw profile picture as rectangle (no clipping)
-    ctx.drawImage(avatar, pfpX, pfpY, pfpWidth, pfpHeight);
+    const avatarUrl = user.displayAvatarURL({ extension: 'png', size: 512 });
+    const avatarBuffer = await downloadImage(avatarUrl);
+
+
+    const tempAvatarPath = path.join(__dirname, 'temp_pfp.png');
+    fs.writeFileSync(tempAvatarPath, avatarBuffer);
+
+
+    // Create fade gradient that only covers the avatar area (400px width)
+    const fade = Buffer.from(`<svg width="400" height="${height}">
+      <defs>
+        <linearGradient id="smoothFade" x1="0" x2="1">
+          <stop offset="0%" stop-color="rgba(0,0,0,0)" />
+          <stop offset="40%" stop-color="rgba(0,0,0,0)" />
+          <stop offset="70%" stop-color="rgba(0,0,0,0.4)" />
+          <stop offset="90%" stop-color="rgba(0,0,0,0.8)" />
+          <stop offset="100%" stop-color="rgba(0,0,0,1)" />
+        </linearGradient>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#smoothFade)"/>
+    </svg>`);
+
+    // Process text for proper wrapping and truncation (reduced width for margins)
+    const processedText = processTextForWrapping(text, 35); // Max 35 chars per line (10% margin on each side)
+
+    // Create text SVG with proper wrapping and positioning
+    const textSvg = Buffer.from(`<svg width="1000" height="400">
+      ${generateWrappedText(processedText, 700, 160, 31, 35)}
+      <text x="700" y="${160 + (processedText.lines.length * 35) + 15}" font-family="Arial, sans-serif" font-size="16" font-weight="300" fill="#aaaaaa" text-anchor="middle">- ${escapeXml(user.username)}</text>
+    </svg>`);
+
+    // Process the image
+    const resizedBuffer = await sharp(tempAvatarPath)
+      .resize(400, 400)
+      .blur(1.5)
+      .png()
+      .toBuffer();
+
+    const extendedBuffer = await sharp(resizedBuffer)
+      .extend({
+        right: 600,
+        background: { r: 0, g: 0, b: 0 }
+      })
+      .png()
+      .toBuffer();
+
+    const gradientCompositeBuffer = await sharp(extendedBuffer)
+      .composite([{
+        input: fade,
+        top: 0,
+        left: 0,
+        blend: 'over'
+      }])
+      .png()
+      .toBuffer();
+
+    const outputBuffer = await sharp(gradientCompositeBuffer)
+      .composite([
+        {
+          input: textSvg,
+          top: 0,
+          left: 0
+        }
+      ])
+      .png()
+      .toBuffer();
+
+    // Clean up temporary file
+    if (fs.existsSync(tempAvatarPath)) {
+      fs.unlinkSync(tempAvatarPath);
+    }
+
+    return outputBuffer;
 
   } catch (error) {
-    console.error('Error loading avatar:', error);
-    // Draw placeholder rectangle if avatar fails to load
-    ctx.fillStyle = '#333333';
-    ctx.fillRect(0, 0, pfpSection, height);
-    
-    // Add user initial
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 120px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(user.username[0].toUpperCase(), pfpSection / 2, height / 2);
+    console.error('Error creating quote image:', error);
+
+    // Fallback: create a simple text-only image
+    const fallbackSvg = Buffer.from(`
+      <svg width="1000" height="400" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="black"/>
+        <text x="500" y="180" font-size="36" fill="white" text-anchor="middle">${escapeXml(text)}</text>
+        <text x="500" y="230" font-size="24" fill="#aaa" text-anchor="middle">- ${escapeXml(user.username)}</text>
+      </svg>
+    `);
+
+    return await sharp(fallbackSvg).png().toBuffer();
   }
-
-  // Draw curvy gradient overlay - covers part of PFP with 100% dark gradient
-  const curveStartX = pfpSection * 0.8; // Start at 80% of PFP section (covers 20% of PFP)
-  const curveEndX = width; // Extend to end of canvas
-  
-  // Create 100% dark gradient for shadow effect
-  const darkGradient = ctx.createLinearGradient(curveStartX, 0, curveStartX + 120, 0);
-  darkGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');     // Transparent (shows PFP)
-  darkGradient.addColorStop(0.3, 'rgba(0, 0, 0, 0.8)'); // Dark shadow
-  darkGradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.95)'); // Very dark
-  darkGradient.addColorStop(1, 'rgba(0, 0, 0, 1)');     // 100% black
-  
-  // Draw smooth curvy gradient shape
-  ctx.beginPath();
-  ctx.moveTo(curveStartX, 0);
-  // Smooth S-curve
-  ctx.bezierCurveTo(
-    curveStartX + 40, height * 0.2,   // Control point 1
-    curveStartX + 80, height * 0.8,   // Control point 2
-    curveStartX + 30, height          // End point
-  );
-  ctx.lineTo(curveEndX, height);
-  ctx.lineTo(curveEndX, 0);
-  ctx.closePath();
-  ctx.fillStyle = darkGradient; // 100% dark gradient
-  ctx.fill();
-
-  // Text area in right section (starts after PFP section)
-  const textSectionStart = pfpSection;
-  const textSectionWidth = width - textSectionStart;
-  const textCenterX = textSectionStart + (textSectionWidth / 2);
-
-  // Set up text styling
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '60px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Word wrap the quote text for center alignment
-  const lines = wrapTextCenter(ctx, text, textSectionWidth - 60, 60); // 30px padding each side
-  
-  // Calculate vertical centering for text block
-  const lineHeight = 70;
-  const totalTextHeight = (lines.length * lineHeight) + 50; // Include space for username
-  const textStartY = (height - totalTextHeight) / 2;
-  
-  // Draw quote text centered
-  lines.forEach((line, index) => {
-    ctx.fillText(line, textCenterX, textStartY + (index * lineHeight));
-  });
-
-  // Draw username - smaller, italic, lighter gray, centered
-  const usernameY = textStartY + (lines.length * lineHeight) + 30;
-  ctx.fillStyle = '#aaaaaa';
-  ctx.font = 'italic 28px Arial, sans-serif';
-  ctx.fillText(`— ${user.username}`, textCenterX, usernameY);
-
-  return canvas.toBuffer('image/png');
 }
 
-// Removed drawCurvedDivider function as it's now integrated into createQuoteImage
+// Helper function to download images
+function downloadImage(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => resolve(Buffer.concat(chunks)));
+      response.on('error', reject);
+    }).on('error', reject);
+  });
+}
 
-function wrapTextCenter(ctx, text, maxWidth, fontSize) {
+// Helper function to escape XML characters
+function escapeXml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Helper function to process text for wrapping
+function processTextForWrapping(text, maxCharsPerLine) {
+  const maxLines = 4;
+  const maxTotalChars = maxCharsPerLine * maxLines - 3; // Reserve space for "..."
+
+  // Truncate if too long
+  if (text.length > maxTotalChars) {
+    text = text.substring(0, maxTotalChars) + '...';
+  }
+
   const words = text.split(' ');
   const lines = [];
   let currentLine = '';
 
-  for (let i = 0; i < words.length; i++) {
-    const testLine = currentLine + words[i] + ' ';
-    const metrics = ctx.measureText(testLine);
-    const testWidth = metrics.width;
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
 
-    if (testWidth > maxWidth && i > 0) {
-      lines.push(currentLine.trim());
-      currentLine = words[i] + ' ';
-    } else {
+    if (testLine.length <= maxCharsPerLine) {
       currentLine = testLine;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        // Single word is too long, truncate it
+        lines.push(word.substring(0, maxCharsPerLine - 3) + '...');
+        currentLine = '';
+      }
+
+      // Stop if we've reached max lines
+      if (lines.length >= maxLines) {
+        break;
+      }
     }
   }
-  
-  if (currentLine.trim().length > 0) {
-    lines.push(currentLine.trim());
+
+  if (currentLine && lines.length < maxLines) {
+    lines.push(currentLine);
   }
 
-  // Limit to 4 lines to prevent overflow
-  return lines.slice(0, 4);
+  return { lines, totalLines: lines.length };
 }
+
+// Helper function to generate SVG text elements for wrapped text
+function generateWrappedText(processedText, x, startY, fontSize, lineHeight) {
+  return processedText.lines.map((line, index) => {
+    const y = startY + (index * lineHeight);
+    return `<text x="${x}" y="${y}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="400" fill="white" text-anchor="middle">${escapeXml(line)}</text>`;
+  }).join('\n      ');
+}
+

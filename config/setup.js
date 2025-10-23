@@ -117,7 +117,7 @@ module.exports = {
 
     // Custom Emojis
     naaILovedick: '<:0069_heh:1428025640598372573>',
-    google: '<:CodeXPray:1428026399049908246>'
+    google: '<:chrome:1430920558274674801>'
 
   },
 

@@ -13,9 +13,9 @@ module.exports = {
   name: "role",
   description: `Comprehensive role management system`,
   aliases: ['r'],
-  usage: '{guildprefix}role [member] [role]\n{guildprefix}role create [name]\n{guildprefix}role delete [role]\n{guildprefix}role rename [role] [new name]\n{guildprefix}role color [role] [color]\n{guildprefix}role icon [role] [emoji]\n{guildprefix}role humans [role]\n{guildprefix}role bots [role]\n{guildprefix}role all [role]',
+  usage: '{guildprefix}role [member] [role]\n{guildprefix}role create [name]\n{guildprefix}role delete [role]\n{guildprefix}role rename [role] [new name]\n{guildprefix}role color [role] [color] [color2]\n{guildprefix}role icon [role] [emoji]\n{guildprefix}role humans [role]\n{guildprefix}role bots [role]\n{guildprefix}role all [role]',
   permission: 'Manage Roles',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     // Permission checks first using utils/permissions.js
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
@@ -121,56 +121,108 @@ module.exports = {
 
       // For color command, try different parsing approaches
       let role = null;
-      let colorArg = '';
+      let colorArgs = [];
 
       // Check if there's a role mention in the arguments
       const roleMention = message.mentions.roles.first();
 
       if (roleMention) {
-        // If there's a role mention, use it and find the color argument
+        // If there's a role mention, use it and find the color arguments
         role = roleMention;
-        // Find the color argument (should be the last non-mention argument)
+        // Find the color arguments (should be all non-mention arguments after the role)
         const nonMentionArgs = args.filter(arg => !arg.startsWith('<@&'));
-        colorArg = nonMentionArgs[nonMentionArgs.length - 1];
+        colorArgs = nonMentionArgs.slice(1); // Skip the 'color' command
       } else {
         // No role mention, try different parsing approaches
-        // First try: last argument is color, everything else is role name
-        colorArg = args[args.length - 1];
-        let roleName = args.slice(1, -1).join(' ');
+        // Try to find role by testing different splits
+        let roleFound = false;
 
-        let roleResult = findRole(message.guild, roleName);
+        for (let i = 1; i < args.length - 1; i++) {
+          const possibleRoleName = args.slice(1, i + 1).join(' ');
+          const roleResult = findRole(message.guild, possibleRoleName);
 
-        // If that doesn't work, try: second argument is role, third is color
-        if (!roleResult.found && args.length === 3) {
-          roleName = args[1];
-          colorArg = args[2];
-          roleResult = findRole(message.guild, roleName);
+          if (roleResult.found) {
+            role = roleResult.role;
+            colorArgs = args.slice(i + 1);
+            roleFound = true;
+            break;
+          }
         }
 
-        if (!roleResult.found) {
-          return embeds.deny(message, roleResult.error || `Could not find role. Usage: \`,role color <role name> <color>\``);
+        if (!roleFound) {
+          return embeds.deny(message, `Could not find role. Usage: \`,role color <role name> <color> [color2]\``);
         }
-
-        role = roleResult.role;
       }
 
-      if (!role) {
-        return embeds.deny(message, `Could not find role. Usage: \`,role color <role name> <color>\``);
+      if (!role || colorArgs.length === 0) {
+        return embeds.deny(message, `Could not find role or color. Usage: \`,role color <role name> <color> [color2]\``);
       }
 
       // Check role hierarchy using utils/permissions.js
       if (!checkUserRoleHierarchy(message, role)) return;
       if (!checkBotRoleHierarchy(message, role)) return;
 
-      try {
-        // Use the color library to parse any color format
-        const parsedColor = Color(colorArg);
-        const hexColor = parsedColor.hex();
+      // Helper function to parse color
+      const parseColor = (colorInput) => {
+        try {
+          // Handle hex colors without # prefix
+          if (/^[0-9A-Fa-f]{6}$/.test(colorInput)) {
+            colorInput = '#' + colorInput;
+          }
 
-        await role.setColor(hexColor, `Role color changed by ${message.author.tag}`);
-        return embeds.success(message, `Changed **${role.name}** color to **${colorArg}** (${hexColor})`);
+          // Use the color library to parse any color format
+          const parsedColor = Color(colorInput);
+          return parsedColor.hex();
+        } catch (error) {
+          throw new Error(`Invalid color format: ${colorInput}`);
+        }
+      };
+
+      try {
+        const primaryColor = parseColor(colorArgs[0]);
+
+        // Check if there's a second color for gradient
+        if (colorArgs.length > 1) {
+          try {
+            const secondaryColor = parseColor(colorArgs[1]);
+
+            // Try to set gradient colors using Discord's API
+            // Discord.js may support this through role.edit() with colors array
+            try {
+              // Try the newer gradient API first
+              if (role.setColors && typeof role.setColors === 'function') {
+                await role.setColors([primaryColor, secondaryColor], `Role gradient colors changed by ${message.author.tag}`);
+                return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${primaryColor} → ${secondaryColor})`);
+              } else {
+                // Try using role.edit with colors array
+                await role.edit({
+                  color: [primaryColor, secondaryColor]
+                }, `Role gradient colors changed by ${message.author.tag}`);
+                return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${primaryColor} → ${secondaryColor})`);
+              }
+            } catch (gradientError) {
+              // If gradient fails, check if it's because enhanced roles aren't unlocked
+              if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
+                await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
+                return embeds.warn(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})\n*Note: Gradient colors require Enhanced Roles to be unlocked in this server. Only the first color was applied.*`);
+              } else {
+                // Other error, fallback to single color
+                await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
+                return embeds.warn(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})\n*Note: Gradient colors are not supported. Only the first color was applied.*`);
+              }
+            }
+          } catch (secondColorError) {
+            // If second color is invalid, just use the first one
+            await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
+            return embeds.warn(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})\n*Note: Second color "${colorArgs[1]}" was invalid and ignored.*`);
+          }
+        } else {
+          // Single color
+          await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
+          return embeds.success(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})`);
+        }
       } catch (error) {
-        return embeds.deny(message, `Invalid color **${colorArg}**. Use hex codes (#FF0000), RGB (rgb(255,0,0)), HSL (hsl(0,100%,50%)), or color names (red, blue, white, etc.)`);
+        return embeds.deny(message, `Invalid color **${colorArgs[0]}**. Use:\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\`\n• HSL: \`hsl(0,100%,50%)\`\n• Color names: \`red\`, \`blue\`, \`white\`, etc.\n• Gradient: \`red pink\` (requires Enhanced Roles unlocked)`);
       }
     }
 
@@ -372,7 +424,6 @@ module.exports = {
         roleOperationLocks.delete(message.guild.id);
       }
 
-      return;
     }
 
     // DEFAULT ROLE TOGGLE (no subcommand)

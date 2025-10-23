@@ -106,7 +106,11 @@ class DatabaseCache extends TTLCache {
         const query = {};
         query[this.keyField] = key;
 
-        await Model.updateOne(query, value, { upsert: true });
+        // Remove _id from value to prevent duplicate key errors
+        const updateValue = { ...value };
+        delete updateValue._id;
+
+        await Model.updateOne(query, { $set: updateValue }, { upsert: true });
       }
     } catch (error) {
       // Silently handle database errors - cache is still updated
@@ -175,8 +179,12 @@ class DatabaseCache extends TTLCache {
     // Update cache immediately
     super.set(key, doc);
 
-    // Write to database immediately if writes are enabled (write-through)
-    if (this.writesEnabled) {
+    // Critical fields (like Prefix) should always write to database immediately
+    const criticalFields = ['Prefix', 'SelfPrefix'];
+    const shouldForceWrite = criticalFields.includes(field);
+
+    // Write to database immediately if writes are enabled OR if it's a critical field
+    if (this.writesEnabled || shouldForceWrite) {
       try {
         const Model = this.getModel();
         if (Model) {
@@ -184,6 +192,10 @@ class DatabaseCache extends TTLCache {
           query[this.keyField] = key;
 
           await Model.updateOne(query, { $set: { [field]: value } }, { upsert: true });
+          
+          if (shouldForceWrite && !this.writesEnabled) {
+            console.log(`⚠️ Force-wrote critical field ${field} to database (writes disabled)`);
+          }
         }
       } catch (error) {
         // Silently handle database errors - cache is still updated
@@ -303,10 +315,14 @@ class DatabaseCache extends TTLCache {
         const query = {};
         query[this.keyField] = key;
 
+        // Remove _id from value to prevent duplicate key errors
+        const updateValue = { ...value };
+        delete updateValue._id;
+
         operations.push({
           updateOne: {
             filter: query,
-            update: value,
+            update: { $set: updateValue },
             upsert: true
           }
         });

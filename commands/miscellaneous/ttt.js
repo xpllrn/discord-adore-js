@@ -80,11 +80,13 @@ async function showStats(message) {
       .addFields(
         { name: 'Wins', value: stats.wins.toString(), inline: true },
         { name: 'Losses', value: stats.losses.toString(), inline: true },
-        { name: 'Draws', value: stats.draws.toString(), inline: true }
+        { name: 'Draws', value: stats.draws.toString(), inline: true },
+        { name: 'Total Games', value: totalMatches.toString(), inline: true }
       );
 
     return message.channel.send({ embeds: [embed] });
   } catch (error) {
+    console.error(`❌ TTT Stats: Error retrieving stats for user ${message.author.id}:`, error);
     return embeds.warn(message, 'Failed to retrieve your statistics. Please try again later.');
   }
 }
@@ -415,13 +417,6 @@ async function endGame(interaction, board, players, playerSymbols, winner, isDra
 
   // Update database stats for all game outcomes
   try {
-    // Ensure cache writes are enabled before saving
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.userCache.areWritesEnabled()) {
-      cacheManager.enableWrites();
-    }
-
     if (isDraw) {
       // Draw game - update both players (or just human player for AI games)
       if (isAI) {
@@ -450,7 +445,8 @@ async function endGame(interaction, board, players, playerSymbols, winner, isDra
       }
     }
   } catch (error) {
-    // Ignore database errors for game flow - stats will be lost but game continues
+    // Log the error for debugging but don't break game flow
+    console.error('❌ TTT: Failed to update stats:', error.message);
   }
 
   // Create final message and disabled buttons

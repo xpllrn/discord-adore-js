@@ -25,6 +25,12 @@ module.exports = {
   console.log(chalk.green(`   [+] Registered ${client.eventCount} event handlers`));
   console.log('');
 
+  // Set loading status while cache initializes
+  client.user.setPresence({
+    activities: [{ name: 'Loading cache...', type: ActivityType.Custom }],
+    status: 'idle'
+  });
+
   try {
     await initializeDatabaseConnection(client);
   } catch (error) {
@@ -101,14 +107,46 @@ async function initializeDatabaseConnection(client) {
     console.log(chalk.green('   [+] Global database connected'));
     console.log(chalk.green('   [+] Local database connected'));
     console.log(chalk.green('   [+] Cache system initialized'));
-    console.log(chalk.green('   [+] Data preloading started'));
+    console.log(chalk.blue('   [~] Waiting for cache preloading to complete...'));
+
+    // Wait for cache system to be fully ready
+    const { getCacheManager } = require('../../database/cache/core/CacheManager');
+    const cacheManager = getCacheManager();
+    
+    // Wait for preloading to complete with timeout
+    const maxWaitTime = 30000; // 30 seconds
+    const startWait = Date.now();
+    
+    while (!cacheManager.isReady() && (Date.now() - startWait) < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Check every 500ms
+    }
+    
+    if (cacheManager.isReady()) {
+      console.log(chalk.green('   [+] Cache preloading completed'));
+      console.log(chalk.green('   [+] Cache writes enabled'));
+      
+      // Get preload statistics
+      const stats = cacheManager.preloader.getStats();
+      console.log(chalk.cyan(`   [i] Preloaded ${stats.totalDocuments} documents in ${stats.loadTime}ms`));
+      if (stats.collections.guilds) console.log(chalk.cyan(`   [i] Guilds: ${stats.collections.guilds}`));
+      if (stats.collections.users) console.log(chalk.cyan(`   [i] Users: ${stats.collections.users}`));
+      if (stats.collections.systems) console.log(chalk.cyan(`   [i] Systems: ${stats.collections.systems}`));
+    } else {
+      console.log(chalk.yellow('   [!] Cache preloading timed out - enabling writes anyway'));
+      cacheManager.enableWrites();
+    }
+    
     console.log('\n');
 
     // Load and set bot status from database
     await loadBotStatusFromDatabase(client);
 
-    // Emit custom event to signal database is ready
+    // Mark cache as ready for command processing
+    client.cacheReady = true;
+    
+    // Emit custom event to signal database and cache are ready
     client.emit('databaseReady');
+    client.emit('cacheReady');
   } else {
     throw new Error('Database connection failed');
   }
