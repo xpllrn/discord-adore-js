@@ -19,7 +19,9 @@ module.exports = {
 {guildprefix}br create [name]
 {guildprefix}br rename [name]
 {guildprefix}br icon [emoji/url]
-{guildprefix}br color [color] [color2]  
+{guildprefix}br color [color]
+{guildprefix}br gradient [color1] [color2]
+{guildprefix}br holographic
 {guildprefix}br share [@user]
 {guildprefix}br remove/delete
 {guildprefix}br cleanup`,
@@ -62,6 +64,11 @@ module.exports = {
         return await handleIcon(client, message, args.slice(1));
       case 'color':
         return await handleColor(client, message, args.slice(1));
+      case 'gradient':
+        return await handleGradient(client, message, args.slice(1));
+      case 'holographic':
+      case 'holo':
+        return await handleHolographic(client, message, args.slice(1));
       case 'share':
         return await handleShare(client, message, args.slice(1));
       case 'remove':
@@ -410,7 +417,7 @@ async function handleColor(client, message, args) {
   }
 
   if (!args[0]) {
-    return embeds.warn(message, 'Please provide a **color** (e.g., #ff0000, red, FF0000) or "none" to remove color\nFor gradient: `br color red pink` (requires Enhanced Roles unlocked)');
+    return embeds.warn(message, 'Please provide a **color** (e.g., #ff0000, red, FF0000) or "none" to remove color');
   }
 
   // Handle removal
@@ -436,86 +443,22 @@ async function handleColor(client, message, args) {
     }
   }
 
-  // Helper function to parse color with fuzzy matching
+  // Helper function to parse color
   const Color = require('color');
 
   const parseColor = (colorInput) => {
-    // Common color names mapping
-    const colorNames = {
-      'red': '#FF0000', 'blue': '#0000FF', 'green': '#00FF00', 'yellow': '#FFFF00',
-      'orange': '#FFA500', 'purple': '#800080', 'pink': '#FFC0CB', 'brown': '#A52A2A',
-      'black': '#000000', 'white': '#FFFFFF', 'gray': '#808080', 'grey': '#808080',
-      'cyan': '#00FFFF', 'magenta': '#FF00FF', 'lime': '#00FF00', 'navy': '#000080',
-      'teal': '#008080', 'olive': '#808000', 'maroon': '#800000', 'aqua': '#00FFFF',
-      'silver': '#C0C0C0', 'gold': '#FFD700', 'indigo': '#4B0082', 'violet': '#EE82EE',
-      'turquoise': '#40E0D0', 'tan': '#D2B48C', 'beige': '#F5F5DC', 'coral': '#FF7F50',
-      'crimson': '#DC143C', 'khaki': '#F0E68C', 'lavender': '#E6E6FA', 'salmon': '#FA8072',
-      'peach': '#FFDAB9', 'mint': '#98FF98', 'rose': '#FF007F', 'sky': '#87CEEB'
-    };
-
-    const input = colorInput.toLowerCase().trim();
-
-    // Try exact color name match first
-    if (colorNames[input]) {
-      return colorNames[input];
-    }
-
-    // Try hex code with or without #
-    if (/^#?[0-9A-Fa-f]{6}$/.test(colorInput)) {
-      const hex = colorInput.startsWith('#') ? colorInput : '#' + colorInput;
-      return hex.toUpperCase();
-    }
-
-    // Try using Color library for other formats (rgb, hsl, etc)
     try {
+      // Handle hex codes without # prefix
+      if (/^[0-9A-Fa-f]{6}$/.test(colorInput)) {
+        colorInput = '#' + colorInput;
+      }
+
+      // Use the color library - it handles color names, hex, rgb, hsl, etc.
       const parsedColor = Color(colorInput);
-      return parsedColor.hex();
-    } catch (e) {
-      // Fuzzy match color names
-      const colorNamesList = Object.keys(colorNames);
-      let bestMatch = null;
-      let bestScore = Infinity;
-
-      for (const colorName of colorNamesList) {
-        // Simple distance calculation
-        const distance = levenshteinDistance(input, colorName);
-        if (distance < bestScore && distance <= 3) { // Allow up to 3 character difference
-          bestScore = distance;
-          bestMatch = colorName;
-        }
-      }
-
-      if (bestMatch) {
-        return colorNames[bestMatch];
-      }
-
+      return parsedColor.hex().toUpperCase();
+    } catch (error) {
       throw new Error(`Invalid color: ${colorInput}`);
     }
-  };
-
-  // Simple Levenshtein distance for fuzzy matching
-  const levenshteinDistance = (str1, str2) => {
-    const matrix = [];
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
-    }
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
-    }
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
-        }
-      }
-    }
-    return matrix[str2.length][str1.length];
   };
 
   try {
@@ -528,84 +471,152 @@ async function handleColor(client, message, args) {
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
-    // Check if there's a second color for gradient
-    if (args.length > 1) {
-      try {
-        const secondaryColor = parseColor(args[1]);
+    // Single color
+    const colorInt = parseInt(primaryColor.replace('#', ''), 16);
+    await discordRole.edit({ color: colorInt });
 
-        // Try to set gradient colors using Discord's API
-        try {
-          // Try the newer gradient API first
-          if (discordRole.setColors && typeof discordRole.setColors === 'function') {
-            await discordRole.setColors([primaryColor, secondaryColor], `Booster role gradient colors changed by ${message.author.tag}`);
-          } else {
-            // Try using role.edit with colors array
-            await discordRole.edit({
-              color: [primaryColor, secondaryColor]
-            }, `Booster role gradient colors changed by ${message.author.tag}`);
-          }
+    await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+      color: primaryColor,
+      lastUsed: new Date()
+    });
 
-          // Update in database - store both colors
-          await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
-            color: `${primaryColor},${secondaryColor}`, // Store as comma-separated for gradient
-            lastUsed: new Date()
-          });
+    return embeds.success(message, `Changed your booster role color to **${args[0]}** (${primaryColor})`);
 
-          return embeds.success(message, `Changed your booster role to gradient colors **${args[0]}** → **${args[1]}** (${primaryColor} → ${secondaryColor})`);
+  } catch (error) {
+    return embeds.warn(message, `Could not parse color **${args[0]}**. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\``);
+  }
+}
 
-        } catch (gradientError) {
-          // If gradient fails, check if it's because enhanced roles aren't unlocked
-          if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
-            // Fall back to single color
-            const colorInt = parseInt(primaryColor.replace('#', ''), 16);
-            await discordRole.edit({ color: colorInt });
+// Set booster role gradient
+async function handleGradient(client, message, args) {
+  // Check if user can use booster roles
+  if (!await canUseBoosterRoles(message.member)) {
+    return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
+  }
 
-            await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
-              color: primaryColor,
-              lastUsed: new Date()
-            });
+  // Get user's booster role
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
+  if (!boosterRole) {
+    return embeds.warn(message, 'You don\'t have a booster role! Use `br create` to make one.');
+  }
 
-            return embeds.warn(message, `Changed your booster role color to **${args[0]}** (${primaryColor})\n*Note: Gradient colors require Enhanced Roles to be unlocked in this server. Only the first color was applied.*`);
-          } else {
-            // Other error, fallback to single color
-            const colorInt = parseInt(primaryColor.replace('#', ''), 16);
-            await discordRole.edit({ color: colorInt });
+  if (!args[0] || !args[1]) {
+    return embeds.warn(message, 'Please provide **two colors** for the gradient (e.g., `br gradient red blue`)');
+  }
 
-            await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
-              color: primaryColor,
-              lastUsed: new Date()
-            });
+  // Helper function to parse color
+  const Color = require('color');
 
-            return embeds.warn(message, `Changed your booster role color to **${args[0]}** (${primaryColor})\n*Note: Gradient colors are not supported. Only the first color was applied.*`);
-          }
-        }
-      } catch (secondColorError) {
-        // If second color is invalid, just use the first one
-        const colorInt = parseInt(primaryColor.replace('#', ''), 16);
-        await discordRole.edit({ color: colorInt });
-
-        await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
-          color: primaryColor,
-          lastUsed: new Date()
-        });
-
-        return embeds.warn(message, `Changed your booster role color to **${args[0]}** (${primaryColor})\n*Note: Second color "${args[1]}" was invalid and ignored.*`);
+  const parseColor = (colorInput) => {
+    try {
+      if (/^[0-9A-Fa-f]{6}$/.test(colorInput)) {
+        colorInput = '#' + colorInput;
       }
-    } else {
-      // Single color
-      const colorInt = parseInt(primaryColor.replace('#', ''), 16);
-      await discordRole.edit({ color: colorInt });
+      const parsedColor = Color(colorInput);
+      return parsedColor.hex().toUpperCase();
+    } catch (error) {
+      throw new Error(`Invalid color: ${colorInput}`);
+    }
+  };
 
+  try {
+    const color1 = parseColor(args[0]);
+    const color2 = parseColor(args[1]);
+
+    // Get the Discord role
+    const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+    if (!discordRole) {
+      await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+      return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
+    }
+
+    // Try to set gradient colors using Discord's API
+    try {
+      if (discordRole.setColors && typeof discordRole.setColors === 'function') {
+        await discordRole.setColors([color1, color2], `Booster role gradient colors changed by ${message.author.tag}`);
+      } else {
+        await discordRole.edit({
+          color: [color1, color2]
+        }, `Booster role gradient colors changed by ${message.author.tag}`);
+      }
+
+      // Update in database - store both colors
       await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
-        color: primaryColor,
+        color: `${color1},${color2}`,
         lastUsed: new Date()
       });
 
-      return embeds.success(message, `Changed your booster role color to **${args[0]}** (${primaryColor})`);
+      return embeds.success(message, `Changed your booster role to gradient colors **${args[0]}** → **${args[1]}** (${color1} → ${color2})`);
+
+    } catch (gradientError) {
+      if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
+        return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors. Try using \`br color\` for a single color instead.`);
+      }
+      return embeds.deny(message, `Failed to set gradient colors. This feature may not be supported.`);
     }
 
   } catch (error) {
-    return embeds.warn(message, `Could not parse color **${args[0]}**. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\`\n• Gradient: \`red pink\` (requires Enhanced Roles unlocked)`);
+    return embeds.warn(message, `Could not parse colors. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\``);
+  }
+}
+
+// Set booster role to holographic
+async function handleHolographic(client, message, args) {
+  // Check if user can use booster roles
+  if (!await canUseBoosterRoles(message.member)) {
+    return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
+  }
+
+  // Get user's booster role
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
+  if (!boosterRole) {
+    return embeds.warn(message, 'You don\'t have a booster role! Use `br create` to make one.');
+  }
+
+  // Get the Discord role
+  const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+  if (!discordRole) {
+    await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+    return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
+  }
+
+  // Discord's required holographic colors (as integers)
+  const holoColors = {
+    primary_color: 11127295,   // #A9D9FF
+    secondary_color: 16759788, // #FF956C
+    tertiary_color: 16761760   // #FFA020
+  };
+
+  try {
+    // Use Discord.js REST API directly to PATCH the role with all three colors
+    await client.rest.patch(
+      `/guilds/${message.guild.id}/roles/${discordRole.id}`,
+      {
+        body: {
+          color: holoColors.primary_color,
+          colors: {
+            primary_color: holoColors.primary_color,
+            secondary_color: holoColors.secondary_color,
+            tertiary_color: holoColors.tertiary_color
+          }
+        },
+        reason: `Booster role set to holographic by ${message.author.tag}`
+      }
+    );
+
+    // Update in database
+    await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+      color: 'holographic',
+      lastUsed: new Date()
+    });
+
+    return embeds.success(message, `Changed your booster role to holographic colors! ✨`);
+  } catch (error) {
+    console.error('Holographic error:', error);
+    if (error.code === 50035 || error.message?.includes('ENHANCED_ROLES') || error.message?.includes('guild feature')) {
+      return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use holographic colors.`);
+    }
+    return embeds.deny(message, `Failed to set holographic colors: ${error.message || 'Unknown error'}`);
   }
 }
 

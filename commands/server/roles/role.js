@@ -13,7 +13,7 @@ module.exports = {
   name: "role",
   description: `Comprehensive role management system`,
   aliases: ['r'],
-  usage: '{guildprefix}role [member] [role]\n{guildprefix}role create [name]\n{guildprefix}role delete [role]\n{guildprefix}role rename [role] [new name]\n{guildprefix}role color [role] [color] [color2]\n{guildprefix}role icon [role] [emoji]\n{guildprefix}role humans [role]\n{guildprefix}role bots [role]\n{guildprefix}role all [role]',
+  usage: '{guildprefix}role [member] [role]\n{guildprefix}role create [name]\n{guildprefix}role delete [role]\n{guildprefix}role rename [role] [new name]\n{guildprefix}role color [role] [color]\n{guildprefix}role gradient [role] [color1] [color2]\n{guildprefix}role holographic [role]\n{guildprefix}role icon [role] [emoji]\n{guildprefix}role humans [role]\n{guildprefix}role bots [role]\n{guildprefix}role all [role]',
   permission: 'Manage Roles',
   run: async (client, message, args) => {
 
@@ -163,131 +163,164 @@ module.exports = {
       if (!checkUserRoleHierarchy(message, role)) return;
       if (!checkBotRoleHierarchy(message, role)) return;
 
-      // Helper function to parse color with fuzzy matching
+      // Helper function to parse color
       const parseColor = (colorInput) => {
-        // Common color names mapping
-        const colorNames = {
-          'red': '#FF0000', 'blue': '#0000FF', 'green': '#00FF00', 'yellow': '#FFFF00',
-          'orange': '#FFA500', 'purple': '#800080', 'pink': '#FFC0CB', 'brown': '#A52A2A',
-          'black': '#000000', 'white': '#FFFFFF', 'gray': '#808080', 'grey': '#808080',
-          'cyan': '#00FFFF', 'magenta': '#FF00FF', 'lime': '#00FF00', 'navy': '#000080',
-          'teal': '#008080', 'olive': '#808000', 'maroon': '#800000', 'aqua': '#00FFFF',
-          'silver': '#C0C0C0', 'gold': '#FFD700', 'indigo': '#4B0082', 'violet': '#EE82EE',
-          'turquoise': '#40E0D0', 'tan': '#D2B48C', 'beige': '#F5F5DC', 'coral': '#FF7F50',
-          'crimson': '#DC143C', 'khaki': '#F0E68C', 'lavender': '#E6E6FA', 'salmon': '#FA8072',
-          'peach': '#FFDAB9', 'mint': '#98FF98', 'rose': '#FF007F', 'sky': '#87CEEB'
-        };
-
-        const input = colorInput.toLowerCase().trim();
-
-        // Try exact color name match first
-        if (colorNames[input]) {
-          return colorNames[input];
-        }
-
-        // Try hex code with or without #
-        if (/^#?[0-9A-Fa-f]{6}$/.test(colorInput)) {
-          const hex = colorInput.startsWith('#') ? colorInput : '#' + colorInput;
-          return hex.toUpperCase();
-        }
-
-        // Try using Color library for other formats (rgb, hsl, etc)
         try {
+          // Handle hex codes without # prefix
+          if (/^[0-9A-Fa-f]{6}$/.test(colorInput)) {
+            colorInput = '#' + colorInput;
+          }
+
+          // Use the color library - it handles color names, hex, rgb, hsl, etc.
           const parsedColor = Color(colorInput);
-          return parsedColor.hex();
-        } catch (e) {
-          // Fuzzy match color names
-          const colorNamesList = Object.keys(colorNames);
-          let bestMatch = null;
-          let bestScore = Infinity;
-
-          for (const colorName of colorNamesList) {
-            // Simple distance calculation
-            const distance = levenshteinDistance(input, colorName);
-            if (distance < bestScore && distance <= 3) { // Allow up to 3 character difference
-              bestScore = distance;
-              bestMatch = colorName;
-            }
-          }
-
-          if (bestMatch) {
-            return colorNames[bestMatch];
-          }
-
+          return parsedColor.hex().toUpperCase();
+        } catch (error) {
           throw new Error(`Invalid color: ${colorInput}`);
         }
       };
 
-      // Simple Levenshtein distance for fuzzy matching
-      const levenshteinDistance = (str1, str2) => {
-        const matrix = [];
-        for (let i = 0; i <= str2.length; i++) {
-          matrix[i] = [i];
-        }
-        for (let j = 0; j <= str1.length; j++) {
-          matrix[0][j] = j;
-        }
-        for (let i = 1; i <= str2.length; i++) {
-          for (let j = 1; j <= str1.length; j++) {
-            if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-              matrix[i][j] = matrix[i - 1][j - 1];
-            } else {
-              matrix[i][j] = Math.min(
-                matrix[i - 1][j - 1] + 1,
-                matrix[i][j - 1] + 1,
-                matrix[i - 1][j] + 1
-              );
-            }
+      try {
+        const primaryColor = parseColor(colorArgs[0]);
+        await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
+        return embeds.success(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})`);
+      } catch (error) {
+        return embeds.deny(message, `Could not parse color **${colorArgs[0]}**. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\``);
+      }
+    }
+
+    // GRADIENT ROLE SUBCOMMAND
+    if (args[0] === 'gradient') {
+      if (!args[1] || !args[2] || !args[3]) {
+        return runHelpCommand(message, 'role');
+      }
+
+      // For gradient command, try different parsing approaches
+      let role = null;
+      let colorArgs = [];
+
+      // Check if there's a role mention in the arguments
+      const roleMention = message.mentions.roles.first();
+
+      if (roleMention) {
+        role = roleMention;
+        const nonMentionArgs = args.filter(arg => !arg.startsWith('<@&'));
+        colorArgs = nonMentionArgs.slice(1); // Skip the 'gradient' command
+      } else {
+        // Try to find role by testing different splits
+        let roleFound = false;
+
+        for (let i = 1; i < args.length - 2; i++) {
+          const possibleRoleName = args.slice(1, i + 1).join(' ');
+          const roleResult = findRole(message.guild, possibleRoleName);
+
+          if (roleResult.found) {
+            role = roleResult.role;
+            colorArgs = args.slice(i + 1);
+            roleFound = true;
+            break;
           }
         }
-        return matrix[str2.length][str1.length];
+
+        if (!roleFound) {
+          return embeds.deny(message, `Could not find role. Usage: \`,role gradient <role name> <color1> <color2>\``);
+        }
+      }
+
+      if (!role || colorArgs.length < 2) {
+        return embeds.deny(message, `Please provide two colors. Usage: \`,role gradient <role name> <color1> <color2>\``);
+      }
+
+      // Check role hierarchy using utils/permissions.js
+      if (!checkUserRoleHierarchy(message, role)) return;
+      if (!checkBotRoleHierarchy(message, role)) return;
+
+      // Helper function to parse color
+      const parseColor = (colorInput) => {
+        try {
+          if (/^[0-9A-Fa-f]{6}$/.test(colorInput)) {
+            colorInput = '#' + colorInput;
+          }
+          const parsedColor = Color(colorInput);
+          return parsedColor.hex().toUpperCase();
+        } catch (error) {
+          throw new Error(`Invalid color: ${colorInput}`);
+        }
       };
 
       try {
-        const primaryColor = parseColor(colorArgs[0]);
+        const color1 = parseColor(colorArgs[0]);
+        const color2 = parseColor(colorArgs[1]);
 
-        // Check if there's a second color for gradient
-        if (colorArgs.length > 1) {
-          try {
-            const secondaryColor = parseColor(colorArgs[1]);
-
-            // Try to set gradient colors using Discord's API
-            // Discord.js may support this through role.edit() with colors array
-            try {
-              // Try the newer gradient API first
-              if (role.setColors && typeof role.setColors === 'function') {
-                await role.setColors([primaryColor, secondaryColor], `Role gradient colors changed by ${message.author.tag}`);
-                return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${primaryColor} → ${secondaryColor})`);
-              } else {
-                // Try using role.edit with colors array
-                await role.edit({
-                  color: [primaryColor, secondaryColor]
-                }, `Role gradient colors changed by ${message.author.tag}`);
-                return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${primaryColor} → ${secondaryColor})`);
-              }
-            } catch (gradientError) {
-              // If gradient fails, check if it's because enhanced roles aren't unlocked
-              if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
-                await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
-                return embeds.warn(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})\n*Note: Gradient colors require Enhanced Roles to be unlocked in this server. Only the first color was applied.*`);
-              } else {
-                // Other error, fallback to single color
-                await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
-                return embeds.warn(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})\n*Note: Gradient colors are not supported. Only the first color was applied.*`);
-              }
-            }
-          } catch (secondColorError) {
-            // If second color is invalid, just use the first one
-            await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
-            return embeds.warn(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})\n*Note: Second color "${colorArgs[1]}" was invalid and ignored.*`);
+        // Try to set gradient colors using Discord's API
+        try {
+          if (role.setColors && typeof role.setColors === 'function') {
+            await role.setColors([color1, color2], `Role gradient colors changed by ${message.author.tag}`);
+          } else {
+            await role.edit({
+              color: [color1, color2]
+            }, `Role gradient colors changed by ${message.author.tag}`);
           }
-        } else {
-          // Single color
-          await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
-          return embeds.success(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})`);
+          return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${color1} → ${color2})`);
+        } catch (gradientError) {
+          if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
+            return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors. Try using \`,role color\` for a single color instead.`);
+          }
+          return embeds.deny(message, `Failed to set gradient colors. This feature may not be supported.`);
         }
       } catch (error) {
-        return embeds.deny(message, `Could not parse color **${colorArgs[0]}**. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\`\n• Gradient: \`red pink\` (requires Enhanced Roles unlocked)`);
+        return embeds.deny(message, `Could not parse colors. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\``);
+      }
+    }
+
+    // HOLOGRAPHIC ROLE SUBCOMMAND
+    if (args[0] === 'holographic' || args[0] === 'holo') {
+      if (!args[1]) {
+        return runHelpCommand(message, 'role');
+      }
+
+      const roleResult = findRole(message.guild, args.slice(1).join(' '));
+
+      if (!roleResult.found) {
+        return embeds.deny(message, roleResult.error);
+      }
+
+      const role = roleResult.role;
+
+      // Check role hierarchy using utils/permissions.js
+      if (!checkUserRoleHierarchy(message, role)) return;
+      if (!checkBotRoleHierarchy(message, role)) return;
+
+      // Discord's required holographic colors (as integers)
+      const holoColors = {
+        primary_color: 11127295,   // #A9D9FF
+        secondary_color: 16759788, // #FF956C
+        tertiary_color: 16761760   // #FFA020
+      };
+
+      try {
+        // Use Discord.js REST API directly to PATCH the role with all three colors
+        await client.rest.patch(
+          `/guilds/${message.guild.id}/roles/${role.id}`,
+          {
+            body: {
+              color: holoColors.primary_color,
+              colors: {
+                primary_color: holoColors.primary_color,
+                secondary_color: holoColors.secondary_color,
+                tertiary_color: holoColors.tertiary_color
+              }
+            },
+            reason: `Role set to holographic by ${message.author.tag}`
+          }
+        );
+
+        return embeds.success(message, `Changed **${role.name}** to holographic colors! ✨`);
+      } catch (error) {
+        console.error('Holographic error:', error);
+        if (error.code === 50035 || error.message?.includes('ENHANCED_ROLES') || error.message?.includes('guild feature')) {
+          return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use holographic colors.`);
+        }
+        return embeds.deny(message, `Failed to set holographic colors: ${error.message || 'Unknown error'}`);
       }
     }
 
