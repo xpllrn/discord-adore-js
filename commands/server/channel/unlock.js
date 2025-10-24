@@ -18,11 +18,6 @@ module.exports = {
       return embeds.deny(message, 'I need **Manage Channels** permission to use this command');
     }
 
-    // Check if command is used in a thread
-    if (message.channel.isThread()) {
-      return embeds.warn(message, 'This command cannot be used in threads. Please use it in the parent channel.');
-    }
-
     let targetChannel = message.channel;
     let targetRole = null;
 
