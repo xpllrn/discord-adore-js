@@ -266,14 +266,14 @@ async function createVoiceManagerPanel(client, channel) {
     .setDescription(
       'Use the buttons below to control your voice channel.\n\n' +
       '**Button Usage:**\n' +
-      '<:lock:1430503055752953887> — **Lock** the voice channel\n' +
-      '<:unlock:1430503064808198184> — **Unlock** the voice channel\n' +
-      '<:ghost:1430503073565900961> — **Ghost** the voice channel\n' +
-      '<:unghost:1430503081925279754> — **Reveal** the voice channel\n' +
-      '<:increase:1430503123159482544> — **Increase** the user limit\n' +
-      '<:decrease:1430503131346895001> — **Decrease** the user limit\n' +
-      '<:rename:1431402284386091121> — **Rename** the voice channel\n' +
-      '<:info:1430503114879799356> — **View** channel information'
+      '> [**`Lock`**](https://dsc.gg/s-invite) the voice channel\n' +
+      '> [**`Unlock`**](https://dsc.gg/s-invite) the voice channel\n' +
+      '> [**`Ghost`**](https://dsc.gg/s-invite) the voice channel\n' +
+      '> [**`Reveal`**](https://dsc.gg/s-invite) the voice channel\n' +
+      '> [**`Increase`**](https://dsc.gg/s-invite) the user limit\n' +
+      '> [**`Decrease`**](https://dsc.gg/s-invite) the user limit\n' +
+      '> [**`Rename`**](https://dsc.gg/s-invite) the voice channel\n' +
+      '> [**`Info`**](https://dsc.gg/s-invite) channel information'
     )
     .setColor(colors.embed)
     .setThumbnail(client.user.displayAvatarURL());
