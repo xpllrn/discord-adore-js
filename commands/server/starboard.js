@@ -14,6 +14,7 @@ module.exports = {
   permission: "Manage Guild",
 
   run: async(client, message, args) => {
+    const { getService } = require('@services');
     const guildService = getService('guild');
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
@@ -22,7 +23,6 @@ module.exports = {
 
     // Ensure guild data exists in the database
     await ensureGuildData(message.guild.id);
-    const { getService } = require('@services');
 
     if (args[0] === 'set') {
 

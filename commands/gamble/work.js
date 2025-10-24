@@ -16,27 +16,27 @@ module.exports = {
   aliases: ['job'],
   description: 'Work to earn coins with a cooldown',
   usage: `{guildprefix}work`,
-  run: async(client, message, args) => {
-    
+  run: async (client, message, args) => {
+
     try {
       const userService = getService('user');
 
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);
-      
+
       // Check work cooldown (1 hour = 3600000 ms)
       const workCooldown = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
       const lastWorked = gambling.lastWorked || null;
       const now = Date.now();
-      
+
       if (lastWorked && (now - lastWorked) < workCooldown) {
         const timeLeft = workCooldown - (now - lastWorked);
         const unixTimestamp = Math.floor((now + timeLeft) / 1000);
-        
+
         const embed = new EmbedBuilder()
           .setColor('#fc6464')
           .setDescription(`${emojis.warn} <@${message.author.id}>: You can **work** again <t:${unixTimestamp}:R>`);
-        
+
         return message.channel.send({ embeds: [embed] });
       }
 
@@ -78,22 +78,22 @@ module.exports = {
       // Randomly select a job
       const job = jobs[Math.floor(Math.random() * jobs.length)];
       const finalEarnings = Math.floor(baseEarnings * job.multiplier);
-      
+
       // Update user's wallet and work timestamp using service layer
       await userService.updateWallet(message.author.id, finalEarnings);
       await userService.updateWorkTimestamp(message.author.id);
-      
+
       // Get updated wallet balance
       const updatedGambling = await userService.getGamblingData(message.author.id);
       const newWallet = updatedGambling.wallet || 0;
-      
+
       // Create success message
       const embed = new EmbedBuilder()
         .setColor('#a4ec7c')
         .setDescription(`${job.emoji} <@${message.author.id}>: You worked as a **${job.name}** and earned **${formatCurrency(finalEarnings)}** coins!\nYou now have **${formatCurrency(newWallet)}** coins in your **wallet**`);
-      
+
       return message.channel.send({ embeds: [embed] });
-      
+
     } catch (error) {
       console.error('Error in work command:', error);
       return embeds.deny(message, 'An error occurred while working');
