@@ -1778,9 +1778,535 @@ class GuildService extends BaseService {
    * @returns {Promise<void>}
    */
   async setCounting(guildId, countingData) {
-    await this.updateGuild(guildId, {
+    await this.updateGuildData(guildId, {
       Counting: countingData
     });
+  }
+
+  // ===== AUTO REACT OPERATIONS =====
+
+  /**
+   * Get all autoreacts for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of autoreact objects
+   */
+  async getAutoReacts(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.AutoReact || [];
+    } catch (error) {
+      console.error(`Error getting autoreacts for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add an autoreact
+   * @param {string} guildId - Guild ID
+   * @param {string} word - Trigger word
+   * @param {string} emojiId - Emoji ID (null for unicode)
+   * @param {string} emojiName - Emoji name
+   * @param {boolean} isCustom - Whether it's a custom emoji
+   * @returns {Promise<boolean>} Success status
+   */
+  async addAutoReact(guildId, word, emojiId, emojiName, isCustom) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!word) {
+      throw new ValidationError('Word is required', 'word', word);
+    }
+
+    if (!emojiName) {
+      throw new ValidationError('Emoji name is required', 'emojiName', emojiName);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const autoReacts = guildData.AutoReact || [];
+
+      const newAutoReact = {
+        word: word.toLowerCase(),
+        emojiId,
+        emojiName,
+        isCustom: isCustom || false
+      };
+
+      autoReacts.push(newAutoReact);
+      guildData.AutoReact = autoReacts;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add autoreact for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove an autoreact
+   * @param {string} guildId - Guild ID
+   * @param {string} word - Trigger word
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeAutoReact(guildId, word) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!word) {
+      throw new ValidationError('Word is required', 'word', word);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const autoReacts = guildData.AutoReact || [];
+
+      guildData.AutoReact = autoReacts.filter(ar => ar.word !== word.toLowerCase());
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove autoreact for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Clear all autoreacts
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllAutoReacts(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.AutoReact = [];
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear autoreacts for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== AUTO RESPONDER OPERATIONS =====
+
+  /**
+   * Get all autoresponders for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of autoresponder objects
+   */
+  async getAutoResponders(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.AutoResponder || [];
+    } catch (error) {
+      console.error(`Error getting autoresponders for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add an autoresponder
+   * @param {string} guildId - Guild ID
+   * @param {Object} autoresponderData - Autoresponder data
+   * @returns {Promise<boolean>} Success status
+   */
+  async addAutoResponder(guildId, autoresponderData) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!autoresponderData || typeof autoresponderData !== 'object') {
+      throw new ValidationError('Autoresponder data is required', 'autoresponderData', autoresponderData);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const autoResponders = guildData.AutoResponder || [];
+
+      autoResponders.push(autoresponderData);
+      guildData.AutoResponder = autoResponders;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add autoresponder for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove an autoresponder
+   * @param {string} guildId - Guild ID
+   * @param {string} trigger - Trigger text
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeAutoResponder(guildId, trigger) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!trigger) {
+      throw new ValidationError('Trigger is required', 'trigger', trigger);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const autoResponders = guildData.AutoResponder || [];
+
+      guildData.AutoResponder = autoResponders.filter(ar => ar.trigger !== trigger);
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove autoresponder for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Clear all autoresponders
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllAutoResponders(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.AutoResponder = [];
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear autoresponders for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== SWEAR TRACKING OPERATIONS =====
+
+  /**
+   * Get swear tracking data for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Array>} Array of swear tracking objects
+   */
+  async getSwears(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const swearTracker = guildData.SwearTracker || [];
+      return swearTracker.filter(st => st.userId === userId);
+    } catch (error) {
+      console.error(`Error getting swears for user ${userId} in guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add a swear to tracking
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @param {string} swear - Swear word
+   * @returns {Promise<boolean>} Success status
+   */
+  async addSwear(guildId, userId, swear) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!swear) {
+      throw new ValidationError('Swear is required', 'swear', swear);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const swearTracker = guildData.SwearTracker || [];
+
+      swearTracker.push({
+        userId,
+        swear: swear.toLowerCase(),
+        timestamp: new Date()
+      });
+
+      guildData.SwearTracker = swearTracker;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add swear for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get all swears for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of all swear tracking objects
+   */
+  async getAllSwears(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.SwearTracker || [];
+    } catch (error) {
+      console.error(`Error getting all swears for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Clear swear tracking for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearUserSwears(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const swearTracker = guildData.SwearTracker || [];
+
+      guildData.SwearTracker = swearTracker.filter(st => st.userId !== userId);
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to clear swears for user ${userId} in guild ${guildId}`, error);
+    }
+  }
+
+  // ===== MESSAGE TRACKING OPERATIONS =====
+
+  /**
+   * Track a message for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async trackMessage(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const messageStats = guildData.MessageStats || [];
+
+      const userIndex = messageStats.findIndex(ms => ms.userId === userId);
+
+      if (userIndex !== -1) {
+        messageStats[userIndex].count = (messageStats[userIndex].count || 0) + 1;
+        messageStats[userIndex].lastMessage = new Date();
+      } else {
+        messageStats.push({
+          userId,
+          count: 1,
+          lastMessage: new Date()
+        });
+      }
+
+      guildData.MessageStats = messageStats;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to track message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get message stats for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Object|null>} Message stats or null
+   */
+  async getMessageStats(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const messageStats = guildData.MessageStats || [];
+
+      return messageStats.find(ms => ms.userId === userId) || null;
+    } catch (error) {
+      console.error(`Error getting message stats for user ${userId} in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  // ===== STICKY MESSAGE OPERATIONS =====
+
+  /**
+   * Update sticky message activity
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateStickyMessageActivity(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const stickyMessages = guildData.StickyMessages || [];
+
+      const stickyIndex = stickyMessages.findIndex(sm => sm.channelId === channelId);
+
+      if (stickyIndex !== -1) {
+        stickyMessages[stickyIndex].lastActivity = new Date();
+        guildData.StickyMessages = stickyMessages;
+        await this.set(guildId, guildData);
+      }
+
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update sticky message activity for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== LEVEL SYSTEM ADDITIONAL OPERATIONS =====
+
+  /**
+   * Get level message mode
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string>} Message mode ('context', 'channel', or 'none')
+   */
+  async getLevelMessageMode(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelSystem = guildData.LevelSystem || {};
+      return levelSystem.messageMode || 'context';
+    } catch (error) {
+      console.error(`Error getting level message mode for guild ${guildId}:`, error.message);
+      return 'context';
+    }
+  }
+
+  /**
+   * Get level up channel
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Channel ID or null
+   */
+  async getLevelUpChannel(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelSystem = guildData.LevelSystem || {};
+      return levelSystem.levelUpChannel || null;
+    } catch (error) {
+      console.error(`Error getting level up channel for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get level roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of level role objects
+   */
+  async getLevelRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelSystem = guildData.LevelSystem || {};
+      return levelSystem.levelRoles || [];
+    } catch (error) {
+      console.error(`Error getting level roles for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add user experience (alias for addExperience)
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @param {number} expGain - Experience to add
+   * @returns {Promise<Object>} Level up result
+   */
+  async addUserExperience(guildId, userId, expGain) {
+    return await this.addExperience(guildId, userId, expGain);
   }
 }
 
