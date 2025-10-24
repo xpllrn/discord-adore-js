@@ -590,6 +590,31 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Get welcome message for specific channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<Object|null>} Welcome message or null
+   */
+  async getWelcomeMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const welcomeMessages = guildData.WelcomeMessages || [];
+      return welcomeMessages.find(wm => wm.channelId === channelId) || null;
+    } catch (error) {
+      console.error(`Error getting welcome message for channel in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
    * Add welcome message (multi-message system)
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Channel ID
@@ -778,6 +803,31 @@ class GuildService extends BaseService {
     } catch (error) {
       console.error(`Error getting leave messages for guild ${guildId}:`, error.message);
       return [];
+    }
+  }
+
+  /**
+   * Get leave message for specific channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<Object|null>} Leave message or null
+   */
+  async getLeaveMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const leaveMessages = guildData.LeaveMessages || [];
+      return leaveMessages.find(lm => lm.channelId === channelId) || null;
+    } catch (error) {
+      console.error(`Error getting leave message for channel in guild ${guildId}:`, error.message);
+      return null;
     }
   }
 
@@ -978,6 +1028,31 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Get boost message for specific channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<Object|null>} Boost message or null
+   */
+  async getBoostMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boostMessages = guildData.BoostMessages || [];
+      return boostMessages.find(bm => bm.channelId === channelId) || null;
+    } catch (error) {
+      console.error(`Error getting boost message for channel in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
    * Add boost message (multi-message system)
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Channel ID
@@ -1065,6 +1140,56 @@ class GuildService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to remove boost message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get recent boost removals
+   * @param {string} guildId - Guild ID
+   * @param {number} limit - Number of recent removals to return
+   * @returns {Promise<Object[]>} Array of boost removal events
+   */
+  async getRecentBoostRemoves(guildId, limit = 20) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boostHistory = guildData.BoostHistory || [];
+
+      return boostHistory
+        .filter(bh => bh.action === 'remove')
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, limit);
+    } catch (error) {
+      console.error(`Error getting recent boost removes for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get recent boost additions
+   * @param {string} guildId - Guild ID
+   * @param {number} limit - Number of recent additions to return
+   * @returns {Promise<Object[]>} Array of boost addition events
+   */
+  async getRecentBoostAdds(guildId, limit = 20) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boostHistory = guildData.BoostHistory || [];
+
+      return boostHistory
+        .filter(bh => bh.action === 'add')
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, limit);
+    } catch (error) {
+      console.error(`Error getting recent boost adds for guild ${guildId}:`, error.message);
+      return [];
     }
   }
 
@@ -1218,6 +1343,17 @@ class GuildService extends BaseService {
       }
       throw new DatabaseWriteError(`Failed to set jail settings for guild ${guildId}`, error);
     }
+  }
+
+  /**
+   * Set jail (alias for setJailSettings)
+   * @param {string} guildId - Guild ID
+   * @param {string} roleId - Jail role ID
+   * @param {string} channelId - Jail channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async setJail(guildId, roleId, channelId) {
+    return await this.setJailSettings(guildId, roleId, channelId);
   }
 
   // ===== AUTO ROLES =====
@@ -3544,6 +3680,179 @@ class GuildService extends BaseService {
     }
   }
 
+  /**
+   * Add giveaway
+   * @param {string} guildId - Guild ID
+   * @param {Object} giveawayData - Giveaway data
+   * @returns {Promise<Object>} Created giveaway
+   */
+  async addGiveaway(guildId, giveawayData) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!giveawayData || typeof giveawayData !== 'object') {
+      throw new ValidationError('Giveaway data is required', 'giveawayData', giveawayData);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+
+      // Get next ID
+      const nextId = giveaways.length > 0 ? Math.max(...giveaways.map(g => g.id)) + 1 : 1;
+
+      const giveaway = {
+        id: nextId,
+        ...giveawayData,
+        isActive: true,
+        createdAt: new Date()
+      };
+
+      giveaways.push(giveaway);
+      guildData.Giveaways = giveaways;
+
+      await this.set(guildId, guildData);
+      return giveaway;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add giveaway for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Update giveaway
+   * @param {string} guildId - Guild ID
+   * @param {number} giveawayId - Giveaway ID
+   * @param {Object} updates - Fields to update
+   * @returns {Promise<Object|null>} Updated giveaway or null
+   */
+  async updateGiveaway(guildId, giveawayId, updates) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof giveawayId !== 'number') {
+      throw new ValidationError('Giveaway ID must be a number', 'giveawayId', giveawayId);
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      throw new ValidationError('Updates object is required', 'updates', updates);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+
+      const giveawayIndex = giveaways.findIndex(g => g.id === giveawayId);
+      if (giveawayIndex === -1) {
+        return null;
+      }
+
+      // Handle nested updates (e.g., 'requirements.level')
+      for (const [key, value] of Object.entries(updates)) {
+        if (key.includes('.')) {
+          const parts = key.split('.');
+          let current = giveaways[giveawayIndex];
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!current[parts[i]]) {
+              current[parts[i]] = {};
+            }
+            current = current[parts[i]];
+          }
+          current[parts[parts.length - 1]] = value;
+        } else {
+          giveaways[giveawayIndex][key] = value;
+        }
+      }
+
+      guildData.Giveaways = giveaways;
+      await this.set(guildId, guildData);
+      return giveaways[giveawayIndex];
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update giveaway for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * End giveaway
+   * @param {string} guildId - Guild ID
+   * @param {number} giveawayId - Giveaway ID
+   * @param {string[]} winners - Array of winner user IDs
+   * @returns {Promise<boolean>} Success status
+   */
+  async endGiveaway(guildId, giveawayId, winners = []) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof giveawayId !== 'number') {
+      throw new ValidationError('Giveaway ID must be a number', 'giveawayId', giveawayId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+
+      const giveaway = giveaways.find(g => g.id === giveawayId);
+      if (giveaway) {
+        giveaway.isActive = false;
+        giveaway.winnerIds = winners;
+        guildData.Giveaways = giveaways;
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to end giveaway for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Delete giveaway
+   * @param {string} guildId - Guild ID
+   * @param {number} giveawayId - Giveaway ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async deleteGiveaway(guildId, giveawayId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof giveawayId !== 'number') {
+      throw new ValidationError('Giveaway ID must be a number', 'giveawayId', giveawayId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+      const initialLength = giveaways.length;
+
+      guildData.Giveaways = giveaways.filter(g => g.id !== giveawayId);
+
+      if (guildData.Giveaways.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to delete giveaway for guild ${guildId}`, error);
+    }
+  }
+
   // ===== LAST.FM CROWN OPERATIONS =====
 
   /**
@@ -4237,6 +4546,109 @@ class GuildService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to update temp channel settings for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Setup voice manager (alias for setVoiceManager with enabled: true)
+   * @param {string} guildId - Guild ID
+   * @param {string} categoryId - Category ID
+   * @param {string} joinChannelId - Join channel ID
+   * @param {string} mutedChannelId - Muted channel ID (optional)
+   * @returns {Promise<boolean>} Success status
+   */
+  async setupVoiceManager(guildId, categoryId, joinChannelId, mutedChannelId = null) {
+    return await this.setVoiceManager(guildId, {
+      enabled: true,
+      categoryId,
+      joinChannelId,
+      mutedChannelId,
+      tempChannels: []
+    });
+  }
+
+  /**
+   * Disable voice manager
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async disableVoiceManager(guildId) {
+    return await this.setVoiceManager(guildId, {
+      enabled: false,
+      categoryId: null,
+      joinChannelId: null,
+      mutedChannelId: null,
+      tempChannels: []
+    });
+  }
+
+  /**
+   * Get temp voice channel (alias for getTempChannel)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<Object|null>} Temp channel data or null
+   */
+  async getTempVoiceChannel(guildId, channelId) {
+    return await this.getTempChannel(guildId, channelId);
+  }
+
+  /**
+   * Update temp voice channel (alias for updateTempChannelSettings)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {Object} settings - Channel settings to update
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateTempVoiceChannel(guildId, channelId, settings) {
+    return await this.updateTempChannelSettings(guildId, channelId, settings);
+  }
+
+  /**
+   * Transfer voice channel ownership
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {string} newOwnerId - New owner user ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async transferVoiceChannelOwnership(guildId, channelId, newOwnerId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!newOwnerId) {
+      throw new ValidationError('New owner ID is required', 'newOwnerId', newOwnerId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.VoiceManager || !guildData.VoiceManager.tempChannels) {
+        return false;
+      }
+
+      const tempChannels = guildData.VoiceManager.tempChannels;
+      const channelIndex = tempChannels.findIndex(tc => tc.channelId === channelId);
+
+      if (channelIndex === -1) {
+        return false;
+      }
+
+      // Update owner
+      tempChannels[channelIndex].ownerId = newOwnerId;
+
+      guildData.VoiceManager.tempChannels = tempChannels;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to transfer voice channel ownership for guild ${guildId}`, error);
     }
   }
 

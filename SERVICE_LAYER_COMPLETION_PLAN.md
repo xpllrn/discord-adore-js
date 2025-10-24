@@ -73,6 +73,14 @@ This document tracks the completion status of service layer methods for all bot 
 - ✅ `getGiveaway(guildId, giveawayId)` - Get by ID
 - ✅ `addGiveawayParticipant(guildId, giveawayId, userId)` - Add participant
 - ✅ `getActiveGiveaways(guildId)` - Get active giveaways
+- ✅ `addGiveaway(guildId, giveawayData)` - Add new giveaway
+- ✅ `updateGiveaway(guildId, giveawayId, updates)` - Update giveaway
+- ✅ `endGiveaway(guildId, giveawayId, winners)` - End giveaway
+- ✅ `deleteGiveaway(guildId, giveawayId)` - Delete giveaway
+
+#### Boost History System
+- ✅ `getRecentBoostRemoves(guildId, limit)` - Get recent boost removals
+- ✅ `getRecentBoostAdds(guildId, limit)` - Get recent boost additions
 
 #### Last.fm Crown System
 - ✅ `getLastFMCrown(guildId, artistName)` - Get crown
@@ -94,12 +102,15 @@ This document tracks the completion status of service layer methods for all bot 
 
 #### Welcome/Leave/Boost Messages (Multi-Message System)
 - ✅ `getWelcomeMessages(guildId)` - Get all welcome messages
+- ✅ `getWelcomeMessage(guildId, channelId)` - Get welcome message for specific channel
 - ✅ `addWelcomeMessage(guildId, channelId, message)` - Add/update welcome message
 - ✅ `removeWelcomeMessage(guildId, channelId)` - Remove welcome message
 - ✅ `getLeaveMessages(guildId)` - Get all leave messages
+- ✅ `getLeaveMessage(guildId, channelId)` - Get leave message for specific channel
 - ✅ `addLeaveMessage(guildId, channelId, message)` - Add/update leave message
 - ✅ `removeLeaveMessage(guildId, channelId)` - Remove leave message
 - ✅ `getBoostMessages(guildId)` - Get all boost messages
+- ✅ `getBoostMessage(guildId, channelId)` - Get boost message for specific channel
 - ✅ `addBoostMessage(guildId, channelId, message)` - Add/update boost message
 - ✅ `removeBoostMessage(guildId, channelId)` - Remove boost message
 
@@ -259,9 +270,10 @@ This document tracks the completion status of service layer methods for all bot 
 
 #### 4. Jail System
 **Command:** Jail-related commands
-**Status:** ✅ Methods exist but need verification
-- `getJailSettings(guildId)`
-- `setJailSettings(guildId, roleId, channelId)`
+**Status:** ✅ Methods implemented
+- ✅ `getJailSettings(guildId)`
+- ✅ `setJailSettings(guildId, roleId, channelId)`
+- ✅ `setJail(guildId, roleId, channelId)` - Alias for setJailSettings
 
 #### 5. Ticket System
 **Command:** `ticket.js`
