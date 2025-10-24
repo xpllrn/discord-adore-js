@@ -13,21 +13,21 @@ module.exports = {
     }
 
     if (!args[0]) {
-        const countingData = await guildService.getCounting(message.guild.id);
-        if (countingData.channelId) {
-            return embeds.info(message, `The counting channel is currently <#${countingData.channelId}>.`);
-        } else {
-            return embeds.info(message, `There is no counting channel set.`);
-        }
+      const countingData = await guildService.getCounting(message.guild.id);
+      if (countingData.channelId) {
+        return embeds.info(message, `The counting channel is currently <#${countingData.channelId}>.`);
+      } else {
+        return embeds.info(message, `There is no counting channel set.`);
+      }
     }
 
     if (args[0].toLowerCase() === 'off' || args[0].toLowerCase() === 'disable') {
-        await guildService.setCounting(message.guild.id, {
-            channelId: null,
-            currentCount: 0,
-            lastCounterId: null
-        });
-        return embeds.success(message, 'Counting channel has been disabled.');
+      await guildService.setCounting(message.guild.id, {
+        channelId: null,
+        currentCount: 0,
+        lastCounterId: null
+      });
+      return embeds.success(message, 'Counting channel has been disabled.');
     }
 
     const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]);

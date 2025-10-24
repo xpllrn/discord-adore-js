@@ -57,21 +57,51 @@ async function processCounting(message) {
         const countingData = await guildService.getCounting(message.guild.id);
 
         if (message.channel.id === countingData.channelId) {
-            const num = parseInt(message.content);
-
-            if (isNaN(num)) {
+            // Extract number from message (handles cases like "89hello" or "10then")
+            const numMatch = message.content.match(/^\d+/);
+            if (!numMatch) {
                 return message.delete();
             }
+            
+            const num = parseInt(numMatch[0]);
+            const { EmbedBuilder } = require('discord.js');
+            const { colors, emojis } = require('../../config/setup');
 
-            if (num === countingData.currentCount + 1 && message.author.id !== countingData.lastCounterId) {
+            // Check if same person is counting twice
+            if (message.author.id === countingData.lastCounterId) {
+                const embed = new EmbedBuilder()
+                    .setColor(colors.error)
+                    .setDescription(`${emojis.error} Same person cannot count twice in a row!`);
+                
+                const warning = await message.channel.send({ embeds: [embed] });
+                setTimeout(() => warning.delete().catch(() => {}), 5000);
+                return;
+            }
+
+            // Check if the number is correct
+            if (num === countingData.currentCount + 1) {
                 countingData.currentCount++;
                 countingData.lastCounterId = message.author.id;
                 await guildService.setCounting(message.guild.id, countingData);
-                message.react('✅');
+                
+                // React with party emoji for every 100, 200, 300, etc.
+                if (num % 100 === 0) {
+                    await message.react('🎉');
+                } else {
+                    await message.react(emojis.success);
+                }
             } else {
-                message.delete();
-                const warning = await message.channel.send(`${message.author}, you broke the count! The next number was ${countingData.currentCount + 1}.`);
-                setTimeout(() => warning.delete(), 5000);
+                // Wrong number - reset count and notify
+                const wrongCount = countingData.currentCount;
+                countingData.currentCount = 0;
+                countingData.lastCounterId = null;
+                await guildService.setCounting(message.guild.id, countingData);
+                
+                const embed = new EmbedBuilder()
+                    .setColor(colors.error)
+                    .setDescription(`${message.author} **RUINED IT AT ${wrongCount}**!! Next number is **\`1\`**.`);
+                
+                await message.channel.send({ embeds: [embed] });
             }
         }
     } catch (error) {

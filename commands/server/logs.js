@@ -58,6 +58,8 @@ module.exports = {
 };
 
 async function handleAdd(client, message, args) {
+  const guildService = getService('guild');
+  
   if (args.length < 1) {
     return embeds.warn(message, 'Usage: `logs add <#channel> [type] [webhook_url]`\n\n**Log Types:** `moderator`, `message`, `events`, `members`\n**Note:** If no type is specified, all log types will be added.');
   }
@@ -200,6 +202,8 @@ async function handleAdd(client, message, args) {
 }
 
 async function handleRemove(client, message, args) {
+  const guildService = getService('guild');
+  
   if (args.length < 1) {
     return embeds.warn(message, 'Usage: `logs remove <#channel> [type]`\n\nIf no type is specified, all logging will be removed from the channel.');
   }
@@ -272,6 +276,8 @@ async function handleRemove(client, message, args) {
 }
 
 async function handleList(client, message) {
+  const guildService = getService('guild');
+  
   try {
     const loggingConfigs = await guildService.getLoggingConfig(message.guild.id);
 

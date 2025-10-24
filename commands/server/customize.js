@@ -7,12 +7,13 @@ module.exports = {
   aliases: ['custom'],
   description: 'Customize the bot\'s server profile (avatar, banner, bio)',
   usage: `{guildprefix}customize avatar [image url/attachment]
-{guildprefix}customize avatar reset
+{guildprefix}customize avatar (no args to reset)
 {guildprefix}customize banner [image url/attachment]
-{guildprefix}customize banner reset
+{guildprefix}customize banner (no args to reset)
 {guildprefix}customize bio [bio text]
-{guildprefix}customize bio reset`,
+{guildprefix}customize bio (no args to reset)`,
   permission: "Server Owner",
+  cooldowns: 300, // 5 minutes in seconds
 
   run: async (client, message, args) => {
 
@@ -34,8 +35,20 @@ module.exports = {
 
     // Handle avatar customization
     if (subcommand === 'avatar') {
-      // Reset avatar to global
-      if (args[1] && args[1].toLowerCase() === 'reset') {
+      // Get image URL from attachment or argument
+      let imageUrl = args[1];
+
+      if (message.attachments.size > 0) {
+        const attachment = message.attachments.first();
+        if (attachment.contentType && attachment.contentType.startsWith('image/')) {
+          imageUrl = attachment.url;
+        } else {
+          return embeds.warn(message, 'Please provide a valid image attachment');
+        }
+      }
+
+      // If no image URL or attachment, reset to global
+      if (!imageUrl) {
         try {
           console.log('[CUSTOMIZE] Resetting server avatar to global');
 
@@ -54,22 +67,6 @@ module.exports = {
           console.error('[CUSTOMIZE] Error code:', error.code);
           return embeds.deny(message, `Failed to reset avatar: ${error.message}`);
         }
-      }
-
-      // Get image URL from attachment or argument
-      let imageUrl = args[1];
-
-      if (message.attachments.size > 0) {
-        const attachment = message.attachments.first();
-        if (attachment.contentType && attachment.contentType.startsWith('image/')) {
-          imageUrl = attachment.url;
-        } else {
-          return embeds.warn(message, 'Please provide a valid image attachment');
-        }
-      }
-
-      if (!imageUrl) {
-        return embeds.warn(message, 'Please provide an image URL or attach an image');
       }
 
       // Validate URL format
@@ -142,8 +139,20 @@ module.exports = {
 
     // Handle banner customization
     if (subcommand === 'banner') {
-      // Reset banner to global
-      if (args[1] && args[1].toLowerCase() === 'reset') {
+      // Get image URL from attachment or argument
+      let imageUrl = args[1];
+
+      if (message.attachments.size > 0) {
+        const attachment = message.attachments.first();
+        if (attachment.contentType && attachment.contentType.startsWith('image/')) {
+          imageUrl = attachment.url;
+        } else {
+          return embeds.warn(message, 'Please provide a valid image attachment');
+        }
+      }
+
+      // If no image URL or attachment, reset to global
+      if (!imageUrl) {
         try {
           console.log('[CUSTOMIZE] Resetting server banner to global');
 
@@ -162,22 +171,6 @@ module.exports = {
           console.error('[CUSTOMIZE] Error code:', error.code);
           return embeds.deny(message, `Failed to reset banner: ${error.message}`);
         }
-      }
-
-      // Get image URL from attachment or argument
-      let imageUrl = args[1];
-
-      if (message.attachments.size > 0) {
-        const attachment = message.attachments.first();
-        if (attachment.contentType && attachment.contentType.startsWith('image/')) {
-          imageUrl = attachment.url;
-        } else {
-          return embeds.warn(message, 'Please provide a valid image attachment');
-        }
-      }
-
-      if (!imageUrl) {
-        return embeds.warn(message, 'Please provide an image URL or attach an image');
       }
 
       // Validate URL format
@@ -250,8 +243,11 @@ module.exports = {
 
     // Handle bio customization
     if (subcommand === 'bio') {
-      // Reset bio to global
-      if (args[1] && args[1].toLowerCase() === 'reset') {
+      // Get bio text
+      const bioText = args.slice(1).join(' ');
+
+      // If no bio text, reset to global
+      if (!bioText) {
         try {
           console.log('[CUSTOMIZE] Resetting server bio to global');
 
@@ -270,13 +266,6 @@ module.exports = {
           console.error('[CUSTOMIZE] Error code:', error.code);
           return embeds.deny(message, `Failed to reset bio: ${error.message}`);
         }
-      }
-
-      // Get bio text
-      const bioText = args.slice(1).join(' ');
-
-      if (!bioText) {
-        return embeds.warn(message, 'Please provide a bio text or use `reset` to clear it');
       }
 
       // Discord bio has a 190 character limit
