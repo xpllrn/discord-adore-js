@@ -70,16 +70,16 @@ async function handleUserBlacklist(client, message, args) {
   if (!client.permissions.checkBotAction(message, targetUser)) return;
 
   try {
-    const systemCache = require('../../database/cache/models/system');
+    const { getService } = require('@services'); const systemService = getService('system');
 
-    const wasBlacklisted = await systemCache.getUserBlacklist(userId);
+    const wasBlacklisted = await systemService.getUserBlacklist(userId);
     const newBlacklistStatus = !wasBlacklisted;
 
     let success;
     if (newBlacklistStatus) {
-      success = await systemCache.addUserBlacklist(userId, reason, message.author.id);
+      success = await systemService.addUserBlacklist(userId, reason, message.author.id);
     } else {
-      success = await systemCache.removeUserBlacklist(userId);
+      success = await systemService.removeUserBlacklist(userId);
     }
 
     if (!success) {
@@ -109,16 +109,16 @@ async function handleServerBlacklist(client, message, args) {
   }
 
   try {
-    const systemCache = require('../../database/cache/models/system');
+    const { getService } = require('@services'); const systemService = getService('system');
 
-    const wasBlacklisted = await systemCache.getServerBlacklist(serverId);
+    const wasBlacklisted = await systemService.getServerBlacklist(serverId);
     const newBlacklistStatus = !wasBlacklisted;
 
     let success;
     if (newBlacklistStatus) {
-      success = await systemCache.addServerBlacklist(serverId, reason, message.author.id);
+      success = await systemService.addServerBlacklist(serverId, reason, message.author.id);
     } else {
-      success = await systemCache.removeServerBlacklist(serverId);
+      success = await systemService.removeServerBlacklist(serverId);
     }
 
     if (!success) {
@@ -181,8 +181,8 @@ function createPaginatedList(message, items, title, itemsPerPage = 6) {
 
 async function listBlacklistedUsers(client, message) {
   try {
-    const systemCache = require('../../database/cache/models/system');
-    const blacklistedUsers = await systemCache.getAllBlacklistedUsers();
+    const { getService } = require('@services'); const systemService = getService('system');
+    const blacklistedUsers = await systemService.getAllBlacklistedUsers();
 
     if (blacklistedUsers.length === 0) {
       return embeds.info(message, 'No users are currently **blacklisted**.');
@@ -208,8 +208,8 @@ async function listBlacklistedUsers(client, message) {
 
 async function listBlacklistedServers(client, message) {
   try {
-    const systemCache = require('../../database/cache/models/system');
-    const blacklistedServers = await systemCache.getAllBlacklistedServers();
+    const { getService } = require('@services'); const systemService = getService('system');
+    const blacklistedServers = await systemService.getAllBlacklistedServers();
 
     if (blacklistedServers.length === 0) {
       return embeds.info(message, 'No servers are currently **blacklisted**.');

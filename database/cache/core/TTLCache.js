@@ -8,7 +8,7 @@ class TTLCache {
     this.defaultTTL = options.defaultTTL || 30 * 60 * 1000; // 30 minutes default
     this.cleanupInterval = options.cleanupInterval || 5 * 60 * 1000; // 5 minutes cleanup
     this.maxSize = options.maxSize || 10000; // Max entries to prevent memory issues
-    
+
     // Statistics
     this.stats = {
       hits: 0,
@@ -18,7 +18,7 @@ class TTLCache {
       evictions: 0,
       cleanups: 0
     };
-    
+
     // Start cleanup timer
     this.startCleanupTimer();
   }
@@ -30,12 +30,12 @@ class TTLCache {
    */
   get(key) {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       this.stats.misses++;
       return null;
     }
-    
+
     // Check if expired
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
@@ -43,7 +43,7 @@ class TTLCache {
       this.stats.evictions++;
       return null;
     }
-    
+
     this.stats.hits++;
     return entry.value;
   }
@@ -59,14 +59,14 @@ class TTLCache {
     if (this.cache.size >= this.maxSize) {
       this.evictOldest();
     }
-    
+
     const expiresAt = Date.now() + ttl;
     this.cache.set(key, {
       value,
       expiresAt,
       createdAt: Date.now()
     });
-    
+
     this.stats.sets++;
   }
 
@@ -78,11 +78,11 @@ class TTLCache {
   delete(key) {
     const existed = this.cache.has(key);
     this.cache.delete(key);
-    
+
     if (existed) {
       this.stats.deletes++;
     }
-    
+
     return existed;
   }
 
@@ -93,18 +93,18 @@ class TTLCache {
    */
   has(key) {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return false;
     }
-    
+
     // Check if expired
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       this.stats.evictions++;
       return false;
     }
-    
+
     return true;
   }
 
@@ -115,13 +115,13 @@ class TTLCache {
   keys() {
     const validKeys = [];
     const now = Date.now();
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (now <= entry.expiresAt) {
         validKeys.push(key);
       }
     }
-    
+
     return validKeys;
   }
 
@@ -178,17 +178,17 @@ class TTLCache {
   cleanup() {
     const now = Date.now();
     let cleaned = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expiresAt) {
         this.cache.delete(key);
         cleaned++;
       }
     }
-    
+
     this.stats.cleanups++;
     this.stats.evictions += cleaned;
-    
+
     return cleaned;
   }
 
@@ -198,14 +198,14 @@ class TTLCache {
   evictOldest() {
     let oldestKey = null;
     let oldestTime = Infinity;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (entry.createdAt < oldestTime) {
         oldestTime = entry.createdAt;
         oldestKey = key;
       }
     }
-    
+
     if (oldestKey) {
       this.cache.delete(oldestKey);
       this.stats.evictions++;

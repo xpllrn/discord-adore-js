@@ -4,7 +4,7 @@ const { ensureGuildData } = require('../../database');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 const config = require('../../config/setup');
 const { findChannel } = require('../../handlers/finder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: "leave",
@@ -19,6 +19,7 @@ module.exports = {
   permission: "Manage Guild",
 
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     // Show help if no subcommand provided
     if (!args[0]) return false;
@@ -45,7 +46,7 @@ module.exports = {
       const leavechannel = channelResult.channel;
 
       // Check leave message limit (5 max)
-      const currentLeaveMessages = await guildCache.getLeaveMessages(message.guild.id) || [];
+      const currentLeaveMessages = await guildService.getLeaveMessages(message.guild.id) || [];
       const existingLeaveMessage = currentLeaveMessages.find(lm => lm.channelId === leavechannel.id);
 
       if (!existingLeaveMessage && currentLeaveMessages.length >= 5) {
@@ -53,16 +54,9 @@ module.exports = {
       }
 
       try {
-        // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.guildCache.areWritesEnabled()) {
-          // Force enable writes if they're not enabled yet
-          cacheManager.enableWrites();
-        }
 
         // Add leave message using new cache system
-        await guildCache.addLeaveMessage(message.guild.id, leavechannel.id, leavemessage);
+        await guildService.addLeaveMessage(message.guild.id, leavechannel.id, leavemessage);
 
         const action = existingLeaveMessage ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **leave message** for ${leavechannel}`);
@@ -88,14 +82,14 @@ module.exports = {
       const leavechannel = channelResult.channel;
 
       // Check if leave message exists for this channel
-      const existingLeaveMessage = await guildCache.getLeaveMessage(message.guild.id, leavechannel.id);
+      const existingLeaveMessage = await guildService.getLeaveMessage(message.guild.id, leavechannel.id);
       if (!existingLeaveMessage) {
         return embeds.warn(message, `No **leave message** exists for ${leavechannel}`);
       }
 
       try {
         // Remove leave message using new cache system
-        await guildCache.removeLeaveMessage(message.guild.id, leavechannel.id);
+        await guildService.removeLeaveMessage(message.guild.id, leavechannel.id);
 
         return embeds.success(message, `Removed the **leave message** for ${leavechannel}`);
       } catch (error) {
@@ -120,7 +114,7 @@ module.exports = {
       const leavechannel = channelResult.channel;
 
       // Check if leave message exists for this channel
-      const existingLeaveMessage = await guildCache.getLeaveMessage(message.guild.id, leavechannel.id);
+      const existingLeaveMessage = await guildService.getLeaveMessage(message.guild.id, leavechannel.id);
       if (!existingLeaveMessage) {
         return embeds.warn(message, `No **leave message** to preview for ${leavechannel}`);
       }
@@ -146,7 +140,7 @@ module.exports = {
 
     } else if (args[0] === 'list') {
 
-      const leaveMessages = await guildCache.getLeaveMessages(message.guild.id) || [];
+      const leaveMessages = await guildService.getLeaveMessages(message.guild.id) || [];
 
       if (leaveMessages.length === 0) {
         return embeds.warn(message, 'No **leave messages** have been setup yet');

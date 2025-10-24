@@ -5,7 +5,7 @@ const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
 const { ensureUserData } = require('../../database');
 const { createConfirmation } = require('../../core/buttons');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -16,6 +16,7 @@ module.exports = {
 {guildprefix}cnh [user]`,
   permission: 'dev',
   run: async(client, message, args) => {
+    const userService = getService('user');
 
     // Check dev permission (silent fail if not dev)
     if (!await hasPermissionLevel(message, 'dev')) return;
@@ -44,7 +45,7 @@ module.exports = {
     await ensureUserData(targetUser.id);
 
     try {
-      const nameHistory = await userCache.getNameHistory(targetUser.id);
+      const nameHistory = await userService.getNameHistory(targetUser.id);
 
       if (nameHistory.length === 0) {
         const username = targetMember ? targetMember.displayName : targetUser.username;
@@ -58,15 +59,8 @@ module.exports = {
         message,
         `Are you sure you want to **clear all name history** for **${username}**?`,
         async (interaction) => {
-          // Ensure cache writes are enabled before clearing
-          const { getCacheManager } = require('../../database/cache/core/CacheManager');
-          const cacheManager = getCacheManager();
-          if (!cacheManager.userCache.areWritesEnabled()) {
-            cacheManager.enableWrites();
-          }
-
-          // On approve: clear all name history
-          await userCache.clearAllNameHistory(targetUser.id);
+          // On approve: clear all name history using service layer
+          await userService.clearAllNameHistory(targetUser.id);
 
           // Edit the confirmation embed to show success message
           const successEmbed = embeds.createSuccess(message, `Cleared all name history for **${username}**`);

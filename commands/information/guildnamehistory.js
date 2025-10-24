@@ -4,7 +4,7 @@ const { hasPermissionLevel } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { ensureGuildData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -14,12 +14,13 @@ module.exports = {
   usage: `{guildprefix}guildnamehistory
 {guildprefix}gnh`,
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     // Ensure guild data exists in the database
     await ensureGuildData(message.guild.id);
 
     try {
-      const nameHistory = await guildCache.getGuildNameHistory(message.guild.id);
+      const nameHistory = await guildService.getGuildNameHistory(message.guild.id);
       
       if (nameHistory.length === 0) {
         return embeds.info(message, 'No guild name changes recorded for this server');

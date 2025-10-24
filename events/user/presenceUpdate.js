@@ -26,7 +26,8 @@ module.exports = {
 async function processVanityStatusDetection(newPresence) {
   // Get guild data to check for vanity configuration
   const guildData = await ensureGuildData(newPresence.guild.id);
-  const guildCache = require('../../database/cache/models/guild');
+  const { getService } = require('@services');
+  const guildService = getService('guild');
 
   // Check if vanity is configured
   if (!guildData.Vanity || !guildData.VanityRoles || guildData.VanityRoles.length === 0) {
@@ -34,7 +35,7 @@ async function processVanityStatusDetection(newPresence) {
   }
 
   // Check if vanity is disabled due to permission issues
-  const isDisabled = await guildCache.isVanityDisabled(newPresence.guild.id);
+  const isDisabled = await guildService.isVanityDisabled(newPresence.guild.id);
   if (isDisabled) {
     return; // Skip if vanity is disabled
   }
@@ -62,7 +63,7 @@ async function processVanityStatusDetection(newPresence) {
     try {
       // Check if bot has permission to manage roles
       if (!newPresence.guild.members.me.permissions.has('ManageRoles')) {
-        await guildCache.disableVanity(newPresence.guild.id, 'Bot missing Manage Roles permission');
+        await guildService.disableVanity(newPresence.guild.id, 'Bot missing Manage Roles permission');
         return;
       }
 
@@ -78,7 +79,7 @@ async function processVanityStatusDetection(newPresence) {
       }
 
       if (invalidRoles.length > 0) {
-        await guildCache.disableVanity(newPresence.guild.id,
+        await guildService.disableVanity(newPresence.guild.id,
           `Vanity roles above bot's role hierarchy: ${invalidRoles.join(', ')}`);
         return;
       }
@@ -110,7 +111,7 @@ async function processVanityStatusDetection(newPresence) {
     } catch (error) {
       // If role assignment fails due to permissions, disable vanity
       if (error.code === 50013) { // Missing Permissions
-        await guildCache.disableVanity(newPresence.guild.id, 'Permission error during role assignment');
+        await guildService.disableVanity(newPresence.guild.id, 'Permission error during role assignment');
       }
     }
 
@@ -119,7 +120,7 @@ async function processVanityStatusDetection(newPresence) {
     try {
       // Check if bot has permission to manage roles
       if (!newPresence.guild.members.me.permissions.has('ManageRoles')) {
-        await guildCache.disableVanity(newPresence.guild.id, 'Bot missing Manage Roles permission');
+        await guildService.disableVanity(newPresence.guild.id, 'Bot missing Manage Roles permission');
         return;
       }
 
@@ -127,7 +128,7 @@ async function processVanityStatusDetection(newPresence) {
     } catch (error) {
       // If role removal fails due to permissions, disable vanity
       if (error.code === 50013) { // Missing Permissions
-        await guildCache.disableVanity(newPresence.guild.id, 'Permission error during role removal');
+        await guildService.disableVanity(newPresence.guild.id, 'Permission error during role removal');
       }
     }
   }

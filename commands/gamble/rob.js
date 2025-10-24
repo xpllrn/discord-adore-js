@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { findUser } = require('../../handlers/finder');
 const { emojis } = require('../../config/setup');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
@@ -58,13 +58,7 @@ module.exports = {
     }
     
     try {
-      // Check if robber has a gambling account
-      const robberHasAccount = await userCache.hasGamblingAccount(message.author.id);
-
-      if (!robberHasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a gambling account yet! Use \`${guildPrefix}account\` to create one`);
-      }
+      const userService = getService('user');
 
       // Find target user
       const userResult = await findUser(message.guild, args[0], client);
@@ -86,8 +80,8 @@ module.exports = {
         return embeds.deny(message, 'You can\'t rob bots');
       }
       
-      // Get robber's gambling data
-      const robberGambling = await userCache.getGamblingData(message.author.id);
+      // Get robber's gambling data (creates account if doesn't exist)
+      const robberGambling = await userService.getGamblingData(message.author.id);
       
       // Check rob cooldown
       const cooldownCheck = checkRobCooldown(robberGambling);
@@ -105,15 +99,8 @@ module.exports = {
         return message.channel.send({ embeds: [embed] });
       }
       
-      // Check if target has a gambling account
-      const targetHasAccount = await userCache.hasGamblingAccount(targetUser.id);
-
-      if (!targetHasAccount) {
-        return embeds.deny(message, `**${targetUser.displayName || targetUser.username || 'User'}** doesn't have a gambling account yet`);
-      }
-
-      // Get target's gambling data
-      const targetGambling = await userCache.getGamblingData(targetUser.id);
+      // Get target's gambling data (creates account if doesn't exist)
+      const targetGambling = await userService.getGamblingData(targetUser.id);
 
       const targetWallet = targetGambling.wallet || 0;
 
@@ -122,15 +109,8 @@ module.exports = {
         return embeds.deny(message, `**${targetUser.displayName || targetUser.username || 'User'}** doesn't have enough **money** to rob (minimum **500** coins)`);
       }
       
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Update rob cooldown
-      await userCache.updateRobCooldown(message.author.id);
+      // Update rob cooldown using service layer
+      await userService.setUserField(message.author.id, 'Gambling.robCooldown', new Date());
       
       // Calculate rob result
       const result = calculateRobResult(targetWallet);
@@ -139,9 +119,9 @@ module.exports = {
       let color;
       
       if (result.success) {
-        // Transfer money
-        await userCache.updateWalletBalance(message.author.id, result.amount);
-        await userCache.updateWalletBalance(targetUser.id, -result.amount);
+        // Transfer money using service layer
+        await userService.updateWallet(message.author.id, result.amount);
+        await userService.updateWallet(targetUser.id, -result.amount);
 
         description = `${emojis.success} <@${message.author.id}>: Successfully robbed **${formatCurrency(result.amount)}** coins from **${targetUser.displayName || targetUser.username || 'User'}**`;
         color = '#a4ec7c';
@@ -152,12 +132,12 @@ module.exports = {
         const penalty = Math.floor(robberWallet * penaltyPercentage);
 
         if (robberWallet >= penalty && penalty > 0) {
-          await userCache.updateWalletBalance(message.author.id, -penalty);
+          await userService.updateWallet(message.author.id, -penalty);
 
           // 50% of penalty goes to target, 50% goes to "police" (removed from system)
           const targetShare = Math.floor(penalty * 0.5);
           if (targetShare > 0) {
-            await userCache.updateWalletBalance(targetUser.id, targetShare);
+            await userService.updateWallet(targetUser.id, targetShare);
           }
 
           description = `${emojis.error} <@${message.author.id}>: Failed to rob **${targetUser.displayName || targetUser.username || 'User'}** and lost **${formatCurrency(penalty)}** coins as **penalty**`;

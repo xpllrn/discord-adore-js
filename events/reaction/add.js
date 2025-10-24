@@ -30,14 +30,15 @@ module.exports = {
 
 async function processStarboard(reaction, user) {
   try {
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
     const message = reaction.message;
     const guild = message.guild;
 
     // Get starboard configuration
-    const starboardChannelId = await guildCache.getStarboardChannel(guild.id);
-    const starboardThreshold = await guildCache.getStarboardThreshold(guild.id);
-    const starboardEmoji = await guildCache.getStarboardEmoji(guild.id);
+    const starboardChannelId = await guildService.getStarboardChannel(guild.id);
+    const starboardThreshold = await guildService.getStarboardThreshold(guild.id);
+    const starboardEmoji = await guildService.getStarboardEmoji(guild.id);
 
     // Skip if starboard is not configured
     if (!starboardChannelId) return;
@@ -62,7 +63,7 @@ async function processStarboard(reaction, user) {
     const reactionCount = reaction.count;
 
     // Check if message already exists in starboard
-    const existingStarboardMessage = await guildCache.findStarboardMessage(guild.id, message.id);
+    const existingStarboardMessage = await guildService.findStarboardMessage(guild.id, message.id);
 
     if (reactionCount >= starboardThreshold) {
       if (existingStarboardMessage) {
@@ -80,11 +81,11 @@ async function processStarboard(reaction, user) {
           });
 
           // Update count in database
-          await guildCache.updateStarboardMessageCount(guild.id, message.id, reactionCount);
+          await guildService.updateStarboardMessageCount(guild.id, message.id, reactionCount);
         } catch (error) {
           console.error('Error updating starboard message:', error);
           // If starboard message was deleted, remove from database
-          await guildCache.removeStarboardMessage(guild.id, message.id);
+          await guildService.removeStarboardMessage(guild.id, message.id);
         }
       } else {
         // Create new starboard message
@@ -98,7 +99,7 @@ async function processStarboard(reaction, user) {
           });
 
           // Add to database
-          await guildCache.addStarboardMessage(
+          await guildService.addStarboardMessage(
             guild.id,
             message.id,
             starboardMessage.id,
@@ -121,7 +122,8 @@ async function processGiveaway(reaction, user) {
     // Skip if user is a bot
     if (user.bot) return;
 
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
     const message = reaction.message;
     const guild = message.guild;
 
@@ -129,7 +131,7 @@ async function processGiveaway(reaction, user) {
     if (reaction.emoji.name !== '🎉') return;
 
     // Check if this message is a giveaway
-    const giveaway = await guildCache.getGiveawayByMessageId(guild.id, message.id);
+    const giveaway = await guildService.getGiveawayByMessageId(guild.id, message.id);
     if (!giveaway || !giveaway.isActive) return;
 
     // Check if giveaway has ended
@@ -152,7 +154,7 @@ async function processGiveaway(reaction, user) {
 
     // Check level requirement
     if (giveaway.requirements.level) {
-      const userLevel = await guildCache.getUserLevel(guild.id, user.id);
+      const userLevel = await guildService.getUserLevel(guild.id, user.id);
       if (!userLevel || userLevel.level < giveaway.requirements.level) {
         eligible = false;
         reason = `Level ${giveaway.requirements.level}+ required`;
@@ -191,11 +193,11 @@ async function processGiveaway(reaction, user) {
     }
 
     // User is eligible, add them to participants
-    await guildCache.addGiveawayParticipant(guild.id, giveaway.id, user.id);
+    await guildService.addGiveawayParticipant(guild.id, giveaway.id, user.id);
 
     // Update the giveaway message footer with new participant count
     try {
-      const updatedGiveaway = await guildCache.getGiveaway(guild.id, giveaway.id);
+      const updatedGiveaway = await guildService.getGiveaway(guild.id, giveaway.id);
       if (updatedGiveaway) {
         const embed = message.embeds[0];
         if (embed) {

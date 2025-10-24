@@ -4,7 +4,7 @@ const { hasPermissionLevel } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { ensureGuildData } = require('../../database');
 const { createConfirmation } = require('../../core/buttons');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -15,6 +15,7 @@ module.exports = {
 {guildprefix}cgnh`,
   permission: 'dev',
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     // Check dev permission (silent fail if not dev)
     if (!await hasPermissionLevel(message, 'dev')) return;
@@ -23,7 +24,7 @@ module.exports = {
     await ensureGuildData(message.guild.id);
 
     try {
-      const nameHistory = await guildCache.getGuildNameHistory(message.guild.id);
+      const nameHistory = await guildService.getGuildNameHistory(message.guild.id);
 
       if (nameHistory.length === 0) {
         return embeds.warn(message, 'No guild name history to clear');
@@ -35,7 +36,7 @@ module.exports = {
         `Are you sure you want to **clear all guild name history** for **${message.guild.name}**?`,
         async (interaction) => {
           // On approve: clear all guild name history
-          await guildCache.clearAllGuildNameHistory(message.guild.id);
+          await guildService.clearAllGuildNameHistory(message.guild.id);
 
           // Edit the confirmation embed to show success message
           const successEmbed = embeds.createSuccess(message, `Cleared all guild name history for **${message.guild.name}**`);

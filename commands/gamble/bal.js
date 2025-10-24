@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { findUser } = require('../../handlers/finder');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 const { colors } = require('../../config/setup');
@@ -35,25 +35,16 @@ module.exports = {
     }
     
     try {
-      // Check if target user has a gambling account
-      const hasAccount = await userCache.hasGamblingAccount(targetUser.id);
+      const userService = getService('user');
 
-      if (!hasAccount) {
-        const isOwnBalance = targetUser.id === message.author.id;
-        const userText = isOwnBalance ? 'You don\'t' : `**${targetUser.displayName || targetUser.username || 'User'}** doesn't`;
-        let suggestion = '';
-        if (isOwnBalance) {
-          const guildPrefix = await getGuildPrefix(message.guild.id);
-          suggestion = ` Use \`${guildPrefix}account\` to create one!`;
-        }
-        return embeds.deny(message, `${userText} have a **gambling account** yet${suggestion}`);
+      // Get gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(targetUser.id);
+      
+      // Calculate and apply bank interest if method exists
+      let interestEarned = 0;
+      if (typeof userService.calculateBankInterest === 'function') {
+        interestEarned = await userService.calculateBankInterest(targetUser.id);
       }
-
-      // Calculate and apply bank interest first
-      const interestEarned = await userCache.calculateBankInterest(targetUser.id);
-
-      // Get updated gambling data
-      const gambling = await userCache.getGamblingData(targetUser.id);
 
       const walletBalance = gambling.wallet || 0;
       const bankBalance = gambling.bank || 0;

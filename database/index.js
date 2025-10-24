@@ -65,39 +65,6 @@ async function _performInitialization(connectionStrings) {
     // Mark database as fully ready
     isDatabaseFullyReady = true;
 
-    // Initialize cache system (preloading will be handled by ready event)
-    try {
-      const { getCacheManager, initializeCacheManager } = require('./cache/core/CacheManager');
-      
-      // Initialize cache manager first
-      const initSuccess = await initializeCacheManager();
-      console.log(`🔧 Cache manager initialization: ${initSuccess ? 'success' : 'failed'}`);
-      
-      const cacheManager = getCacheManager();
-      
-      // Start preloading but don't wait for it here - the ready event will handle waiting
-      if (cacheManager.initialized) {
-        // Start preloading in background - ready event will wait for completion
-        cacheManager.preloader.preloadAllData().catch((error) => {
-          console.log('⚠️ Cache preloading failed:', error.message);
-          // Enable writes anyway as fallback
-          cacheManager.enableWrites();
-        });
-      }
-      
-    } catch (error) {
-      console.error('❌ Cache system initialization failed:', error.message);
-      // Try to enable writes anyway as emergency fallback
-      try {
-        const { getCacheManager } = require('./cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        cacheManager.enableWrites();
-        console.log('⚠️ Enabled cache writes despite initialization failure');
-      } catch (fallbackError) {
-        console.error('❌ Failed to enable cache writes as fallback:', fallbackError.message);
-      }
-    }
-
     // Initialize graceful shutdown system
     try {
       const shutdownManager = getShutdownManager();
@@ -109,15 +76,7 @@ async function _performInitialization(connectionStrings) {
         await connection.disconnect(false);
       }, 10); // High priority
 
-      // Add cache shutdown handlers
-      shutdownManager.addShutdownHandler('cache', async () => {
-        console.log('🔄 Shutting down cache system...');
-        const { getCacheManager } = require('./cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (cacheManager.initialized) {
-          await cacheManager.shutdown();
-        }
-      }, 20);
+
 
       // Add health checks
       shutdownManager.addHealthCheck('database', async () => {
@@ -125,11 +84,7 @@ async function _performInitialization(connectionStrings) {
         return health.overall;
       }, 60000);
 
-      shutdownManager.addHealthCheck('cache', async () => {
-        const { getCacheManager } = require('./cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        return cacheManager.initialized && cacheManager.guildCache.size() >= 0;
-      }, 60000);
+
 
       // Add error recovery handlers
       shutdownManager.addErrorRecoveryHandler('database-reconnect', async (type, error) => {

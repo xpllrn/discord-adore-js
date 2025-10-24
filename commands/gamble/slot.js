@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 
 // Utility functions embedded within the command
@@ -44,16 +44,10 @@ module.exports = {
     }
     
     try {
-      // Check if user has a gambling account
-      const hasAccount = await userCache.hasGamblingAccount(message.author.id);
-      
-      if (!hasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a **gambling account** yet! Use \`${guildPrefix}account\` to create one`);
-      }
+      const userService = getService('user');
 
-      // Get user's gambling data
-      const gambling = await userCache.getGamblingData(message.author.id);
+      // Get user's gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(message.author.id);
       const walletBalance = gambling.wallet || 0;
       
       if (walletBalance <= 0) {
@@ -76,15 +70,8 @@ module.exports = {
         amount = 100000;
       }
 
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Deduct the bet amount first
-      await userCache.updateWalletBalance(message.author.id, -amount);
+      // Deduct the bet amount first using service layer
+      await userService.updateWallet(message.author.id, -amount);
 
       // Slot machine outcomes with exact probabilities for 3-matching symbols
       // WIN RATE: 50% total
@@ -196,17 +183,17 @@ module.exports = {
 
         if (selectedOutcome.multiplier === 1) {
           // Triple bananas - break even (return bet)
-          await userCache.updateWalletBalance(message.author.id, winnings);
-          await userCache.updateGamblingStats(message.author.id, amount, 0, 0); // No net gain/loss
+          await userService.updateWallet(message.author.id, winnings);
+          await userService.updateGamblingStats(message.author.id, amount, 0, 0); // No net gain/loss
           resultText = 'You **broke even**. Your bet was returned!';
         } else {
-          await userCache.updateWalletBalance(message.author.id, winnings);
-          await userCache.updateGamblingStats(message.author.id, amount, winnings - amount, 0);
+          await userService.updateWallet(message.author.id, winnings);
+          await userService.updateGamblingStats(message.author.id, amount, winnings - amount, 0);
           resultText = `You **won**! Congratulations on your jackpot!`;
         }
       } else {
         // No match - lose bet (money already deducted at the beginning)
-        await userCache.updateGamblingStats(message.author.id, amount, 0, amount);
+        await userService.updateGamblingStats(message.author.id, amount, 0, amount);
         resultText = 'You **lost**. Better luck next time!';
       }
 

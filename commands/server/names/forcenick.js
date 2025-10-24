@@ -2,7 +2,7 @@ const { PermissionFlagsBits, EmbedBuilder } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const guildCache = require('../../../database/cache/models/guild');
+const { getService } = require('@services');
 const { createPagination, createConfirmation } = require('../../../core/buttons');
 const config = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
@@ -32,7 +32,7 @@ module.exports = {
     // Handle list subcommand
     if (args[0] === 'list') {
       try {
-        const forcedNicks = await guildCache.getAllForceNicks(message.guild.id);
+        const forcedNicks = await guildService.getAllForceNicks(message.guild.id);
 
         if (forcedNicks.length === 0) {
           return embeds.warn(message, 'No forced nicknames found in this server');
@@ -49,7 +49,7 @@ module.exports = {
             });
           } else {
             // Clean up database - remove forced nicknames for users no longer in server
-            await guildCache.removeForceNick(message.guild.id, forcedNick.userId);
+            await guildService.removeForceNick(message.guild.id, forcedNick.userId);
           }
         }
 
@@ -107,7 +107,7 @@ module.exports = {
     // Handle reset subcommand
     if (args[0] === 'reset') {
       try {
-        const forcedNicks = await guildCache.getAllForceNicks(message.guild.id);
+        const forcedNicks = await guildService.getAllForceNicks(message.guild.id);
 
         if (forcedNicks.length === 0) {
           return embeds.warn(message, 'No forced nicknames found to reset');
@@ -119,7 +119,7 @@ module.exports = {
           `Are you sure you want to **remove all ${forcedNicks.length} forced nicknames**?`,
           async (interaction) => {
             // On approve: delete all forced nicknames using cache system
-            await guildCache.clearAllForceNicks(message.guild.id);
+            await guildService.clearAllForceNicks(message.guild.id);
 
             // Edit the confirmation embed to show success message
             const successEmbed = new EmbedBuilder()
@@ -161,13 +161,13 @@ module.exports = {
     try {
       if (!nickname) {
         // Remove forced nickname using cache system
-        const existingForcenick = await guildCache.getForceNick(message.guild.id, member.user.id);
+        const existingForcenick = await guildService.getForceNick(message.guild.id, member.user.id);
 
         if (!existingForcenick) {
           return embeds.warn(message, `**${member.user.tag}** doesn't have a forced nickname`);
         }
 
-        await guildCache.removeForceNick(message.guild.id, member.user.id);
+        await guildService.removeForceNick(message.guild.id, member.user.id);
 
         return embeds.success(message, `Removed forced nickname for **${member.user.tag}**`);
 
@@ -181,7 +181,7 @@ module.exports = {
         await member.setNickname(nickname, `Forced nickname by ${message.author.tag}`);
 
         // Save using cache system
-        await guildCache.setForceNick(message.guild.id, member.user.id, nickname, message.author.id);
+        await guildService.setForceNick(message.guild.id, member.user.id, nickname, message.author.id);
 
         return embeds.success(message, `**${member.user.tag}** now has a forced nickname: **${nickname}**`);
       }

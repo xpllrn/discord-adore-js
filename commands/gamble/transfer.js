@@ -1,5 +1,5 @@
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { findUser } = require('../../handlers/finder');
 const { runHelpCommand, getGuildPrefix } = require('../../utils/commandProcessor');
 
@@ -47,13 +47,7 @@ module.exports = {
     }
     
     try {
-      // Check if sender has a gambling account
-      const senderHasAccount = await userCache.hasGamblingAccount(message.author.id);
-
-      if (!senderHasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a gambling account yet! Use \`${guildPrefix}account\` to create one`);
-      }
+      const userService = getService('user');
 
       // Find target user
       const userResult = await findUser(message.guild, args[0], client);
@@ -80,15 +74,11 @@ module.exports = {
         return embeds.deny(message, 'You can\'t give money to bots');
       }
 
-      // Check if target has a gambling account
-      const targetHasAccount = await userCache.hasGamblingAccount(targetUser.id);
-
-      if (!targetHasAccount) {
-        return embeds.deny(message, `**${targetUser.displayName || targetUser.username || 'User'}** doesn't have a **gambling account** yet`);
-      }
+      // Get sender's gambling data (creates account if doesn't exist)
+      const senderGambling = await userService.getGamblingData(message.author.id);
       
-      // Get sender's gambling data
-      const senderGambling = await userCache.getGamblingData(message.author.id);
+      // Ensure target has an account (creates if doesn't exist)
+      await userService.getGamblingData(targetUser.id);
       const walletBalance = senderGambling.wallet || 0;
       
       if (walletBalance <= 0) {
@@ -111,16 +101,9 @@ module.exports = {
         return embeds.deny(message, 'Minimum transfer amount is 10 coins');
       }
       
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Transfer money
-      await userCache.updateWalletBalance(message.author.id, -amount);
-      await userCache.updateWalletBalance(targetUser.id, amount);
+      // Transfer money using service layer
+      await userService.updateWallet(message.author.id, -amount);
+      await userService.updateWallet(targetUser.id, amount);
       
       return embeds.success(message, `Transferred **${formatCurrency(amount)}** coins to **${targetUser.displayName || targetUser.username || 'User'}**`);
       

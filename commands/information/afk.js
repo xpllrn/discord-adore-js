@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const { embeds } = require('../../core/embeds');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const { colors } = require('../../config/setup');
 
 module.exports = {
@@ -8,21 +8,21 @@ module.exports = {
   description: `Set an AFK status for when you are mentioned`,
   usage: `{guildprefix}afk [reason]`,
   run: async(client, message, args) => {
-
+    const guildService = getService('guild');
     const content = args.join(" ") || "AFK";
 
     try {
-      // Check if user is already AFK using cache system
-      const existingAFK = await guildCache.getAFKStatus(message.guild.id, message.author.id);
+      // Check if user is already AFK using service layer
+      const existingAFK = await guildService.getAFKStatus(message.guild.id, message.author.id);
 
       if (existingAFK) {
         // User is already AFK, remove AFK status
-        await guildCache.removeAFKStatus(message.guild.id, message.author.id);
+        await guildService.removeAFKStatus(message.guild.id, message.author.id);
 
         return embeds.success(message, 'Your **AFK** status has been removed');
       } else {
-        // Set user as AFK using cache system
-        await guildCache.setAFKStatus(message.guild.id, message.author.id, content);
+        // Set user as AFK using service layer
+        await guildService.setAFKStatus(message.guild.id, message.author.id, content);
 
         const embed = new EmbedBuilder()
           .setColor(colors.success)

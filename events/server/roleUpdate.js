@@ -1,6 +1,6 @@
 const webhookLogger = require('../../utils/webhookLogger');
 const { AuditLogEvent } = require('discord.js');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: 'roleUpdate',
@@ -100,11 +100,13 @@ module.exports = {
 // Handle booster role hierarchy management
 async function handleBoosterRoleHierarchy(oldRole, newRole) {
   try {
+    const guildService = getService('guild');
+    
     // Check if booster role system is enabled
-    const isEnabled = await guildCache.isBoosterRoleSystemEnabled(newRole.guild.id);
+    const isEnabled = await guildService.isBoosterRoleSystemEnabled(newRole.guild.id);
     if (!isEnabled) return;
 
-    const baseRoleId = await guildCache.getBoosterRoleBaseRole(newRole.guild.id);
+    const baseRoleId = await guildService.getBoosterRoleBaseRole(newRole.guild.id);
     if (!baseRoleId) return;
 
     // Check if this is the base role being moved
@@ -115,7 +117,7 @@ async function handleBoosterRoleHierarchy(oldRole, newRole) {
     }
 
     // Check if this is a booster role
-    const boosterRole = await guildCache.getBoosterRoleByRoleId(newRole.guild.id, newRole.id);
+    const boosterRole = await guildService.getBoosterRoleByRoleId(newRole.guild.id, newRole.id);
     if (!boosterRole) return;
 
     // This is a booster role, ensure it's positioned correctly
@@ -129,7 +131,7 @@ async function handleBoosterRoleHierarchy(oldRole, newRole) {
         await newRole.edit({ position: targetPosition });
 
         // Update last used time since role was modified
-        await guildCache.updateBoosterRoleLastUsed(newRole.guild.id, boosterRole.id);
+        await guildService.updateBoosterRoleLastUsed(newRole.guild.id, boosterRole.id);
       } catch (error) {
         // Silent fail if can't reposition role
       }
@@ -143,10 +145,12 @@ async function handleBoosterRoleHierarchy(oldRole, newRole) {
 // Reposition all booster roles below the base role
 async function repositionAllBoosterRoles(guild, baseRoleId) {
   try {
+    const guildService = getService('guild');
+    
     const baseRole = guild.roles.cache.get(baseRoleId);
     if (!baseRole) return;
 
-    const boosterRoles = await guildCache.getBoosterRoles(guild.id);
+    const boosterRoles = await guildService.getBoosterRoles(guild.id);
     if (boosterRoles.length === 0) return;
 
     // Get all Discord roles for booster roles

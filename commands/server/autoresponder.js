@@ -4,7 +4,7 @@ const { hasDiscordPermission } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { ensureGuildData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -17,6 +17,7 @@ module.exports = {
 {guildprefix}autoresponder reset`,
   permission: 'Manage Channels',
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
@@ -101,20 +102,20 @@ module.exports = {
       }
 
       // Check if autoresponder already exists using cache system
-      const existingResponder = await guildCache.findAutoResponder(message.guild.id, trigger);
+      const existingResponder = await guildService.findAutoResponder(message.guild.id, trigger);
 
       if (existingResponder) {
         return embeds.deny(message, `An autoresponder for **${trigger}** already exists`);
       }
 
       // Check autoresponder limit (50 max)
-      const currentAutoResponders = await guildCache.getAutoResponders(message.guild.id) || [];
+      const currentAutoResponders = await guildService.getAutoResponders(message.guild.id) || [];
       if (currentAutoResponders.length >= 50) {
         return embeds.deny(message, 'You have reached the **maximum autoresponders (50)**. Please remove some first.');
       }
 
       // Save using cache system
-      await guildCache.addAutoResponder(message.guild.id, trigger, response, options);
+      await guildService.addAutoResponder(message.guild.id, trigger, response, options);
 
       // Build options display
       let optionsDisplay = [];
@@ -130,7 +131,7 @@ module.exports = {
       
     } else if (args[0] === 'reset') {
 
-      const data = await guildCache.getAutoResponders(message.guild.id);
+      const data = await guildService.getAutoResponders(message.guild.id);
 
       if (data && data.length > 0) {
         // Show confirmation dialog
@@ -139,7 +140,7 @@ module.exports = {
           'Are you sure you want to **remove all autoresponders**?',
           async (interaction) => {
             // On approve: delete all autoresponders using cache system
-            await guildCache.clearAllAutoResponders(message.guild.id);
+            await guildService.clearAllAutoResponders(message.guild.id);
 
             // Edit the confirmation embed to show success message
             const successEmbed = new EmbedBuilder()
@@ -157,7 +158,7 @@ module.exports = {
 
     } else if (args[0] === 'list') {
 
-      const data = await guildCache.getAutoResponders(message.guild.id);
+      const data = await guildService.getAutoResponders(message.guild.id);
 
       if (data && data.length > 0) {
         // Format page function for pagination
@@ -197,10 +198,10 @@ module.exports = {
       }
 
       // Check if autoresponder exists using cache system
-      const data = await guildCache.findAutoResponder(message.guild.id, trigger);
+      const data = await guildService.findAutoResponder(message.guild.id, trigger);
 
       if (data) {
-        await guildCache.removeAutoResponder(message.guild.id, trigger);
+        await guildService.removeAutoResponder(message.guild.id, trigger);
         return embeds.success(message, `Removed autoresponder for **${trigger}**`);
       } else {
         return embeds.deny(message, `No autoresponder found for **${trigger}**`);

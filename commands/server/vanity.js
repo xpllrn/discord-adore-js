@@ -5,7 +5,7 @@ const { checkBotRoleHierarchy } = require('../../utils/permissions');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 const config = require('../../config/setup');
 const { findRole, findChannel } = require('../../handlers/finder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: "vanity",
@@ -110,13 +110,6 @@ module.exports = {
       const isUpdate = globaldata.VanityLogChannel && globaldata.VanityMessage;
 
       try {
-        // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.guildCache.areWritesEnabled()) {
-          // Force enable writes if they're not enabled yet
-          cacheManager.enableWrites();
-        }
 
         // Update both database and cache
         globaldata.VanityLogChannel = vanitychannel.id;
@@ -124,7 +117,7 @@ module.exports = {
         await globaldata.save();
 
         // Update cache to ensure sync
-        await guildCache.setVanityMessage(message.guild.id, vanitychannel.id, vanitymessage);
+        await guildService.setVanityMessage(message.guild.id, vanitychannel.id, vanitymessage);
 
         const action = isUpdate ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **vanity message** for ${vanitychannel}`);
@@ -158,7 +151,7 @@ module.exports = {
         await globaldata.save();
 
         // Update cache to ensure sync
-        await guildCache.removeVanityMessage(message.guild.id);
+        await guildService.removeVanityMessage(message.guild.id);
 
         return embeds.success(message, `Removed the **vanity message** for ${vanitychannel}`);
       } catch (error) {
@@ -215,7 +208,7 @@ module.exports = {
       }
 
       // Check if vanity is disabled
-      const vanityDisabledInfo = await guildCache.getVanityDisabledInfo(message.guild.id);
+      const vanityDisabledInfo = await guildService.getVanityDisabledInfo(message.guild.id);
 
       // Add status information
       const isConfigured = globaldata.Vanity && globaldata.VanityRoles && globaldata.VanityRoles.length > 0;
@@ -258,7 +251,7 @@ module.exports = {
     } else if (args[0] === 'enable') {
 
       // Check if vanity is currently disabled
-      const vanityDisabledInfo = await guildCache.getVanityDisabledInfo(message.guild.id);
+      const vanityDisabledInfo = await guildService.getVanityDisabledInfo(message.guild.id);
       if (!vanityDisabledInfo.disabled) {
         return embeds.warn(message, 'Vanity system is not disabled');
       }
@@ -290,7 +283,7 @@ module.exports = {
       }
 
       // Re-enable vanity
-      await guildCache.enableVanity(message.guild.id);
+      await guildService.enableVanity(message.guild.id);
       return embeds.success(message,
         `Successfully **re-enabled** the vanity system!\n\n` +
         `**Previous disable reason:** ${vanityDisabledInfo.reason}`

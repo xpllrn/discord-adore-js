@@ -4,7 +4,7 @@ const { checkUserRoleHierarchy, checkBotRoleHierarchy } = require('../../utils/p
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { ensureGuildData } = require('../../database');
 const { createConfirmation } = require('../../core/buttons');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 const { findRole } = require('../../handlers/finder');
 
@@ -18,6 +18,7 @@ module.exports = {
 {guildprefix}autorole reset`,
   permission: 'Manage Guild & Manage Roles',
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     await ensureGuildData(message.guild.id);
 
@@ -44,7 +45,7 @@ module.exports = {
       if (!checkBotRoleHierarchy(message, role)) return;
 
       // Get current auto roles using cache system
-      const currentAutoRoles = await guildCache.getAutoRoles(message.guild.id) || [];
+      const currentAutoRoles = await guildService.getAutoRoles(message.guild.id) || [];
 
       // Check if role is already in autoroles
       if (currentAutoRoles.includes(role.id)) {
@@ -57,7 +58,7 @@ module.exports = {
       }
 
       // Add the new role using cache system
-      await guildCache.addAutoRole(message.guild.id, role.id);
+      await guildService.addAutoRole(message.guild.id, role.id);
 
       return embeds.success(message, `**${role.name}** has been added to auto roles`);
 
@@ -65,7 +66,7 @@ module.exports = {
 
     } else if (args[0] === 'reset') {
 
-      const autoRoles = await guildCache.getAutoRoles(message.guild.id);
+      const autoRoles = await guildService.getAutoRoles(message.guild.id);
 
       if (autoRoles && autoRoles.length > 0) {
         // Show confirmation dialog
@@ -74,7 +75,7 @@ module.exports = {
           'Are you sure you want to **remove all auto roles**?',
           async (interaction) => {
             // On approve: delete all auto roles using cache system
-            await guildCache.clearAllAutoRoles(message.guild.id);
+            await guildService.clearAllAutoRoles(message.guild.id);
 
             // Edit the confirmation embed to show success message
             const successEmbed = new EmbedBuilder()
@@ -92,7 +93,7 @@ module.exports = {
 
     } else if (args[0] === 'list') {
 
-      const autoRoles = await guildCache.getAutoRoles(message.guild.id);
+      const autoRoles = await guildService.getAutoRoles(message.guild.id);
 
       if (autoRoles && autoRoles.length > 0) {
         // Clean up invalid roles before displaying
@@ -103,7 +104,7 @@ module.exports = {
             validRoles.push(roleId);
           } else {
             // Remove invalid role using cache system
-            await guildCache.removeAutoRole(message.guild.id, roleId);
+            await guildService.removeAutoRole(message.guild.id, roleId);
           }
         }
 
@@ -148,7 +149,7 @@ module.exports = {
       }
 
       const role = roleResult.role;
-      const autoRoles = await guildCache.getAutoRoles(message.guild.id);
+      const autoRoles = await guildService.getAutoRoles(message.guild.id);
 
       if (autoRoles && autoRoles.length > 0) {
         if (!autoRoles.includes(role.id)) {
@@ -156,7 +157,7 @@ module.exports = {
         }
 
         // Remove the role using cache system
-        await guildCache.removeAutoRole(message.guild.id, role.id);
+        await guildService.removeAutoRole(message.guild.id, role.id);
 
         return embeds.success(message, `Removed **${role.name}** from auto roles`);
       } else {

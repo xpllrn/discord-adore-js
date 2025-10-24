@@ -1,6 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 const { colors } = require('../../config/setup');
 
@@ -44,16 +44,10 @@ module.exports = {
     }
     
     try {
-      // Check if user has a gambling account
-      const hasAccount = await userCache.hasGamblingAccount(message.author.id);
+      const userService = getService('user');
       
-      if (!hasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a **gambling account** yet! Use \`${guildPrefix}account\` to create one`);
-      }
-      
-      // Get user's gambling data
-      const gambling = await userCache.getGamblingData(message.author.id);
+      // Get user's gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(message.author.id);
       const walletBalance = gambling.wallet || 0;
       
       // Parse amount
@@ -72,15 +66,8 @@ module.exports = {
         amount = 100000;
       }
 
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Deduct the bet amount immediately
-      await userCache.updateWalletBalance(message.author.id, -amount);
+      // Deduct the bet amount immediately using service layer
+      await userService.updateWallet(message.author.id, -amount);
 
       // Generate crash point at game start (like real crash games)
       const crashPoint = generateCrashPoint();
@@ -129,7 +116,7 @@ module.exports = {
 
           if (!cashedOut) {
             // Player lost - crashed before cashing out
-            await userCache.updateGamblingStats(message.author.id, amount, 0, amount);
+            await userService.updateGamblingStats(message.author.id, amount, 0, amount);
 
             const loseEmbed = new EmbedBuilder()
               .setColor(colors.error)
@@ -189,9 +176,9 @@ module.exports = {
         winnings = Math.floor(amount * currentMultiplier);
         const profit = winnings - amount;
         
-        // Add winnings to wallet
-        await userCache.updateWalletBalance(message.author.id, winnings);
-        await userCache.updateGamblingStats(message.author.id, amount, profit, 0);
+        // Add winnings to wallet using service layer
+        await userService.updateWallet(message.author.id, winnings);
+        await userService.updateGamblingStats(message.author.id, amount, profit, 0);
         
         const winEmbed = new EmbedBuilder()
           .setColor(colors.success)

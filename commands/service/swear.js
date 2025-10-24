@@ -4,7 +4,7 @@ const { hasDiscordPermission } = require('../../utils/permissions');
 const { findUser } = require('../../handlers/finder');
 const { ensureGuildData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 const SWEAR_WORDS = [
@@ -61,7 +61,7 @@ module.exports = {
 {guildprefix}swear leaderboard
 {guildprefix}swear reset`,
   run: async(client, message, args) => {
-
+    const guildService = getService('guild');
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'list') {
@@ -80,7 +80,7 @@ module.exports = {
       }
       
       try {
-        const userData = await guildCache.getUserSwearData(message.guild.id, targetUser.id);
+        const userData = await guildService.getUserSwearData(message.guild.id, targetUser.id);
         
         if (!userData || userData.swears.length === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
@@ -124,13 +124,13 @@ module.exports = {
 
     } else if (args[0] === 'leaderboard' || args[0] === 'lb') {
       try {
-        const leaderboard = await guildCache.getSwearLeaderboard(message.guild.id);
+        const leaderboard = await guildService.getSwearLeaderboard(message.guild.id);
 
         if (leaderboard.length === 0) {
           return embeds.warn(message, 'No swear data found for this server');
         }
 
-        const userPosition = await guildCache.getUserSwearPosition(message.guild.id, message.author.id);
+        const userPosition = await guildService.getUserSwearPosition(message.guild.id, message.author.id);
 
         // Pre-fetch all usernames to avoid async issues in pagination
         const leaderboardWithUsernames = await Promise.all(
@@ -208,7 +208,7 @@ module.exports = {
       if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
 
       try {
-        const swearData = await guildCache.getSwearTracker(message.guild.id);
+        const swearData = await guildService.getSwearTracker(message.guild.id);
 
         if (swearData.length === 0) {
           return embeds.warn(message, 'No swear data to reset');
@@ -219,7 +219,7 @@ module.exports = {
           'Are you sure you want to **reset all swear data** for this server?',
           async (interaction) => {
 
-            await guildCache.clearAllSwearData(message.guild.id);
+            await guildService.clearAllSwearData(message.guild.id);
 
             const successEmbed = embeds.createSuccess(message, 'Reset all swear data for this server');
 
@@ -243,7 +243,7 @@ module.exports = {
       const userId = targetUser.id;
 
       try {
-        const userData = await guildCache.getUserSwearData(message.guild.id, userId);
+        const userData = await guildService.getUserSwearData(message.guild.id, userId);
 
         if (!userData || !userData.swears || userData.swears.length === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
@@ -267,7 +267,7 @@ module.exports = {
     } else {
 
       try {
-        const userData = await guildCache.getUserSwearData(message.guild.id, message.author.id);
+        const userData = await guildService.getUserSwearData(message.guild.id, message.author.id);
 
         if (!userData || !userData.swears || userData.swears.length === 0) {
           return embeds.info(message, 'You have no recorded swears in this server');

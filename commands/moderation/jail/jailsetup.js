@@ -136,11 +136,12 @@ module.exports = {
         await jailChannel.send({ embeds: [jailWelcomeEmbed] });
       }
 
-      // Save jail role and channel IDs to database using cache
-      const guildCache = require('../../../database/cache/models/guild');
+      // Save jail role and channel IDs to database using service layer
+      const { getService } = require('@services');
+      const guildService = getService('guild');
 
       try {
-        await guildCache.setJail(message.guild.id, jailRole.id, jailChannel.id);
+        await guildService.setJail(message.guild.id, jailRole.id, jailChannel.id);
       } catch (error) {
         console.error('Error saving jail setup to database:', error);
       }

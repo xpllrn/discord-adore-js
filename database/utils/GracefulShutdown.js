@@ -274,15 +274,8 @@ class GracefulShutdown {
     console.log(chalk.blue('🔄 Handling reload request...'));
     
     try {
-      // Reload cache system
-      const { getCacheManager } = require('../cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      
-      if (cacheManager) {
-        console.log(chalk.gray('  🔄 Reloading cache data...'));
-        await cacheManager.preloader.preloadAllData();
-        console.log(chalk.green('  ✅ Cache reload complete'));
-      }
+      // Cache system has been removed - using service layer now
+      console.log(chalk.green('  ✅ Service layer active (no cache reload needed)'));
 
       // Reload database connections health check
       const { healthCheck } = require('../connection');

@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
 
@@ -11,7 +11,7 @@ module.exports = {
   description: 'Show your current or last played track from Last.fm',
   usage: '{guildprefix}fm\n{guildprefix}fm [user]',
   run: async(client, message, args) => {
-
+    const userService = getService('user');
     const guildprefix = await getGuildPrefix(message.guild.id);
 
     let targetUser = message.author;
@@ -30,7 +30,7 @@ module.exports = {
       targetUserId = targetUser.id;
     }
 
-    const fmuser = await userCache.getLastFMUsername(targetUserId);
+    const fmuser = await userService.getLastFMUsername(targetUserId);
 
     if (!fmuser) {
       const isOwnProfile = targetUserId === message.author.id;

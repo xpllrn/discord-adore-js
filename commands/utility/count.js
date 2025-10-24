@@ -1,5 +1,5 @@
 const { embeds } = require('../../core/embeds');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: 'count',
@@ -7,12 +7,13 @@ module.exports = {
   description: 'Set a channel for counting.',
   usage: '{guildprefix}count [channel | #channel | channelId | off]',
   run: async (client, message, args) => {
+    const guildService = getService('guild');
     if (!message.member.permissions.has('ManageGuild')) {
       return embeds.permission(message, 'Manage Guild');
     }
 
     if (!args[0]) {
-        const countingData = await guildCache.getCounting(message.guild.id);
+        const countingData = await guildService.getCounting(message.guild.id);
         if (countingData.channelId) {
             return embeds.info(message, `The counting channel is currently <#${countingData.channelId}>.`);
         } else {
@@ -21,7 +22,7 @@ module.exports = {
     }
 
     if (args[0].toLowerCase() === 'off' || args[0].toLowerCase() === 'disable') {
-        await guildCache.setCounting(message.guild.id, {
+        await guildService.setCounting(message.guild.id, {
             channelId: null,
             currentCount: 0,
             lastCounterId: null
@@ -34,7 +35,7 @@ module.exports = {
       return embeds.deny(message, 'Invalid channel provided.');
     }
 
-    await guildCache.setCounting(message.guild.id, {
+    await guildService.setCounting(message.guild.id, {
       channelId: channel.id,
       currentCount: 0,
       lastCounterId: null

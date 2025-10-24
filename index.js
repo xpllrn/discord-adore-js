@@ -1,3 +1,6 @@
+// Initialize module aliases first (must be before any other requires)
+require('module-alias/register');
+
 const { Client, Collection, GatewayIntentBits, Partials } = require('discord.js')
 
 // Protect against stdout/stderr write errors

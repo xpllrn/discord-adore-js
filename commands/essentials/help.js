@@ -12,6 +12,8 @@ module.exports = {
 
     // Get guild prefix with multiple fallback methods for reliability
     let guildprefix = config.bot.defaultPrefix; // Default fallback
+    console.log(`🔍 [HELP] Initial guildprefix: "${guildprefix}"`);
+    console.log(`🔍 [HELP] Guild ID: "${message.guild.id}"`);
 
     try {
       // Check if database is ready first
@@ -19,11 +21,14 @@ module.exports = {
       const dbStatus = isDatabaseReady();
 
       if (dbStatus.local || dbStatus.global) {
-        // Try cache-based approach first
-        const guildCache = require('../../database/cache/models/guild');
-        const cachedPrefix = await guildCache.getPrefix(message.guild.id);
+        // Try service layer approach first
+        const { getService } = require('@services');
+        const guildService = getService('guild');
+        const cachedPrefix = await guildService.getPrefix(message.guild.id);
+        console.log(`🔍 [HELP] Cached prefix from guildService: "${cachedPrefix}"`);
         if (cachedPrefix) {
           guildprefix = cachedPrefix;
+          console.log(`🔍 [HELP] Updated guildprefix to: "${guildprefix}"`);
         }
       } else {
         console.log('Database not ready, using default prefix');
@@ -32,6 +37,9 @@ module.exports = {
       console.error('Error getting guild prefix, using default:', cacheError.message);
       // guildprefix is already set to default
     }
+
+    console.log(`🔍 [HELP] Final guildprefix before usage: "${guildprefix}"`);
+    console.log(`🔍 [HELP] Type of guildprefix: ${typeof guildprefix}`);
 
     const command = client.commands.get(args[0]) || client.commands.get(client.aliases.get(args[0]))
   
@@ -62,6 +70,10 @@ module.exports = {
       if (command.usage) {
         let usage = command.usage
         usage = usage.replaceAll('{guildprefix}', guildprefix)
+        console.log(`🔍 [HELP] After replacement - usage contains: "${usage.substring(0, 100)}..."`);
+        if (usage.includes(message.guild.id)) {
+          console.log(`⚠️ [HELP] WARNING: Usage contains guild ID! Full usage: "${usage}"`);
+        }
         fields.push({ name: '**Syntax**', value: `\`\`\`js\n${usage}\`\`\``, inline: false });
       }
 

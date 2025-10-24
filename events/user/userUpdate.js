@@ -9,22 +9,12 @@ module.exports = {
         return;
       }
 
-      const userCache = require('../../database/cache/models/user');
-      const { ensureUserData } = require('../../database');
+      const { getService } = require('@services');
+      const userService = getService('user');
 
-      // Ensure user data exists
-      await ensureUserData(newUser.id);
-
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Track username changes
+      // Track username changes using service layer
       if (oldUser.username !== newUser.username) {
-        await userCache.addNameChange(
+        await userService.addNameChange(
           newUser.id,
           'username',
           oldUser.username,
@@ -33,9 +23,9 @@ module.exports = {
         );
       }
 
-      // Track displayname changes
+      // Track displayname changes using service layer
       if (oldUser.displayName !== newUser.displayName) {
-        await userCache.addNameChange(
+        await userService.addNameChange(
           newUser.id,
           'displayname',
           oldUser.displayName || oldUser.username,

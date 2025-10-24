@@ -1,6 +1,6 @@
 const { WebhookClient, EmbedBuilder, AuditLogEvent } = require('discord.js');
 const config = require('../config/setup');
-const guildCache = require('../database/cache/models/guild');
+const { getService } = require('@services');
 
 class WebhookLogger {
   constructor() {
@@ -37,7 +37,8 @@ class WebhookLogger {
    */
   async getLoggingConfigs(guildId, logType) {
     try {
-      const configs = await guildCache.getLoggingConfigsForType(guildId, logType);
+      const guildService = getService('guild');
+      const configs = await guildService.getLoggingConfigsForType(guildId, logType);
       return configs.filter(config => config.webhookUrl);
     } catch (error) {
       // Silent fail for getting configs - return empty array
@@ -93,7 +94,7 @@ class WebhookLogger {
    */
   async handleDeletedWebhook(guildId, config, embed, files = []) {
     try {
-      const guildCache = require('../database/cache/models/guild');
+      const { getService } = require('@services');
 
       // Get the Discord client from global client reference (avoid circular dependency)
       const client = global.discordClient;
@@ -121,8 +122,9 @@ class WebhookLogger {
       });
 
       // Update the config with new webhook URL
+      const guildService = getService('guild');
       config.webhookUrl = newWebhook.url;
-      await guildCache.updateLoggingConfig(guildId, config.channelId, config);
+      await guildService.updateLoggingConfig(guildId, config.channelId, config);
 
       // Clear old webhook from cache and add new one
       this.webhookClients.delete(config.webhookUrl);

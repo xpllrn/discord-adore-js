@@ -18,6 +18,14 @@
   },
   "author": "",
   "license": "ISC",
+  "_moduleAliases": {
+    "@services": "database/services",
+    "@core": "database/services/core",
+    "@models": "database/models",
+    "@utils": "utils",
+    "@config": "config",
+    "@handlers": "handlers"
+  },
   "dependencies": {
     "axios": "^1.10.0",
     "canvas": "^3.2.0",
@@ -38,6 +46,7 @@
     "jimp": "^0.22.12",
     "js-base64": "^3.7.2",
     "luxon": "^3.6.1",
+    "module-alias": "^2.2.3",
     "moment": "^2.29.4",
     "mongodb": "^6.17.0",
     "mongoose": "^6.6.0",

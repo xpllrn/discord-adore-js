@@ -5,12 +5,16 @@ module.exports = {
   name: 'messageCreate',
   async execute(message) {
 
-
     // Skip bots
     if (message.author.bot) return;
 
     // Skip if no guild
     if (!message.guild) return;
+
+    // CRITICAL: Skip all message processing until cache is ready
+    if (!message.client.cacheReady) {
+      return; // Don't process any messages during startup
+    }
 
     // Process adore mentions first (highest priority)
     await processAdoreMention(message);
@@ -48,8 +52,9 @@ module.exports = {
 
 async function processCounting(message) {
     try {
-        const guildCache = require('../../database/cache/models/guild');
-        const countingData = await guildCache.getCounting(message.guild.id);
+        const { getService } = require('@services');
+        const guildService = getService('guild');
+        const countingData = await guildService.getCounting(message.guild.id);
 
         if (message.channel.id === countingData.channelId) {
             const num = parseInt(message.content);
@@ -61,7 +66,7 @@ async function processCounting(message) {
             if (num === countingData.currentCount + 1 && message.author.id !== countingData.lastCounterId) {
                 countingData.currentCount++;
                 countingData.lastCounterId = message.author.id;
-                await guildCache.setCounting(message.guild.id, countingData);
+                await guildService.setCounting(message.guild.id, countingData);
                 message.react('✅');
             } else {
                 message.delete();
@@ -79,10 +84,11 @@ async function processAutoreact(message) {
     // Skip if message is empty or only whitespace
     if (!message.content || !message.content.trim()) return;
 
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
 
-    // Get all autoreacts for this guild using cache system
-    const autoreacts = await guildCache.getAutoReacts(message.guild.id);
+    // Get all autoreacts for this guild using service layer
+    const autoreacts = await guildService.getAutoReacts(message.guild.id);
 
     if (!autoreacts || autoreacts.length === 0) return;
 
@@ -101,8 +107,8 @@ async function processAutoreact(message) {
             if (emoji) {
               emojiToReact = emoji;
             } else {
-              // Remove invalid emoji using cache system
-              await guildCache.removeAutoReact(message.guild.id, autoreact.word);
+              // Remove invalid emoji using service layer
+              await guildService.removeAutoReact(message.guild.id, autoreact.word);
               continue;
             }
           } else {
@@ -128,10 +134,11 @@ async function processAutoresponder(message) {
     // Skip if message is empty or only whitespace
     if (!message.content || !message.content.trim()) return;
 
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
 
-    // Get all autoresponders for this guild using cache system
-    const autoresponders = await guildCache.getAutoResponders(message.guild.id);
+    // Get all autoresponders for this guild using service layer
+    const autoresponders = await guildService.getAutoResponders(message.guild.id);
 
     if (!autoresponders || autoresponders.length === 0) return;
 
@@ -292,9 +299,10 @@ async function processMessageTracking(message) {
     const { ensureGuildData } = require('../../database');
     await ensureGuildData(message.guild.id);
 
-    // Track the message
-    const guildCache = require('../../database/cache/models/guild');
-    await guildCache.trackMessage(message.guild.id, message.author.id);
+    // Track the message using service layer
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+    await guildService.trackMessage(message.guild.id, message.author.id);
 
   } catch (error) {
     // Silent fail for message tracking
@@ -306,9 +314,10 @@ async function processStickyMessageActivity(message) {
     // Skip bots
     if (message.author.bot) return;
 
-    // Update sticky message activity for this channel
-    const guildCache = require('../../database/cache/models/guild');
-    await guildCache.updateStickyMessageActivity(message.guild.id, message.channel.id);
+    // Update sticky message activity for this channel using service layer
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+    await guildService.updateStickyMessageActivity(message.guild.id, message.channel.id);
 
   } catch (error) {
     // Silent fail for sticky message activity tracking
@@ -349,11 +358,12 @@ async function processSwearTracking(message) {
     const foundSwears = detectSwears(message.content);
 
     if (foundSwears.length > 0) {
-      const guildCache = require('../../database/cache/models/guild');
+      const { getService } = require('@services');
+      const guildService = getService('guild');
 
-      // Add each detected swear to the database
+      // Add each detected swear to the database using service layer
       for (const swear of foundSwears) {
-        await guildCache.addSwear(message.guild.id, message.author.id, swear);
+        await guildService.addSwear(message.guild.id, message.author.id, swear);
       }
     }
 
@@ -395,18 +405,19 @@ async function processLevelSystem(message) {
     if (!message.content || !message.content.trim()) return;
 
     // Skip if message is a command (starts with prefix)
-    const prefixCache = require('../../database/cache/models/prefix');
-    const guildPrefix = await prefixCache.getGuildPrefix(message.guild.id);
+    const { getService } = require('@services');
+    const prefixService = getService('prefix');
+    const guildPrefix = await prefixService.getGuildPrefix(message.guild.id);
     if (message.content.startsWith(guildPrefix)) return;
 
-    const guildCache = require('../../database/cache/models/guild');
+    const guildService = getService('guild');
 
-    // Check if level system is enabled
-    const isEnabled = await guildCache.isLevelSystemEnabled(message.guild.id);
+    // Check if level system is enabled using service layer
+    const isEnabled = await guildService.isLevelSystemEnabled(message.guild.id);
     if (!isEnabled) return;
 
-    // Get user's current level data
-    const userData = await guildCache.getUserLevel(message.guild.id, message.author.id);
+    // Get user's current level data using service layer
+    const userData = await guildService.getUserLevel(message.guild.id, message.author.id);
 
     // Check cooldown (prevent spam XP farming)
     const now = new Date();
@@ -427,15 +438,8 @@ async function processLevelSystem(message) {
     // Cap at 25 XP maximum (prevents abuse while allowing good progression)
     xpGain = Math.min(xpGain, 25);
 
-    // Ensure cache writes are enabled before adding XP
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.guildCache.areWritesEnabled()) {
-      cacheManager.enableWrites();
-    }
-
-    // Add XP and check for level up
-    const result = await guildCache.addUserExperience(message.guild.id, message.author.id, xpGain);
+    // Add XP and check for level up using service layer
+    const result = await guildService.addUserExperience(message.guild.id, message.author.id, xpGain);
 
     // If user leveled up, send level up message
     if (result.leveledUp) {
@@ -459,12 +463,13 @@ async function processLevelSystem(message) {
 // Handle level up notifications
 async function handleLevelUp(message, newLevel, userData) {
   try {
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
     const { EmbedBuilder } = require('discord.js');
     const { colors, emojis } = require('../../config/setup');
 
-    // Get message mode
-    const messageMode = await guildCache.getLevelMessageMode(message.guild.id);
+    // Get message mode using service layer
+    const messageMode = await guildService.getLevelMessageMode(message.guild.id);
 
     if (messageMode === 'none') return; // Level up messages disabled
 
@@ -482,7 +487,7 @@ async function handleLevelUp(message, newLevel, userData) {
     let targetChannel = message.channel; // Default to context
 
     if (messageMode === 'channel') {
-      const levelUpChannelId = await guildCache.getLevelUpChannel(message.guild.id);
+      const levelUpChannelId = await guildService.getLevelUpChannel(message.guild.id);
       if (levelUpChannelId) {
         const levelUpChannel = message.guild.channels.cache.get(levelUpChannelId);
         if (levelUpChannel) {
@@ -505,10 +510,11 @@ async function handleLevelUp(message, newLevel, userData) {
 // Assign level roles when user levels up
 async function assignLevelRoles(message, newLevel) {
   try {
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
 
-    // Get level roles
-    const levelRoles = await guildCache.getLevelRoles(message.guild.id);
+    // Get level roles using service layer
+    const levelRoles = await guildService.getLevelRoles(message.guild.id);
     if (!levelRoles || levelRoles.length === 0) return;
 
     // Find roles user should have based on their new level

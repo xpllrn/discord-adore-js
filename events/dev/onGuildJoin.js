@@ -25,8 +25,9 @@ module.exports = {
 };
 
 async function checkServerBlacklist(serverId) {
-  const systemCache = require('../../database/cache/models/system');
-  return await systemCache.getServerBlacklist(serverId);
+  const { getService } = require('@services');
+  const systemService = getService('system');
+  return await systemService.getServerBlacklist(serverId);
 }
 
 async function createGuildData(guild) {

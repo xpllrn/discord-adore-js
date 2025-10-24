@@ -3,7 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { ensureGuildData } = require('../../database');
 const { colors, emojis } = require('../../config/setup');
 const { findUser } = require('../../handlers/finder');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 
 module.exports = {
   name: "ttt",
@@ -15,11 +15,12 @@ module.exports = {
   cooldown: 3000,
   
   run: async (client, message, args) => {
+    const userService = getService('user');
     await ensureGuildData(message.guild.id);
 
     // Handle stats subcommand
     if (args[0] && args[0].toLowerCase() === 'stats') {
-      return await showStats(message);
+      return await showStats(message, userService);
     }
 
     // Parse opponent
@@ -60,9 +61,9 @@ module.exports = {
   }
 };
 
-async function showStats(message) {
+async function showStats(message, userService) {
   try {
-    const stats = await userCache.getTicTacToeStats(message.author.id);
+    const stats = await userService.getTicTacToeStats(message.author.id);
 
     // Check if user has played any games
     const totalMatches = stats.wins + stats.losses + stats.draws;
@@ -420,11 +421,11 @@ async function endGame(interaction, board, players, playerSymbols, winner, isDra
     if (isDraw) {
       // Draw game - update both players (or just human player for AI games)
       if (isAI) {
-        await userCache.updateTicTacToeStats(players[0].id, 'draw');
+        await userService.updateTicTacToeStats(players[0].id, 'draw');
       } else {
         // Human vs Human draw
-        await userCache.updateTicTacToeStats(players[0].id, 'draw');
-        await userCache.updateTicTacToeStats(players[1].id, 'draw');
+        await userService.updateTicTacToeStats(players[0].id, 'draw');
+        await userService.updateTicTacToeStats(players[1].id, 'draw');
       }
     } else if (winnerIndex !== -1) {
       // Game with winner
@@ -432,16 +433,16 @@ async function endGame(interaction, board, players, playerSymbols, winner, isDra
         // Human vs AI game
         if (winnerIndex === 0) {
           // Human won
-          await userCache.updateTicTacToeStats(players[0].id, 'win');
+          await userService.updateTicTacToeStats(players[0].id, 'win');
         } else {
           // AI won
-          await userCache.updateTicTacToeStats(players[0].id, 'loss');
+          await userService.updateTicTacToeStats(players[0].id, 'loss');
         }
       } else {
         // Human vs Human game
-        await userCache.updateTicTacToeStats(players[winnerIndex].id, 'win');
+        await userService.updateTicTacToeStats(players[winnerIndex].id, 'win');
         const loserIndex = winnerIndex === 0 ? 1 : 0;
-        await userCache.updateTicTacToeStats(players[loserIndex].id, 'loss');
+        await userService.updateTicTacToeStats(players[loserIndex].id, 'loss');
       }
     }
   } catch (error) {

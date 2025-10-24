@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
 
 // Utility functions embedded within the command
@@ -18,35 +18,15 @@ module.exports = {
   run: async(client, message, args) => {
     
     try {
-      // Check if user already has an account
-      const hasAccount = await userCache.hasGamblingAccount(message.author.id);
+      const userService = getService('user');
 
-      if (hasAccount) {
+      // Get gambling data - this will auto-create account if it doesn't exist
+      const gambling = await userService.getGamblingData(message.author.id);
+      
+      // Check if account already existed (wallet would be > 0 if it did)
+      if (gambling.wallet > 0 || gambling.bank > 0 || gambling.totalGambled > 0) {
         return embeds.warn(message, 'You already have a **gambling account**!');
       }
-      
-      // Create the account by setting the default gambling data to the database
-      const newAccountData = {
-        wallet: 1000,
-        bank: 0,
-        dailyClaim: {
-          lastClaimed: null,
-          streak: 0
-        },
-        robCooldown: null,
-        totalGambled: 0,
-        totalWon: 0,
-        totalLost: 0
-      };
-      
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      await userCache.setGamblingData(message.author.id, newAccountData);
       
       // Send success message
       const embed = new EmbedBuilder()

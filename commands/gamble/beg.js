@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 
@@ -19,16 +19,10 @@ module.exports = {
   run: async(client, message, args) => {
     
     try {
-      // Check if user has a gambling account
-      const hasAccount = await userCache.hasGamblingAccount(message.author.id);
+      const userService = getService('user');
       
-      if (!hasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a **gambling account** yet! Use \`${guildPrefix}account\` to create one`);
-      }
-      
-      // Get user's gambling data
-      const gambling = await userCache.getGamblingData(message.author.id);
+      // Get user's gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(message.author.id);
       
       // Check beg cooldown (30 minutes)
       const lastBeg = gambling.begCooldown ? new Date(gambling.begCooldown) : null;
@@ -85,16 +79,9 @@ module.exports = {
       
       const randomMessage = begMessages[Math.floor(Math.random() * begMessages.length)];
       
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Update user's wallet and beg cooldown
-      await userCache.updateWalletBalance(message.author.id, begAmount);
-      await userCache.updateBegCooldown(message.author.id);
+      // Update user's wallet and beg cooldown using service layer
+      await userService.updateWallet(message.author.id, begAmount);
+      await userService.setUserField(message.author.id, 'Gambling.begCooldown', now);
       
       // Send success message
       const embed = new EmbedBuilder()

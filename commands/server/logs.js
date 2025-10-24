@@ -3,7 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { ensureGuildData } = require('../../database');
 const config = require('../../config/setup');
 const { findChannel } = require('../../handlers/finder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const permissions = require('../../utils/permissions');
 
 module.exports = {
@@ -13,6 +13,7 @@ module.exports = {
   usage: '{guildprefix}logs add <channel> <type>\n{guildprefix}logs remove <channel> [type]\n{guildprefix}logs list',
   permission: "Manage Guild",
   run: async (client, message, args) => {
+    const guildService = getService('guild');
     try {
       // Check permissions
       if (!permissions.hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, "Manage Guild")) {
@@ -136,7 +137,7 @@ async function handleAdd(client, message, args) {
     }
 
     // Check if logging config already exists for this channel
-    let existingConfig = await guildCache.getLoggingConfigForChannel(message.guild.id, channel.id);
+    let existingConfig = await guildService.getLoggingConfigForChannel(message.guild.id, channel.id);
     let addedTypes = [];
     let alreadyEnabledTypes = [];
 
@@ -153,7 +154,7 @@ async function handleAdd(client, message, args) {
 
       if (addedTypes.length > 0) {
         existingConfig.webhookUrl = finalWebhookUrl; // Update webhook URL
-        await guildCache.updateLoggingConfig(message.guild.id, channel.id, existingConfig);
+        await guildService.updateLoggingConfig(message.guild.id, channel.id, existingConfig);
 
         let responseMessage = `Added **${addedTypes.join(', ')}** logging to ${channel}!\n\n**Current log types:** ${existingConfig.logTypes.join(', ')}`;
         if (alreadyEnabledTypes.length > 0) {
@@ -174,7 +175,7 @@ async function handleAdd(client, message, args) {
         createdBy: message.author.id
       };
 
-      await guildCache.addLoggingConfig(message.guild.id, newConfig);
+      await guildService.addLoggingConfig(message.guild.id, newConfig);
 
       if (logTypesToAdd.length === 1) {
         embeds.success(message, `Successfully set up **${logTypesToAdd[0]}** logging in ${channel}!`);
@@ -215,7 +216,7 @@ async function handleRemove(client, message, args) {
   const channel = channelResult.channel;
 
   try {
-    const loggingConfigs = await guildCache.getLoggingConfig(message.guild.id);
+    const loggingConfigs = await guildService.getLoggingConfig(message.guild.id);
 
     if (!loggingConfigs || loggingConfigs.length === 0) {
       return embeds.warn(message, 'No logging configurations found for this server.');
@@ -239,10 +240,10 @@ async function handleRemove(client, message, args) {
       }
 
       // Remove the log type using cache method
-      await guildCache.removeLoggingConfig(message.guild.id, channel.id, logType);
+      await guildService.removeLoggingConfig(message.guild.id, channel.id, logType);
 
       // Check if any log types remain
-      const updatedConfig = await guildCache.getLoggingConfigForChannel(message.guild.id, channel.id);
+      const updatedConfig = await guildService.getLoggingConfigForChannel(message.guild.id, channel.id);
       if (!updatedConfig) {
         embeds.success(message, `Removed **${logType}** logging from <#${channel.id}>. All logging has been disabled for this channel.`);
       } else {
@@ -250,7 +251,7 @@ async function handleRemove(client, message, args) {
       }
     } else {
       // Remove entire config (all log types)
-      await guildCache.removeLoggingConfig(message.guild.id, channel.id);
+      await guildService.removeLoggingConfig(message.guild.id, channel.id);
 
       embeds.success(message, `Removed all logging from <#${channel.id}>`);
     }
@@ -272,7 +273,7 @@ async function handleRemove(client, message, args) {
 
 async function handleList(client, message) {
   try {
-    const loggingConfigs = await guildCache.getLoggingConfig(message.guild.id);
+    const loggingConfigs = await guildService.getLoggingConfig(message.guild.id);
 
     if (!loggingConfigs || loggingConfigs.length === 0) {
       return embeds.info(message, 'No logging configurations found for this server.\n\nUse `logs add <#channel> <type>` to set up logging.');

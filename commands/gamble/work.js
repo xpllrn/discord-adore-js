@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 
@@ -19,16 +19,10 @@ module.exports = {
   run: async(client, message, args) => {
     
     try {
-      // Check if user has a gambling account
-      const hasAccount = await userCache.hasGamblingAccount(message.author.id);
-      
-      if (!hasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a **gambling account** yet! Use \`${guildPrefix}account\` to create one`);
-      }
+      const userService = getService('user');
 
-      // Get user's gambling data
-      const gambling = await userCache.getGamblingData(message.author.id);
+      // Get user's gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(message.author.id);
       
       // Check work cooldown (1 hour = 3600000 ms)
       const workCooldown = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
@@ -85,19 +79,12 @@ module.exports = {
       const job = jobs[Math.floor(Math.random() * jobs.length)];
       const finalEarnings = Math.floor(baseEarnings * job.multiplier);
       
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Update user's wallet and work timestamp
-      await userCache.updateWalletBalance(message.author.id, finalEarnings);
-      await userCache.updateWorkTimestamp(message.author.id);
+      // Update user's wallet and work timestamp using service layer
+      await userService.updateWallet(message.author.id, finalEarnings);
+      await userService.updateWorkTimestamp(message.author.id);
       
       // Get updated wallet balance
-      const updatedGambling = await userCache.getGamblingData(message.author.id);
+      const updatedGambling = await userService.getGamblingData(message.author.id);
       const newWallet = updatedGambling.wallet || 0;
       
       // Create success message

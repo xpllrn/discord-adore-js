@@ -4,7 +4,7 @@ const { ensureGuildData } = require('../../database');
 const { hasDiscordPermission } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findChannel, findUser, findRole } = require('../../handlers/finder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 const ms = require('ms');
 
@@ -221,7 +221,7 @@ async function handleStart(client, message, args) {
     
     // Update giveaway data with message ID and save to database
     giveawayData.messageId = giveawayMessage.id;
-    await guildCache.addGiveaway(message.guild.id, giveawayData);
+    await guildService.addGiveaway(message.guild.id, giveawayData);
     
     return embeds.success(message, `Giveaway **${title}** started in ${channel}!`);
 
@@ -256,7 +256,7 @@ async function handleEnd(client, message, args) {
     return embeds.warn(message, 'I can only end giveaways from this server');
   }
 
-  const giveaway = await guildCache.getGiveawayByMessageId(message.guild.id, linkData.messageId);
+  const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
   if (!giveaway) {
     return embeds.warn(message, 'No giveaway found with that message link');
   }
@@ -281,7 +281,7 @@ async function handleEnd(client, message, args) {
     const winners = selectRandomWinners(giveaway.participants, giveaway.winners);
 
     // End the giveaway in database
-    await guildCache.endGiveaway(message.guild.id, giveaway.id, winners);
+    await guildService.endGiveaway(message.guild.id, giveaway.id, winners);
 
     // Update the giveaway message
     const endedEmbed = createGiveawayEmbed({ ...giveaway, isActive: false, winnerIds: winners }, message.guild)
@@ -322,7 +322,7 @@ async function handleEnd(client, message, args) {
 
 // List giveaways subcommand
 async function handleList(client, message, args) {
-  const activeGiveaways = await guildCache.getActiveGiveaways(message.guild.id);
+  const activeGiveaways = await guildService.getActiveGiveaways(message.guild.id);
 
   if (activeGiveaways.length === 0) {
     return embeds.info(message, 'There are no active giveaways in this server');
@@ -370,7 +370,7 @@ async function handleCancel(client, message, args) {
     return embeds.warn(message, 'I can only cancel giveaways from this server');
   }
 
-  const giveaway = await guildCache.getGiveawayByMessageId(message.guild.id, linkData.messageId);
+  const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
   if (!giveaway) {
     return embeds.warn(message, 'No giveaway found with that message link');
   }
@@ -392,7 +392,7 @@ async function handleCancel(client, message, args) {
     }
 
     // Delete the giveaway from database
-    await guildCache.deleteGiveaway(message.guild.id, giveaway.id);
+    await guildService.deleteGiveaway(message.guild.id, giveaway.id);
 
     // Update the message to show it's cancelled
     const cancelledEmbed = createGiveawayEmbed(giveaway, message.guild)
@@ -425,7 +425,7 @@ async function handleReroll(client, message, args) {
     return embeds.warn(message, 'I can only reroll giveaways from this server');
   }
 
-  const giveaway = await guildCache.getGiveawayByMessageId(message.guild.id, linkData.messageId);
+  const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
   if (!giveaway) {
     return embeds.warn(message, 'No giveaway found with that message link');
   }
@@ -461,7 +461,7 @@ async function handleReroll(client, message, args) {
     const newWinners = selectRandomWinners(giveaway.participants, winnersToReroll);
 
     // Update the giveaway in database
-    await guildCache.updateGiveaway(message.guild.id, giveaway.id, { winnerIds: newWinners });
+    await guildService.updateGiveaway(message.guild.id, giveaway.id, { winnerIds: newWinners });
 
     // Update the giveaway message
     const rerolledEmbed = createGiveawayEmbed({ ...giveaway, winnerIds: newWinners }, message.guild)
@@ -526,7 +526,7 @@ async function handleEdit(client, message, args) {
     return embeds.warn(message, 'I can only edit giveaways from this server');
   }
 
-  const giveaway = await guildCache.getGiveawayByMessageId(message.guild.id, linkData.messageId);
+  const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
   if (!giveaway) {
     return embeds.warn(message, 'No giveaway found with that message link');
   }
@@ -585,7 +585,7 @@ async function handleEditLevel(client, message, args, giveaway, linkData) {
 
   try {
     // Update giveaway in database
-    const updatedGiveaway = await guildCache.updateGiveaway(message.guild.id, giveaway.id, {
+    const updatedGiveaway = await guildService.updateGiveaway(message.guild.id, giveaway.id, {
       'requirements.level': levelRequirement
     });
 
@@ -621,7 +621,7 @@ async function handleEditRole(client, message, args, giveaway, linkData) {
 
   try {
     // Update giveaway in database
-    const updatedGiveaway = await guildCache.updateGiveaway(message.guild.id, giveaway.id, {
+    const updatedGiveaway = await guildService.updateGiveaway(message.guild.id, giveaway.id, {
       'requirements.roleId': roleRequirement
     });
 
@@ -653,7 +653,7 @@ async function handleEditHost(client, message, args, giveaway, linkData) {
 
   try {
     // Update giveaway in database
-    const updatedGiveaway = await guildCache.updateGiveaway(message.guild.id, giveaway.id, {
+    const updatedGiveaway = await guildService.updateGiveaway(message.guild.id, giveaway.id, {
       hostId: userResult.user.user.id
     });
 
@@ -684,7 +684,7 @@ async function handleEditDescription(client, message, args, giveaway, linkData) 
 
   try {
     // Update giveaway in database
-    const updatedGiveaway = await guildCache.updateGiveaway(message.guild.id, giveaway.id, {
+    const updatedGiveaway = await guildService.updateGiveaway(message.guild.id, giveaway.id, {
       description: newDescription
     });
 
@@ -732,7 +732,7 @@ async function handleEditImage(client, message, args, giveaway, linkData) {
 
   try {
     // Update giveaway in database
-    const updatedGiveaway = await guildCache.updateGiveaway(message.guild.id, giveaway.id, {
+    const updatedGiveaway = await guildService.updateGiveaway(message.guild.id, giveaway.id, {
       image: imageUrl
     });
 

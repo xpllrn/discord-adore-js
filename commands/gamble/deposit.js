@@ -1,5 +1,5 @@
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 
 // Utility functions embedded within the command
@@ -43,16 +43,10 @@ module.exports = {
     }
     
     try {
-      // Check if user has a gambling account
-      const hasAccount = await userCache.hasGamblingAccount(message.author.id);
+      const userService = getService('user');
 
-      if (!hasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a gambling account yet! Use \`${guildPrefix}account\` to create one`);
-      }
-
-      // Get user's gambling data
-      const gambling = await userCache.getGamblingData(message.author.id);
+      // Get user's gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(message.author.id);
       const walletBalance = gambling.wallet || 0;
       
       if (walletBalance <= 0) {
@@ -70,8 +64,8 @@ module.exports = {
         return embeds.deny(message, `You only have **${formatCurrency(walletBalance)}** coins in your **wallet**`);
       }
       
-      // Transfer money from wallet to bank
-      const success = await userCache.transferMoney(message.author.id, amount, true);
+      // Transfer money from wallet to bank using service layer
+      const success = await userService.transferMoney(message.author.id, amount, true);
 
       if (!success) {
         return embeds.deny(message, 'Failed to deposit money. Please try again');

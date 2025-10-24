@@ -4,7 +4,7 @@ const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
 const { ensureUserData } = require('../../database');
 const { createPagination } = require('../../core/buttons');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -40,7 +40,7 @@ module.exports = {
     await ensureUserData(targetUser.id);
 
     try {
-      const nameHistory = await userCache.getNameHistory(targetUser.id);
+      const nameHistory = await userService.getNameHistory(targetUser.id);
       
       if (nameHistory.length === 0) {
         const username = targetMember ? targetMember.displayName : targetUser.username;

@@ -1,12 +1,16 @@
 const { ensureGuildData } = require('../../database');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const webhookLogger = require('../../utils/webhookLogger');
 
 module.exports = {
   name: 'guildMemberAdd',
   async execute(member, client) {
     try {
+      // CRITICAL: Skip all member processing until cache is ready
+      if (!client.cacheReady) {
+        return; // Don't process any member events during startup
+      }
       // Log member join (always log, including bots)
       await logMemberJoin(member);
 
@@ -29,8 +33,10 @@ module.exports = {
 
 async function processWelcomeMessages(member) {
   try {
+    const guildService = getService('guild');
+    
     // Get welcome messages from new multi-channel system
-    const welcomeMessages = await guildCache.getWelcomeMessages(member.guild.id) || [];
+    const welcomeMessages = await guildService.getWelcomeMessages(member.guild.id) || [];
 
     if (welcomeMessages.length === 0) {
       // Check for legacy welcome message system
@@ -45,7 +51,7 @@ async function processWelcomeMessages(member) {
         const welcomeChannel = member.guild.channels.cache.get(welcomeConfig.channelId);
         if (!welcomeChannel) {
           // Channel no longer exists, remove from config
-          await guildCache.removeWelcomeMessage(member.guild.id, welcomeConfig.channelId);
+          await guildService.removeWelcomeMessage(member.guild.id, welcomeConfig.channelId);
           continue;
         }
 
@@ -76,9 +82,11 @@ async function processWelcomeMessages(member) {
 
 async function processLegacyWelcome(member) {
   try {
+    const guildService = getService('guild');
+    
     // Check for old single-channel welcome system
-    const welcomeChannel = await guildCache.getWelcomeChannel(member.guild.id);
-    const welcomeMessage = await guildCache.getWelcomeMessage(member.guild.id);
+    const welcomeChannel = await guildService.getWelcomeChannel(member.guild.id);
+    const welcomeMessage = await guildService.getWelcomeMessage(member.guild.id);
 
     if (!welcomeChannel || !welcomeMessage) {
       return; // No legacy welcome configured
@@ -88,7 +96,7 @@ async function processLegacyWelcome(member) {
     const channel = member.guild.channels.cache.get(welcomeChannel);
     if (!channel) {
       // Channel no longer exists, clean up legacy data
-      await guildCache.removeWelcome(member.guild.id);
+      await guildService.removeWelcome(member.guild.id);
       return;
     }
 
@@ -98,10 +106,10 @@ async function processLegacyWelcome(member) {
     }
 
     // Migrate to new system
-    await guildCache.addWelcomeMessage(member.guild.id, welcomeChannel, welcomeMessage);
+    await guildService.addWelcomeMessage(member.guild.id, welcomeChannel, welcomeMessage);
 
     // Clean up legacy data
-    await guildCache.removeWelcome(member.guild.id);
+    await guildService.removeWelcome(member.guild.id);
 
     // Process and send the welcome message with variables
     try {
@@ -121,8 +129,10 @@ async function processLegacyWelcome(member) {
 
 async function processAutoroles(member) {
   try {
-    // Get autorole data for this guild using cache system
-    const autoRoleIds = await guildCache.getAutoRoles(member.guild.id);
+    const guildService = getService('guild');
+    
+    // Get autorole data for this guild using service layer
+    const autoRoleIds = await guildService.getAutoRoles(member.guild.id);
 
     if (!autoRoleIds || autoRoleIds.length === 0) {
       return; // No autoroles configured
@@ -144,10 +154,10 @@ async function processAutoroles(member) {
       }
     }
 
-    // Clean up invalid roles using cache system
+    // Clean up invalid roles using service layer
     if (invalidRoles.length > 0) {
       for (const invalidRoleId of invalidRoles) {
-        await guildCache.removeAutoRole(member.guild.id, invalidRoleId);
+        await guildService.removeAutoRole(member.guild.id, invalidRoleId);
       }
     }
 

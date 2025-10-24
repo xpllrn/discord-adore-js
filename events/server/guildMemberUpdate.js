@@ -3,8 +3,7 @@
 
 const { ensureGuildData, ensureUserData } = require('../../database');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
-const guildCache = require('../../database/cache/models/guild');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 
 module.exports = {
   name: 'guildMemberUpdate',
@@ -32,13 +31,15 @@ async function handleBoostEvents(oldMember, newMember) {
     if (!wasBooster && isBooster) {
       // NEW BOOST
       await handleNewBoost(newMember);
-      // Track boost addition
-      await guildCache.trackBoostEvent(newMember.guild.id, newMember.user.id, 'add');
+      // Track boost addition using service layer
+      const guildService = getService('guild');
+      await guildService.trackBoostEvent(newMember.guild.id, newMember.user.id, 'add');
     } else if (wasBooster && !isBooster) {
       // BOOST REMOVED
       await handleBoostRemoved(newMember);
-      // Track boost removal
-      await guildCache.trackBoostEvent(newMember.guild.id, newMember.user.id, 'remove');
+      // Track boost removal using service layer
+      const guildService = getService('guild');
+      await guildService.trackBoostEvent(newMember.guild.id, newMember.user.id, 'remove');
     }
   } catch (error) {
     // Silent error handling
@@ -51,8 +52,9 @@ async function handleNewBoost(member) {
     // Process boost messages for all configured channels
     await processBoostMessages(member);
 
-    // Handle boost role assignment
-    const boostRoleId = await guildCache.getBoostRole(member.guild.id);
+    // Handle boost role assignment using service layer
+    const guildService = getService('guild');
+    const boostRoleId = await guildService.getBoostRole(member.guild.id);
     if (boostRoleId) {
       const boostRole = member.guild.roles.cache.get(boostRoleId);
       if (boostRole && !member.roles.cache.has(boostRoleId)) {
@@ -71,8 +73,9 @@ async function handleNewBoost(member) {
 // Handle boost removal
 async function handleBoostRemoved(member) {
   try {
-    // Handle boost role removal
-    const boostRoleId = await guildCache.getBoostRole(member.guild.id);
+    // Handle boost role removal using service layer
+    const guildService = getService('guild');
+    const boostRoleId = await guildService.getBoostRole(member.guild.id);
     if (boostRoleId) {
       const boostRole = member.guild.roles.cache.get(boostRoleId);
       if (boostRole && member.roles.cache.has(boostRoleId)) {
@@ -94,8 +97,9 @@ async function handleNicknameChanges(oldMember, newMember) {
     // Check if nickname changed
     if (oldMember.nickname !== newMember.nickname) {
 
-      // First, handle forced nickname enforcement
-      const forcedNick = await guildCache.getForceNick(newMember.guild.id, newMember.user.id);
+      // First, handle forced nickname enforcement using service layer
+      const guildService = getService('guild');
+      const forcedNick = await guildService.getForceNick(newMember.guild.id, newMember.user.id);
       if (forcedNick) {
         // If the new nickname doesn't match the forced nickname, restore it
         if (newMember.nickname !== forcedNick.nickname) {
@@ -103,25 +107,18 @@ async function handleNicknameChanges(oldMember, newMember) {
             await newMember.setNickname(forcedNick.nickname, 'Enforcing forced nickname');
             return; // Don't track this change since we're reverting it
           } catch (error) {
-            // If we can't set the nickname (permissions, hierarchy, etc.), remove the forced nickname
-            await guildCache.removeForceNick(newMember.guild.id, newMember.user.id);
+            // If we can't set the nickname (permissions, hierarchy, etc.), remove the forced nickname using service layer
+            await guildService.removeForceNick(newMember.guild.id, newMember.user.id);
           }
         }
       }
 
-      // Track nickname changes for history
-      await ensureUserData(newMember.user.id);
+      // Track nickname changes for history using service layer
       const oldNickname = oldMember.nickname || oldMember.user.username;
       const newNickname = newMember.nickname || newMember.user.username;
 
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      await userCache.addNameChange(
+      const userService = getService('user');
+      await userService.addNameChange(
         newMember.user.id,
         'nickname',
         oldNickname,
@@ -136,8 +133,9 @@ async function handleNicknameChanges(oldMember, newMember) {
 
 async function processBoostMessages(member) {
   try {
-    // Get boost messages from new multi-channel system
-    const boostMessages = await guildCache.getBoostMessages(member.guild.id) || [];
+    // Get boost messages from new multi-channel system using service layer
+    const guildService = getService('guild');
+    const boostMessages = await guildService.getBoostMessages(member.guild.id) || [];
 
     if (boostMessages.length === 0) {
       // Check for legacy boost message system
@@ -151,8 +149,8 @@ async function processBoostMessages(member) {
         // Get the boost channel
         const boostChannel = member.guild.channels.cache.get(boostConfig.channelId);
         if (!boostChannel) {
-          // Channel no longer exists, remove from config
-          await guildCache.removeBoostMessage(member.guild.id, boostConfig.channelId);
+          // Channel no longer exists, remove from config using service layer
+          await guildService.removeBoostMessage(member.guild.id, boostConfig.channelId);
           continue;
         }
 
@@ -183,9 +181,10 @@ async function processBoostMessages(member) {
 
 async function processLegacyBoost(member) {
   try {
-    // Check for old single-channel boost system
-    const boostChannel = await guildCache.getBoostChannel(member.guild.id);
-    const boostMessage = await guildCache.getBoostMessage(member.guild.id);
+    // Check for old single-channel boost system using service layer
+    const guildService = getService('guild');
+    const boostChannel = await guildService.getBoostChannel(member.guild.id);
+    const boostMessage = await guildService.getBoostMessage(member.guild.id);
 
     if (!boostChannel || !boostMessage) {
       return; // No legacy boost configured
@@ -194,8 +193,8 @@ async function processLegacyBoost(member) {
     // Get the boost channel
     const channel = member.guild.channels.cache.get(boostChannel);
     if (!channel) {
-      // Channel no longer exists, clean up legacy data
-      await guildCache.removeBoost(member.guild.id);
+      // Channel no longer exists, clean up legacy data using service layer
+      await guildService.removeBoost(member.guild.id);
       return;
     }
 
@@ -204,11 +203,11 @@ async function processLegacyBoost(member) {
       return;
     }
 
-    // Migrate to new system
-    await guildCache.addBoostMessage(member.guild.id, boostChannel, boostMessage);
+    // Migrate to new system using service layer
+    await guildService.addBoostMessage(member.guild.id, boostChannel, boostMessage);
 
-    // Clean up legacy data
-    await guildCache.removeBoost(member.guild.id);
+    // Clean up legacy data using service layer
+    await guildService.removeBoost(member.guild.id);
 
     // Process and send the boost message with variables
     try {

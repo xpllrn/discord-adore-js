@@ -71,11 +71,12 @@ module.exports = {
 };
 
 /**
- * Initialize database connection after Discord is ready
+ * Initialize database connection and services after Discord is ready
  * @param {Client} client - Discord client instance
  */
 async function initializeDatabaseConnection(client) {
   const { initializeDatabase } = require('../../database');
+  const { initializeServices, getServiceHealth } = require('@services');
   
   // Get database connections from config
   const globalConnection = config.database.globalConnection;
@@ -106,34 +107,27 @@ async function initializeDatabaseConnection(client) {
   if (dbSuccess) {
     console.log(chalk.green('   [+] Global database connected'));
     console.log(chalk.green('   [+] Local database connected'));
-    console.log(chalk.green('   [+] Cache system initialized'));
-    console.log(chalk.blue('   [~] Waiting for cache preloading to complete...'));
-
-    // Wait for cache system to be fully ready
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
     
-    // Wait for preloading to complete with timeout
-    const maxWaitTime = 30000; // 30 seconds
-    const startWait = Date.now();
-    
-    while (!cacheManager.isReady() && (Date.now() - startWait) < maxWaitTime) {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Check every 500ms
-    }
-    
-    if (cacheManager.isReady()) {
-      console.log(chalk.green('   [+] Cache preloading completed'));
-      console.log(chalk.green('   [+] Cache writes enabled'));
+    // Initialize new service layer
+    console.log(chalk.blue('   [~] Initializing Data Service Layer...'));
+    try {
+      await initializeServices();
+      console.log(chalk.green('   [+] Service layer initialized'));
       
-      // Get preload statistics
-      const stats = cacheManager.preloader.getStats();
-      console.log(chalk.cyan(`   [i] Preloaded ${stats.totalDocuments} documents in ${stats.loadTime}ms`));
-      if (stats.collections.guilds) console.log(chalk.cyan(`   [i] Guilds: ${stats.collections.guilds}`));
-      if (stats.collections.users) console.log(chalk.cyan(`   [i] Users: ${stats.collections.users}`));
-      if (stats.collections.systems) console.log(chalk.cyan(`   [i] Systems: ${stats.collections.systems}`));
-    } else {
-      console.log(chalk.yellow('   [!] Cache preloading timed out - enabling writes anyway'));
-      cacheManager.enableWrites();
+      // Check service health
+      const health = getServiceHealth();
+      if (health.overall) {
+        console.log(chalk.green('   [+] All services healthy'));
+        console.log(chalk.cyan(`   [i] Guild Service: ${health.guild ? 'Ready' : 'Not Ready'}`));
+        console.log(chalk.cyan(`   [i] User Service: ${health.user ? 'Ready' : 'Not Ready'}`));
+        console.log(chalk.cyan(`   [i] System Service: ${health.system ? 'Ready' : 'Not Ready'}`));
+        console.log(chalk.cyan(`   [i] Prefix Service: ${health.prefix ? 'Ready' : 'Not Ready'}`));
+      } else {
+        console.log(chalk.yellow('   [~] Some services not fully initialized'));
+      }
+    } catch (error) {
+      console.log(chalk.yellow('   [~] Service layer initialization warning:', error.message));
+      console.log(chalk.yellow('   [~] Some services not fully initialized'));
     }
     
     console.log('\n');
@@ -141,24 +135,26 @@ async function initializeDatabaseConnection(client) {
     // Load and set bot status from database
     await loadBotStatusFromDatabase(client);
 
-    // Mark cache as ready for command processing
+    // Mark services as ready for command processing
     client.cacheReady = true;
     
-    // Emit custom event to signal database and cache are ready
+    // Emit ready events
+    console.log(chalk.blue('   [~] Triggering delayed ready events...'));
     client.emit('databaseReady');
     client.emit('cacheReady');
+    client.emit('cacheReadyComplete');
   } else {
     throw new Error('Database connection failed');
   }
 }
 
 /**
- * Load bot status from database configuration
+ * Load bot status from database configuration using new service layer
  * @param {Client} client - Discord client instance
  */
 async function loadBotStatusFromDatabase(client) {
   try {
-    const { System } = require('../../database');
+    const { getService } = require('@services');
     const instanceId = process.env.INSTANCE_ID;
 
     // Display instance information
@@ -176,40 +172,63 @@ async function loadBotStatusFromDatabase(client) {
       return;
     }
 
-    // Get system data
-    const systemData = await System.findOne({ _id: 'system' });
-    if (!systemData || !systemData.InstanceConfig) {
-      client.user.setPresence({
-        activities: [{ name: 'adore.exe', type: ActivityType.Watching }],
-        status: 'online'
-      });
-      console.log(chalk.green('   [+] Status: Watching adore.exe'));
-      return;
-    }
+    // Try to use new service layer first
+    try {
+      const systemService = getService('system');
+      const systemData = await systemService.ensureSystemData('system');
+      
+      if (!systemData || !systemData.InstanceConfig) {
+        throw new Error('No instance config found');
+      }
 
-    // Find instance configuration
-    const instanceConfig = systemData.InstanceConfig.find(config => config.instanceId === instanceId);
-    if (!instanceConfig || !instanceConfig.botStatus) {
-      client.user.setPresence({
-        activities: [{ name: 'adore.exe', type: ActivityType.Watching }],
-        status: 'online'
-      });
-      console.log(chalk.green('   [+] Status: Watching adore.exe'));
-      return;
-    }
+      // Find instance configuration
+      const instanceConfig = systemData.InstanceConfig.find(config => config.instanceId === instanceId);
+      if (!instanceConfig || !instanceConfig.botStatus) {
+        throw new Error('No bot status config found');
+      }
 
-    // Set bot status from database
-    const { activity, type, status } = instanceConfig.botStatus;
-    if (activity) {
-      const activityType = ActivityType[type] || ActivityType.Watching;
-      client.user.setPresence({
-        activities: [{ name: activity, type: activityType }],
-        status: status || 'online'
-      });
-      console.log(chalk.green(`   [+] Status: ${type} ${activity}`));
-    } else {
-      client.user.setStatus(status || 'online');
-      console.log(chalk.green(`   [+] Status: ${status || 'online'}`));
+      // Set bot status from database
+      const { activity, type, status } = instanceConfig.botStatus;
+      if (activity) {
+        const activityType = ActivityType[type] || ActivityType.Watching;
+        client.user.setPresence({
+          activities: [{ name: activity, type: activityType }],
+          status: status || 'online'
+        });
+        console.log(chalk.green(`   [+] Status: ${type} ${activity}`));
+      } else {
+        client.user.setStatus(status || 'online');
+        console.log(chalk.green(`   [+] Status: ${status || 'online'}`));
+      }
+      return;
+    } catch (serviceError) {
+      // Fall back to direct database access
+      console.log(chalk.yellow('   [~] Service layer unavailable, using direct database access'));
+      
+      const { System } = require('../../database');
+      const systemData = await System.findOne({ _id: 'system' });
+      
+      if (!systemData || !systemData.InstanceConfig) {
+        throw new Error('No system data found');
+      }
+
+      const instanceConfig = systemData.InstanceConfig.find(config => config.instanceId === instanceId);
+      if (!instanceConfig || !instanceConfig.botStatus) {
+        throw new Error('No bot status config found');
+      }
+
+      const { activity, type, status } = instanceConfig.botStatus;
+      if (activity) {
+        const activityType = ActivityType[type] || ActivityType.Watching;
+        client.user.setPresence({
+          activities: [{ name: activity, type: activityType }],
+          status: status || 'online'
+        });
+        console.log(chalk.green(`   [+] Status: ${type} ${activity}`));
+      } else {
+        client.user.setStatus(status || 'online');
+        console.log(chalk.green(`   [+] Status: ${status || 'online'}`));
+      }
     }
 
   } catch (error) {
@@ -218,7 +237,7 @@ async function loadBotStatusFromDatabase(client) {
       activities: [{ name: 'adore.exe', type: ActivityType.Watching }],
       status: 'online'
     });
-    console.log(chalk.green('  Status: Watching adore.exe'));
+    console.log(chalk.green('   [+] Status: Watching adore.exe (default)'));
   }
 }
 

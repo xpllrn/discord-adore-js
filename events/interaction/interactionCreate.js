@@ -1,7 +1,7 @@
 const { EmbedBuilder, ChannelType, PermissionFlagsBits, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { ensureGuildData } = require('../../database');
 const { colors, emojis } = require('../../config/setup');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const { embeds } = require('../../core/embeds');
 const voiceManagerButtons = require('./voiceManagerButtons');
 
@@ -179,8 +179,9 @@ async function handleCreateTicket(interaction) {
     // Ensure guild data exists
     await ensureGuildData(guild.id);
 
-    // Get ticket system configuration
-    const ticketSystem = await guildCache.getTicketSystem(guild.id);
+    // Get ticket system configuration using service layer
+    const guildService = getService('guild');
+    const ticketSystem = await guildService.getTicketSystem(guild.id);
 
     if (!ticketSystem.enabled) {
       // Create a fake message object for embeds.deny
@@ -198,7 +199,7 @@ async function handleCreateTicket(interaction) {
     }
 
     // Check if user already has an open ticket
-    const existingTickets = await guildCache.getUserTickets(guild.id, user.id);
+    const existingTickets = await guildService.getUserTickets(guild.id, user.id);
     if (existingTickets.length > 0) {
       const ticketChannel = guild.channels.cache.get(existingTickets[0].channelId);
       if (ticketChannel) {
@@ -216,7 +217,7 @@ async function handleCreateTicket(interaction) {
         return embeds.deny(fakeMessage, `You already have an open ticket: ${ticketChannel}\n\nPlease use your existing ticket or close it before creating a new one.`);
       } else {
         // Clean up orphaned ticket data
-        await guildCache.removeTicket(guild.id, existingTickets[0].channelId);
+        await guildService.removeTicket(guild.id, existingTickets[0].channelId);
       }
     }
 
@@ -280,7 +281,7 @@ async function handleCreateTicket(interaction) {
     });
 
     // Create ticket in database
-    await guildCache.createTicket(guild.id, user.id, ticketChannel.id);
+    await guildService.createTicket(guild.id, user.id, ticketChannel.id);
 
     // Create welcome embed for the ticket
     const welcomeEmbed = new EmbedBuilder()
@@ -369,8 +370,9 @@ async function handleTicketClose(interaction) {
     const guild = interaction.guild;
     const user = interaction.user;
 
-    // Get ticket data
-    const ticket = await guildCache.getTicket(guild.id, channelId);
+    // Get ticket data using service layer
+    const guildService = getService('guild');
+    const ticket = await guildService.getTicket(guild.id, channelId);
     if (!ticket) {
       // Create a fake message object for embeds.deny
       const fakeMessage = {
@@ -387,7 +389,7 @@ async function handleTicketClose(interaction) {
     }
 
     // Get ticket system configuration
-    const ticketSystem = await guildCache.getTicketSystem(guild.id);
+    const ticketSystem = await guildService.getTicketSystem(guild.id);
 
     // Check permissions
     const isTicketOwner = ticket.userId === user.id;
@@ -411,7 +413,7 @@ async function handleTicketClose(interaction) {
 
     if (ticket.status === 'closed') {
       // Reopen the ticket
-      await guildCache.reopenTicket(guild.id, channelId);
+      await guildService.reopenTicket(guild.id, channelId);
 
       // Add ticket creator back to channel
       await interaction.channel.permissionOverwrites.edit(ticket.userId, {
@@ -457,7 +459,7 @@ async function handleTicketClose(interaction) {
 
     } else {
       // Close the ticket
-      await guildCache.closeTicket(guild.id, channelId, user.id);
+      await guildService.closeTicket(guild.id, channelId, user.id);
 
       // Remove ticket creator from channel completely
       await interaction.channel.permissionOverwrites.edit(ticket.userId, {
@@ -538,8 +540,9 @@ async function handleTicketDelete(interaction) {
     const guild = interaction.guild;
     const user = interaction.user;
 
-    // Get ticket data
-    const ticket = await guildCache.getTicket(guild.id, channelId);
+    // Get ticket data using service layer
+    const guildService = getService('guild');
+    const ticket = await guildService.getTicket(guild.id, channelId);
     if (!ticket) {
       // Create a fake message object for embeds.deny
       const fakeMessage = {
@@ -557,7 +560,7 @@ async function handleTicketDelete(interaction) {
     }
 
     // Get ticket system configuration
-    const ticketSystem = await guildCache.getTicketSystem(guild.id);
+    const ticketSystem = await guildService.getTicketSystem(guild.id);
 
     // Check permissions (only support role or admin can delete)
     const hasAdminPerms = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
@@ -641,8 +644,9 @@ async function handleConfirmDelete(interaction) {
       components: []
     });
 
-    // Remove ticket from database
-    await guildCache.removeTicket(interaction.guild.id, channelId);
+    // Remove ticket from database using service layer
+    const guildService = getService('guild');
+    await guildService.removeTicket(interaction.guild.id, channelId);
 
     // Delete the channel after a short delay to ensure the response is sent
     setTimeout(async () => {
@@ -752,20 +756,14 @@ async function handleBoosterRoleShare(interaction) {
       });
     }
 
-    // Ensure cache writes are enabled before lookup
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.guildCache.areWritesEnabled()) {
-      cacheManager.enableWrites();
-    }
-
-    // Get the booster role data
-    const boosterRole = await guildCache.getBoosterRole(interaction.guild.id, boosterRoleId);
+    // Get the booster role data using service layer
+    const guildService = getService('guild');
+    const boosterRole = await guildService.getBoosterRole(interaction.guild.id, boosterRoleId);
     if (!boosterRole) {
       console.error(`Booster role not found: guildId=${interaction.guild.id}, boosterRoleId=${boosterRoleId}`);
 
       // Try to get all booster roles for debugging
-      const allBoosterRoles = await guildCache.getBoosterRoles(interaction.guild.id);
+      const allBoosterRoles = await guildService.getBoosterRoles(interaction.guild.id);
       console.error(`Available booster roles:`, allBoosterRoles.map(br => ({ id: br.id, roleId: br.roleId, ownerId: br.ownerId })));
 
       const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Booster role not found. The role may have been deleted or there was a database error.');
@@ -823,18 +821,12 @@ async function handleBoosterRoleShare(interaction) {
       try {
         await interaction.member.roles.add(discordRole);
 
-        // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.guildCache.areWritesEnabled()) {
-          cacheManager.enableWrites();
-        }
+        // Add to shared list in database using service layer
+        const guildService = getService('guild');
+        await guildService.addBoosterRoleShare(interaction.guild.id, boosterRoleId, targetUserId);
 
-        // Add to shared list in database
-        await guildCache.addBoosterRoleShare(interaction.guild.id, boosterRoleId, targetUserId);
-
-        // Remove from pending shares
-        await guildCache.removeBoosterRolePendingShare(interaction.guild.id, boosterRoleId, targetUserId);
+        // Remove from pending shares using service layer
+        await guildService.removeBoosterRolePendingShare(interaction.guild.id, boosterRoleId, targetUserId);
 
         // Update the message using prebuilt embed
         const acceptedEmbed = embeds.createSuccess(
@@ -857,14 +849,9 @@ async function handleBoosterRoleShare(interaction) {
 
     } else {
       // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.guildCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Decline the share
-      await guildCache.removeBoosterRolePendingShare(interaction.guild.id, boosterRoleId, targetUserId);
+      // Decline the share using service layer
+      const guildService = getService('guild');
+      await guildService.removeBoosterRolePendingShare(interaction.guild.id, boosterRoleId, targetUserId);
 
       // Update the message using prebuilt embed
       const declinedEmbed = embeds.createWarn(
@@ -895,7 +882,8 @@ async function handleVMRenameModal(interaction) {
       return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    const tempChannel = await guildCache.getTempVoiceChannel(interaction.guild.id, member.voice.channel.id);
+    const guildService = getService('guild');
+    const tempChannel = await guildService.getTempVoiceChannel(interaction.guild.id, member.voice.channel.id);
     if (!tempChannel || tempChannel.ownerId !== member.id) {
       const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'You can only rename your own voice channel');
       return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
@@ -910,7 +898,7 @@ async function handleVMRenameModal(interaction) {
 
     try {
       await member.voice.channel.setName(newName);
-      await guildCache.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
+      await guildService.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
         customName: newName
       });
 

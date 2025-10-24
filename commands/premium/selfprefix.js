@@ -1,5 +1,5 @@
 const { embeds } = require('../../core/embeds');
-const { getUserPrefix, setUserPrefix, clearUserPrefix } = require('../../utils/commandProcessor');
+const { getService } = require('@services');
 
 module.exports = {
   name: "selfprefix",
@@ -9,18 +9,23 @@ module.exports = {
 
 
   run: async (_, message, args) => {
-
     const subcommand = args[0]?.toLowerCase();
     const newPrefix = args[1];
 
     if (!subcommand) {
-      const userPrefix = await getUserPrefix(message.author.id);
+      try {
+        const prefixService = getService('prefix');
+        const userPrefix = await prefixService.getUserPrefix(message.author.id);
 
-      const description = userPrefix 
-        ? `**Your self prefix:** \`${userPrefix}\``
-        : `**Your self prefix:** *Not set*`;
+        const description = userPrefix 
+          ? `**Your self prefix:** \`${userPrefix}\``
+          : `**Your self prefix:** *Not set*`;
 
-      return embeds.info(message, description);
+        return embeds.info(message, description);
+      } catch (error) {
+        console.error('Error getting user prefix:', error.message);
+        return embeds.warn(message, 'Failed to retrieve your self prefix. Please try again.');
+      }
     }
 
     // Handle subcommands
@@ -51,19 +56,31 @@ async function handleSetSelfPrefix(message, newPrefix) {
     return embeds.warn(message, "Prefix **can't** contain spaces.");
   }
 
-  const success = await setUserPrefix(message.author.id, newPrefix);
-  if (success) {
-    return embeds.success(message, `Your self prefix has been **set** to \`${newPrefix}\``);
-  } else {
-    return embeds.warn(message, "Failed to set self prefix. Please try again.");
+  try {
+    const prefixService = getService('prefix');
+    const success = await prefixService.setUserPrefix(message.author.id, newPrefix);
+    if (success) {
+      return embeds.success(message, `Your self prefix has been **set** to \`${newPrefix}\``);
+    } else {
+      return embeds.warn(message, "Failed to set self prefix. Please try again.");
+    }
+  } catch (error) {
+    console.error('Error setting user prefix:', error.message);
+    return embeds.warn(message, "An error occurred while setting your prefix. Please try again.");
   }
 }
 
 async function handleRemoveSelfPrefix(message) {
-  const success = await clearUserPrefix(message.author.id);
-  if (success) {
-    return embeds.success(message, "Your self prefix has been **removed**!");
-  } else {
-    return embeds.warn(message, "Failed to remove self prefix. Please try again.");
+  try {
+    const prefixService = getService('prefix');
+    const success = await prefixService.clearUserPrefix(message.author.id);
+    if (success) {
+      return embeds.success(message, "Your self prefix has been **removed**!");
+    } else {
+      return embeds.warn(message, "Failed to remove self prefix. Please try again.");
+    }
+  } catch (error) {
+    console.error('Error clearing user prefix:', error.message);
+    return embeds.warn(message, "An error occurred while removing your prefix. Please try again.");
   }
 }

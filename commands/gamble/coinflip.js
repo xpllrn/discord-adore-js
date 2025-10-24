@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 
 // Utility functions embedded within the command
@@ -42,16 +42,10 @@ module.exports = {
     }
     
     try {
-      // Check if user has a gambling account
-      const hasAccount = await userCache.hasGamblingAccount(message.author.id);
+      const userService = getService('user');
 
-      if (!hasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a **gambling account** yet! Use \`${guildPrefix}account\` to create one`);
-      }
-
-      // Get user's gambling data
-      const gambling = await userCache.getGamblingData(message.author.id);
+      // Get user's gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(message.author.id);
       const walletBalance = gambling.wallet || 0;
 
       // Parse amount
@@ -96,34 +90,27 @@ module.exports = {
 
       const won = userChoice === coinResult;
 
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
       let description, color;
 
       if (won) {
         // User wins - double their money
         const winAmount = amount;
-        await userCache.updateWalletBalance(message.author.id, winAmount);
-        await userCache.updateGamblingStats(message.author.id, amount, winAmount, 0);
+        await userService.updateWallet(message.author.id, winAmount);
+        await userService.updateGamblingStats(message.author.id, amount, winAmount, 0);
 
         // Get updated wallet balance
-        const updatedGambling = await userCache.getGamblingData(message.author.id);
+        const updatedGambling = await userService.getGamblingData(message.author.id);
         const newWallet = updatedGambling.wallet || 0;
 
         description = `🪙 <@${message.author.id}>: You chose **${userChoice}** and it's **${coinResult}**!\nYou won **${formatCurrency(winAmount)}** 💵, in total you have **${formatCurrency(newWallet)}** 💵`;
         color = '#a4ec7c';
       } else {
         // User loses
-        await userCache.updateWalletBalance(message.author.id, -amount);
-        await userCache.updateGamblingStats(message.author.id, amount, 0, amount);
+        await userService.updateWallet(message.author.id, -amount);
+        await userService.updateGamblingStats(message.author.id, amount, 0, amount);
 
         // Get updated wallet balance
-        const updatedGambling = await userCache.getGamblingData(message.author.id);
+        const updatedGambling = await userService.getGamblingData(message.author.id);
         const newWallet = updatedGambling.wallet || 0;
 
         description = `🪙 <@${message.author.id}>: You chose **${userChoice}**, but it's **${coinResult}**!\nYou lost **${formatCurrency(amount)}** 💵, in total you have **${formatCurrency(newWallet)}** 💵`;

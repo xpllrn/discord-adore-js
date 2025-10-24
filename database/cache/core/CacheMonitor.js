@@ -73,7 +73,7 @@ class CacheMonitor {
   collectMetrics() {
     const timestamp = Date.now();
     const stats = this.cacheManager.getStats();
-    
+
     // Store metrics for different time intervals
     this.storeMetrics('minute', timestamp, stats);
     this.storeMetrics('hour', timestamp, stats);
@@ -95,7 +95,7 @@ class CacheMonitor {
   storeMetrics(interval, timestamp, stats) {
     const intervalMap = this.metrics.intervals[interval];
     const key = this.getIntervalKey(timestamp, interval);
-    
+
     if (!intervalMap.has(key)) {
       intervalMap.set(key, {
         timestamp,
@@ -115,7 +115,7 @@ class CacheMonitor {
    */
   getIntervalKey(timestamp, interval) {
     const date = new Date(timestamp);
-    
+
     switch (interval) {
       case 'minute':
         return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
@@ -216,7 +216,7 @@ class CacheMonitor {
   logAlert(alert) {
     const color = alert.type === 'CRITICAL' ? chalk.red : chalk.yellow;
     const icon = alert.type === 'CRITICAL' ? '🚨' : '⚠️';
-    
+
     console.log(color(`${icon} CACHE ALERT [${alert.type}]: ${alert.message}`));
   }
 
@@ -226,10 +226,10 @@ class CacheMonitor {
   generateReport() {
     const stats = this.cacheManager.getStats();
     const uptime = Date.now() - this.metrics.startTime;
-    
+
     console.log(chalk.blue('\n📊 === CACHE PERFORMANCE REPORT ==='));
     console.log(chalk.gray(`Uptime: ${this.formatDuration(uptime)}`));
-    
+
     // Overall statistics
     for (const [cacheType, cacheStats] of Object.entries(stats)) {
       if (cacheType === 'batch' || cacheType === 'preloader') continue;

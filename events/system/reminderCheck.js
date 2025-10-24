@@ -5,7 +5,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const config = require('../../config/setup');
 
 module.exports = {
-  name: 'ready',
+  name: 'cacheReadyComplete',
   once: true,
   async execute(client) {
     // Set up reminder checking
@@ -29,7 +29,8 @@ function setupReminderCheck(client) {
 
 async function checkReminders(client) {
   try {
-    const userCache = require('../../database/cache/models/user');
+    const { getService } = require('@services');
+    const userService = getService('user');
     const { getModels, isDatabaseReady } = require('../../database');
 
     // Check if database is ready
@@ -65,8 +66,8 @@ async function checkReminders(client) {
 
         const userId = userData.UserID;
 
-        // Get reminders from cache (this will auto-fetch from DB if not in cache)
-        const reminders = await userCache.getReminders(userId);
+        // Get reminders using service layer
+        const reminders = await userService.getReminders(userId);
 
         // Check each reminder
         for (const reminder of reminders) {
@@ -109,26 +110,19 @@ async function checkReminders(client) {
                   components: components
                 });
 
-                // Ensure cache writes are enabled before updating
-                const { getCacheManager } = require('../../database/cache/core/CacheManager');
-                const cacheManager = getCacheManager();
-                if (!cacheManager.userCache.areWritesEnabled()) {
-                  cacheManager.enableWrites();
-                }
-
                 if (reminder.isDaily) {
-                  // Update next trigger for daily reminder
+                  // Update next trigger for daily reminder using service layer
                   const nextTrigger = new Date(now.getTime() + reminder.duration);
-                  await userCache.updateReminderNextTrigger(userId, reminder.id, nextTrigger);
+                  await userService.updateReminderNextTrigger(userId, reminder.id, nextTrigger);
                 } else {
-                  // Remove one-time reminder
-                  await userCache.removeReminder(userId, reminder.id);
+                  // Remove one-time reminder using service layer
+                  await userService.removeReminder(userId, reminder.id);
                 }
               }
             } catch (dmError) {
               // If we can't send DM (user has DMs disabled, blocked bot, etc.)
-              // Remove the reminder to prevent spam attempts
-              await userCache.removeReminder(userId, reminder.id);
+              // Remove the reminder to prevent spam attempts using service layer
+              await userService.removeReminder(userId, reminder.id);
             }
           }
         }

@@ -9,8 +9,9 @@ module.exports = {
         return;
       }
 
-      const guildCache = require('../../database/cache/models/guild');
+      const { getService } = require('@services');
       const { ensureGuildData } = require('../../database');
+      const guildService = getService('guild');
 
       // Ensure guild data exists
       await ensureGuildData(newGuild.id);
@@ -35,7 +36,7 @@ module.exports = {
       }
 
       // Track guild name change
-      await guildCache.addGuildNameChange(
+      await guildService.addGuildNameChange(
         newGuild.id,
         oldGuild.name,
         newGuild.name,

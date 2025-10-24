@@ -1,6 +1,6 @@
 const { EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, MessageFlags } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const { colors, emojis } = require('../../config/setup');
 
 /**
@@ -96,19 +96,20 @@ module.exports = {
       }
 
       // For all other actions, validate first then reply immediately
+      const guildService = getService('guild');
       const member = interaction.member;
       if (!member.voice.channel) {
         const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'You need to be in a voice channel to use this command');
         return await safeInteractionResponse(interaction, { embeds: [embed], flags: MessageFlags.Ephemeral });
       }
 
-      const voiceManager = await guildCache.getVoiceManager(interaction.guild.id);
+      const voiceManager = await guildService.getVoiceManager(interaction.guild.id);
       if (!voiceManager || !voiceManager.enabled) {
         const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Voice manager is not setup in this server');
         return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       }
 
-      const tempChannel = await guildCache.getTempVoiceChannel(interaction.guild.id, member.voice.channel.id);
+      const tempChannel = await guildService.getTempVoiceChannel(interaction.guild.id, member.voice.channel.id);
       if (!tempChannel) {
         const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'You can only use voice manager commands in temporary voice channels');
         return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
@@ -152,6 +153,7 @@ module.exports = {
 
   async handleRenameButton(interaction) {
     // Validate without deferring reply
+    const guildService = getService('guild');
     const member = interaction.member;
     if (!member.voice.channel) {
       return await interaction.reply({
@@ -160,7 +162,7 @@ module.exports = {
       });
     }
 
-    const voiceManager = await guildCache.getVoiceManager(interaction.guild.id);
+    const voiceManager = await guildService.getVoiceManager(interaction.guild.id);
     if (!voiceManager || !voiceManager.enabled) {
       return await interaction.reply({
         content: '❌ Voice manager is not setup in this server',
@@ -168,7 +170,7 @@ module.exports = {
       });
     }
 
-    const tempChannel = await guildCache.getTempVoiceChannel(interaction.guild.id, member.voice.channel.id);
+    const tempChannel = await guildService.getTempVoiceChannel(interaction.guild.id, member.voice.channel.id);
     if (!tempChannel) {
       return await interaction.reply({
         content: '❌ You can only use voice manager commands in temporary voice channels',
@@ -205,6 +207,7 @@ module.exports = {
 };
 
 async function handleLock(interaction, tempChannel) {
+  const guildService = getService('guild');
   if (tempChannel.settings.locked) {
     const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Your voice channel is already locked');
     return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
@@ -220,7 +223,7 @@ async function handleLock(interaction, tempChannel) {
       UseVAD: true
     });
 
-    await guildCache.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
       locked: true
     });
 
@@ -233,6 +236,7 @@ async function handleLock(interaction, tempChannel) {
 }
 
 async function handleUnlock(interaction, tempChannel) {
+  const guildService = getService('guild');
   if (!tempChannel.settings.locked) {
     const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Your voice channel is not locked');
     return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
@@ -248,7 +252,7 @@ async function handleUnlock(interaction, tempChannel) {
       UseVAD: true
     });
 
-    await guildCache.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
       locked: false
     });
 
@@ -261,6 +265,7 @@ async function handleUnlock(interaction, tempChannel) {
 }
 
 async function handleHide(interaction, tempChannel) {
+  const guildService = getService('guild');
   if (tempChannel.settings.hidden) {
     const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Your voice channel is already hidden');
     return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
@@ -271,7 +276,7 @@ async function handleHide(interaction, tempChannel) {
       ViewChannel: false
     });
 
-    await guildCache.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
       hidden: true
     });
 
@@ -284,6 +289,7 @@ async function handleHide(interaction, tempChannel) {
 }
 
 async function handleUnhide(interaction, tempChannel) {
+  const guildService = getService('guild');
   if (!tempChannel.settings.hidden) {
     const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Your voice channel is not hidden');
     return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
@@ -299,7 +305,7 @@ async function handleUnhide(interaction, tempChannel) {
       UseVAD: true
     });
 
-    await guildCache.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
       hidden: false
     });
 
@@ -313,6 +319,7 @@ async function handleUnhide(interaction, tempChannel) {
 
 
 async function handleClaim(interaction, tempChannel) {
+  const guildService = getService('guild');
   // Check if current owner is still in the channel
   const currentOwner = interaction.guild.members.cache.get(tempChannel.ownerId);
   if (currentOwner && currentOwner.voice.channel && currentOwner.voice.channel.id === tempChannel.channelId) {
@@ -321,7 +328,7 @@ async function handleClaim(interaction, tempChannel) {
   }
 
   try {
-    await guildCache.transferVoiceChannelOwnership(interaction.guild.id, tempChannel.channelId, interaction.user.id);
+    await guildService.transferVoiceChannelOwnership(interaction.guild.id, tempChannel.channelId, interaction.user.id);
     const embed = embeds.createSuccess({ author: { id: interaction.user.id } }, 'You have claimed ownership of this voice channel');
     return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   } catch (error) {
@@ -331,12 +338,13 @@ async function handleClaim(interaction, tempChannel) {
 }
 
 async function handleIncrease(interaction, tempChannel) {
+  const guildService = getService('guild');
   const currentLimit = tempChannel.settings.userLimit || 0;
   const newLimit = currentLimit === 0 ? 2 : Math.min(currentLimit + 1, 99);
 
   try {
     await interaction.member.voice.channel.setUserLimit(newLimit);
-    await guildCache.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
       userLimit: newLimit
     });
 
@@ -349,6 +357,7 @@ async function handleIncrease(interaction, tempChannel) {
 }
 
 async function handleDecrease(interaction, tempChannel) {
+  const guildService = getService('guild');
   const currentLimit = tempChannel.settings.userLimit || 0;
   if (currentLimit <= 1) {
     const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'User limit is already at minimum (1) or unlimited (0)');
@@ -359,7 +368,7 @@ async function handleDecrease(interaction, tempChannel) {
 
   try {
     await interaction.member.voice.channel.setUserLimit(newLimit);
-    await guildCache.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(interaction.guild.id, tempChannel.channelId, {
       userLimit: newLimit
     });
 
@@ -501,6 +510,7 @@ async function handleActivity(interaction, tempChannel) {
 
 async function handleDelete(interaction, tempChannel) {
   try {
+    const guildService = getService('guild');
     // Respond to the interaction first before deleting the channel
     const success = await safeInteractionResponse(interaction, {
       content: '🗑️ **Voice channel is being deleted...**',
@@ -512,7 +522,7 @@ async function handleDelete(interaction, tempChannel) {
     }
 
     // Remove from database
-    await guildCache.removeTempVoiceChannel(interaction.guild.id, tempChannel.channelId);
+    await guildService.removeTempVoiceChannel(interaction.guild.id, tempChannel.channelId);
 
     // Delete the channel after a short delay to ensure the response is sent
     setTimeout(async () => {

@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const { EmbedBuilder } = require('discord.js');
 const { colors } = require('../config/setup');
-const userCache = require('../database/cache/models/user');
+const { getService } = require('@services');
 const { findUser } = require('../handlers/finder');
 const { checkBotAction } = require('./permissions');
 
@@ -141,16 +141,17 @@ function createRoleplayCommand(action, actionPastTense) {
       // Get the actual user ID and username (handle both User and GuildMember objects)
       const targetUserId = targetId;
       const targetUsername = actualUser.username || 'Unknown';
+      const userService = getService('user');
 
       // Track the interaction and get count
-      const count = await userCache.trackRoleplayInteraction(
+      const count = await userService.trackRoleplayInteraction(
         message.author.id,
         targetUserId,
         action
       );
 
       // Get how many times the target has performed this action on the user (for footer)
-      const reverseCount = await userCache.getRoleplayCount(targetUserId, message.author.id, action);
+      const reverseCount = await userService.getRoleplayCount(targetUserId, message.author.id, action);
 
       // Create description based on whether it's self-action or targeting someone else
       let description;

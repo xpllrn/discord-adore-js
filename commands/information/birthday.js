@@ -5,7 +5,7 @@ const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
 const { ensureUserData } = require('../../database');
 const { createConfirmation, createPagination } = require('../../core/buttons');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -17,6 +17,7 @@ module.exports = {
 {guildprefix}bday set [day] [month]
 {guildprefix}bday list`,
   run: async(client, message, args) => {
+    const userService = getService('user');
     
     if (args[0] === 'set') {
       // Set birthday (universal)
@@ -69,23 +70,16 @@ module.exports = {
       await ensureUserData(message.author.id);
 
       try {
-        // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.userCache.areWritesEnabled()) {
-          cacheManager.enableWrites();
-        }
-
-        // Check if user already has a birthday set
-        const existingBirthday = await userCache.getBirthday(message.author.id);
+        // Check if user already has a birthday set using service layer
+        const existingBirthday = await userService.getBirthday(message.author.id);
 
         if (existingBirthday && existingBirthday.day && existingBirthday.month) {
-          const formattedBirthday = await userCache.getFormattedBirthday(message.author.id);
+          const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
           return embeds.warn(message, `You already have a birthday set to **${formattedBirthday}**. Birthdays cannot be changed once set.`);
         }
 
-        await userCache.setBirthday(message.author.id, day, month);
-        const formattedBirthday = await userCache.getFormattedBirthday(message.author.id);
+        await userService.setBirthday(message.author.id, day, month);
+        const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
         return embeds.success(message, `Set your birthday to **${formattedBirthday}**`);
       } catch (error) {
         console.error('Error setting birthday:', error);
@@ -120,14 +114,8 @@ module.exports = {
       await ensureUserData(targetUser.id);
 
       try {
-        // Ensure cache writes are enabled before operations
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.userCache.areWritesEnabled()) {
-          cacheManager.enableWrites();
-        }
-
-        const currentBirthday = await userCache.getBirthday(targetUser.id);
+        // Get current birthday using service layer
+        const currentBirthday = await userService.getBirthday(targetUser.id);
 
         if (!currentBirthday || !currentBirthday.day || !currentBirthday.month) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
@@ -142,7 +130,7 @@ module.exports = {
           `Are you sure you want to **reset the birthday** for **${username}**?`,
           async (interaction) => {
             // On approve: clear birthday
-            await userCache.clearBirthday(targetUser.id);
+            await userService.clearBirthday(targetUser.id);
 
             // Edit the confirmation embed to show success message
             const successEmbed = embeds.createSuccess(message, `Reset birthday for **${username}**`);
@@ -164,10 +152,10 @@ module.exports = {
         // Get birthday data for all guild members
         for (const [userId, member] of guildMembers) {
           try {
-            const birthday = await userCache.getBirthday(userId);
+            const birthday = await userService.getBirthday(userId);
             if (birthday && birthday.day && birthday.month) {
-              const formattedBirthday = await userCache.getFormattedBirthday(userId);
-              const isBirthdayToday = await userCache.isBirthday(userId);
+              const formattedBirthday = await userService.getFormattedBirthday(userId);
+              const isBirthdayToday = await userService.isBirthday(userId);
               const nextBirthdayTimestamp = await getNextBirthdayTimestamp(userId);
 
               birthdayData.push({
@@ -262,14 +250,14 @@ module.exports = {
       }
 
       try {
-        const formattedBirthday = await userCache.getFormattedBirthday(targetUser.id);
+        const formattedBirthday = await userService.getFormattedBirthday(targetUser.id);
         const username = targetMember ? targetMember.displayName : targetUser.username;
         
         if (!formattedBirthday) {
           return embeds.info(message, `🎂 **${username}** has no birthday set`);
         }
 
-        const isBirthdayToday = await userCache.isBirthday(targetUser.id);
+        const isBirthdayToday = await userService.isBirthday(targetUser.id);
 
         if (isBirthdayToday) {
           const birthdayText = `🎂 **${username}**'s birthday is **${formattedBirthday}** (Today!)`;
@@ -287,13 +275,13 @@ module.exports = {
     } else {
       // Show user's own birthday
       try {
-        const formattedBirthday = await userCache.getFormattedBirthday(message.author.id);
+        const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
         
         if (!formattedBirthday) {
           return embeds.info(message, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`);
         }
 
-        const isBirthdayToday = await userCache.isBirthday(message.author.id);
+        const isBirthdayToday = await userService.isBirthday(message.author.id);
 
         if (isBirthdayToday) {
           const birthdayText = `🎂 Your birthday is **${formattedBirthday}** (Today!)`;
@@ -313,7 +301,7 @@ module.exports = {
 
 // Helper function to calculate next birthday timestamp
 async function getNextBirthdayTimestamp(userId) {
-  const birthday = await userCache.getBirthday(userId);
+  const birthday = await userService.getBirthday(userId);
 
   if (!birthday) return null;
 

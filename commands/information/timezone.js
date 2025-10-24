@@ -3,7 +3,7 @@ const timezone = require('node-location-timezone');
 const { embeds } = require('../../core/embeds');
 const { findUser } = require('../../handlers/finder');
 const { runHelpCommand } = require('../../utils/commandProcessor');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 
 module.exports = {
   name: "timezone",
@@ -42,7 +42,8 @@ module.exports = {
 
 async function showUserTimezone(message, userId, targetUser = null) {
   try {
-    const userTimezone = await userCache.getTimezone(userId);
+    const userService = getService('user');
+    const userTimezone = await userService.getTimezone(userId);
 
     if (!userTimezone) {
       const displayName = targetUser ?
@@ -75,6 +76,7 @@ async function showUserTimezone(message, userId, targetUser = null) {
 
 async function setUserTimezone(message, cityName) {
   try {
+    const userService = getService('user');
     // Try to find timezone by city name first
     let timezoneId = timezone.findTimezoneByCityName(cityName);
     let locationName = cityName;
@@ -108,15 +110,8 @@ async function setUserTimezone(message, cityName) {
       return embeds.deny(message, `Invalid timezone data for **${cityName}**. Please try a **different** city.`);
     }
 
-    // Ensure cache writes are enabled before saving
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.userCache.areWritesEnabled()) {
-      cacheManager.enableWrites();
-    }
-
-    // Update user timezone using cache system
-    await userCache.setTimezone(message.author.id, timezoneId);
+    // Update user timezone using service layer
+    await userService.setTimezone(message.author.id, timezoneId);
 
     const timeString = testTime.toFormat('LLLL dd, hh:mm a');
     const text = `Timezone set to **${locationName}**. Your current time is **${timeString}**`;

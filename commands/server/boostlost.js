@@ -1,6 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const { colors } = require('../../config/setup');
 
 module.exports = {
@@ -10,6 +10,7 @@ module.exports = {
   usage: `{guildprefix}boosters lost\n{guildprefix}boosters new`,
   permission: "Manage Guild",
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     const subcommand = args[0]?.toLowerCase();
 
@@ -29,7 +30,7 @@ module.exports = {
 async function handleBoostLost(client, message) {
   try {
     // Get recent boost removals
-    const recentBoostRemoves = await guildCache.getRecentBoostRemoves(message.guild.id, 20);
+    const recentBoostRemoves = await guildService.getRecentBoostRemoves(message.guild.id, 20);
 
     if (recentBoostRemoves.length === 0) {
       return embeds.warn(message, 'No **recently lost boosters** have been recorded yet');
@@ -105,7 +106,7 @@ async function handleBoostLost(client, message) {
             }
 
             // Get updated data
-            const updatedBoostRemoves = await guildCache.getRecentBoostRemoves(message.guild.id, 20);
+            const updatedBoostRemoves = await guildService.getRecentBoostRemoves(message.guild.id, 20);
 
             if (updatedBoostRemoves.length === 0) {
               const noDataEmbed = new EmbedBuilder()
@@ -199,7 +200,7 @@ async function handleBoostLost(client, message) {
 async function handleBoostNew(client, message) {
   try {
     // Get recent boost additions
-    const recentBoostAdds = await guildCache.getRecentBoostAdds(message.guild.id, 20);
+    const recentBoostAdds = await guildService.getRecentBoostAdds(message.guild.id, 20);
 
     if (recentBoostAdds.length === 0) {
       return embeds.warn(message, 'No **recently new boosters** have been recorded yet');
@@ -255,7 +256,7 @@ async function handleBoostNew(client, message) {
           }
 
           // Get updated data
-          const updatedBoostAdds = await guildCache.getRecentBoostAdds(message.guild.id, 20);
+          const updatedBoostAdds = await guildService.getRecentBoostAdds(message.guild.id, 20);
 
           if (updatedBoostAdds.length === 0) {
             const noDataEmbed = new EmbedBuilder()

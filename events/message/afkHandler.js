@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const { colors } = require('../../config/setup');
 
 module.exports = {
@@ -8,13 +8,20 @@ module.exports = {
     // Skip bots and DMs
     if (message.author.bot || !message.guild) return;
 
+    // CRITICAL: Skip all message processing until cache is ready
+    if (!message.client.cacheReady) {
+      return; // Don't process any messages during startup
+    }
+
     try {
-      // Check if the message author is AFK and remove their status using cache system
-      const authorAFK = await guildCache.getAFKStatus(message.guild.id, message.author.id);
+      const guildService = getService('guild');
+      
+      // Check if the message author is AFK and remove their status using service layer
+      const authorAFK = await guildService.getAFKStatus(message.guild.id, message.author.id);
 
       if (authorAFK) {
-        // Remove AFK status using cache system
-        await guildCache.removeAFKStatus(message.guild.id, message.author.id);
+        // Remove AFK status using service layer
+        await guildService.removeAFKStatus(message.guild.id, message.author.id);
 
         // Calculate time since AFK
         const timeAgo = Date.now() - authorAFK.since.getTime();
@@ -27,14 +34,14 @@ module.exports = {
         message.channel.send({ embeds: [embed] });
       }
 
-      // Check if any mentioned users are AFK using cache system
+      // Check if any mentioned users are AFK using service layer
       if (message.mentions.users.size > 0) {
         const afkUsers = [];
 
         for (const [userId, user] of message.mentions.users) {
           if (user.bot) continue;
 
-          const afkData = await guildCache.getAFKStatus(message.guild.id, userId);
+          const afkData = await guildService.getAFKStatus(message.guild.id, userId);
 
           if (afkData) {
             const timeAgo = Date.now() - afkData.since.getTime();

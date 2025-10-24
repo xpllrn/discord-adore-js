@@ -1,7 +1,7 @@
 const { ensureGuildData } = require('../../database');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 const webhookLogger = require('../../utils/webhookLogger');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: 'guildMemberRemove',
@@ -21,8 +21,10 @@ module.exports = {
 
 async function processLeaveMessages(member) {
   try {
+    const guildService = getService('guild');
+    
     // Get leave messages from new multi-channel system
-    const leaveMessages = await guildCache.getLeaveMessages(member.guild.id) || [];
+    const leaveMessages = await guildService.getLeaveMessages(member.guild.id) || [];
 
     if (leaveMessages.length === 0) {
       // Check for legacy leave message system
@@ -37,7 +39,7 @@ async function processLeaveMessages(member) {
         const leaveChannel = member.guild.channels.cache.get(leaveConfig.channelId);
         if (!leaveChannel) {
           // Channel no longer exists, remove from config
-          await guildCache.removeLeaveMessage(member.guild.id, leaveConfig.channelId);
+          await guildService.removeLeaveMessage(member.guild.id, leaveConfig.channelId);
           continue;
         }
 
@@ -68,9 +70,11 @@ async function processLeaveMessages(member) {
 
 async function processLegacyLeave(member) {
   try {
+    const guildService = getService('guild');
+    
     // Check for old single-channel leave system
-    const leaveChannel = await guildCache.getLeaveChannel(member.guild.id);
-    const leaveMessage = await guildCache.getLeaveMessage(member.guild.id);
+    const leaveChannel = await guildService.getLeaveChannel(member.guild.id);
+    const leaveMessage = await guildService.getLeaveMessage(member.guild.id);
 
     if (!leaveChannel || !leaveMessage) {
       return; // No legacy leave configured
@@ -80,7 +84,7 @@ async function processLegacyLeave(member) {
     const channel = member.guild.channels.cache.get(leaveChannel);
     if (!channel) {
       // Channel no longer exists, clean up legacy data
-      await guildCache.removeLeave(member.guild.id);
+      await guildService.removeLeave(member.guild.id);
       return;
     }
 
@@ -90,10 +94,10 @@ async function processLegacyLeave(member) {
     }
 
     // Migrate to new system
-    await guildCache.addLeaveMessage(member.guild.id, leaveChannel, leaveMessage);
+    await guildService.addLeaveMessage(member.guild.id, leaveChannel, leaveMessage);
 
     // Clean up legacy data
-    await guildCache.removeLeave(member.guild.id);
+    await guildService.removeLeave(member.guild.id);
 
     // Process and send the leave message with variables
     try {

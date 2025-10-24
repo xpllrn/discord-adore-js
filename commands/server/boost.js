@@ -4,7 +4,7 @@ const { ensureGuildData } = require('../../database');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 const config = require('../../config/setup');
 const { findChannel, findRole } = require('../../handlers/finder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: "boost",
@@ -20,6 +20,7 @@ module.exports = {
   permission: "Manage Guild",
 
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     // Show help if no subcommand provided
     if (!args[0]) return false;
@@ -43,7 +44,7 @@ module.exports = {
       const boostchannel = channelResult.channel;
 
       // Check boost message limit (5 max)
-      const currentBoostMessages = await guildCache.getBoostMessages(message.guild.id) || [];
+      const currentBoostMessages = await guildService.getBoostMessages(message.guild.id) || [];
       const existingBoostMessage = currentBoostMessages.find(bm => bm.channelId === boostchannel.id);
 
       if (!existingBoostMessage && currentBoostMessages.length >= 5) {
@@ -51,16 +52,9 @@ module.exports = {
       }
 
       try {
-        // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.guildCache.areWritesEnabled()) {
-          // Force enable writes if they're not enabled yet
-          cacheManager.enableWrites();
-        }
 
         // Add boost message using new cache system
-        await guildCache.addBoostMessage(message.guild.id, boostchannel.id, boostmessage);
+        await guildService.addBoostMessage(message.guild.id, boostchannel.id, boostmessage);
 
         const action = existingBoostMessage ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **boost message** for ${boostchannel}`);
@@ -84,14 +78,14 @@ module.exports = {
       const boostchannel = channelResult.channel;
 
       // Check if boost message exists for this channel
-      const existingBoostMessage = await guildCache.getBoostMessage(message.guild.id, boostchannel.id);
+      const existingBoostMessage = await guildService.getBoostMessage(message.guild.id, boostchannel.id);
       if (!existingBoostMessage) {
         return embeds.warn(message, `No **boost message** exists for ${boostchannel}`);
       }
 
       try {
         // Remove boost message using new cache system
-        await guildCache.removeBoostMessage(message.guild.id, boostchannel.id);
+        await guildService.removeBoostMessage(message.guild.id, boostchannel.id);
 
         return embeds.success(message, `Removed the **boost message** for ${boostchannel}`);
       } catch (error) {
@@ -115,7 +109,7 @@ module.exports = {
       const boostchannel = channelResult.channel;
 
       // Check if boost message exists for this channel
-      const existingBoostMessage = await guildCache.getBoostMessage(message.guild.id, boostchannel.id);
+      const existingBoostMessage = await guildService.getBoostMessage(message.guild.id, boostchannel.id);
       if (!existingBoostMessage) {
         return embeds.warn(message, `No **boost message** to preview for ${boostchannel}`);
       }
@@ -146,7 +140,7 @@ module.exports = {
 
       if (roleInput.toLowerCase() === 'none') {
         // Remove boost role
-        await guildCache.removeBoostRole(message.guild.id);
+        await guildService.removeBoostRole(message.guild.id);
         return embeds.success(message, 'Removed the **boost role**');
       }
 
@@ -172,12 +166,12 @@ module.exports = {
       }
 
       // Set the boost role
-      await guildCache.setBoostRole(message.guild.id, boostRole.id);
+      await guildService.setBoostRole(message.guild.id, boostRole.id);
       return embeds.success(message, `Set **${boostRole.name}** as the boost role`);
 
     } else if (args[0] === 'list') {
 
-      const boostMessages = await guildCache.getBoostMessages(message.guild.id) || [];
+      const boostMessages = await guildService.getBoostMessages(message.guild.id) || [];
 
       if (boostMessages.length === 0) {
         return embeds.warn(message, 'No **boost messages** have been setup yet');

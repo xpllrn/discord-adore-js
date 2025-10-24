@@ -1,5 +1,5 @@
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: 'voiceStateUpdate',
@@ -13,9 +13,10 @@ module.exports = {
 
       const guild = newState.guild;
       const member = newState.member;
+      const guildService = getService('guild');
 
       // Get voice manager configuration
-      const voiceManager = await guildCache.getVoiceManager(guild.id);
+      const voiceManager = await guildService.getVoiceManager(guild.id);
       if (!voiceManager.enabled) return;
 
       // Handle user joining the "Join 2 create" channel
@@ -42,6 +43,7 @@ module.exports = {
 // Handle user joining the "Join 2 create" channel
 async function handleJoinToCreate(guild, member, voiceManager) {
   try {
+    const guildService = getService('guild');
     console.log(`User ${member.displayName} joined hub channel ${voiceManager.joinChannelId}. Attempting to create temporary channel.`);
     // Check if user already has a temporary channel
     const existingChannel = voiceManager.tempChannels.find(ch => ch.ownerId === member.id);
@@ -53,7 +55,7 @@ async function handleJoinToCreate(guild, member, voiceManager) {
         return;
       } else {
         // Channel doesn't exist anymore, remove from database
-        await guildCache.removeTempVoiceChannel(guild.id, existingChannel.channelId);
+        await guildService.removeTempVoiceChannel(guild.id, existingChannel.channelId);
       }
     }
 
@@ -98,7 +100,7 @@ async function handleJoinToCreate(guild, member, voiceManager) {
     });
 
     // Add to database
-    await guildCache.addTempVoiceChannel(guild.id, tempChannel.id, member.id);
+    await guildService.addTempVoiceChannel(guild.id, tempChannel.id, member.id);
 
     // Move user to their new channel
     await member.voice.setChannel(tempChannel);
@@ -111,6 +113,7 @@ async function handleJoinToCreate(guild, member, voiceManager) {
 // Handle user leaving a temporary voice channel
 async function handleTempChannelLeave(guild, channel, voiceManager) {
   try {
+    const guildService = getService('guild');
     // Check if this is a temporary channel
     const tempChannel = voiceManager.tempChannels.find(ch => ch.channelId === channel.id);
     if (!tempChannel) return;
@@ -121,7 +124,7 @@ async function handleTempChannelLeave(guild, channel, voiceManager) {
       await channel.delete('Temporary voice channel auto-cleanup');
       
       // Remove from database
-      await guildCache.removeTempVoiceChannel(guild.id, channel.id);
+      await guildService.removeTempVoiceChannel(guild.id, channel.id);
     }
 
   } catch (error) {
@@ -132,6 +135,7 @@ async function handleTempChannelLeave(guild, channel, voiceManager) {
 // Handle user joining a temporary voice channel
 async function handleTempChannelJoin(guild, member, channel, voiceManager) {
   try {
+    const guildService = getService('guild');
     // Check if this is a temporary channel
     const tempChannel = voiceManager.tempChannels.find(ch => ch.channelId === channel.id);
     if (!tempChannel) return;
@@ -144,7 +148,7 @@ async function handleTempChannelJoin(guild, member, channel, voiceManager) {
     );
 
     for (const cooldown of inviteCooldowns) {
-      await guildCache.markInviteAsJoined(guild.id, cooldown.userId, member.id);
+      await guildService.markInviteAsJoined(guild.id, cooldown.userId, member.id);
     }
 
   } catch (error) {

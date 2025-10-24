@@ -4,7 +4,7 @@ const { hasDiscordPermission } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { ensureGuildData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -14,6 +14,7 @@ module.exports = {
   usage: '{guildprefix}autoreact add [emoji] word\n{guildprefix}autoreact remove [word]\n{guildprefix}autoreact list\n{guildprefix}autoreact reset',
   permission: 'Manage Channels',
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
@@ -60,7 +61,7 @@ module.exports = {
       }
 
       // Check if trigger already exists using cache system
-      const autoReacts = await guildCache.getAutoReacts(message.guild.id);
+      const autoReacts = await guildService.getAutoReacts(message.guild.id);
       const existingData = autoReacts.find(ar => ar.word === word);
 
       if (existingData) {
@@ -73,7 +74,7 @@ module.exports = {
       }
 
       // Save using cache system
-      await guildCache.addAutoReact(message.guild.id, word, emojiId, emojiName, isCustom);
+      await guildService.addAutoReact(message.guild.id, word, emojiId, emojiName, isCustom);
 
       const emojiDisplay = isCustom ? `<:${emojiName}:${emojiId}>` : emojiName;
       return embeds.success(message, `Created autoreact for **${word}** with ${emojiDisplay}`);
@@ -87,11 +88,11 @@ module.exports = {
       }
 
       // Check if autoreact exists using cache system
-      const autoReacts = await guildCache.getAutoReacts(message.guild.id);
+      const autoReacts = await guildService.getAutoReacts(message.guild.id);
       const data = autoReacts.find(ar => ar.word === word.toLowerCase());
 
       if (data) {
-        await guildCache.removeAutoReact(message.guild.id, word.toLowerCase());
+        await guildService.removeAutoReact(message.guild.id, word.toLowerCase());
         return embeds.success(message, `Removed autoreact for **${word}**`);
       } else {
         return embeds.warn(message, `No autoreact found for **${word}**`);
@@ -99,7 +100,7 @@ module.exports = {
 
     } else if (args[0] === 'list') {
 
-      const data = await guildCache.getAutoReacts(message.guild.id);
+      const data = await guildService.getAutoReacts(message.guild.id);
 
       if (data && data.length > 0) {
         // Clean up invalid emojis before displaying
@@ -112,7 +113,7 @@ module.exports = {
               validData.push(autoreact);
             } else {
               // Remove invalid emoji using cache system
-              await guildCache.removeAutoReact(message.guild.id, autoreact.word);
+              await guildService.removeAutoReact(message.guild.id, autoreact.word);
             }
           } else {
             // Unicode emojis are always valid
@@ -152,7 +153,7 @@ module.exports = {
 
     } else if (args[0] === 'reset') {
 
-      const data = await guildCache.getAutoReacts(message.guild.id);
+      const data = await guildService.getAutoReacts(message.guild.id);
 
       if (data && data.length > 0) {
         // Show confirmation dialog
@@ -161,7 +162,7 @@ module.exports = {
           'Are you sure you want to **remove all autoreacts**?',
           async (interaction) => {
             // On approve: delete all autoreacts using cache system
-            await guildCache.clearAllAutoReacts(message.guild.id);
+            await guildService.clearAllAutoReacts(message.guild.id);
 
             // Edit the confirmation embed to show success message
             const successEmbed = new EmbedBuilder()

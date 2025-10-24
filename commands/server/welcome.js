@@ -4,7 +4,7 @@ const { ensureGuildData } = require('../../database');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 const config = require('../../config/setup');
 const { findChannel } = require('../../handlers/finder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: "welcome",
@@ -19,6 +19,7 @@ module.exports = {
   permission: "Manage Guild",
 
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     if (!args[0]) return false;
 
@@ -44,23 +45,15 @@ module.exports = {
         const welcomechannel = channelResult.channel;
 
         // Check welcome message limit (5 max)
-        const currentWelcomeMessages = await guildCache.getWelcomeMessages(message.guild.id) || [];
+        const currentWelcomeMessages = await guildService.getWelcomeMessages(message.guild.id) || [];
         const existingWelcomeMessage = currentWelcomeMessages.find(wm => wm.channelId === welcomechannel.id);
 
         if (!existingWelcomeMessage && currentWelcomeMessages.length >= 5) {
           return embeds.deny(message, 'You have reached the **maximum welcome messages (5)**. Please remove some first.');
         }
 
-        // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.guildCache.areWritesEnabled()) {
-          // Force enable writes if they're not enabled yet
-          cacheManager.enableWrites();
-        }
-
         // Add welcome message using new cache system
-        await guildCache.addWelcomeMessage(message.guild.id, welcomechannel.id, welcomemessage);
+        await guildService.addWelcomeMessage(message.guild.id, welcomechannel.id, welcomemessage);
 
         const action = existingWelcomeMessage ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **welcome message** for ${welcomechannel}`);
@@ -86,13 +79,13 @@ module.exports = {
       const welcomechannel = channelResult.channel;
 
       // Check if welcome message exists for this channel
-      const existingWelcomeMessage = await guildCache.getWelcomeMessage(message.guild.id, welcomechannel.id);
+      const existingWelcomeMessage = await guildService.getWelcomeMessage(message.guild.id, welcomechannel.id);
       if (!existingWelcomeMessage) {
         return embeds.warn(message, `No **welcome message** exists for ${welcomechannel}`);
       }
 
       // Remove welcome message using new cache system
-      await guildCache.removeWelcomeMessage(message.guild.id, welcomechannel.id);
+      await guildService.removeWelcomeMessage(message.guild.id, welcomechannel.id);
 
       return embeds.success(message, `Removed the **welcome message** for ${welcomechannel}`);
 
@@ -114,7 +107,7 @@ module.exports = {
       const welcomechannel = channelResult.channel;
 
       // Check if welcome message exists for this channel
-      const existingWelcomeMessage = await guildCache.getWelcomeMessage(message.guild.id, welcomechannel.id);
+      const existingWelcomeMessage = await guildService.getWelcomeMessage(message.guild.id, welcomechannel.id);
       if (!existingWelcomeMessage) {
         return embeds.warn(message, `No **welcome message** to preview for ${welcomechannel}`);
       }
@@ -140,7 +133,7 @@ module.exports = {
 
     } else if (args[0] === 'list') {
 
-      const welcomeMessages = await guildCache.getWelcomeMessages(message.guild.id) || [];
+      const welcomeMessages = await guildService.getWelcomeMessages(message.guild.id) || [];
 
       if (welcomeMessages.length === 0) {
         return embeds.warn(message, 'No **welcome messages** have been setup yet');

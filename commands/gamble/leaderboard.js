@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const { getCacheManager } = require('../../database/cache');
+const { getService } = require('@services');
 const { getQueryOptimizer } = require('../../database/utils/QueryOptimizer');
 const { colors } = require('../../config/setup');
 
@@ -17,40 +17,33 @@ module.exports = {
   run: async(client, message, args) => {
 
     try {
-      const cacheManager = getCacheManager();
+      const userService = getService('user');
 
-      if (!cacheManager.isReady()) {
-        return embeds.warn(message, 'Cache system is still loading. Please try again in a moment.');
+      // Get all users from database (this will need to query the database directly)
+      // For now, we'll use a simple approach - get users from guild members
+      const guildMembers = await message.guild.members.fetch();
+      const userIds = Array.from(guildMembers.keys());
+
+      if (userIds.length === 0) {
+        return embeds.warn(message, 'No users found in this server');
       }
 
-      // Get all cached user keys
-      const userKeys = cacheManager.userCache.keys();
+      // Get gambling data for all users using batch operation
+      const gamblingDataMap = await userService.batchGetGamblingData(userIds);
 
-      if (userKeys.length === 0) {
-        return embeds.warn(message, 'No users found with gambling data');
-      }
-
-      // Process users from cache
+      // Process users and calculate wealth
       const usersWithWealth = [];
 
-      for (const userId of userKeys) {
-        try {
-          const userData = await cacheManager.userCache.get(userId);
-          if (userData && userData.Gambling) {
-            const wallet = userData.Gambling.wallet || 0;
-            const bank = userData.Gambling.bank || 0;
-            const totalWealth = wallet + bank;
+      for (const [userId, gamblingData] of gamblingDataMap) {
+        const wallet = gamblingData.wallet || 0;
+        const bank = gamblingData.bank || 0;
+        const totalWealth = wallet + bank;
 
-            if (totalWealth > 0) {
-              usersWithWealth.push({
-                UserID: userId,
-                totalWealth: totalWealth
-              });
-            }
-          }
-        } catch (error) {
-          // Skip users with cache errors
-          continue;
+        if (totalWealth > 0) {
+          usersWithWealth.push({
+            UserID: userId,
+            totalWealth: totalWealth
+          });
         }
       }
 

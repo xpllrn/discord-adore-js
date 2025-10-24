@@ -3,7 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { ensureUserData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -15,6 +15,7 @@ module.exports = {
 {guildprefix}note list
 {guildprefix}note reset`,
   run: async(client, message, args) => {
+    const userService = getService('user');
 
     // Ensure user data exists in the database
     await ensureUserData(message.author.id);
@@ -37,14 +38,8 @@ module.exports = {
       }
 
       try {
-        // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.userCache.areWritesEnabled()) {
-          cacheManager.enableWrites();
-        }
-
-        const newNote = await userCache.addNote(message.author.id, content);
+        // Add note using service layer
+        const newNote = await userService.addNote(message.author.id, content);
         return embeds.success(message, `Created note **#${newNote.id}**: ${content.length > 50 ? content.substring(0, 50) + '...' : content}`);
       } catch (error) {
         console.error('Error adding note:', error);
@@ -60,7 +55,7 @@ module.exports = {
       }
 
       try {
-        const removedNote = await userCache.removeNote(message.author.id, noteId);
+        const removedNote = await userService.removeNote(message.author.id, noteId);
         
         if (removedNote) {
           return embeds.success(message, `Removed note **#${noteId}**`);
@@ -75,7 +70,7 @@ module.exports = {
     } else if (args[0] === 'list' || !args[0]) {
 
       try {
-        const notes = await userCache.getNotesData(message.author.id);
+        const notes = await userService.getNotesData(message.author.id);
 
         if (notes && notes.length > 0) {
           // Sort notes by ID for consistent display
@@ -115,7 +110,7 @@ module.exports = {
     } else if (args[0] === 'reset' || args[0] === 'clear') {
 
       try {
-        const notes = await userCache.getNotesData(message.author.id);
+        const notes = await userService.getNotesData(message.author.id);
 
         if (notes && notes.length > 0) {
           // Show confirmation dialog
@@ -123,15 +118,8 @@ module.exports = {
             message,
             'Are you sure you want to **remove all notes**?',
             async (interaction) => {
-              // Ensure cache writes are enabled before clearing
-              const { getCacheManager } = require('../../database/cache/core/CacheManager');
-              const cacheManager = getCacheManager();
-              if (!cacheManager.userCache.areWritesEnabled()) {
-                cacheManager.enableWrites();
-              }
-
-              // On approve: delete all notes
-              await userCache.clearAllNotes(message.author.id);
+              // On approve: delete all notes using service layer
+              await userService.clearAllNotes(message.author.id);
 
               // Edit the confirmation embed to show success message
               const successEmbed = embeds.createSuccess(message, 'Removed all notes');

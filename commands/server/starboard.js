@@ -14,6 +14,7 @@ module.exports = {
   permission: "Manage Guild",
 
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
@@ -21,7 +22,7 @@ module.exports = {
 
     // Ensure guild data exists in the database
     await ensureGuildData(message.guild.id);
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
 
     if (args[0] === 'set') {
 
@@ -45,7 +46,7 @@ module.exports = {
         return embeds.warn(message, `I don't have permission to send messages and embed links in ${starboardChannel}`);
       }
 
-      await guildCache.setStarboardChannel(message.guild.id, starboardChannel.id);
+      await guildService.setStarboardChannel(message.guild.id, starboardChannel.id);
       return embeds.success(message, `**Starboard enabled!** Set starboard channel to ${starboardChannel}`);
 
     } else if (args[0] === 'threshold') {
@@ -58,7 +59,7 @@ module.exports = {
         return embeds.warn(message, 'Threshold must be a number and at least **2**');
       }
 
-      await guildCache.setStarboardThreshold(message.guild.id, threshold);
+      await guildService.setStarboardThreshold(message.guild.id, threshold);
       return embeds.success(message, `Set **starboard threshold** to **${threshold}** reactions`);
 
     } else if (args[0] === 'emoji') {
@@ -88,14 +89,14 @@ module.exports = {
         }
       }
 
-      await guildCache.setStarboardEmoji(message.guild.id, emoji);
+      await guildService.setStarboardEmoji(message.guild.id, emoji);
       return embeds.success(message, `Set **starboard emoji** to ${emoji}`);
 
     } else if (args[0] === 'check') {
 
-      const starboardChannel = await guildCache.getStarboardChannel(message.guild.id);
-      const starboardThreshold = await guildCache.getStarboardThreshold(message.guild.id);
-      const starboardEmoji = await guildCache.getStarboardEmoji(message.guild.id);
+      const starboardChannel = await guildService.getStarboardChannel(message.guild.id);
+      const starboardThreshold = await guildService.getStarboardThreshold(message.guild.id);
+      const starboardEmoji = await guildService.getStarboardEmoji(message.guild.id);
 
       if (!starboardChannel) {
         return embeds.warn(message, 'No **starboard channel** has been set up yet');
@@ -119,12 +120,12 @@ module.exports = {
 
     } else if (args[0] === 'unset') {
 
-      const starboardChannel = await guildCache.getStarboardChannel(message.guild.id);
+      const starboardChannel = await guildService.getStarboardChannel(message.guild.id);
       if (!starboardChannel) {
         return embeds.warn(message, 'Starboard is not currently enabled');
       }
 
-      await guildCache.setStarboardChannel(message.guild.id, null);
+      await guildService.setStarboardChannel(message.guild.id, null);
       return embeds.success(message, 'Disabled the **starboard system**');
 
     } else {

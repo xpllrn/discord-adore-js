@@ -1,9 +1,8 @@
 const { Collection, PermissionFlagsBits } = require('discord.js');
 const config = require('../config/setup');
-const prefixCache = require('../database/cache/models/prefix');
 const { embeds } = require('../core/embeds');
 const { hasPermissionLevel, hasDiscordPermission, hasMultipleDiscordPermissions, checkPermissionLevel } = require('./permissions');
-const { User } = require('../database');
+const { getService } = require('@services');
 
 const cooldowns = new Collection();
 
@@ -47,12 +46,13 @@ async function processCommand(message, isEdit = false) {
     return;
   }
 
-  // Check for valid prefix
-  const prefixResult = await prefixCache.checkPrefixes(message);
+  // Check for valid prefix using new PrefixService
+  const prefixService = getService('prefix');
+  const prefixResult = await prefixService.resolvePrefix(message);
   if (!prefixResult) return;
 
-  const { prefix } = prefixResult;
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const { prefix, content } = prefixResult;
+  const args = content.trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
 
   // Find command
@@ -213,60 +213,102 @@ function handleCooldown(message, command) {
 }
 
 /**
- * Get the current prefix for a guild
+ * Get the current prefix for a guild using new PrefixService
  * @param {string} guildId - Guild ID
  * @returns {Promise<string>} Guild prefix
  */
 async function getGuildPrefix(guildId) {
-  return await prefixCache.getGuildPrefix(guildId);
+  console.log(`🔍 [PREFIX-PROCESSOR-GET] Getting prefix for guild: "${guildId}" (type: ${typeof guildId})`);
+  try {
+    const prefixService = getService('prefix');
+    const result = await prefixService.getGuildPrefix(guildId);
+    console.log(`📊 [PREFIX-PROCESSOR-GET] Returning prefix: "${result}" (type: ${typeof result})`);
+    return result;
+  } catch (error) {
+    console.error('Error getting guild prefix:', error.message);
+    return config.prefix || '!'; // Fallback to default prefix
+  }
 }
 
 /**
- * Get the current self prefix for a user
+ * Get the current self prefix for a user using new PrefixService
  * @param {string} userId - User ID
  * @returns {Promise<string|null>} User self prefix or null
  */
 async function getUserPrefix(userId) {
-  return await prefixCache.getUserPrefix(userId);
+  try {
+    const prefixService = getService('prefix');
+    return await prefixService.getUserPrefix(userId);
+  } catch (error) {
+    console.error('Error getting user prefix:', error.message);
+    return null;
+  }
 }
 
 /**
- * Set guild prefix
+ * Set guild prefix using new PrefixService
  * @param {string} guildId - Guild ID
  * @param {string} prefix - New prefix
  * @returns {Promise<boolean>} Success status
  */
 async function setGuildPrefix(guildId, prefix) {
-  return await prefixCache.setGuildPrefix(guildId, prefix);
+  console.log(`🔄 [PREFIX-PROCESSOR] Setting prefix for guild ${guildId} to "${prefix}"`);
+  
+  try {
+    const prefixService = getService('prefix');
+    const result = await prefixService.setGuildPrefix(guildId, prefix);
+    console.log(`📊 [PREFIX-PROCESSOR] setGuildPrefix returned: ${result}`);
+    return result;
+  } catch (error) {
+    console.error(`❌ [PREFIX-PROCESSOR] Error in setGuildPrefix:`, error.message);
+    return false;
+  }
 }
 
 /**
- * Set user self prefix
+ * Set user self prefix using new PrefixService
  * @param {string} userId - User ID
  * @param {string} prefix - New self prefix
  * @returns {Promise<boolean>} Success status
  */
 async function setUserPrefix(userId, prefix) {
-  return await prefixCache.setUserPrefix(userId, prefix);
+  try {
+    const prefixService = getService('prefix');
+    return await prefixService.setUserPrefix(userId, prefix);
+  } catch (error) {
+    console.error('Error setting user prefix:', error.message);
+    return false;
+  }
 }
 
 /**
- * Clear user self prefix
+ * Clear user self prefix using new PrefixService
  * @param {string} userId - User ID
  * @returns {Promise<boolean>} Success status
  */
 async function clearUserPrefix(userId) {
-  return await prefixCache.clearUserPrefix(userId);
+  try {
+    const prefixService = getService('prefix');
+    return await prefixService.clearUserPrefix(userId);
+  } catch (error) {
+    console.error('Error clearing user prefix:', error.message);
+    return false;
+  }
 }
 
 /**
- * Check if user is blacklisted using cache system
+ * Check if user is blacklisted using new SystemService
  * @param {string} userId - Discord user ID
  * @returns {Promise<boolean>} Whether user is blacklisted
  */
 async function checkUserBlacklist(userId) {
-  const systemCache = require('../database/cache/models/system');
-  return await systemCache.getUserBlacklist(userId);
+  try {
+    const systemService = getService('system');
+    return await systemService.isUserBlacklisted(userId);
+  } catch (error) {
+    console.error('Error checking user blacklist:', error.message);
+    return false; // Default to not blacklisted on error
+  }
 }
 
 /**

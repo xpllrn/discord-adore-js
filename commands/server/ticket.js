@@ -5,7 +5,7 @@ const { colors, emojis } = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { hasDiscordPermission } = require('../../utils/permissions');
 const { findChannel, findRole } = require('../../handlers/finder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 
 module.exports = {
   name: "ticket",
@@ -50,7 +50,7 @@ module.exports = {
 
 async function handleSetup(client, message, args) {
   try {
-    const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
 
     // Check if there's an existing setup and if the message still exists
     if (ticketSystem.enabled && ticketSystem.setupMessageId && ticketSystem.setupChannelId) {
@@ -91,8 +91,8 @@ async function handleSetup(client, message, args) {
     });
 
     // Enable ticket system and save setup info
-    await guildCache.enableTicketSystem(message.guild.id);
-    await guildCache.setTicketSetup(message.guild.id, message.channel.id, setupMessage.id);
+    await guildService.enableTicketSystem(message.guild.id);
+    await guildService.setTicketSetup(message.guild.id, message.channel.id, setupMessage.id);
 
     return embeds.success(message, "Ticket system has been set up successfully! Users can now create tickets using the button above.");
 
@@ -104,7 +104,7 @@ async function handleSetup(client, message, args) {
 
 async function handleReset(client, message, args) {
   try {
-    const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
 
     if (!ticketSystem.enabled) {
       return embeds.deny(message, "No ticket system is currently set up. Use `,ticket setup` to create one.");
@@ -126,7 +126,7 @@ async function handleReset(client, message, args) {
     }
 
     // Reset the ticket system setup data
-    await guildCache.setTicketSetup(message.guild.id, null, null);
+    await guildService.setTicketSetup(message.guild.id, null, null);
 
     return embeds.success(message, "Ticket system has been reset successfully! The old setup message has been removed. Use `,ticket setup` to create a new one.");
 
@@ -139,7 +139,7 @@ async function handleReset(client, message, args) {
 async function handleCategory(client, message, args) {
   try {
     if (!args[1]) {
-      const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+      const ticketSystem = await guildService.getTicketSystem(message.guild.id);
       if (ticketSystem.categoryId) {
         const category = message.guild.channels.cache.get(ticketSystem.categoryId);
         const categoryName = category ? category.name : 'Unknown Category';
@@ -150,7 +150,7 @@ async function handleCategory(client, message, args) {
     }
 
     if (args[1].toLowerCase() === 'none') {
-      await guildCache.setTicketCategory(message.guild.id, null);
+      await guildService.setTicketCategory(message.guild.id, null);
       return embeds.success(message, "Ticket category has been removed. New tickets will be created at the top of the channel list.");
     }
 
@@ -160,7 +160,7 @@ async function handleCategory(client, message, args) {
     }
 
     const category = categoryResult.channel;
-    await guildCache.setTicketCategory(message.guild.id, category.id);
+    await guildService.setTicketCategory(message.guild.id, category.id);
     return embeds.success(message, `Ticket category has been set to **${category.name}**. New tickets will be created in this category.`);
 
   } catch (error) {
@@ -171,7 +171,7 @@ async function handleCategory(client, message, args) {
 
 async function handleAddUser(client, message, args) {
   try {
-    const ticket = await guildCache.getTicket(message.guild.id, message.channel.id);
+    const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
     }
@@ -181,7 +181,7 @@ async function handleAddUser(client, message, args) {
     }
 
     // Check permissions
-    const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
     const isTicketOwner = ticket.userId === message.author.id;
     const hasAdminPerms = hasDiscordPermission(message.member, PermissionFlagsBits.Administrator);
     const hasSupportRole = ticketSystem.supportRoleId && message.member.roles.cache.has(ticketSystem.supportRoleId);
@@ -217,7 +217,7 @@ async function handleAddUser(client, message, args) {
 
 async function handleRemoveUser(client, message, args) {
   try {
-    const ticket = await guildCache.getTicket(message.guild.id, message.channel.id);
+    const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
     }
@@ -227,7 +227,7 @@ async function handleRemoveUser(client, message, args) {
     }
 
     // Check permissions
-    const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
     const isTicketOwner = ticket.userId === message.author.id;
     const hasAdminPerms = hasDiscordPermission(message.member, PermissionFlagsBits.Administrator);
     const hasSupportRole = ticketSystem.supportRoleId && message.member.roles.cache.has(ticketSystem.supportRoleId);
@@ -267,7 +267,7 @@ async function handleRemoveUser(client, message, args) {
 
 async function handleClose(client, message, args) {
   try {
-    const ticket = await guildCache.getTicket(message.guild.id, message.channel.id);
+    const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
     }
@@ -277,7 +277,7 @@ async function handleClose(client, message, args) {
     }
 
     // Check permissions
-    const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
     const isTicketOwner = ticket.userId === message.author.id;
     const hasAdminPerms = hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator');
     const hasSupportRole = ticketSystem.supportRoleId && message.member.roles.cache.has(ticketSystem.supportRoleId);
@@ -286,7 +286,7 @@ async function handleClose(client, message, args) {
       return embeds.deny(message, "You don't have permission to close this ticket.");
     }
 
-    await guildCache.closeTicket(message.guild.id, message.channel.id, message.author.id);
+    await guildService.closeTicket(message.guild.id, message.channel.id, message.author.id);
 
     // Remove ticket creator from channel completely
     await message.channel.permissionOverwrites.edit(ticket.userId, {
@@ -307,7 +307,7 @@ async function handleClose(client, message, args) {
 
 async function handleOpen(client, message, args) {
   try {
-    const ticket = await guildCache.getTicket(message.guild.id, message.channel.id);
+    const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
     }
@@ -317,7 +317,7 @@ async function handleOpen(client, message, args) {
     }
 
     // Check permissions
-    const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
     const hasAdminPerms = hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator');
     const hasSupportRole = ticketSystem.supportRoleId && message.member.roles.cache.has(ticketSystem.supportRoleId);
 
@@ -325,7 +325,7 @@ async function handleOpen(client, message, args) {
       return embeds.deny(message, "You don't have permission to reopen this ticket.");
     }
 
-    await guildCache.reopenTicket(message.guild.id, message.channel.id);
+    await guildService.reopenTicket(message.guild.id, message.channel.id);
 
     // Restore full channel permissions for ticket creator
     await message.channel.permissionOverwrites.edit(ticket.userId, {
@@ -346,7 +346,7 @@ async function handleOpen(client, message, args) {
 
 async function handleRename(client, message, args) {
   try {
-    const ticket = await guildCache.getTicket(message.guild.id, message.channel.id);
+    const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
     }
@@ -356,7 +356,7 @@ async function handleRename(client, message, args) {
     }
 
     // Check permissions
-    const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
     const isTicketOwner = ticket.userId === message.author.id;
     const hasAdminPerms = hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator');
     const hasSupportRole = ticketSystem.supportRoleId && message.member.roles.cache.has(ticketSystem.supportRoleId);
@@ -379,7 +379,7 @@ async function handleRename(client, message, args) {
 
 async function handleSupport(client, message, args) {
   try {
-    const ticketSystem = await guildCache.getTicketSystem(message.guild.id);
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
 
     // If no arguments, show current support role
     if (!args[1]) {
@@ -395,7 +395,7 @@ async function handleSupport(client, message, args) {
 
     // Handle removing support role
     if (args[1].toLowerCase() === 'none') {
-      await guildCache.setTicketSupportRole(message.guild.id, null);
+      await guildService.setTicketSupportRole(message.guild.id, null);
       return embeds.success(message, "Support role has been removed. Only administrators and the ticket creator will have access to tickets.");
     }
 
@@ -407,7 +407,7 @@ async function handleSupport(client, message, args) {
     }
 
     const role = roleResult.role;
-    await guildCache.setTicketSupportRole(message.guild.id, role.id);
+    await guildService.setTicketSupportRole(message.guild.id, role.id);
     return embeds.success(message, `**${role.name}** has been set as the support role for tickets. Members with this role will have access to all tickets.`);
 
   } catch (error) {

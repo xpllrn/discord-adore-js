@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { findUser } = require('../../handlers/finder');
 
 module.exports = {
@@ -111,7 +111,7 @@ module.exports = {
 async function checkLastFmNowPlaying(user, embed, sentMessage) {
   try {
 
-    const fmuser = await userCache.getLastFMUsername(user.id);
+    const fmuser = await userService.getLastFMUsername(user.id);
 
     if (!fmuser) {
       return;

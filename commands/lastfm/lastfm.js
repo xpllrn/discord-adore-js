@@ -1,8 +1,7 @@
 const { EmbedBuilder, AttachmentBuilder } = require("discord.js");
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
-const userCache = require('../../database/cache/models/user');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const { getGuildPrefix, runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
 const axios = require('axios');
@@ -68,7 +67,8 @@ module.exports = {
   description: 'Manage your last.fm profile and settings',
   usage: '{guildprefix}lastfm howto\n{guildprefix}lastfm set [lastfm username]\n{guildprefix}lastfm wk [artist]\n{guildprefix}lastfm ta [user] [period]',
   run: async(client, message, args) => {
-
+    const userService = getService('user');
+    const guildService = getService('guild');
     const guildprefix = await getGuildPrefix(message.guild.id);
     const command = String(args[0] || '').toLowerCase();
 
@@ -78,7 +78,7 @@ module.exports = {
 
     // Check if user has Last.fm linked for username-required commands
     if (commands.username.includes(command)) {
-        const fmUsername = await userCache.getLastFMUsername(message.author.id);
+        const fmUsername = await userService.getLastFMUsername(message.author.id);
         if (!fmUsername) {
             return embeds.warn(message, error(message.author, message.author, 'notConnected'));
         }
@@ -106,15 +106,9 @@ module.exports = {
             }
 
             if (String(args[1]).toLowerCase() === 'none') {
-                // Ensure cache writes are enabled before saving
-                const { getCacheManager } = require('../../database/cache/core/CacheManager');
-                const cacheManager = getCacheManager();
-                if (!cacheManager.userCache.areWritesEnabled()) {
-                    cacheManager.enableWrites();
-                }
-
-                await userCache.setLastFMUsername(message.author.id, null);
-                await userCache.setLastFMLibrary(message.author.id, null);
+                // Unlink Last.fm profile using service layer
+                await userService.setLastFMUsername(message.author.id, null);
+                await userService.setLastFMLibrary(message.author.id, null);
                 return embeds.success(message, `Your **Last.fm** profile has been **unlinked**`);
             }
 
@@ -136,20 +130,13 @@ module.exports = {
                 }
 
                 // Check if user already has this username set
-                const currentUsername = await userCache.getLastFMUsername(message.author.id);
+                const currentUsername = await userService.getLastFMUsername(message.author.id);
                 if (currentUsername === results.user.name) {
                     return embeds.warn(message, `Your **Last.fm** username is already set as [**${results.user.name}**](https://last.fm/user/${results.user.name}).`);
                 }
 
-                // Ensure cache writes are enabled before saving
-                const { getCacheManager } = require('../../database/cache/core/CacheManager');
-                const cacheManager = getCacheManager();
-                if (!cacheManager.userCache.areWritesEnabled()) {
-                    cacheManager.enableWrites();
-                }
-
-                // Update user data using cache system
-                await userCache.setLastFMUsername(message.author.id, results.user.name);
+                // Update user data using service layer
+                await userService.setLastFMUsername(message.author.id, results.user.name);
 
                 // Start library indexing
                 const msg = await embeds.loading(message, `Creating a new **Last.fm** library..`);
@@ -168,7 +155,7 @@ module.exports = {
         case 'refresh':
         case 'index': {
             try {
-                const fmUsername = await userCache.getLastFMUsername(message.author.id);
+                const fmUsername = await userService.getLastFMUsername(message.author.id);
                 if (!fmUsername) {
                     return embeds.warn(message, error(message.author, message.author, 'notConnected'));
                 }
@@ -386,7 +373,7 @@ module.exports = {
                 }
 
                 const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
-                const targetFmUsername = await userCache.getLastFMUsername(targetUser.id);
+                const targetFmUsername = await userService.getLastFMUsername(targetUser.id);
 
                 if (!targetFmUsername) {
                     return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
@@ -517,13 +504,7 @@ class Library {
     }
 
     async saveUserLibrary() {
-        // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.userCache.areWritesEnabled()) {
-            cacheManager.enableWrites();
-        }
-
+        // Save library using service layer
         const libraryData = {
             artists: this.artists.map(({ name, playcount }) => ({
                 name: name,
@@ -542,7 +523,7 @@ class Library {
             lastUpdated: new Date()
         };
 
-        await userCache.setLastFMLibrary(this.userId, libraryData);
+        await userService.setLastFMLibrary(this.userId, libraryData);
     }
 }
 
@@ -559,7 +540,7 @@ class WhoKnows {
 
             if (!args[1]) {
                 // Get from recent tracks
-                const fmUsername = await userCache.getLastFMUsername(this.userId);
+                const fmUsername = await userService.getLastFMUsername(this.userId);
                 const recentTracks = await fetch(`http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${fmUsername}&api_key=${config.apis.lastfm}&format=json`, {
                     method: 'GET'
                 }).then((results) => results.json()).catch(() => {});
@@ -647,9 +628,9 @@ class WhoKnows {
                 const guildMembers = await message.guild.members.fetch();
 
                 for (const [memberId, member] of guildMembers) {
-                    const fmUsername = await userCache.getLastFMUsername(memberId);
+                    const fmUsername = await userService.getLastFMUsername(memberId);
                     if (fmUsername) {
-                        const library = await userCache.getLastFMLibrary(memberId);
+                        const library = await userService.getLastFMLibrary(memberId);
                         const plays = this.getUserPlays(library, name, artist);
 
                         const object = {
@@ -743,7 +724,7 @@ class WhoKnows {
 
     async handleCrown(message, crownUserId, artistName, crownPlays) {
         try {
-            const existingCrown = await guildCache.getLastFMCrown(message.guild.id, artistName);
+            const existingCrown = await guildService.getLastFMCrown(message.guild.id, artistName);
             const crownMember = await message.guild.members.fetch(crownUserId);
 
             if (existingCrown) {
@@ -752,13 +733,13 @@ class WhoKnows {
                 const oldCrownMember = await message.guild.members.fetch(existingCrown.userId).catch(() => null);
 
                 // Update crown
-                await guildCache.setLastFMCrown(message.guild.id, artistName, crownUserId, crownPlays);
+                await guildService.setLastFMCrown(message.guild.id, artistName, crownUserId, crownPlays);
 
                 const stealEmbed = embeds.createInfo(message, `\`${crownMember.user.tag}\` stole the crown from \`${oldCrownMember ? oldCrownMember.user.tag : 'Unknown User'}\` for **${artistName}**!`);
                 await message.channel.send({ embeds: [stealEmbed] });
             } else {
                 // New crown
-                await guildCache.setLastFMCrown(message.guild.id, artistName, crownUserId, crownPlays);
+                await guildService.setLastFMCrown(message.guild.id, artistName, crownUserId, crownPlays);
 
                 const claimEmbed = embeds.createInfo(message, `\`${crownMember.user.tag}\` claimed the crown for **${artistName}**!`);
                 await message.channel.send({ embeds: [claimEmbed] });
@@ -787,7 +768,7 @@ class Top {
                 }
             }
 
-            const fmUsername = await userCache.getLastFMUsername(targetUser.id);
+            const fmUsername = await userService.getLastFMUsername(targetUser.id);
             if (!fmUsername) {
                 return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
             }
@@ -865,7 +846,7 @@ class Plays {
                 }
             }
 
-            const fmUsername = await userCache.getLastFMUsername(targetUser.id);
+            const fmUsername = await userService.getLastFMUsername(targetUser.id);
             if (!fmUsername) {
                 return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
             }
@@ -963,8 +944,8 @@ class Compare {
     async execute(message) {
         try {
             const [user1Data, user2Data] = await Promise.all([
-                userCache.getLastFMUsername(this.userId1),
-                userCache.getLastFMUsername(this.userId2)
+                userService.getLastFMUsername(this.userId1),
+                userService.getLastFMUsername(this.userId2)
             ]);
 
             if (!user1Data || !user2Data) {
@@ -972,8 +953,8 @@ class Compare {
             }
 
             const [library1, library2] = await Promise.all([
-                userCache.getLastFMLibrary(this.userId1),
-                userCache.getLastFMLibrary(this.userId2)
+                userService.getLastFMLibrary(this.userId1),
+                userService.getLastFMLibrary(this.userId2)
             ]);
 
             if (!library1 || !library2 || !library1.artists || !library2.artists) {
@@ -1062,7 +1043,7 @@ class Recent {
                 }
             }
 
-            const fmUsername = await userCache.getLastFMUsername(targetUser.id);
+            const fmUsername = await userService.getLastFMUsername(targetUser.id);
             if (!fmUsername) {
                 return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
             }
@@ -1143,7 +1124,7 @@ class Chart {
                 period = 'overall';
             }
 
-            const fmUsername = await userCache.getLastFMUsername(targetUser.id);
+            const fmUsername = await userService.getLastFMUsername(targetUser.id);
             if (!fmUsername) {
                 return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
             }
@@ -1518,7 +1499,7 @@ class Streak {
                 }
             }
 
-            const fmUsername = await userCache.getLastFMUsername(targetUser.id);
+            const fmUsername = await userService.getLastFMUsername(targetUser.id);
             if (!fmUsername) {
                 return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
             }
@@ -1599,7 +1580,7 @@ class Pace {
                 }
             }
 
-            const fmUsername = await userCache.getLastFMUsername(targetUser.id);
+            const fmUsername = await userService.getLastFMUsername(targetUser.id);
             if (!fmUsername) {
                 return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
             }

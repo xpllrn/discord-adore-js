@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 
@@ -48,16 +48,10 @@ module.exports = {
   run: async(client, message, args) => {
     
     try {
-      // Check if user has a gambling account
-      const hasAccount = await userCache.hasGamblingAccount(message.author.id);
+      const userService = getService('user');
 
-      if (!hasAccount) {
-        const guildPrefix = await getGuildPrefix(message.guild.id);
-        return embeds.deny(message, `You don\'t have a **gambling account** yet! Use \`${guildPrefix}account\` to create one`);
-      }
-
-      // Get user's gambling data
-      const gambling = await userCache.getGamblingData(message.author.id);
+      // Get user's gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(message.author.id);
       
       // Check if user can claim daily
       const claimCheck = checkDailyClaim(gambling);
@@ -79,16 +73,9 @@ module.exports = {
       const newStreak = claimCheck.streak + 1;
       const reward = calculateDailyReward(newStreak);
       
-      // Ensure cache writes are enabled before saving
-      const { getCacheManager } = require('../../database/cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      if (!cacheManager.userCache.areWritesEnabled()) {
-        cacheManager.enableWrites();
-      }
-
-      // Update user's wallet and daily claim
-      await userCache.updateWalletBalance(message.author.id, reward);
-      await userCache.updateDailyClaim(message.author.id, newStreak);
+      // Update user's wallet and daily claim using service layer
+      await userService.updateWallet(message.author.id, reward);
+      await userService.updateDailyClaim(message.author.id, newStreak);
 
       // Create success message
       let description = `${emojis.success} <@${message.author.id}>: Claimed **${formatCurrency(reward)}** coins`;

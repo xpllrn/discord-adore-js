@@ -179,14 +179,7 @@ async function connect(connectionStrings) {
       return false;
     }
 
-    // Initialize TTL cache system (without preloading yet)
-    try {
-      const { getCacheManager } = require('./cache/core/CacheManager');
-      const cacheManager = getCacheManager();
-      cacheManager.initialized = true;
-    } catch (error) {
-      // Silent fallback
-    }
+
 
     return true;
   } catch (error) {

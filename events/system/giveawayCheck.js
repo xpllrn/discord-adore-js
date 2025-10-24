@@ -5,7 +5,7 @@ const { EmbedBuilder } = require('discord.js');
 const config = require('../../config/setup');
 
 module.exports = {
-  name: 'ready',
+  name: 'cacheReadyComplete',
   once: true,
   async execute(client) {
     // Set up giveaway checking
@@ -83,7 +83,8 @@ function createGiveawayEmbed(giveaway, guild) {
 
 async function checkGiveaways(client) {
   try {
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
     const { getModels, isDatabaseReady } = require('../../database');
 
     // Check if database is ready
@@ -130,7 +131,7 @@ async function checkGiveaways(client) {
         }
 
         // Get expired giveaways for this guild
-        const expiredGiveaways = await guildCache.getExpiredGiveaways(guildId);
+        const expiredGiveaways = await guildService.getExpiredGiveaways(guildId);
 
         for (const giveaway of expiredGiveaways) {
           try {
@@ -138,7 +139,7 @@ async function checkGiveaways(client) {
             const channel = guild.channels.cache.get(giveaway.channelId);
             if (!channel) {
               // Channel not found, mark giveaway as ended
-              await guildCache.endGiveaway(guildId, giveaway.id, []);
+              await guildService.endGiveaway(guildId, giveaway.id, []);
               continue;
             }
 
@@ -147,7 +148,7 @@ async function checkGiveaways(client) {
               giveawayMessage = await channel.messages.fetch(giveaway.messageId);
             } catch (error) {
               // Message not found, mark giveaway as ended
-              await guildCache.endGiveaway(guildId, giveaway.id, []);
+              await guildService.endGiveaway(guildId, giveaway.id, []);
               continue;
             }
 
@@ -155,7 +156,7 @@ async function checkGiveaways(client) {
             const winners = selectRandomWinners(giveaway.participants, giveaway.winners);
             
             // End the giveaway in database
-            await guildCache.endGiveaway(guildId, giveaway.id, winners);
+            await guildService.endGiveaway(guildId, giveaway.id, winners);
 
             // Update the giveaway message
             const endedEmbed = createGiveawayEmbed({ ...giveaway, isActive: false, winnerIds: winners }, guild)
@@ -189,7 +190,7 @@ async function checkGiveaways(client) {
           } catch (giveawayError) {
             console.error(`Error processing giveaway ${giveaway.id} in guild ${guildId}:`, giveawayError);
             // Mark giveaway as ended to prevent repeated processing
-            await guildCache.endGiveaway(guildId, giveaway.id, []);
+            await guildService.endGiveaway(guildId, giveaway.id, []);
           }
         }
       } catch (guildError) {

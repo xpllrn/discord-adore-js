@@ -1,7 +1,7 @@
 const { PermissionFlagsBits, ChannelType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { hasDiscordPermission, isGlobalDev } = require('../../utils/permissions');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const { colors, emojis } = require('../../config/setup');
 
 // Command execution tracker to prevent multiple executions
@@ -73,12 +73,12 @@ module.exports = {
       return embeds.warn(message, 'You must be in a voice channel to use this command');
     }
 
-    const voiceManager = await guildCache.getVoiceManager(message.guild.id);
+    const voiceManager = await guildService.getVoiceManager(message.guild.id);
     if (!voiceManager.enabled) {
       return embeds.warn(message, 'Voice manager is not setup in this server. Use `,vm setup` first.');
     }
 
-    const tempChannel = await guildCache.getTempVoiceChannel(message.guild.id, member.voice.channel.id);
+    const tempChannel = await guildService.getTempVoiceChannel(message.guild.id, member.voice.channel.id);
     if (!tempChannel) {
       return embeds.warn(message, 'You can only use this command in a temporary voice channel created by the bot');
     }
@@ -147,7 +147,7 @@ module.exports = {
 
 // Setup command handler
 async function handleSetupCommand(message, client) {
-  const voiceManager = await guildCache.getVoiceManager(message.guild.id);
+  const voiceManager = await guildService.getVoiceManager(message.guild.id);
   if (voiceManager.enabled) {
     return embeds.warn(message, 'Voice manager is already setup in this server. Use `,vm reset` to recreate.');
   }
@@ -193,7 +193,7 @@ async function handleSetupCommand(message, client) {
     });
 
     // Save configuration to database
-    await guildCache.setupVoiceManager(
+    await guildService.setupVoiceManager(
       message.guild.id,
       category.id,
       joinChannel.id,
@@ -213,7 +213,7 @@ async function handleSetupCommand(message, client) {
 
 // Reset command handler
 async function handleResetCommand(message) {
-  const voiceManager = await guildCache.getVoiceManager(message.guild.id);
+  const voiceManager = await guildService.getVoiceManager(message.guild.id);
   if (!voiceManager.enabled) {
     return embeds.warn(message, 'Voice manager is not setup in this server. Use `,vm setup` first.');
   }
@@ -245,7 +245,7 @@ async function handleResetCommand(message) {
     }
 
     // Clear database configuration
-    await guildCache.disableVoiceManager(message.guild.id);
+    await guildService.disableVoiceManager(message.guild.id);
 
     return embeds.success(message, 'Voice manager has been reset. Use `,vm setup` to create a new voice manager system.');
 
@@ -460,7 +460,7 @@ async function handleLockCommand(message, tempChannel) {
       Connect: false
     });
 
-    await guildCache.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
       locked: true
     });
 
@@ -480,7 +480,7 @@ async function handleUnlockCommand(message, tempChannel) {
       Connect: true
     });
 
-    await guildCache.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
       locked: false
     });
 
@@ -500,7 +500,7 @@ async function handleHideCommand(message, tempChannel) {
       ViewChannel: false
     });
 
-    await guildCache.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
       hidden: true
     });
 
@@ -520,7 +520,7 @@ async function handleUnhideCommand(message, tempChannel) {
       ViewChannel: true
     });
 
-    await guildCache.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
       hidden: false
     });
 
@@ -536,7 +536,7 @@ async function handleIncreaseCommand(message, tempChannel) {
 
   try {
     await message.member.voice.channel.setUserLimit(newLimit);
-    await guildCache.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
       userLimit: newLimit
     });
 
@@ -556,7 +556,7 @@ async function handleDecreaseCommand(message, tempChannel) {
 
   try {
     await message.member.voice.channel.setUserLimit(newLimit);
-    await guildCache.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
       userLimit: newLimit
     });
 
@@ -575,7 +575,7 @@ async function handleLimitCommand(message, args, tempChannel) {
 
   try {
     await message.member.voice.channel.setUserLimit(limit);
-    await guildCache.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
       userLimit: limit
     });
 
@@ -599,7 +599,7 @@ async function handleNameCommand(message, args, tempChannel) {
 
   try {
     await message.member.voice.channel.setName(newName);
-    await guildCache.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
+    await guildService.updateTempVoiceChannel(message.guild.id, tempChannel.channelId, {
       customName: newName
     });
 
@@ -762,7 +762,7 @@ async function handleTransferCommand(message, args, tempChannel) {
   }
 
   try {
-    await guildCache.transferVoiceChannelOwnership(message.guild.id, tempChannel.channelId, targetUser.id);
+    await guildService.transferVoiceChannelOwnership(message.guild.id, tempChannel.channelId, targetUser.id);
     return embeds.success(message, `Voice channel ownership transferred to ${targetUser.username}`);
   } catch (error) {
     return embeds.deny(message, 'Failed to transfer ownership');
@@ -777,7 +777,7 @@ async function handleClaimCommand(message, tempChannel) {
   }
 
   try {
-    await guildCache.transferVoiceChannelOwnership(message.guild.id, tempChannel.channelId, message.author.id);
+    await guildService.transferVoiceChannelOwnership(message.guild.id, tempChannel.channelId, message.author.id);
     return embeds.success(message, 'You have claimed ownership of this voice channel');
   } catch (error) {
     return embeds.deny(message, 'Failed to claim ownership');

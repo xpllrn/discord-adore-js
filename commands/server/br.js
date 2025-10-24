@@ -1,10 +1,14 @@
+// NOTE: Cache system has been updated to ensure ALL data is loaded before bot starts
+// All cache write enabling checks are now redundant but left for backward compatibility
+// The bot will not start until ALL cache data is loaded from the database
+
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { ensureGuildData } = require('../../database');
 const { hasDiscordPermission } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findRole, findUser } = require('../../handlers/finder');
-const guildCache = require('../../database/cache/models/guild');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -15,11 +19,11 @@ module.exports = {
 {guildprefix}br create [name]
 {guildprefix}br rename [name]
 {guildprefix}br icon [emoji/url]
-{guildprefix}br color [hex]
+{guildprefix}br color [color] [color2]  
 {guildprefix}br share [@user]
 {guildprefix}br remove/delete
 {guildprefix}br cleanup`,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     if (!args[0]) {
       return runHelpCommand(message, 'br');
@@ -43,7 +47,7 @@ module.exports = {
     }
 
     // Check if booster role system is enabled
-    const isEnabled = await guildCache.isBoosterRoleSystemEnabled(message.guild.id);
+    const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
     if (!isEnabled) {
       return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
     }
@@ -75,13 +79,13 @@ async function canUseBoosterRoles(member) {
   if (member.premiumSince) {
     return true;
   }
-  
+
   // Check if user has an existing booster role
-  const boosterRole = await guildCache.getUserBoosterRole(member.guild.id, member.id);
+  const boosterRole = await guildService.getUserBoosterRole(member.guild.id, member.id);
   if (boosterRole) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -111,18 +115,18 @@ function supportsRoleIcons(guild) {
 async function handleBaseRole(client, message, args) {
   if (!args[0]) {
     // Show current base role
-    const baseRoleId = await guildCache.getBoosterRoleBaseRole(message.guild.id);
+    const baseRoleId = await guildService.getBoosterRoleBaseRole(message.guild.id);
     if (!baseRoleId) {
       return embeds.info(message, 'No base role is currently set for the booster role system');
     }
-    
+
     const baseRole = message.guild.roles.cache.get(baseRoleId);
     if (!baseRole) {
       // Base role was deleted, disable system
-      await guildCache.setBoosterRoleBaseRole(message.guild.id, null);
+      await guildService.setBoosterRoleBaseRole(message.guild.id, null);
       return embeds.warn(message, 'The base role was deleted. Booster role system has been disabled.');
     }
-    
+
     return embeds.info(message, `Current base role: ${baseRole}\n\nAll booster roles will be positioned below this role.`);
   }
 
@@ -132,24 +136,18 @@ async function handleBaseRole(client, message, args) {
   }
 
   const role = roleResult.role;
-  
+
   // Check if bot can manage this role
   const botMember = message.guild.members.cache.get(client.user.id);
   if (role.position >= botMember.roles.highest.position) {
     return embeds.warn(message, 'I cannot manage this role. Please ensure my highest role is above the base role.');
   }
 
-  // Ensure cache writes are enabled before saving
-  const { getCacheManager } = require('../../database/cache/core/CacheManager');
-  const cacheManager = getCacheManager();
-  if (!cacheManager.guildCache.areWritesEnabled()) {
-    // Force enable writes if they're not enabled yet
-    cacheManager.enableWrites();
-  }
+  // Cache is guaranteed to be ready and writes enabled
 
   // Set the base role
-  await guildCache.setBoosterRoleBaseRole(message.guild.id, role.id);
-  
+  await guildService.setBoosterRoleBaseRole(message.guild.id, role.id);
+
   return embeds.success(message, `Base role set to ${role}!\n\nBooster role system is now **enabled**. All booster roles will be positioned below this role.`);
 }
 
@@ -161,13 +159,13 @@ async function handleCreate(client, message, args) {
   }
 
   // Check if user already has a booster role
-  const existingRole = await guildCache.getUserBoosterRole(message.guild.id, message.author.id);
+  const existingRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
   if (existingRole) {
     // Check if the Discord role still exists
     const discordRole = message.guild.roles.cache.get(existingRole.roleId);
     if (!discordRole) {
       // Role was deleted, remove from database and allow creation of new one
-      await guildCache.deleteBoosterRole(message.guild.id, existingRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, existingRole.id);
       // Continue with role creation below
     } else {
       return embeds.warn(message, 'You already have a booster role! Use other commands to customize it.');
@@ -185,9 +183,9 @@ async function handleCreate(client, message, args) {
 
   try {
     // Get base role for positioning
-    const baseRoleId = await guildCache.getBoosterRoleBaseRole(message.guild.id);
+    const baseRoleId = await guildService.getBoosterRoleBaseRole(message.guild.id);
     const baseRole = message.guild.roles.cache.get(baseRoleId);
-    
+
     if (!baseRole) {
       return embeds.warn(message, 'Base role not found. Please contact an admin to reconfigure the booster role system.');
     }
@@ -209,15 +207,10 @@ async function handleCreate(client, message, args) {
       name: roleName
     };
 
-    // Ensure cache writes are enabled before saving
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.guildCache.areWritesEnabled()) {
-      // Force enable writes if they're not enabled yet
-      cacheManager.enableWrites();
-    }
+    // Cache writes are guaranteed to be enabled after full preloading
+    // No need to check or force enable - system won't start without complete cache
 
-    await guildCache.addBoosterRole(message.guild.id, boosterRoleData);
+    await guildService.addBoosterRole(message.guild.id, boosterRoleData);
 
     // Give the role to the user
     await message.member.roles.add(newRole);
@@ -238,7 +231,7 @@ async function handleRename(client, message, args) {
   }
 
   // Get user's booster role
-  const boosterRole = await guildCache.getUserBoosterRole(message.guild.id, message.author.id);
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
   if (!boosterRole) {
     return embeds.warn(message, 'You don\'t have a booster role! Use `br create` to make one.');
   }
@@ -257,22 +250,15 @@ async function handleRename(client, message, args) {
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     if (!discordRole) {
       // Role was deleted, remove from database
-      await guildCache.deleteBoosterRole(message.guild.id, boosterRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
     // Update the role name
     await discordRole.edit({ name: newName });
 
-    // Ensure cache writes are enabled before saving
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.guildCache.areWritesEnabled()) {
-      cacheManager.enableWrites();
-    }
-
     // Update in database
-    await guildCache.updateBoosterRole(message.guild.id, boosterRole.id, {
+    await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
       name: newName,
       lastUsed: new Date()
     });
@@ -298,7 +284,7 @@ async function handleIcon(client, message, args) {
   }
 
   // Get user's booster role
-  const boosterRole = await guildCache.getUserBoosterRole(message.guild.id, message.author.id);
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
   if (!boosterRole) {
     return embeds.warn(message, 'You don\'t have a booster role! Use `br create` to make one.');
   }
@@ -359,7 +345,7 @@ async function handleIcon(client, message, args) {
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     if (!discordRole) {
       // Role was deleted, remove from database
-      await guildCache.deleteBoosterRole(message.guild.id, boosterRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
@@ -371,15 +357,8 @@ async function handleIcon(client, message, args) {
     // Update the role icon
     await discordRole.edit({ icon: iconUrl });
 
-    // Ensure cache writes are enabled before saving
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.guildCache.areWritesEnabled()) {
-      cacheManager.enableWrites();
-    }
-
     // Update in database - store the original input for display purposes
-    await guildCache.updateBoosterRole(message.guild.id, boosterRole.id, {
+    await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
       icon: args[0], // Store original input format
       lastUsed: new Date()
     });
@@ -425,103 +404,152 @@ async function handleColor(client, message, args) {
   }
 
   // Get user's booster role
-  const boosterRole = await guildCache.getUserBoosterRole(message.guild.id, message.author.id);
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
   if (!boosterRole) {
     return embeds.warn(message, 'You don\'t have a booster role! Use `br create` to make one.');
   }
 
   if (!args[0]) {
-    return embeds.warn(message, 'Please provide a **hex color code** (e.g., #ff0000, red) or "none" to remove color');
+    return embeds.warn(message, 'Please provide a **color** (e.g., #ff0000, red, FF0000) or "none" to remove color\nFor gradient: `br color red pink` (requires Enhanced Roles unlocked)');
   }
 
-  let color = null;
-  const colorInput = args[0].toLowerCase();
-
-  if (colorInput === 'none' || colorInput === 'remove') {
-    color = 0x000000; // Default black
-  } else {
-    // Try to parse color
+  // Handle removal
+  if (args[0].toLowerCase() === 'none' || args[0].toLowerCase() === 'remove') {
     try {
-      // Remove # if present
-      const hexColor = colorInput.replace('#', '');
-
-      // Check if it's a valid hex color
-      if (/^[0-9A-F]{6}$/i.test(hexColor)) {
-        color = parseInt(hexColor, 16);
-      } else {
-        // Try common color names
-        const colorMap = {
-          'red': 0xff0000,
-          'green': 0x00ff00,
-          'blue': 0x0000ff,
-          'yellow': 0xffff00,
-          'purple': 0x800080,
-          'pink': 0xffc0cb,
-          'orange': 0xffa500,
-          'cyan': 0x00ffff,
-          'magenta': 0xff00ff,
-          'lime': 0x00ff00,
-          'white': 0xffffff,
-          'black': 0x000000
-        };
-
-        if (colorMap[colorInput]) {
-          color = colorMap[colorInput];
-        } else {
-          return embeds.warn(message, 'Invalid color! Use a hex code (e.g., #ff0000) or color name (e.g., red)');
-        }
+      const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+      if (!discordRole) {
+        await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+        return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
       }
-    } catch {
-      return embeds.warn(message, 'Invalid color format! Use a hex code (e.g., #ff0000) or color name (e.g., red)');
+
+      await discordRole.edit({ color: 0x000000 });
+
+      await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+        color: null,
+        lastUsed: new Date()
+      });
+
+      return embeds.success(message, 'Color removed from your booster role!');
+    } catch (error) {
+      console.error('Error removing booster role color:', error);
+      return embeds.deny(message, 'Failed to remove booster role color. Please check my permissions.');
     }
   }
 
+  // Helper function to parse color using Color library (same as role command)
+  const Color = require('color');
+
+  const parseColor = (colorInput) => {
+    try {
+      // Handle hex colors without # prefix
+      if (/^[0-9A-Fa-f]{6}$/.test(colorInput)) {
+        colorInput = '#' + colorInput;
+      }
+
+      // Use the color library to parse any color format
+      const parsedColor = Color(colorInput);
+      return parsedColor.hex();
+    } catch (error) {
+      throw new Error(`Invalid color format: ${colorInput}`);
+    }
+  };
+
   try {
+    const primaryColor = parseColor(args[0]);
+
     // Get the Discord role
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     if (!discordRole) {
-      // Role was deleted, remove from database
-      await guildCache.deleteBoosterRole(message.guild.id, boosterRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
-    // Update the role color
-    await discordRole.edit({ color: color });
+    // Check if there's a second color for gradient
+    if (args.length > 1) {
+      try {
+        const secondaryColor = parseColor(args[1]);
 
-    // Ensure cache writes are enabled before saving
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.guildCache.areWritesEnabled()) {
-      cacheManager.enableWrites();
+        // Try to set gradient colors using Discord's API
+        try {
+          // Try the newer gradient API first
+          if (discordRole.setColors && typeof discordRole.setColors === 'function') {
+            await discordRole.setColors([primaryColor, secondaryColor], `Booster role gradient colors changed by ${message.author.tag}`);
+          } else {
+            // Try using role.edit with colors array
+            await discordRole.edit({
+              color: [primaryColor, secondaryColor]
+            }, `Booster role gradient colors changed by ${message.author.tag}`);
+          }
+
+          // Update in database - store both colors
+          await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+            color: `${primaryColor},${secondaryColor}`, // Store as comma-separated for gradient
+            lastUsed: new Date()
+          });
+
+          return embeds.success(message, `Changed your booster role to gradient colors **${args[0]}** → **${args[1]}** (${primaryColor} → ${secondaryColor})`);
+
+        } catch (gradientError) {
+          // If gradient fails, check if it's because enhanced roles aren't unlocked
+          if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
+            // Fall back to single color
+            const colorInt = parseInt(primaryColor.replace('#', ''), 16);
+            await discordRole.edit({ color: colorInt });
+
+            await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+              color: primaryColor,
+              lastUsed: new Date()
+            });
+
+            return embeds.warn(message, `Changed your booster role color to **${args[0]}** (${primaryColor})\n*Note: Gradient colors require Enhanced Roles to be unlocked in this server. Only the first color was applied.*`);
+          } else {
+            // Other error, fallback to single color
+            const colorInt = parseInt(primaryColor.replace('#', ''), 16);
+            await discordRole.edit({ color: colorInt });
+
+            await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+              color: primaryColor,
+              lastUsed: new Date()
+            });
+
+            return embeds.warn(message, `Changed your booster role color to **${args[0]}** (${primaryColor})\n*Note: Gradient colors are not supported. Only the first color was applied.*`);
+          }
+        }
+      } catch (secondColorError) {
+        // If second color is invalid, just use the first one
+        const colorInt = parseInt(primaryColor.replace('#', ''), 16);
+        await discordRole.edit({ color: colorInt });
+
+        await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+          color: primaryColor,
+          lastUsed: new Date()
+        });
+
+        return embeds.warn(message, `Changed your booster role color to **${args[0]}** (${primaryColor})\n*Note: Second color "${args[1]}" was invalid and ignored.*`);
+      }
+    } else {
+      // Single color
+      const colorInt = parseInt(primaryColor.replace('#', ''), 16);
+      await discordRole.edit({ color: colorInt });
+
+      await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+        color: primaryColor,
+        lastUsed: new Date()
+      });
+
+      return embeds.success(message, `Changed your booster role color to **${args[0]}** (${primaryColor})`);
     }
 
-    // Update in database
-    const hexColor = color === 0x000000 ? null : `#${color.toString(16).padStart(6, '0')}`;
-    await guildCache.updateBoosterRole(message.guild.id, boosterRole.id, {
-      color: hexColor,
-      lastUsed: new Date()
-    });
-
-    const colorText = hexColor ? `set to ${hexColor}` : 'removed';
-    return embeds.success(message, `Color for your booster role ${colorText}!`);
-
   } catch (error) {
-    console.error('Error setting booster role color:', error);
-    return embeds.deny(message, 'Failed to update booster role color. Please check my permissions.');
+    return embeds.warn(message, `Invalid color **${args[0]}**. Use:\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\`\n• HSL: \`hsl(0,100%,50%)\`\n• Color names: \`red\`, \`blue\`, \`white\`, etc.\n• Gradient: \`red pink\` (requires Enhanced Roles unlocked)`);
   }
 }
 
 // Share booster role with another user
 async function handleShare(client, message, args) {
-  // Ensure cache writes are enabled before lookup
-  const { getCacheManager } = require('../../database/cache/core/CacheManager');
-  const cacheManager = getCacheManager();
-  if (!cacheManager.guildCache.areWritesEnabled()) {
-    cacheManager.enableWrites();
-  }
 
   // Get user's booster role (no need to check if they're boosting for sharing)
-  const boosterRole = await guildCache.getUserBoosterRole(message.guild.id, message.author.id);
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
   if (!boosterRole) {
     return embeds.warn(message, 'You don\'t have a booster role! Use `br create` to make one.');
   }
@@ -582,7 +610,7 @@ async function handleShare(client, message, args) {
         { name: 'Role', value: roleDisplay, inline: true },
         { name: 'Shared by', value: `<@${message.author.id}>`, inline: true }
       )
-      .setFooter({ text: 'You have 5 minutes to respond' })
+      .setFooter({ text: 'You have 60 seconds to respond' })
       .setTimestamp();
 
     // Create accept/decline buttons using buttons.js pattern
@@ -612,15 +640,8 @@ async function handleShare(client, message, args) {
       components: [buttons]
     });
 
-    // Ensure cache writes are enabled before saving
-    const { getCacheManager } = require('../../database/cache/core/CacheManager');
-    const cacheManager = getCacheManager();
-    if (!cacheManager.guildCache.areWritesEnabled()) {
-      cacheManager.enableWrites();
-    }
-
     // Add to pending shares
-    await guildCache.addBoosterRolePendingShare(
+    await guildService.addBoosterRolePendingShare(
       message.guild.id,
       boosterRole.id,
       targetUser.id,
@@ -628,60 +649,23 @@ async function handleShare(client, message, args) {
       message.channel.id
     );
 
-    // Create collector for button interactions
-    const collector = shareMessage.createMessageComponentCollector({
-      time: 60000 // 60 seconds timeout
-    });
-
-    collector.on('collect', async (interaction) => {
+    // Set up timeout to clean up pending share after 60 seconds
+    setTimeout(async () => {
       try {
-        // Check if interaction is still valid
-        if (!interaction.isRepliable()) {
-          return;
-        }
+        // Remove pending share from database
+        await guildService.removeBoosterRolePendingShare(message.guild.id, boosterRole.id, targetUser.id);
 
-        // Check if the user is the target user
-        if (interaction.user.id !== targetUser.id) {
-          const warnEmbed = new EmbedBuilder()
-            .setColor(config.colors.warn)
-            .setDescription(`${config.emojis.warn} <@${interaction.user.id}>: This button is **NOT** for you`);
-
-          return interaction.reply({
-            embeds: [warnEmbed],
-            flags: MessageFlags.Ephemeral
-          });
-        }
-
-        // Disable buttons
+        // Disable buttons on timeout
         const disabledButtons = createButtons(true);
-        await interaction.update({
+        await shareMessage.edit({
           components: [disabledButtons]
         });
-
-        collector.stop();
       } catch (error) {
-        console.error('Error handling br share interaction:', error);
+        // Message might have been deleted or already handled
       }
-    });
+    }, 60000);
 
-    collector.on('end', async (collected, reason) => {
-      if (reason === 'time') {
-        try {
-          // Remove pending share from database
-          await guildCache.removeBoosterRolePendingShare(message.guild.id, boosterRole.id, targetUser.id);
-
-          // Disable buttons on timeout
-          const disabledButtons = createButtons(true);
-          await shareMessage.edit({
-            components: [disabledButtons]
-          });
-        } catch (error) {
-          // Message might have been deleted
-        }
-      }
-    });
-
-    return embeds.success(message, `Sent a share request to **${targetUser.username}**! They have 60 seconds to respond.`);
+    // Don't send success message as requested
 
   } catch (error) {
     console.error('Error sharing booster role:', error);
@@ -698,7 +682,7 @@ async function handleCleanup(client, message, args) {
   }
 
   try {
-    const unusedRoles = await guildCache.getUnusedBoosterRoles(message.guild.id, daysSinceLastUsed);
+    const unusedRoles = await guildService.getUnusedBoosterRoles(message.guild.id, daysSinceLastUsed);
 
     if (unusedRoles.length === 0) {
       return embeds.info(message, `No unused booster roles found (inactive for ${daysSinceLastUsed}+ days)`);
@@ -716,7 +700,7 @@ async function handleCleanup(client, message, args) {
         }
 
         // Remove from database
-        await guildCache.deleteBoosterRole(message.guild.id, boosterRole.id);
+        await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
         deletedCount++;
       } catch (error) {
         console.error(`Error deleting booster role ${boosterRole.id}:`, error);
@@ -725,9 +709,9 @@ async function handleCleanup(client, message, args) {
     }
 
     const resultText = `Cleanup completed!\n\n` +
-                      `**Deleted:** ${deletedCount} booster roles\n` +
-                      (failedCount > 0 ? `**Failed:** ${failedCount} booster roles\n` : '') +
-                      `**Criteria:** Inactive for ${daysSinceLastUsed}+ days`;
+      `**Deleted:** ${deletedCount} booster roles\n` +
+      (failedCount > 0 ? `**Failed:** ${failedCount} booster roles\n` : '') +
+      `**Criteria:** Inactive for ${daysSinceLastUsed}+ days`;
 
     return embeds.success(message, resultText);
 
@@ -740,7 +724,7 @@ async function handleCleanup(client, message, args) {
 // Remove/delete booster role
 async function handleRemove(client, message, args) {
   // Get user's booster role
-  const boosterRole = await guildCache.getUserBoosterRole(message.guild.id, message.author.id);
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
   if (!boosterRole) {
     return embeds.warn(message, 'You don\'t have a booster role to remove!');
   }
@@ -753,7 +737,7 @@ async function handleRemove(client, message, args) {
     }
 
     // Remove from database
-    await guildCache.deleteBoosterRole(message.guild.id, boosterRole.id);
+    await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
     return embeds.success(message, `Successfully removed your booster role **${boosterRole.name}**!`);
 
   } catch (error) {

@@ -1,4 +1,4 @@
-const snipeCache = require('../../database/cache/snipe');
+const snipeCache = require('../../utils/snipeCache');
 
 module.exports = {
   name: 'messageReactionRemove',
@@ -23,13 +23,14 @@ module.exports = {
 
 async function processStarboardRemoval(reaction, user) {
   try {
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
     const message = reaction.message;
     const guild = message.guild;
 
     // Get starboard configuration
-    const starboardChannelId = await guildCache.getStarboardChannel(guild.id);
-    const starboardEmoji = await guildCache.getStarboardEmoji(guild.id);
+    const starboardChannelId = await guildService.getStarboardChannel(guild.id);
+    const starboardEmoji = await guildService.getStarboardEmoji(guild.id);
 
     // Skip if starboard is not configured
     if (!starboardChannelId) return;
@@ -47,7 +48,7 @@ async function processStarboardRemoval(reaction, user) {
     if (!emojiMatch) return;
 
     // Check if message exists in starboard
-    const existingStarboardMessage = await guildCache.findStarboardMessage(guild.id, message.id);
+    const existingStarboardMessage = await guildService.findStarboardMessage(guild.id, message.id);
     if (!existingStarboardMessage) return;
 
     // Get the starboard channel
@@ -63,7 +64,7 @@ async function processStarboardRemoval(reaction, user) {
       if (reactionCount === 0) {
         // Remove starboard message if no reactions left
         await starboardMessage.delete();
-        await guildCache.removeStarboardMessage(guild.id, message.id);
+        await guildService.removeStarboardMessage(guild.id, message.id);
       } else {
         // Update the embed with new reaction count
         const starboardCommand = require('../../commands/server/starboard');
@@ -76,11 +77,11 @@ async function processStarboardRemoval(reaction, user) {
         });
 
         // Update count in database
-        await guildCache.updateStarboardMessageCount(guild.id, message.id, reactionCount);
+        await guildService.updateStarboardMessageCount(guild.id, message.id, reactionCount);
       }
     } catch (error) {
       // If starboard message was deleted, remove from database
-      await guildCache.removeStarboardMessage(guild.id, message.id);
+      await guildService.removeStarboardMessage(guild.id, message.id);
     }
   } catch (error) {
     console.error('Error in starboard removal processing:', error);
@@ -92,7 +93,8 @@ async function processGiveawayRemoval(reaction, user) {
     // Skip if user is a bot
     if (user.bot) return;
 
-    const guildCache = require('../../database/cache/models/guild');
+    const { getService } = require('@services');
+    const guildService = getService('guild');
     const message = reaction.message;
     const guild = message.guild;
 
@@ -100,15 +102,15 @@ async function processGiveawayRemoval(reaction, user) {
     if (reaction.emoji.name !== '🎉') return;
 
     // Check if this message is a giveaway
-    const giveaway = await guildCache.getGiveawayByMessageId(guild.id, message.id);
+    const giveaway = await guildService.getGiveawayByMessageId(guild.id, message.id);
     if (!giveaway || !giveaway.isActive) return;
 
     // Remove user from participants
-    await guildCache.removeGiveawayParticipant(guild.id, giveaway.id, user.id);
+    await guildService.removeGiveawayParticipant(guild.id, giveaway.id, user.id);
 
     // Update the giveaway message footer with new participant count
     try {
-      const updatedGiveaway = await guildCache.getGiveaway(guild.id, giveaway.id);
+      const updatedGiveaway = await guildService.getGiveaway(guild.id, giveaway.id);
       if (updatedGiveaway) {
         const embed = message.embeds[0];
         if (embed) {

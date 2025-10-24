@@ -3,7 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { ensureUserData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
-const userCache = require('../../database/cache/models/user');
+const { getService } = require('@services');
 const config = require('../../config/setup');
 const ms = require('ms');
 
@@ -26,7 +26,8 @@ module.exports = {
     if (args[0] === 'list' || !args[0]) {
       // List user's reminders
       try {
-        const reminders = await userCache.getReminders(message.author.id);
+        const userService = getService('user');
+        const reminders = await userService.getReminders(message.author.id);
 
         if (!reminders || reminders.length === 0) {
           return embeds.info(message, 'You have no active reminders');
@@ -69,7 +70,8 @@ module.exports = {
       }
 
       try {
-        const removedReminder = await userCache.removeReminder(message.author.id, reminderId);
+        const userService = getService('user');
+        const removedReminder = await userService.removeReminder(message.author.id, reminderId);
 
         if (removedReminder) {
           return embeds.success(message, `Removed reminder **#${reminderId}**`);
@@ -84,7 +86,8 @@ module.exports = {
     } else if (args[0] === 'reset' || args[0] === 'clear') {
       // Clear all reminders
       try {
-        const reminders = await userCache.getReminders(message.author.id);
+        const userService = getService('user');
+        const reminders = await userService.getReminders(message.author.id);
 
         if (!reminders || reminders.length === 0) {
           return embeds.warn(message, 'You have no reminders to clear');
@@ -95,13 +98,7 @@ module.exports = {
           `Are you sure you want to **remove all ${reminders.length} reminders**?`,
           async (interaction) => {
             // Ensure cache writes are enabled before clearing
-            const { getCacheManager } = require('../../database/cache/core/CacheManager');
-            const cacheManager = getCacheManager();
-            if (!cacheManager.userCache.areWritesEnabled()) {
-              cacheManager.enableWrites();
-            }
-
-            await userCache.clearReminders(message.author.id);
+            await userService.clearReminders(message.author.id);
             const successEmbed = embeds.createSuccess(message, 'Cleared all your reminders');
             await interaction.editReply({ embeds: [successEmbed], components: [] });
           }
@@ -166,13 +163,8 @@ module.exports = {
 
       try {
         // Ensure cache writes are enabled before saving
-        const { getCacheManager } = require('../../database/cache/core/CacheManager');
-        const cacheManager = getCacheManager();
-        if (!cacheManager.userCache.areWritesEnabled()) {
-          cacheManager.enableWrites();
-        }
-
-        const newReminder = await userCache.addReminder(
+        const userService = getService('user');
+        const newReminder = await userService.addReminder(
           message.author.id,
           content,
           duration,
