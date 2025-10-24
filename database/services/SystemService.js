@@ -225,6 +225,24 @@ class SystemService extends BaseService {
   }
 
   /**
+   * Check if server is blacklisted (alias for isServerBlacklisted)
+   * @param {string} serverId - Server ID to check
+   * @returns {Promise<boolean>} True if server is blacklisted
+   */
+  async getServerBlacklist(serverId) {
+    return this.isServerBlacklisted(serverId);
+  }
+
+  /**
+   * Check if user is blacklisted (alias for isUserBlacklisted)
+   * @param {string} userId - User ID to check
+   * @returns {Promise<boolean>} True if user is blacklisted
+   */
+  async getUserBlacklist(userId) {
+    return this.isUserBlacklisted(userId);
+  }
+
+  /**
    * Add user to blacklist
    * @param {string} userId - User ID to blacklist
    * @param {string} reason - Reason for blacklisting

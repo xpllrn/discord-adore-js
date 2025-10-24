@@ -1855,7 +1855,70 @@ class UserService extends BaseService {
   }
 
   /**
-   * Add name change to history
+   * Add name change to history (new format with type)
+   * @param {string} userId - User ID
+   * @param {string} type - Type of name change ('username', 'displayname', 'nickname')
+   * @param {string} oldName - Old name
+   * @param {string} newName - New name
+   * @param {string|null} guildId - Guild ID (null for global changes)
+   * @returns {Promise<Object>} Created history entry
+   */
+  async addNameChange(userId, type, oldName, newName, guildId = null) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!type || !['username', 'displayname', 'nickname'].includes(type)) {
+      throw new ValidationError('Type must be username, displayname, or nickname', 'type', type);
+    }
+
+    if (!oldName || typeof oldName !== 'string') {
+      throw new ValidationError('Old name is required', 'oldName', oldName);
+    }
+
+    if (!newName || typeof newName !== 'string') {
+      throw new ValidationError('New name is required', 'newName', newName);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const history = userData.NameHistory || [];
+      
+      const historyEntry = {
+        type,
+        oldName: oldName.trim(),
+        newName: newName.trim(),
+        guildId: guildId || null,
+        changedAt: new Date()
+      };
+      
+      // Check if this exact change already exists as the most recent entry
+      if (history.length > 0) {
+        const mostRecent = history[history.length - 1];
+        if (mostRecent.type === type && 
+            mostRecent.oldName === historyEntry.oldName && 
+            mostRecent.newName === historyEntry.newName &&
+            mostRecent.guildId === historyEntry.guildId) {
+          // Don't add duplicate consecutive changes
+          return mostRecent;
+        }
+      }
+      
+      history.push(historyEntry);
+      userData.NameHistory = history;
+      
+      await this.set(userId, userData);
+      return historyEntry;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add name change for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Add name change to history (legacy format)
    * @param {string} userId - User ID
    * @param {string} name - New name
    * @param {Date} changedAt - When the name changed (defaults to now)
@@ -1904,11 +1967,20 @@ class UserService extends BaseService {
   }
 
   /**
-   * Clear user's name history
+   * Clear user's name history (alias for clearAllNameHistory)
    * @param {string} userId - User ID
    * @returns {Promise<number>} Number of entries cleared
    */
   async clearNameHistory(userId) {
+    return this.clearAllNameHistory(userId);
+  }
+
+  /**
+   * Clear all name history for a user
+   * @param {string} userId - User ID
+   * @returns {Promise<number>} Number of entries cleared
+   */
+  async clearAllNameHistory(userId) {
     if (!userId) {
       throw new ValidationError('User ID is required', 'userId', userId);
     }
