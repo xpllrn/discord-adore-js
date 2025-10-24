@@ -712,7 +712,7 @@ async function handleAdoreMention(client, message) {
     const url = args[1];
 
     if (!url || !url.match(/^https?:\/\/.+/)) {
-        return message.react('💀');
+        return message.react('❤️');
     }
 
     try {
@@ -721,7 +721,7 @@ async function handleAdoreMention(client, message) {
         } else if (url.match(/tiktok\.com/)) {
             return await handleTikTok(message, url, client);
         } else {
-            return message.react('💀');
+            return message.react('❤️');
         }
     } catch (error) {
         if (client.errorLogger) {
@@ -733,7 +733,7 @@ async function handleAdoreMention(client, message) {
                 channel: message.channel
             });
         }
-        return message.react('💀');
+        return message.react('❤️');
     }
 }
 
@@ -751,7 +751,7 @@ async function handleInstagram(message, url, client) {
                     channel: message.channel
                 });
             }
-            return message.react('💀');
+            return message.react('❤️');
         }
 
         const { data } = result;
@@ -790,7 +790,7 @@ async function handleInstagram(message, url, client) {
         if (attachments.length > 0) {
             return message.reply({ files: attachments });
         } else {
-            return message.react('💀');
+            return message.react('❤️');
         }
 
     } catch (error) {
@@ -803,7 +803,7 @@ async function handleInstagram(message, url, client) {
                 channel: message.channel
             });
         }
-        return message.react('💀');
+        return message.react('❤️');
     }
 }
 
@@ -853,7 +853,7 @@ async function handleTikTok(message, url, client) {
                 // Silent fail for alternative API
             }
 
-            return message.react('💀');
+            return message.react('❤️');
         }
 
         const videoData = response.data.data;
@@ -869,7 +869,7 @@ async function handleTikTok(message, url, client) {
                 channel: message.channel
             });
         }
-        return message.react('💀');
+        return message.react('❤️');
     }
 }
 
@@ -878,7 +878,7 @@ async function processTikTokVideo(message, videoData, client) {
         let videoUrl = videoData.play || videoData.download_addr || videoData.video?.downloadAddr;
 
         if (!videoUrl) {
-            return message.react('💀');
+            return message.react('❤️');
         }
 
         if (videoUrl.startsWith('/')) {
@@ -899,7 +899,7 @@ async function processTikTokVideo(message, videoData, client) {
             const fileSizeMB = buffer.length / (1024 * 1024);
 
             if (fileSizeMB > 25) {
-                return message.react('💀');
+                return message.react('❤️');
             }
 
             const filename = `tiktok_${Date.now()}.mp4`;
@@ -917,7 +917,7 @@ async function processTikTokVideo(message, videoData, client) {
                     channel: message.channel
                 });
             }
-            return message.react('💀');
+            return message.react('❤️');
         }
 
     } catch (error) {
@@ -930,7 +930,7 @@ async function processTikTokVideo(message, videoData, client) {
                 channel: message.channel
             });
         }
-        return message.react('💀');
+        return message.react('❤️');
     }
 }
 

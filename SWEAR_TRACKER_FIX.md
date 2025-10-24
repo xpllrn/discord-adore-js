@@ -55,14 +55,37 @@ This caused:
 
 The service layer has been updated with the correct schema structure.
 
-### Step 2: Run Migration Script
+### Step 2: Test Database Connection (Optional but Recommended)
 
-To fix existing data in your database, run the migration script:
+First, verify your database connection works:
 
 ```bash
 cd adore_bot
+node database/utils/test-connection.js
+```
+
+This will show you:
+- If your .env file is loaded correctly
+- If database connection is successful
+- How many guilds have swear tracking data
+
+### Step 3: Run Migration Script
+
+To fix existing data in your database:
+
+```bash
+# Make sure you're in the adore_bot directory
+cd adore_bot
+
+# Run the migration
 node database/utils/migrate-swear-data.js
 ```
+
+The script will automatically:
+- Load your database connection from `.env`
+- Connect to your MongoDB database
+- Migrate all existing swear data to the new format
+- Show progress for each guild
 
 This will:
 - Find all guilds with swear tracking data
@@ -70,7 +93,7 @@ This will:
 - Preserve all existing swear counts
 - Calculate correct totals
 
-### Step 3: Restart Bot
+### Step 4: Restart Bot
 
 After migration completes, restart your bot:
 
@@ -80,7 +103,7 @@ After migration completes, restart your bot:
 node index.js
 ```
 
-### Step 4: Verify
+### Step 5: Verify
 
 Test the swear command to verify data persists:
 

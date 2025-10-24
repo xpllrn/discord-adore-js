@@ -147,16 +147,43 @@ async function migrateSwearData() {
 
 // Run migration if called directly
 if (require.main === module) {
-  const { connectDatabase } = require('../connection');
+  const { initializeDatabase } = require('../index');
+  const path = require('path');
+  const fs = require('fs');
   
-  connectDatabase()
-    .then(() => migrateSwearData())
+  // Load environment variables
+  const envPath = path.join(__dirname, '../../.env');
+  if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+  }
+  
+  // Get connection strings from environment
+  const connectionStrings = {
+    global: process.env.GLOBAL_CONNECTION || process.env.MONGO_URI_GLOBAL || process.env.MONGO_URI,
+    local: process.env.LOCAL_CONNECTION || process.env.MONGO_URI_LOCAL || process.env.MONGO_URI
+  };
+  
+  if (!connectionStrings.global && !connectionStrings.local) {
+    console.error('Error: No MongoDB connection string found in environment variables');
+    console.error('Please set MONGO_URI, GLOBAL_CONNECTION, or LOCAL_CONNECTION in your .env file');
+    process.exit(1);
+  }
+  
+  console.log('Connecting to database...');
+  initializeDatabase(connectionStrings)
+    .then(success => {
+      if (!success) {
+        throw new Error('Failed to connect to database');
+      }
+      console.log('Database connected successfully\n');
+      return migrateSwearData();
+    })
     .then(() => {
-      console.log('Migration script completed successfully');
+      console.log('\n✅ Migration script completed successfully');
       process.exit(0);
     })
     .catch(error => {
-      console.error('Migration script failed:', error);
+      console.error('\n❌ Migration script failed:', error);
       process.exit(1);
     });
 }
