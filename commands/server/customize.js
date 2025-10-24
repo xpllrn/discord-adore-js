@@ -1,4 +1,4 @@
-const { PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, Routes } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const axios = require('axios');
 
@@ -14,13 +14,13 @@ module.exports = {
 {guildprefix}customize bio reset`,
   permission: "Server Owner",
 
-  run: async(client, message, args) => {
-    
+  run: async (client, message, args) => {
+
     // Check if user is server owner
     if (message.guild.ownerId !== message.author.id) {
       return embeds.deny(message, 'Only the **server owner** can use this command');
     }
-    
+
     // Check if bot has permission to edit its own profile
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ChangeNickname)) {
       return embeds.deny(message, 'I need **Change Nickname** permission to customize my server profile');
@@ -37,20 +37,28 @@ module.exports = {
       // Reset avatar to global
       if (args[1] && args[1].toLowerCase() === 'reset') {
         try {
-          await message.guild.members.me.edit({
-            avatar: null
-          });
-          
+          console.log('[CUSTOMIZE] Resetting server avatar to global');
+
+          await client.rest.patch(
+            Routes.guildMember(message.guild.id, '@me'),
+            {
+              body: {
+                avatar: null
+              }
+            }
+          );
+
           return embeds.success(message, 'Reset my **server avatar** to the global avatar');
         } catch (error) {
-          console.error('Bot avatar reset error:', error);
+          console.error('[CUSTOMIZE] Bot avatar reset error:', error);
+          console.error('[CUSTOMIZE] Error code:', error.code);
           return embeds.deny(message, `Failed to reset avatar: ${error.message}`);
         }
       }
 
       // Get image URL from attachment or argument
       let imageUrl = args[1];
-      
+
       if (message.attachments.size > 0) {
         const attachment = message.attachments.first();
         if (attachment.contentType && attachment.contentType.startsWith('image/')) {
@@ -70,6 +78,8 @@ module.exports = {
       }
 
       try {
+        console.log('[CUSTOMIZE] Downloading avatar image from:', imageUrl);
+
         // Download the image
         const response = await axios.get(imageUrl, {
           responseType: 'arraybuffer',
@@ -82,6 +92,7 @@ module.exports = {
         // Check if it's an image
         const contentType = response.headers['content-type'];
         if (!contentType || !contentType.startsWith('image/')) {
+          console.log('[CUSTOMIZE] Invalid content type:', contentType);
           return embeds.warn(message, 'The provided URL does not point to a valid image');
         }
 
@@ -89,25 +100,43 @@ module.exports = {
         const base64Image = Buffer.from(response.data, 'binary').toString('base64');
         const dataUri = `data:${contentType};base64,${base64Image}`;
 
-        // Set the server-specific avatar
-        await message.guild.members.me.edit({
-          avatar: dataUri
-        });
+        console.log('[CUSTOMIZE] Attempting to set server avatar via REST API');
+        console.log('[CUSTOMIZE] Guild ID:', message.guild.id);
+        console.log('[CUSTOMIZE] Using @me endpoint');
+
+        // Use REST API to set server-specific avatar
+        const result = await client.rest.patch(
+          Routes.guildMember(message.guild.id, '@me'),
+          {
+            body: {
+              avatar: dataUri
+            }
+          }
+        );
+
+        console.log('[CUSTOMIZE] API Response:', JSON.stringify(result, null, 2));
 
         return embeds.success(message, 'Updated my **server avatar** successfully');
-        
+
       } catch (error) {
-        console.error('Bot avatar error:', error);
-        
+        console.error('[CUSTOMIZE] Bot avatar error:', error);
+        console.error('[CUSTOMIZE] Error code:', error.code);
+        console.error('[CUSTOMIZE] Error message:', error.message);
+        console.error('[CUSTOMIZE] Error stack:', error.stack);
+
         if (error.code === 50035) {
           return embeds.deny(message, 'Invalid image format. Please use PNG, JPG, or GIF');
         }
-        
+
+        if (error.code === 50013) {
+          return embeds.deny(message, 'Missing permissions to edit server profile');
+        }
+
         if (error.response && error.response.status === 404) {
           return embeds.deny(message, 'Could not download the image from the provided URL');
         }
-        
-        return embeds.deny(message, `Failed to set avatar: ${error.message}`);
+
+        return embeds.deny(message, `Failed to set avatar: ${error.message || 'Unknown error'}`);
       }
     }
 
@@ -116,20 +145,28 @@ module.exports = {
       // Reset banner to global
       if (args[1] && args[1].toLowerCase() === 'reset') {
         try {
-          await message.guild.members.me.edit({
-            banner: null
-          });
-          
+          console.log('[CUSTOMIZE] Resetting server banner to global');
+
+          await client.rest.patch(
+            Routes.guildMember(message.guild.id, '@me'),
+            {
+              body: {
+                banner: null
+              }
+            }
+          );
+
           return embeds.success(message, 'Reset my **server banner** to the global banner');
         } catch (error) {
-          console.error('Bot banner reset error:', error);
+          console.error('[CUSTOMIZE] Bot banner reset error:', error);
+          console.error('[CUSTOMIZE] Error code:', error.code);
           return embeds.deny(message, `Failed to reset banner: ${error.message}`);
         }
       }
 
       // Get image URL from attachment or argument
       let imageUrl = args[1];
-      
+
       if (message.attachments.size > 0) {
         const attachment = message.attachments.first();
         if (attachment.contentType && attachment.contentType.startsWith('image/')) {
@@ -149,6 +186,8 @@ module.exports = {
       }
 
       try {
+        console.log('[CUSTOMIZE] Downloading banner image from:', imageUrl);
+
         // Download the image
         const response = await axios.get(imageUrl, {
           responseType: 'arraybuffer',
@@ -161,6 +200,7 @@ module.exports = {
         // Check if it's an image
         const contentType = response.headers['content-type'];
         if (!contentType || !contentType.startsWith('image/')) {
+          console.log('[CUSTOMIZE] Invalid content type:', contentType);
           return embeds.warn(message, 'The provided URL does not point to a valid image');
         }
 
@@ -168,25 +208,43 @@ module.exports = {
         const base64Image = Buffer.from(response.data, 'binary').toString('base64');
         const dataUri = `data:${contentType};base64,${base64Image}`;
 
-        // Set the server-specific banner
-        await message.guild.members.me.edit({
-          banner: dataUri
-        });
+        console.log('[CUSTOMIZE] Attempting to set server banner via REST API');
+        console.log('[CUSTOMIZE] Guild ID:', message.guild.id);
+        console.log('[CUSTOMIZE] Using @me endpoint');
+
+        // Use REST API to set server-specific banner
+        const result = await client.rest.patch(
+          Routes.guildMember(message.guild.id, '@me'),
+          {
+            body: {
+              banner: dataUri
+            }
+          }
+        );
+
+        console.log('[CUSTOMIZE] API Response:', JSON.stringify(result, null, 2));
 
         return embeds.success(message, 'Updated my **server banner** successfully');
-        
+
       } catch (error) {
-        console.error('Bot banner error:', error);
-        
+        console.error('[CUSTOMIZE] Bot banner error:', error);
+        console.error('[CUSTOMIZE] Error code:', error.code);
+        console.error('[CUSTOMIZE] Error message:', error.message);
+        console.error('[CUSTOMIZE] Error stack:', error.stack);
+
         if (error.code === 50035) {
           return embeds.deny(message, 'Invalid image format. Please use PNG, JPG, or GIF');
         }
-        
+
+        if (error.code === 50013) {
+          return embeds.deny(message, 'Missing permissions to edit server profile');
+        }
+
         if (error.response && error.response.status === 404) {
           return embeds.deny(message, 'Could not download the image from the provided URL');
         }
-        
-        return embeds.deny(message, `Failed to set banner: ${error.message}`);
+
+        return embeds.deny(message, `Failed to set banner: ${error.message || 'Unknown error'}`);
       }
     }
 
@@ -195,20 +253,28 @@ module.exports = {
       // Reset bio to global
       if (args[1] && args[1].toLowerCase() === 'reset') {
         try {
-          await message.guild.members.me.edit({
-            bio: null
-          });
-          
+          console.log('[CUSTOMIZE] Resetting server bio to global');
+
+          await client.rest.patch(
+            Routes.guildMember(message.guild.id, '@me'),
+            {
+              body: {
+                bio: null
+              }
+            }
+          );
+
           return embeds.success(message, 'Reset my **server bio** to the global bio');
         } catch (error) {
-          console.error('Bot bio reset error:', error);
+          console.error('[CUSTOMIZE] Bot bio reset error:', error);
+          console.error('[CUSTOMIZE] Error code:', error.code);
           return embeds.deny(message, `Failed to reset bio: ${error.message}`);
         }
       }
 
       // Get bio text
       const bioText = args.slice(1).join(' ');
-      
+
       if (!bioText) {
         return embeds.warn(message, 'Please provide a bio text or use `reset` to clear it');
       }
@@ -219,21 +285,40 @@ module.exports = {
       }
 
       try {
-        // Set the server-specific bio
-        await message.guild.members.me.edit({
-          bio: bioText
-        });
+        console.log('[CUSTOMIZE] Attempting to set server bio via REST API');
+        console.log('[CUSTOMIZE] Guild ID:', message.guild.id);
+        console.log('[CUSTOMIZE] Using @me endpoint');
+        console.log('[CUSTOMIZE] Bio text:', bioText);
+
+        // Use REST API to set server-specific bio
+        const result = await client.rest.patch(
+          Routes.guildMember(message.guild.id, '@me'),
+          {
+            body: {
+              bio: bioText
+            }
+          }
+        );
+
+        console.log('[CUSTOMIZE] API Response:', JSON.stringify(result, null, 2));
 
         return embeds.success(message, `Updated my **server bio** to:\n\`\`\`${bioText}\`\`\``);
-        
+
       } catch (error) {
-        console.error('Bot bio error:', error);
-        
+        console.error('[CUSTOMIZE] Bot bio error:', error);
+        console.error('[CUSTOMIZE] Error code:', error.code);
+        console.error('[CUSTOMIZE] Error message:', error.message);
+        console.error('[CUSTOMIZE] Error stack:', error.stack);
+
         if (error.code === 50035) {
           return embeds.deny(message, 'Invalid bio text. Please check for special characters or length');
         }
-        
-        return embeds.deny(message, `Failed to set bio: ${error.message}`);
+
+        if (error.code === 50013) {
+          return embeds.deny(message, 'Missing permissions to edit server profile');
+        }
+
+        return embeds.deny(message, `Failed to set bio: ${error.message || 'Unknown error'}`);
       }
     }
   }
