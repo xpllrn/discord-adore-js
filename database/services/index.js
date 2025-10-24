@@ -128,10 +128,6 @@ async function shutdownServices() {
 function getServiceHealth() {
   const health = {
     connectionManager: false,
-    // guild: false,
-    // user: false,
-    // system: false,
-    // prefix: false,
     overall: false
   };
 
@@ -145,12 +141,10 @@ function getServiceHealth() {
   health.guild = serviceInstances.guild?.initialized || false;
   health.user = serviceInstances.user?.initialized || false;
   health.prefix = serviceInstances.prefix?.initialized || false;
-  
-  // TODO: Check other services when implemented
-  // health.system = serviceInstances.system?.initialized || false;
+  health.system = serviceInstances.system?.initialized || false;
 
   // Overall health is true if connection manager and core services are healthy
-  health.overall = health.connectionManager && health.guild && health.user && health.prefix;
+  health.overall = health.connectionManager && health.guild && health.user && health.prefix && health.system;
 
   return health;
 }
