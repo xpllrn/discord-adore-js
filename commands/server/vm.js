@@ -266,14 +266,14 @@ async function createVoiceManagerPanel(client, channel) {
     .setDescription(
       'Use the buttons below to control your voice channel.\n\n' +
       '**Button Usage:**\n' +
-      `<:lock:1430503055752953887> — **Lock** the voice channel\n` +
-      `<:unlock:1430503064808198184> — **Unlock** the voice channel\n` +
-      `<:ghost:1430503073565900961> — **Ghost** the voice channel\n` +
-      `<:reveal:1430503081925279754> — **Reveal** the voice channel\n` +
-      `<:increase:1430503123159482544> — **Increase** the user limit\n` +
-      `<:decrease:1430503131346895001> — **Decrease** the user limit\n` +
-      `<:rename:1430503098043859086> — **Rename** the voice channel\n` +
-      `<:info:1430503114879799356> — **View** channel information`
+      '🔒 — **Lock** the voice channel\n' +
+      '🔓 — **Unlock** the voice channel\n' +
+      '👻 — **Ghost** the voice channel\n' +
+      '👁️ — **Reveal** the voice channel\n' +
+      '➕ — **Increase** the user limit\n' +
+      '➖ — **Decrease** the user limit\n' +
+      '✏️ — **Rename** the voice channel\n' +
+      'ℹ️ — **View** channel information'
     )
     .setColor(colors.embed)
     .setThumbnail(client.user.displayAvatarURL());
@@ -311,7 +311,7 @@ async function createVoiceManagerPanel(client, channel) {
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_rename')
-        .setEmoji('1430503098043859086')
+        .setEmoji('1431402284386091121')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_info')
