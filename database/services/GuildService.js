@@ -6167,17 +6167,15 @@ class GuildService extends BaseService {
         // Update existing AFK status
         afkArray[existingIndex] = {
           userId,
-          reason: reason.trim(),
-          timestamp: new Date(),
-          setAt: new Date()
+          message: reason.trim(),
+          since: new Date()
         };
       } else {
         // Add new AFK status
         afkArray.push({
           userId,
-          reason: reason.trim(),
-          timestamp: new Date(),
-          setAt: new Date()
+          message: reason.trim(),
+          since: new Date()
         });
       }
       
