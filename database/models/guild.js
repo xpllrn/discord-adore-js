@@ -497,7 +497,7 @@ const guildSchema = new mongoose.Schema({
       required: true,
       enum: ['moderator', 'message', 'events', 'members'], // Available log types
       validate: {
-        validator: function(v) {
+        validator: function (v) {
           return v && v.length > 0; // At least one log type must be selected
         },
         message: 'At least one log type must be selected'
@@ -1027,8 +1027,8 @@ const guildSchema = new mongoose.Schema({
       default: 0
     },
     lastCounterId: {
-        type: String,
-        default: null
+      type: String,
+      default: null
     }
   }
 }, {
@@ -1036,7 +1036,7 @@ const guildSchema = new mongoose.Schema({
 });
 
 // Add validation and cleanup for BoosterRoles and VoiceManager
-guildSchema.pre('validate', function() {
+guildSchema.pre('validate', function () {
   if (this.BoosterRoles && this.BoosterRoles.length > 0) {
     // Filter out corrupted entries that have neither userId nor ownerId
     this.BoosterRoles = this.BoosterRoles.filter((role, index) => {
