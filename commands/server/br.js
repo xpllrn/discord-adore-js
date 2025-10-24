@@ -444,7 +444,8 @@ async function handleColor(client, message, args) {
   }
 
   // Helper function to parse color
-  const Color = require('color');
+  const colorLib = require('color');
+  const Color = colorLib.default || colorLib;
 
   const parseColor = (colorInput) => {
     try {
@@ -505,7 +506,8 @@ async function handleGradient(client, message, args) {
   }
 
   // Helper function to parse color
-  const Color = require('color');
+  const colorLib = require('color');
+  const Color = colorLib.default || colorLib;
 
   const parseColor = (colorInput) => {
     try {

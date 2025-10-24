@@ -4,7 +4,8 @@ const { hasDiscordPermission, checkUserRoleHierarchy, checkBotRoleHierarchy, che
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findRole, findUser } = require('../../../handlers/finder');
 const { PermissionFlagsBits } = require('discord.js');
-const Color = require('color');
+const colorLib = require('color');
+const Color = colorLib.default || colorLib;
 
 // Map to track ongoing role operations per guild to prevent concurrent operations
 const roleOperationLocks = new Map();
