@@ -37,30 +37,30 @@ module.exports = {
 {guildprefix}slot 1000
 {guildprefix}slot all
 {guildprefix}slot half`,
-  run: async(client, message, args) => {
-    
+  run: async (client, message, args) => {
+
     if (!args[0]) {
       return embeds.warn(message, 'You must give an **amount** to bet!');
     }
-    
+
     try {
       const userService = getService('user');
 
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);
       const walletBalance = gambling.wallet || 0;
-      
+
       if (walletBalance <= 0) {
         return embeds.deny(message, 'You don\'t have any money in your wallet to gamble');
       }
-      
+
       // Parse amount
       let amount = parseAmount(args[0], walletBalance);
-      
+
       if (amount === null || amount <= 0) {
         return embeds.deny(message, 'Please provide a valid amount');
       }
-      
+
       if (amount > walletBalance) {
         return embeds.deny(message, `You only have **${formatCurrency(walletBalance)}** coins in your **wallet**`);
       }
@@ -100,7 +100,7 @@ module.exports = {
 
       // All possible symbols for no-match scenarios
       const allSymbols = ['💎', '🍒', '🍓', '🍌'];
-      
+
       // Create spinning slot machine embed
       const createSpinningEmbed = (slot1, slot2, slot3) => {
         return new EmbedBuilder()
@@ -214,7 +214,7 @@ module.exports = {
 
       const finalEmbed = createFinalEmbed(finalSlot1, finalSlot2, finalSlot3, resultText, winnings);
       return slotMessage.edit({ embeds: [finalEmbed] });
-      
+
     } catch (error) {
       console.error('Error in slot command:', error);
       return embeds.deny(message, 'An error occurred while playing slots');

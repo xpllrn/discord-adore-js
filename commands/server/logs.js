@@ -155,8 +155,14 @@ async function handleAdd(client, message, args) {
       }
 
       if (addedTypes.length > 0) {
-        existingConfig.webhookUrl = finalWebhookUrl; // Update webhook URL
-        await guildService.updateLoggingConfig(message.guild.id, channel.id, existingConfig);
+        // Update with merged log types
+        await guildService.setLoggingChannel(
+          message.guild.id,
+          channel.id,
+          finalWebhookUrl,
+          existingConfig.logTypes,
+          message.author.id
+        );
 
         let responseMessage = `Added **${addedTypes.join(', ')}** logging to ${channel}!\n\n**Current log types:** ${existingConfig.logTypes.join(', ')}`;
         if (alreadyEnabledTypes.length > 0) {
@@ -168,16 +174,13 @@ async function handleAdd(client, message, args) {
       }
     } else {
       // Create new logging config
-      const newConfig = {
-        channelId: channel.id,
-        webhookUrl: finalWebhookUrl,
-        logTypes: logTypesToAdd,
-        enabled: true,
-        createdAt: new Date(),
-        createdBy: message.author.id
-      };
-
-      await guildService.addLoggingConfig(message.guild.id, newConfig);
+      await guildService.setLoggingChannel(
+        message.guild.id,
+        channel.id,
+        finalWebhookUrl,
+        logTypesToAdd,
+        message.author.id
+      );
 
       if (logTypesToAdd.length === 1) {
         embeds.success(message, `Successfully set up **${logTypesToAdd[0]}** logging in ${channel}!`);
@@ -243,19 +246,27 @@ async function handleRemove(client, message, args) {
         return embeds.warn(message, `**${logType}** logging is not enabled for <#${channel.id}>.`);
       }
 
-      // Remove the log type using cache method
-      await guildService.removeLoggingConfig(message.guild.id, channel.id, logType);
+      // Remove the log type from the array
+      const updatedLogTypes = config.logTypes.filter(type => type !== logType);
 
-      // Check if any log types remain
-      const updatedConfig = await guildService.getLoggingConfigForChannel(message.guild.id, channel.id);
-      if (!updatedConfig) {
+      if (updatedLogTypes.length === 0) {
+        // If no log types remain, remove the entire config
+        await guildService.removeLoggingChannel(message.guild.id, channel.id);
         embeds.success(message, `Removed **${logType}** logging from <#${channel.id}>. All logging has been disabled for this channel.`);
       } else {
-        embeds.success(message, `Removed **${logType}** logging from <#${channel.id}>.\n\n**Remaining log types:** ${updatedConfig.logTypes.join(', ')}`);
+        // Update with remaining log types
+        await guildService.setLoggingChannel(
+          message.guild.id,
+          channel.id,
+          config.webhookUrl,
+          updatedLogTypes,
+          config.createdBy
+        );
+        embeds.success(message, `Removed **${logType}** logging from <#${channel.id}>.\n\n**Remaining log types:** ${updatedLogTypes.join(', ')}`);
       }
     } else {
       // Remove entire config (all log types)
-      await guildService.removeLoggingConfig(message.guild.id, channel.id);
+      await guildService.removeLoggingChannel(message.guild.id, channel.id);
 
       embeds.success(message, `Removed all logging from <#${channel.id}>`);
     }
