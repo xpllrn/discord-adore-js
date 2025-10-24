@@ -147,6 +147,8 @@ module.exports = {
 
 // Setup command handler
 async function handleSetupCommand(message, client) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   const voiceManager = await guildService.getVoiceManager(message.guild.id);
   if (voiceManager.enabled) {
     return embeds.warn(message, 'Voice manager is already setup in this server. Use `,vm reset` to recreate.');
@@ -213,6 +215,8 @@ async function handleSetupCommand(message, client) {
 
 // Reset command handler
 async function handleResetCommand(message) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   const voiceManager = await guildService.getVoiceManager(message.guild.id);
   if (!voiceManager.enabled) {
     return embeds.warn(message, 'Voice manager is not setup in this server. Use `,vm setup` first.');
@@ -451,6 +455,8 @@ async function showVMHelp(message) {
 
 // Command handlers
 async function handleLockCommand(message, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   if (tempChannel.settings.locked) {
     return embeds.warn(message, 'Your voice channel is already locked');
   }
@@ -471,6 +477,8 @@ async function handleLockCommand(message, tempChannel) {
 }
 
 async function handleUnlockCommand(message, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   if (!tempChannel.settings.locked) {
     return embeds.warn(message, 'Your voice channel is not locked');
   }
@@ -491,6 +499,8 @@ async function handleUnlockCommand(message, tempChannel) {
 }
 
 async function handleHideCommand(message, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   if (tempChannel.settings.hidden) {
     return embeds.warn(message, 'Your voice channel is already hidden');
   }
@@ -511,6 +521,8 @@ async function handleHideCommand(message, tempChannel) {
 }
 
 async function handleUnhideCommand(message, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   if (!tempChannel.settings.hidden) {
     return embeds.warn(message, 'Your voice channel is not hidden');
   }
@@ -531,6 +543,8 @@ async function handleUnhideCommand(message, tempChannel) {
 }
 
 async function handleIncreaseCommand(message, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   const currentLimit = tempChannel.settings.userLimit || 0;
   const newLimit = currentLimit === 0 ? 2 : Math.min(currentLimit + 1, 99);
 
@@ -547,6 +561,8 @@ async function handleIncreaseCommand(message, tempChannel) {
 }
 
 async function handleDecreaseCommand(message, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   const currentLimit = tempChannel.settings.userLimit || 0;
   if (currentLimit <= 1) {
     return embeds.warn(message, 'User limit is already at minimum (1) or unlimited (0)');
@@ -567,6 +583,8 @@ async function handleDecreaseCommand(message, tempChannel) {
 }
 
 async function handleLimitCommand(message, args, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   const limit = parseInt(args[1]);
 
   if (isNaN(limit) || limit < 0 || limit > 99) {
@@ -587,6 +605,8 @@ async function handleLimitCommand(message, args, tempChannel) {
 }
 
 async function handleNameCommand(message, args, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   const newName = args.slice(1).join(' ');
 
   if (!newName) {
@@ -739,6 +759,8 @@ async function handleStatusCommand(message, args, tempChannel) {
 }
 
 async function handleTransferCommand(message, args, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   const targetUser = message.mentions.users.first();
   if (!targetUser) {
     return embeds.warn(message, 'Please mention a user to transfer ownership to: `,vm transfer @user`');
@@ -770,6 +792,8 @@ async function handleTransferCommand(message, args, tempChannel) {
 }
 
 async function handleClaimCommand(message, tempChannel) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
   // Check if current owner is still in the channel
   const currentOwner = message.guild.members.cache.get(tempChannel.ownerId);
   if (currentOwner && currentOwner.voice.channel && currentOwner.voice.channel.id === tempChannel.channelId) {

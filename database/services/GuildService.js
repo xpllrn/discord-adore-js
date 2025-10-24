@@ -570,6 +570,116 @@ class GuildService extends BaseService {
     }
   }
 
+  /**
+   * Get welcome messages (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of welcome messages
+   */
+  async getWelcomeMessages(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.WelcomeMessages || [];
+    } catch (error) {
+      console.error(`Error getting welcome messages for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add welcome message (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {string} message - Welcome message
+   * @returns {Promise<boolean>} Success status
+   */
+  async addWelcomeMessage(guildId, channelId, message) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!message || message.trim().length === 0) {
+      throw new ValidationError('Welcome message is required', 'message', message);
+    }
+
+    if (message.length > 2000) {
+      throw new ValidationError('Welcome message cannot exceed 2000 characters', 'message', message);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const welcomeMessages = guildData.WelcomeMessages || [];
+
+      // Check if message for this channel already exists
+      const existingIndex = welcomeMessages.findIndex(wm => wm.channelId === channelId);
+
+      if (existingIndex !== -1) {
+        // Update existing message
+        welcomeMessages[existingIndex].message = message.trim();
+        welcomeMessages[existingIndex].createdAt = new Date();
+      } else {
+        // Add new message
+        welcomeMessages.push({
+          channelId,
+          message: message.trim(),
+          createdAt: new Date()
+        });
+      }
+
+      guildData.WelcomeMessages = welcomeMessages;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add welcome message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove welcome message (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeWelcomeMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const welcomeMessages = guildData.WelcomeMessages || [];
+      const initialLength = welcomeMessages.length;
+
+      guildData.WelcomeMessages = welcomeMessages.filter(wm => wm.channelId !== channelId);
+
+      if (guildData.WelcomeMessages.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove welcome message for guild ${guildId}`, error);
+    }
+  }
+
   // ===== LEAVE SYSTEM =====
 
   /**
@@ -649,6 +759,116 @@ class GuildService extends BaseService {
       return true;
     } catch (error) {
       throw new DatabaseWriteError(`Failed to remove leave settings for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get leave messages (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of leave messages
+   */
+  async getLeaveMessages(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.LeaveMessages || [];
+    } catch (error) {
+      console.error(`Error getting leave messages for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add leave message (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {string} message - Leave message
+   * @returns {Promise<boolean>} Success status
+   */
+  async addLeaveMessage(guildId, channelId, message) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!message || message.trim().length === 0) {
+      throw new ValidationError('Leave message is required', 'message', message);
+    }
+
+    if (message.length > 2000) {
+      throw new ValidationError('Leave message cannot exceed 2000 characters', 'message', message);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const leaveMessages = guildData.LeaveMessages || [];
+
+      // Check if message for this channel already exists
+      const existingIndex = leaveMessages.findIndex(lm => lm.channelId === channelId);
+
+      if (existingIndex !== -1) {
+        // Update existing message
+        leaveMessages[existingIndex].message = message.trim();
+        leaveMessages[existingIndex].createdAt = new Date();
+      } else {
+        // Add new message
+        leaveMessages.push({
+          channelId,
+          message: message.trim(),
+          createdAt: new Date()
+        });
+      }
+
+      guildData.LeaveMessages = leaveMessages;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add leave message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove leave message (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeLeaveMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const leaveMessages = guildData.LeaveMessages || [];
+      const initialLength = leaveMessages.length;
+
+      guildData.LeaveMessages = leaveMessages.filter(lm => lm.channelId !== channelId);
+
+      if (guildData.LeaveMessages.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove leave message for guild ${guildId}`, error);
     }
   }
 
@@ -735,6 +955,116 @@ class GuildService extends BaseService {
       return true;
     } catch (error) {
       throw new DatabaseWriteError(`Failed to remove boost settings for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get boost messages (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of boost messages
+   */
+  async getBoostMessages(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.BoostMessages || [];
+    } catch (error) {
+      console.error(`Error getting boost messages for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add boost message (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {string} message - Boost message
+   * @returns {Promise<boolean>} Success status
+   */
+  async addBoostMessage(guildId, channelId, message) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!message || message.trim().length === 0) {
+      throw new ValidationError('Boost message is required', 'message', message);
+    }
+
+    if (message.length > 2000) {
+      throw new ValidationError('Boost message cannot exceed 2000 characters', 'message', message);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boostMessages = guildData.BoostMessages || [];
+
+      // Check if message for this channel already exists
+      const existingIndex = boostMessages.findIndex(bm => bm.channelId === channelId);
+
+      if (existingIndex !== -1) {
+        // Update existing message
+        boostMessages[existingIndex].message = message.trim();
+        boostMessages[existingIndex].createdAt = new Date();
+      } else {
+        // Add new message
+        boostMessages.push({
+          channelId,
+          message: message.trim(),
+          createdAt: new Date()
+        });
+      }
+
+      guildData.BoostMessages = boostMessages;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add boost message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove boost message (multi-message system)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeBoostMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boostMessages = guildData.BoostMessages || [];
+      const initialLength = boostMessages.length;
+
+      guildData.BoostMessages = boostMessages.filter(bm => bm.channelId !== channelId);
+
+      if (guildData.BoostMessages.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove boost message for guild ${guildId}`, error);
     }
   }
 
@@ -2842,7 +3172,90 @@ class GuildService extends BaseService {
   }
 
   /**
-   * Set starboard settings
+   * Set starboard channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Starboard channel ID (null to disable)
+   * @returns {Promise<boolean>} Success status
+   */
+  async setStarboardChannel(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.StarboardChannel = channelId;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set starboard channel for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set starboard threshold
+   * @param {string} guildId - Guild ID
+   * @param {number} threshold - Starboard threshold
+   * @returns {Promise<boolean>} Success status
+   */
+  async setStarboardThreshold(guildId, threshold) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof threshold !== 'number' || threshold < 1) {
+      throw new ValidationError('Threshold must be a positive number', 'threshold', threshold);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.StarboardThreshold = threshold;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set starboard threshold for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set starboard emoji
+   * @param {string} guildId - Guild ID
+   * @param {string} emoji - Starboard emoji
+   * @returns {Promise<boolean>} Success status
+   */
+  async setStarboardEmoji(guildId, emoji) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!emoji) {
+      throw new ValidationError('Emoji is required', 'emoji', emoji);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.StarboardEmoji = emoji;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set starboard emoji for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set starboard settings (all at once)
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Starboard channel ID
    * @param {number} threshold - Starboard threshold

@@ -92,6 +92,22 @@ This document tracks the completion status of service layer methods for all bot 
 - ✅ `getCounting(guildId)` - Get counting config
 - ✅ `setCounting(guildId, countingData)` - Set counting config
 
+#### Welcome/Leave/Boost Messages (Multi-Message System)
+- ✅ `getWelcomeMessages(guildId)` - Get all welcome messages
+- ✅ `addWelcomeMessage(guildId, channelId, message)` - Add/update welcome message
+- ✅ `removeWelcomeMessage(guildId, channelId)` - Remove welcome message
+- ✅ `getLeaveMessages(guildId)` - Get all leave messages
+- ✅ `addLeaveMessage(guildId, channelId, message)` - Add/update leave message
+- ✅ `removeLeaveMessage(guildId, channelId)` - Remove leave message
+- ✅ `getBoostMessages(guildId)` - Get all boost messages
+- ✅ `addBoostMessage(guildId, channelId, message)` - Add/update boost message
+- ✅ `removeBoostMessage(guildId, channelId)` - Remove boost message
+
+#### Starboard System (Individual Setters)
+- ✅ `setStarboardChannel(guildId, channelId)` - Set starboard channel
+- ✅ `setStarboardThreshold(guildId, threshold)` - Set starboard threshold
+- ✅ `setStarboardEmoji(guildId, emoji)` - Set starboard emoji
+
 #### Ticket System
 - ✅ `getTicketSystem(guildId)` - Get ticket system configuration
 - ✅ `setTicketSystem(guildId, config)` - Set ticket system configuration

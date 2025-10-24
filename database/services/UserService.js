@@ -179,6 +179,26 @@ class UserService extends BaseService {
   // ===== GAMBLING SYSTEM =====
 
   /**
+   * Get default gambling data structure
+   * @private
+   * @returns {Object} Default gambling data
+   */
+  getDefaultGamblingData() {
+    return {
+      wallet: 1000,
+      bank: 0,
+      dailyClaim: { lastClaimed: null, streak: 0 },
+      robCooldown: null,
+      lastWorked: null,
+      begCooldown: null,
+      lastInterestClaim: null,
+      totalGambled: 0,
+      totalWon: 0,
+      totalLost: 0
+    };
+  }
+
+  /**
    * Get gambling data for user
    * @param {string} userId - User ID
    * @returns {Promise<Object>} Gambling data
@@ -190,32 +210,10 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      return userData.Gambling || {
-        wallet: 1000,
-        bank: 0,
-        dailyClaim: { lastClaimed: null, streak: 0 },
-        robCooldown: null,
-        lastWorked: null,
-        begCooldown: null,
-        lastInterestClaim: null,
-        totalGambled: 0,
-        totalWon: 0,
-        totalLost: 0
-      };
+      return userData.Gambling || this.getDefaultGamblingData();
     } catch (error) {
       console.error(`Error getting gambling data for user ${userId}:`, error.message);
-      return {
-        wallet: 1000,
-        bank: 0,
-        dailyClaim: { lastClaimed: null, streak: 0 },
-        robCooldown: null,
-        lastWorked: null,
-        begCooldown: null,
-        lastInterestClaim: null,
-        totalGambled: 0,
-        totalWon: 0,
-        totalLost: 0
-      };
+      return this.getDefaultGamblingData();
     }
   }
 
