@@ -301,6 +301,8 @@ module.exports = {
 
 // Helper function to calculate next birthday timestamp
 async function getNextBirthdayTimestamp(userId) {
+  const { getService } = require('@services');
+  const userService = getService('user');
   const birthday = await userService.getBirthday(userId);
 
   if (!birthday) return null;

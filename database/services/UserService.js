@@ -1091,6 +1091,189 @@ class UserService extends BaseService {
   getNestedField(obj, path) {
     return path.split('.').reduce((current, key) => current?.[key], obj);
   }
+
+  // ===== BIRTHDAY OPERATIONS =====
+
+  /**
+   * Get user birthday
+   * @param {string} userId - User ID
+   * @returns {Promise<Object|null>} Birthday object with day and month, or null
+   */
+  async getBirthday(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const birthday = userData.Birthday || {};
+      
+      if (birthday.day && birthday.month) {
+        return {
+          day: birthday.day,
+          month: birthday.month,
+          setAt: birthday.setAt
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error getting birthday for user ${userId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set user birthday with UTC timestamp
+   * @param {string} userId - User ID
+   * @param {number} day - Day of month (1-31)
+   * @param {number} month - Month (1-12)
+   * @returns {Promise<boolean>} Success status
+   */
+  async setBirthday(userId, day, month) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (typeof day !== 'number' || day < 1 || day > 31) {
+      throw new ValidationError('Day must be a number between 1 and 31', 'day', day);
+    }
+
+    if (typeof month !== 'number' || month < 1 || month > 12) {
+      throw new ValidationError('Month must be a number between 1 and 12', 'month', month);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      
+      userData.Birthday = {
+        day,
+        month,
+        setAt: new Date() // UTC timestamp
+      };
+      
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set birthday for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Clear user birthday
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearBirthday(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      
+      userData.Birthday = {
+        day: null,
+        month: null,
+        setAt: null
+      };
+      
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear birthday for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Get formatted birthday string
+   * @param {string} userId - User ID
+   * @returns {Promise<string|null>} Formatted birthday (e.g., "March 15") or null
+   */
+  async getFormattedBirthday(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const birthday = await this.getBirthday(userId);
+      
+      if (!birthday) {
+        return null;
+      }
+
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+
+      const monthName = monthNames[birthday.month - 1];
+      return `${monthName} ${birthday.day}`;
+    } catch (error) {
+      console.error(`Error getting formatted birthday for user ${userId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Check if today is user's birthday
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} True if today is user's birthday
+   */
+  async isBirthday(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const birthday = await this.getBirthday(userId);
+      
+      if (!birthday) {
+        return false;
+      }
+
+      const now = new Date();
+      const currentDay = now.getDate();
+      const currentMonth = now.getMonth() + 1;
+
+      return birthday.day === currentDay && birthday.month === currentMonth;
+    } catch (error) {
+      console.error(`Error checking if birthday for user ${userId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get all users with birthdays on a specific date
+   * @param {number} day - Day of month (1-31)
+   * @param {number} month - Month (1-12)
+   * @returns {Promise<string[]>} Array of user IDs
+   */
+  async getUsersWithBirthday(day, month) {
+    if (typeof day !== 'number' || day < 1 || day > 31) {
+      throw new ValidationError('Day must be a number between 1 and 31', 'day', day);
+    }
+
+    if (typeof month !== 'number' || month < 1 || month > 12) {
+      throw new ValidationError('Month must be a number between 1 and 12', 'month', month);
+    }
+
+    try {
+      const Model = this.getModel();
+      const users = await Model.find({
+        'Birthday.day': day,
+        'Birthday.month': month
+      }).lean();
+
+      return users.map(user => user[this.keyField]);
+    } catch (error) {
+      console.error(`Error getting users with birthday ${month}/${day}:`, error.message);
+      return [];
+    }
+  }
 }
 
 module.exports = UserService;
