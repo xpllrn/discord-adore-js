@@ -37,6 +37,7 @@ module.exports = {
       try {
         const newRole = await message.guild.roles.create({
           name: roleName,
+          permissions: 0n, // No permissions by default
           reason: `Role created by ${message.author.tag}`
         });
 

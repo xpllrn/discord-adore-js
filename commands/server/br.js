@@ -194,7 +194,7 @@ async function handleCreate(client, message, args) {
     const newRole = await message.guild.roles.create({
       name: roleName,
       color: 0x000000, // Default black color
-      permissions: [], // No permissions - just a display role
+      permissions: 0n, // No permissions - just a display role
       mentionable: false,
       hoist: false,
       position: Math.max(1, baseRole.position - 1)

@@ -264,7 +264,7 @@ async function createVoiceManagerPanel(client, channel) {
   const panelEmbed = new EmbedBuilder()
     .setTitle('**VoiceMaster Interface**')
     .setDescription(
-      'Use the buttons below to control your voice channel.\n\n' +
+      '-# Use the buttons below to control your voice channel.\n\n' +
       '**Button Usage:**\n' +
       '> [**`Lock`**](https://dsc.gg/s-invite) the voice channel\n' +
       '> [**`Unlock`**](https://dsc.gg/s-invite) the voice channel\n' +
