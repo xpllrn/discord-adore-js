@@ -436,22 +436,86 @@ async function handleColor(client, message, args) {
     }
   }
 
-  // Helper function to parse color using Color library (same as role command)
+  // Helper function to parse color with fuzzy matching
   const Color = require('color');
 
   const parseColor = (colorInput) => {
-    try {
-      // Handle hex colors without # prefix
-      if (/^[0-9A-Fa-f]{6}$/.test(colorInput)) {
-        colorInput = '#' + colorInput;
-      }
+    // Common color names mapping
+    const colorNames = {
+      'red': '#FF0000', 'blue': '#0000FF', 'green': '#00FF00', 'yellow': '#FFFF00',
+      'orange': '#FFA500', 'purple': '#800080', 'pink': '#FFC0CB', 'brown': '#A52A2A',
+      'black': '#000000', 'white': '#FFFFFF', 'gray': '#808080', 'grey': '#808080',
+      'cyan': '#00FFFF', 'magenta': '#FF00FF', 'lime': '#00FF00', 'navy': '#000080',
+      'teal': '#008080', 'olive': '#808000', 'maroon': '#800000', 'aqua': '#00FFFF',
+      'silver': '#C0C0C0', 'gold': '#FFD700', 'indigo': '#4B0082', 'violet': '#EE82EE',
+      'turquoise': '#40E0D0', 'tan': '#D2B48C', 'beige': '#F5F5DC', 'coral': '#FF7F50',
+      'crimson': '#DC143C', 'khaki': '#F0E68C', 'lavender': '#E6E6FA', 'salmon': '#FA8072',
+      'peach': '#FFDAB9', 'mint': '#98FF98', 'rose': '#FF007F', 'sky': '#87CEEB'
+    };
 
-      // Use the color library to parse any color format
+    const input = colorInput.toLowerCase().trim();
+
+    // Try exact color name match first
+    if (colorNames[input]) {
+      return colorNames[input];
+    }
+
+    // Try hex code with or without #
+    if (/^#?[0-9A-Fa-f]{6}$/.test(colorInput)) {
+      const hex = colorInput.startsWith('#') ? colorInput : '#' + colorInput;
+      return hex.toUpperCase();
+    }
+
+    // Try using Color library for other formats (rgb, hsl, etc)
+    try {
       const parsedColor = Color(colorInput);
       return parsedColor.hex();
-    } catch (error) {
-      throw new Error(`Invalid color format: ${colorInput}`);
+    } catch (e) {
+      // Fuzzy match color names
+      const colorNamesList = Object.keys(colorNames);
+      let bestMatch = null;
+      let bestScore = Infinity;
+
+      for (const colorName of colorNamesList) {
+        // Simple distance calculation
+        const distance = levenshteinDistance(input, colorName);
+        if (distance < bestScore && distance <= 3) { // Allow up to 3 character difference
+          bestScore = distance;
+          bestMatch = colorName;
+        }
+      }
+
+      if (bestMatch) {
+        return colorNames[bestMatch];
+      }
+
+      throw new Error(`Invalid color: ${colorInput}`);
     }
+  };
+
+  // Simple Levenshtein distance for fuzzy matching
+  const levenshteinDistance = (str1, str2) => {
+    const matrix = [];
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    return matrix[str2.length][str1.length];
   };
 
   try {
@@ -541,7 +605,7 @@ async function handleColor(client, message, args) {
     }
 
   } catch (error) {
-    return embeds.warn(message, `Invalid color **${args[0]}**. Use:\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\`\n• HSL: \`hsl(0,100%,50%)\`\n• Color names: \`red\`, \`blue\`, \`white\`, etc.\n• Gradient: \`red pink\` (requires Enhanced Roles unlocked)`);
+    return embeds.warn(message, `Could not parse color **${args[0]}**. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\`\n• Gradient: \`red pink\` (requires Enhanced Roles unlocked)`);
   }
 }
 
