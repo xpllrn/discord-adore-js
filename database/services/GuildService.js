@@ -2504,7 +2504,7 @@ class GuildService extends BaseService {
    * Get swear tracking data for a user
    * @param {string} guildId - Guild ID
    * @param {string} userId - User ID
-   * @returns {Promise<Array>} Array of swear tracking objects
+   * @returns {Promise<Object|null>} User swear tracking object or null
    */
   async getSwears(guildId, userId) {
     if (!guildId) {
@@ -2518,10 +2518,10 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const swearTracker = guildData.SwearTracker || [];
-      return swearTracker.filter(st => st.userId === userId);
+      return swearTracker.find(st => st.userId === userId) || null;
     } catch (error) {
       console.error(`Error getting swears for user ${userId} in guild ${guildId}:`, error.message);
-      return [];
+      return null;
     }
   }
 
@@ -2548,12 +2548,58 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const swearTracker = guildData.SwearTracker || [];
+      const word = swear.toLowerCase();
+      const now = new Date();
 
-      swearTracker.push({
-        userId,
-        swear: swear.toLowerCase(),
-        timestamp: new Date()
-      });
+      // Find existing user entry
+      let userEntry = swearTracker.find(st => st.userId === userId);
+
+      if (!userEntry) {
+        // Create new user entry with proper schema structure
+        userEntry = {
+          userId,
+          swears: [],
+          totalSwears: 0,
+          todaySwears: 0,
+          lastSwearDate: now
+        };
+        swearTracker.push(userEntry);
+      }
+
+      // Find existing swear word in user's swears array
+      let swearEntry = userEntry.swears.find(s => s.word === word);
+
+      if (swearEntry) {
+        // Increment existing swear count
+        swearEntry.count++;
+        swearEntry.lastUsed = now;
+      } else {
+        // Add new swear word
+        userEntry.swears.push({
+          word,
+          count: 1,
+          lastUsed: now
+        });
+      }
+
+      // Update totals
+      userEntry.totalSwears++;
+
+      // Check if it's today and update todaySwears
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lastSwearDate = new Date(userEntry.lastSwearDate);
+      lastSwearDate.setHours(0, 0, 0, 0);
+
+      if (lastSwearDate.getTime() === today.getTime()) {
+        // Same day, increment today's count
+        userEntry.todaySwears++;
+      } else {
+        // New day, reset today's count
+        userEntry.todaySwears = 1;
+      }
+
+      userEntry.lastSwearDate = now;
 
       guildData.SwearTracker = swearTracker;
 
@@ -2605,10 +2651,16 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const swearTracker = guildData.SwearTracker || [];
 
+      // Find and remove the user's entry
+      const initialLength = swearTracker.length;
       guildData.SwearTracker = swearTracker.filter(st => st.userId !== userId);
 
-      await this.set(guildId, guildData);
-      return true;
+      if (guildData.SwearTracker.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false; // User had no swear data
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error;
@@ -2636,10 +2688,10 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const swearTracker = guildData.SwearTracker || [];
 
-      // Filter swears for this user
-      const userSwears = swearTracker.filter(st => st.userId === userId);
+      // Find user entry in the tracker
+      const userEntry = swearTracker.find(st => st.userId === userId);
 
-      if (userSwears.length === 0) {
+      if (!userEntry || !userEntry.swears || userEntry.swears.length === 0) {
         return {
           userId,
           swears: [],
@@ -2648,43 +2700,24 @@ class GuildService extends BaseService {
         };
       }
 
-      // Aggregate swears by word
-      const swearCounts = {};
-      let todaySwears = 0;
+      // Check if todaySwears needs to be reset (if lastSwearDate is not today)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const lastSwearDate = new Date(userEntry.lastSwearDate);
+      lastSwearDate.setHours(0, 0, 0, 0);
 
-      for (const swear of userSwears) {
-        // Skip if swear word is undefined or null
-        if (!swear.swear) continue;
-        
-        const word = swear.swear.toLowerCase();
-        if (!swearCounts[word]) {
-          swearCounts[word] = 0;
-        }
-        swearCounts[word]++;
-
-        // Count today's swears
-        const swearDate = new Date(swear.timestamp);
-        swearDate.setHours(0, 0, 0, 0);
-        if (swearDate.getTime() === today.getTime()) {
-          todaySwears++;
-        }
-      }
-
-      // Convert to array format
-      const swears = Object.entries(swearCounts).map(([word, count]) => ({
-        word,
-        count
-      }));
-
-      const totalSwears = userSwears.length;
+      const todaySwears = lastSwearDate.getTime() === today.getTime() 
+        ? (userEntry.todaySwears || 0) 
+        : 0;
 
       return {
         userId,
-        swears,
+        swears: userEntry.swears.map(s => ({
+          word: s.word,
+          count: s.count
+        })),
         todaySwears,
-        totalSwears
+        totalSwears: userEntry.totalSwears || 0
       };
     } catch (error) {
       console.error(`Error getting user swear data for guild ${guildId}:`, error.message);
@@ -2716,49 +2749,30 @@ class GuildService extends BaseService {
         return [];
       }
 
-      // Group by user
-      const userSwearCounts = {};
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      for (const swear of swearTracker) {
-        // Skip if swear word is undefined or null
-        if (!swear.swear) continue;
-        
-        if (!userSwearCounts[swear.userId]) {
-          userSwearCounts[swear.userId] = {
-            userId: swear.userId,
-            swears: {},
-            todaySwears: 0,
-            totalSwears: 0
+      // Map user entries to leaderboard format
+      const leaderboard = swearTracker
+        .filter(userEntry => userEntry.totalSwears > 0)
+        .map(userEntry => {
+          // Check if todaySwears needs to be reset
+          const lastSwearDate = new Date(userEntry.lastSwearDate);
+          lastSwearDate.setHours(0, 0, 0, 0);
+          const todaySwears = lastSwearDate.getTime() === today.getTime() 
+            ? (userEntry.todaySwears || 0) 
+            : 0;
+
+          return {
+            userId: userEntry.userId,
+            calculatedTotal: userEntry.totalSwears || 0,
+            todaySwears,
+            swears: (userEntry.swears || []).map(s => ({
+              word: s.word,
+              count: s.count
+            }))
           };
-        }
-
-        const word = swear.swear.toLowerCase();
-        if (!userSwearCounts[swear.userId].swears[word]) {
-          userSwearCounts[swear.userId].swears[word] = 0;
-        }
-        userSwearCounts[swear.userId].swears[word]++;
-        userSwearCounts[swear.userId].totalSwears++;
-
-        // Count today's swears
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const swearDate = new Date(swear.timestamp);
-        swearDate.setHours(0, 0, 0, 0);
-        if (swearDate.getTime() === today.getTime()) {
-          userSwearCounts[swear.userId].todaySwears++;
-        }
-      }
-
-      // Convert to array and calculate totals
-      const leaderboard = Object.values(userSwearCounts).map(userData => ({
-        userId: userData.userId,
-        calculatedTotal: userData.totalSwears,
-        todaySwears: userData.todaySwears,
-        swears: Object.entries(userData.swears).map(([word, count]) => ({
-          word,
-          count
-        }))
-      }));
+        });
 
       // Sort by total swears descending
       leaderboard.sort((a, b) => b.calculatedTotal - a.calculatedTotal);
