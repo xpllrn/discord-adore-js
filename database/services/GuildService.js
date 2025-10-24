@@ -5390,6 +5390,1184 @@ class GuildService extends BaseService {
       return [];
     }
   }
+
+  // ===== LOGGING SYSTEM EXTENDED =====
+
+  /**
+   * Valid event types for logging
+   * @private
+   * @returns {string[]} Array of valid event types
+   */
+  getValidLoggingEventTypes() {
+    return [
+      'messageDelete',
+      'messageUpdate',
+      'memberJoin',
+      'memberLeave',
+      'memberBan',
+      'memberUnban',
+      'roleCreate',
+      'roleDelete',
+      'roleUpdate',
+      'channelCreate',
+      'channelDelete',
+      'channelUpdate',
+      'voiceStateUpdate',
+      'guildUpdate',
+      'emojiCreate',
+      'emojiDelete',
+      'emojiUpdate'
+    ];
+  }
+
+  /**
+   * Add logging configuration
+   * @param {string} guildId - Guild ID
+   * @param {string} eventType - Event type to log
+   * @param {string} channelId - Log channel ID
+   * @param {Object} options - Additional options
+   * @returns {Promise<boolean>} Success status
+   */
+  async addLoggingConfig(guildId, eventType, channelId, options = {}) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!eventType) {
+      throw new ValidationError('Event type is required', 'eventType', eventType);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    // Validate event type
+    const validEventTypes = this.getValidLoggingEventTypes();
+    if (!validEventTypes.includes(eventType)) {
+      throw new ValidationError(
+        `Invalid event type. Must be one of: ${validEventTypes.join(', ')}`,
+        'eventType',
+        eventType
+      );
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      let loggingConfig = guildData.LoggingConfig || [];
+      
+      // Check if config already exists for this event type
+      const existingIndex = loggingConfig.findIndex(config => config.eventType === eventType);
+      
+      if (existingIndex !== -1) {
+        // Update existing config
+        loggingConfig[existingIndex] = {
+          eventType,
+          channelId,
+          enabled: true,
+          options: options || {},
+          createdAt: loggingConfig[existingIndex].createdAt || new Date(),
+          updatedAt: new Date()
+        };
+      } else {
+        // Add new config
+        loggingConfig.push({
+          eventType,
+          channelId,
+          enabled: true,
+          options: options || {},
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+      
+      guildData.LoggingConfig = loggingConfig;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add logging config for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Update logging configuration
+   * @param {string} guildId - Guild ID
+   * @param {string} eventType - Event type
+   * @param {Object} updates - Updates to apply
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateLoggingConfig(guildId, eventType, updates) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!eventType) {
+      throw new ValidationError('Event type is required', 'eventType', eventType);
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      throw new ValidationError('Updates object is required', 'updates', updates);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      let loggingConfig = guildData.LoggingConfig || [];
+      
+      // Find existing config by event type
+      const configIndex = loggingConfig.findIndex(config => config.eventType === eventType);
+      
+      if (configIndex !== -1) {
+        // Apply updates
+        loggingConfig[configIndex] = {
+          ...loggingConfig[configIndex],
+          ...updates,
+          eventType, // Preserve event type
+          updatedAt: new Date()
+        };
+        
+        guildData.LoggingConfig = loggingConfig;
+        await this.set(guildId, guildData);
+        return true;
+      }
+      
+      return false; // Config not found
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update logging config for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove logging configuration
+   * @param {string} guildId - Guild ID
+   * @param {string} eventType - Event type
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeLoggingConfig(guildId, eventType) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!eventType) {
+      throw new ValidationError('Event type is required', 'eventType', eventType);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const loggingConfig = guildData.LoggingConfig || [];
+      const initialLength = loggingConfig.length;
+      
+      guildData.LoggingConfig = loggingConfig.filter(config => config.eventType !== eventType);
+      
+      if (guildData.LoggingConfig.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+      
+      return false; // Config not found
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove logging config for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== TICKET SYSTEM EXTENDED =====
+
+  /**
+   * Enable ticket system
+   * @param {string} guildId - Guild ID
+   * @param {string} categoryId - Category ID
+   * @param {string} supportRoleId - Support role ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async enableTicketSystem(guildId, categoryId, supportRoleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!categoryId) {
+      throw new ValidationError('Category ID is required', 'categoryId', categoryId);
+    }
+
+    if (!supportRoleId) {
+      throw new ValidationError('Support role ID is required', 'supportRoleId', supportRoleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.TicketSystem) {
+        guildData.TicketSystem = {
+          enabled: false,
+          categoryId: null,
+          supportRoleId: null,
+          setupChannelId: null,
+          setupMessageId: null,
+          activeTickets: [],
+          ticketCounter: 0
+        };
+      }
+      
+      guildData.TicketSystem.enabled = true;
+      guildData.TicketSystem.categoryId = categoryId;
+      guildData.TicketSystem.supportRoleId = supportRoleId;
+      
+      // Initialize activeTickets if needed
+      if (!guildData.TicketSystem.activeTickets) {
+        guildData.TicketSystem.activeTickets = [];
+      }
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to enable ticket system for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set ticket category
+   * @param {string} guildId - Guild ID
+   * @param {string} categoryId - Category ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async setTicketCategory(guildId, categoryId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!categoryId) {
+      throw new ValidationError('Category ID is required', 'categoryId', categoryId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.TicketSystem) {
+        guildData.TicketSystem = {
+          enabled: false,
+          categoryId: null,
+          supportRoleId: null,
+          setupChannelId: null,
+          setupMessageId: null,
+          activeTickets: [],
+          ticketCounter: 0
+        };
+      }
+      
+      guildData.TicketSystem.categoryId = categoryId;
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set ticket category for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set ticket setup channel and message
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Setup channel ID
+   * @param {string} messageId - Setup message ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async setTicketSetup(guildId, channelId, messageId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.TicketSystem) {
+        guildData.TicketSystem = {
+          enabled: false,
+          categoryId: null,
+          supportRoleId: null,
+          setupChannelId: null,
+          setupMessageId: null,
+          activeTickets: [],
+          ticketCounter: 0
+        };
+      }
+      
+      guildData.TicketSystem.setupChannelId = channelId;
+      guildData.TicketSystem.setupMessageId = messageId;
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set ticket setup for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set ticket support role
+   * @param {string} guildId - Guild ID
+   * @param {string} roleId - Support role ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async setTicketSupportRole(guildId, roleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!roleId) {
+      throw new ValidationError('Role ID is required', 'roleId', roleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.TicketSystem) {
+        guildData.TicketSystem = {
+          enabled: false,
+          categoryId: null,
+          supportRoleId: null,
+          setupChannelId: null,
+          setupMessageId: null,
+          activeTickets: [],
+          ticketCounter: 0
+        };
+      }
+      
+      guildData.TicketSystem.supportRoleId = roleId;
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set ticket support role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get ticket by channel ID
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Ticket channel ID
+   * @returns {Promise<Object|null>} Ticket data or null
+   */
+  async getTicket(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const ticketSystem = guildData.TicketSystem || {};
+      const activeTickets = ticketSystem.activeTickets || [];
+      
+      return activeTickets.find(ticket => ticket.channelId === channelId) || null;
+    } catch (error) {
+      console.error(`Error getting ticket for channel ${channelId} in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Reopen a closed ticket
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Ticket channel ID
+   * @param {string} reopenedBy - User ID who reopened
+   * @returns {Promise<boolean>} Success status
+   */
+  async reopenTicket(guildId, channelId, reopenedBy) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!reopenedBy) {
+      throw new ValidationError('Reopened by user ID is required', 'reopenedBy', reopenedBy);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const ticketSystem = guildData.TicketSystem || {};
+      let activeTickets = ticketSystem.activeTickets || [];
+      
+      // Find ticket by channel ID
+      const ticketIndex = activeTickets.findIndex(ticket => ticket.channelId === channelId);
+      
+      if (ticketIndex !== -1) {
+        // Reopen the ticket
+        activeTickets[ticketIndex].closed = false;
+        activeTickets[ticketIndex].reopenedAt = new Date();
+        activeTickets[ticketIndex].reopenedBy = reopenedBy;
+        
+        guildData.TicketSystem.activeTickets = activeTickets;
+        await this.set(guildId, guildData);
+        return true;
+      }
+      
+      return false; // Ticket not found
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to reopen ticket for channel ${channelId} in guild ${guildId}`, error);
+    }
+  }
+
+  // ===== BOOSTER ROLE SYSTEM EXTENDED =====
+
+  /**
+   * Get booster role base role ID
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Base role ID or null
+   */
+  async getBoosterRoleBaseRole(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boosterSystem = guildData.BoosterRoleSystem || {};
+      return boosterSystem.baseRoleId || null;
+    } catch (error) {
+      console.error(`Error getting booster role base role for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set booster role base role
+   * @param {string} guildId - Guild ID
+   * @param {string} roleId - Base role ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async setBoosterRoleBaseRole(guildId, roleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!roleId) {
+      throw new ValidationError('Role ID is required', 'roleId', roleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.BoosterRoleSystem) {
+        guildData.BoosterRoleSystem = {
+          baseRoleId: null,
+          enabled: false
+        };
+      }
+      
+      guildData.BoosterRoleSystem.baseRoleId = roleId;
+      guildData.BoosterRoleSystem.enabled = true; // Enable system when base role is set
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set booster role base role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Check if booster role system is enabled
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} True if enabled
+   */
+  async isBoosterRoleSystemEnabled(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boosterSystem = guildData.BoosterRoleSystem || {};
+      return boosterSystem.enabled || false;
+    } catch (error) {
+      console.error(`Error checking booster role system status for guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Add pending booster role share
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - Owner user ID
+   * @param {string} targetUserId - Target user ID
+   * @param {string} roleId - Role ID
+   * @returns {Promise<Object>} Created pending share
+   */
+  async addBoosterRolePendingShare(guildId, userId, targetUserId, roleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!targetUserId) {
+      throw new ValidationError('Target user ID is required', 'targetUserId', targetUserId);
+    }
+
+    if (!roleId) {
+      throw new ValidationError('Role ID is required', 'roleId', roleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      let boosterRoles = guildData.BoosterRoles || [];
+      
+      // Generate unique ID
+      const id = boosterRoles.length > 0 
+        ? Math.max(...boosterRoles.filter(br => br.id).map(br => br.id)) + 1 
+        : 1;
+      
+      // Create pending share with 24-hour expiration
+      const pendingShare = {
+        id,
+        userId,
+        targetUserId,
+        roleId,
+        pending: true,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      };
+      
+      boosterRoles.push(pendingShare);
+      guildData.BoosterRoles = boosterRoles;
+      
+      await this.set(guildId, guildData);
+      return pendingShare;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add booster role pending share for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove pending booster role share
+   * @param {string} guildId - Guild ID
+   * @param {number} shareId - Share ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeBoosterRolePendingShare(guildId, shareId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof shareId !== 'number' || shareId < 1) {
+      throw new ValidationError('Valid share ID is required', 'shareId', shareId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boosterRoles = guildData.BoosterRoles || [];
+      const initialLength = boosterRoles.length;
+      
+      guildData.BoosterRoles = boosterRoles.filter(br => !(br.pending && br.id === shareId));
+      
+      if (guildData.BoosterRoles.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+      
+      return false; // Pending share not found
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove booster role pending share for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Delete booster role
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async deleteBoosterRole(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      let boosterRoles = guildData.BoosterRoles || [];
+      
+      // Find booster role by userId
+      const roleIndex = boosterRoles.findIndex(br => br.userId === userId && !br.deleted);
+      
+      if (roleIndex !== -1) {
+        // Mark as deleted with timestamp (keep for audit trail)
+        boosterRoles[roleIndex].deleted = true;
+        boosterRoles[roleIndex].deletedAt = new Date();
+        
+        guildData.BoosterRoles = boosterRoles;
+        await this.set(guildId, guildData);
+        return true;
+      }
+      
+      return false; // Booster role not found
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to delete booster role for user ${userId} in guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get unused booster roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of unused roles
+   */
+  async getUnusedBoosterRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boosterRoles = guildData.BoosterRoles || [];
+      
+      // Filter for deleted roles or roles without userId
+      return boosterRoles.filter(br => br.deleted === true || !br.userId);
+    } catch (error) {
+      console.error(`Error getting unused booster roles for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get user's booster role
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Object|null>} Booster role or null
+   */
+  async getUserBoosterRole(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const boosterRoles = guildData.BoosterRoles || [];
+      
+      // Find active (not deleted) booster role for user
+      return boosterRoles.find(br => br.userId === userId && !br.deleted) || null;
+    } catch (error) {
+      console.error(`Error getting booster role for user ${userId} in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  // ===== AFK SYSTEM =====
+
+  /**
+   * Get AFK status for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Object|null>} AFK status or null
+   */
+  async getAFKStatus(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const afkArray = guildData.AFK || [];
+      
+      return afkArray.find(afk => afk.userId === userId) || null;
+    } catch (error) {
+      console.error(`Error getting AFK status for user ${userId} in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set AFK status for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @param {string} reason - AFK reason
+   * @returns {Promise<boolean>} Success status
+   */
+  async setAFKStatus(guildId, userId, reason) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+      throw new ValidationError('AFK reason is required', 'reason', reason);
+    }
+
+    if (reason.length > 500) {
+      throw new ValidationError('AFK reason cannot exceed 500 characters', 'reason', reason);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      let afkArray = guildData.AFK || [];
+      
+      // Check if user already has AFK status
+      const existingIndex = afkArray.findIndex(afk => afk.userId === userId);
+      
+      if (existingIndex !== -1) {
+        // Update existing AFK status
+        afkArray[existingIndex] = {
+          userId,
+          reason: reason.trim(),
+          timestamp: new Date(),
+          setAt: new Date()
+        };
+      } else {
+        // Add new AFK status
+        afkArray.push({
+          userId,
+          reason: reason.trim(),
+          timestamp: new Date(),
+          setAt: new Date()
+        });
+      }
+      
+      guildData.AFK = afkArray;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set AFK status for user ${userId} in guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove AFK status for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeAFKStatus(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const afkArray = guildData.AFK || [];
+      const initialLength = afkArray.length;
+      
+      guildData.AFK = afkArray.filter(afk => afk.userId !== userId);
+      
+      if (guildData.AFK.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+      
+      return false; // User was not AFK
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove AFK status for user ${userId} in guild ${guildId}`, error);
+    }
+  }
+
+  // ===== BOOST ROLE SYSTEM =====
+
+  /**
+   * Set boost role
+   * @param {string} guildId - Guild ID
+   * @param {string} roleId - Boost role ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async setBoostRole(guildId, roleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!roleId) {
+      throw new ValidationError('Role ID is required', 'roleId', roleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.BoostRole = roleId;
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set boost role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove boost role
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeBoostRole(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.BoostRole = null;
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to remove boost role for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== VANITY SYSTEM EXTENDED =====
+
+  /**
+   * Enable vanity system
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async enableVanity(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.VanityDisabled = false;
+      guildData.VanityDisabledReason = null;
+      guildData.VanityDisabledAt = null;
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to enable vanity for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set vanity log message
+   * @param {string} guildId - Guild ID
+   * @param {string} message - Vanity message
+   * @returns {Promise<boolean>} Success status
+   */
+  async setVanityMessage(guildId, message) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      throw new ValidationError('Vanity message is required', 'message', message);
+    }
+
+    if (message.length > 2000) {
+      throw new ValidationError('Vanity message cannot exceed 2000 characters', 'message', message);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.VanityMessage = message.trim();
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set vanity message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove vanity message
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeVanityMessage(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.VanityMessage = null;
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to remove vanity message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get vanity disabled information
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object>} Disabled info
+   */
+  async getVanityDisabledInfo(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return {
+        disabled: guildData.VanityDisabled || false,
+        reason: guildData.VanityDisabledReason || null,
+        disabledAt: guildData.VanityDisabledAt || null,
+        disabledBy: guildData.VanityDisabledBy || null
+      };
+    } catch (error) {
+      console.error(`Error getting vanity disabled info for guild ${guildId}:`, error.message);
+      return {
+        disabled: false,
+        reason: null,
+        disabledAt: null,
+        disabledBy: null
+      };
+    }
+  }
+
+  // ===== GUILD NAME HISTORY =====
+
+  /**
+   * Get guild name history
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of name history
+   */
+  async getGuildNameHistory(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const history = guildData.GuildNameHistory || [];
+      
+      // Sort by changedAt descending (newest first)
+      return history.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+    } catch (error) {
+      console.error(`Error getting guild name history for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Clear all guild name history
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllGuildNameHistory(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.GuildNameHistory = [];
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear guild name history for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== FORCE NICK SYSTEM EXTENDED =====
+
+  /**
+   * Set forced nickname
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @param {string} nickname - Forced nickname
+   * @param {string} reason - Optional reason
+   * @returns {Promise<boolean>} Success status
+   */
+  async setForceNick(guildId, userId, nickname, reason = null) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!nickname || typeof nickname !== 'string' || nickname.trim().length === 0) {
+      throw new ValidationError('Nickname is required', 'nickname', nickname);
+    }
+
+    if (nickname.length > 32) {
+      throw new ValidationError('Nickname cannot exceed 32 characters', 'nickname', nickname);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      let forceNicks = guildData.ForceNick || [];
+      
+      // Check if user already has forced nick
+      const existingIndex = forceNicks.findIndex(fn => fn.userId === userId);
+      
+      if (existingIndex !== -1) {
+        // Update existing forced nick
+        forceNicks[existingIndex] = {
+          userId,
+          nickname: nickname.trim(),
+          reason: reason ? reason.trim() : null,
+          setAt: new Date(),
+          setBy: null // Can be enhanced to track who set it
+        };
+      } else {
+        // Add new forced nick
+        forceNicks.push({
+          userId,
+          nickname: nickname.trim(),
+          reason: reason ? reason.trim() : null,
+          setAt: new Date(),
+          setBy: null
+        });
+      }
+      
+      guildData.ForceNick = forceNicks;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set forced nickname for user ${userId} in guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Clear all forced nicknames
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllForceNicks(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.ForceNick = [];
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear all forced nicknames for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== AUTO RESPONDER HELPER =====
+
+  /**
+   * Find auto responder by trigger
+   * @param {string} guildId - Guild ID
+   * @param {string} trigger - Trigger text
+   * @returns {Promise<Object|null>} Auto responder or null
+   */
+  async findAutoResponder(guildId, trigger) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!trigger || typeof trigger !== 'string') {
+      throw new ValidationError('Trigger is required', 'trigger', trigger);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const autoResponders = guildData.AutoResponder || [];
+      
+      // Perform case-insensitive search
+      const triggerLower = trigger.toLowerCase();
+      return autoResponders.find(ar => ar.trigger && ar.trigger.toLowerCase() === triggerLower) || null;
+    } catch (error) {
+      console.error(`Error finding auto responder for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  // ===== REQUIRED EXPERIENCE HELPER =====
+
+  /**
+   * Get required experience for level
+   * @param {number} level - Level number
+   * @returns {number} Required experience
+   */
+  getRequiredExperience(level) {
+    if (typeof level !== 'number' || level < 1) {
+      throw new ValidationError('Level must be a positive number', 'level', level);
+    }
+
+    // Standard RPG progression formula
+    // Level 1->2: 100 XP
+    // Level 2->3: 155 XP
+    // Level 3->4: 220 XP
+    // Formula: 100 * level * (1 + level * 0.1)
+    return Math.floor(100 * level * (1 + level * 0.1));
+  }
 }
 
 module.exports = GuildService;

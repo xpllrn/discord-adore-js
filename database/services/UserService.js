@@ -1765,6 +1765,167 @@ class UserService extends BaseService {
       throw new DatabaseWriteError(`Failed to reset TicTacToe stats for user ${userId}`, error);
     }
   }
+
+  // ===== REMINDER SYSTEM EXTENDED =====
+
+  /**
+   * Remove a specific reminder
+   * @param {string} userId - User ID
+   * @param {number} reminderId - Reminder ID
+   * @returns {Promise<Object|null>} Removed reminder or null
+   */
+  async removeReminder(userId, reminderId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (typeof reminderId !== 'number' || reminderId < 1) {
+      throw new ValidationError('Valid reminder ID is required', 'reminderId', reminderId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const reminders = userData.Reminders || [];
+      
+      // Find the reminder to remove
+      const reminderToRemove = reminders.find(r => r.id === reminderId);
+      
+      if (reminderToRemove) {
+        // Filter out the reminder
+        userData.Reminders = reminders.filter(r => r.id !== reminderId);
+        await this.set(userId, userData);
+        return reminderToRemove;
+      }
+      
+      return null; // Reminder not found
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove reminder for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Clear all reminders for a user
+   * @param {string} userId - User ID
+   * @returns {Promise<number>} Number of reminders cleared
+   */
+  async clearReminders(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const reminders = userData.Reminders || [];
+      const count = reminders.length;
+      
+      userData.Reminders = [];
+      await this.set(userId, userData);
+      
+      return count;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear reminders for user ${userId}`, error);
+    }
+  }
+
+  // ===== NAME HISTORY SYSTEM =====
+
+  /**
+   * Get user's name change history
+   * @param {string} userId - User ID
+   * @returns {Promise<Object[]>} Array of name history entries
+   */
+  async getNameHistory(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const history = userData.NameHistory || [];
+      
+      // Sort by changedAt descending (newest first)
+      return history.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+    } catch (error) {
+      console.error(`Error getting name history for user ${userId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add name change to history
+   * @param {string} userId - User ID
+   * @param {string} name - New name
+   * @param {Date} changedAt - When the name changed (defaults to now)
+   * @param {string} discriminator - Optional discriminator
+   * @returns {Promise<Object>} Created history entry
+   */
+  async addNameHistory(userId, name, changedAt = null, discriminator = null) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      throw new ValidationError('Name is required', 'name', name);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const history = userData.NameHistory || [];
+      
+      const historyEntry = {
+        name: name.trim(),
+        changedAt: changedAt || new Date(),
+        discriminator: discriminator || null
+      };
+      
+      // Check if this exact name already exists as the most recent entry
+      if (history.length > 0) {
+        const mostRecent = history[history.length - 1];
+        if (mostRecent.name === historyEntry.name) {
+          // Don't add duplicate consecutive names
+          return mostRecent;
+        }
+      }
+      
+      history.push(historyEntry);
+      userData.NameHistory = history;
+      
+      await this.set(userId, userData);
+      return historyEntry;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add name history for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Clear user's name history
+   * @param {string} userId - User ID
+   * @returns {Promise<number>} Number of entries cleared
+   */
+  async clearNameHistory(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const history = userData.NameHistory || [];
+      const count = history.length;
+      
+      userData.NameHistory = [];
+      await this.set(userId, userData);
+      
+      return count;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear name history for user ${userId}`, error);
+    }
+  }
 }
 
 module.exports = UserService;
