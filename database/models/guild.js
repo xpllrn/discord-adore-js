@@ -1029,6 +1029,10 @@ const guildSchema = new mongoose.Schema({
     lastCounterId: {
       type: String,
       default: null
+    },
+    strict: {
+      type: Boolean,
+      default: true
     }
   }
 }, {

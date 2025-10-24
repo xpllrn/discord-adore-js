@@ -116,19 +116,32 @@ class CustomEmbedBuilder {
             } else if (str.startsWith('button:')) {
                 let buttonData = str.replace('}', '').replace('$v', '').replace('button:', '').split('&&')
 
-                if (buttonData.length >= 2) {
-                    const type = buttonData[0].toString().trim().toLowerCase()
+                if (buttonData.length >= 1) {
+                    const firstParam = buttonData[0].toString().trim()
+                    
+                    // Detect if first parameter is a URL (starts with http:// or https://)
+                    const isUrlFirst = firstParam.startsWith('http://') || firstParam.startsWith('https://')
+                    
+                    let type, label, url, emoji, enabled;
 
-                    // Handle different button types with flexible parameter positions
-                    let label, url, emoji, enabled;
-
-                    if (type === 'link') {
-                        // Link button format: link && [txt] && [link] && [emote]
-                        // Parameters: type, label, url, emoji
-                        label = buttonData[1] ? buttonData[1].toString().trim() : ''
-                        url = buttonData[2] ? buttonData[2].toString().trim() : ''
-                        emoji = buttonData[3] ? buttonData[3].toString().trim() : null
+                    if (isUrlFirst || firstParam.toLowerCase() === 'link') {
+                        // Link button format: [url] && [label] && [emoji] && [enabled]
+                        // OR: link && [label] && [url] && [emoji]
+                        
+                        if (isUrlFirst) {
+                            // Format: {button: https://... && label && emoji}
+                            url = firstParam
+                            label = buttonData[1] ? buttonData[1].toString().trim() : ''
+                            emoji = buttonData[2] ? buttonData[2].toString().trim() : null
+                        } else {
+                            // Format: {button: link && label && url && emoji}
+                            label = buttonData[1] ? buttonData[1].toString().trim() : ''
+                            url = buttonData[2] ? buttonData[2].toString().trim() : ''
+                            emoji = buttonData[3] ? buttonData[3].toString().trim() : null
+                        }
+                        
                         enabled = true // Link buttons are always enabled
+                        type = 'link'
 
                         // Validate that URL is provided for link buttons
                         if (!url) {
@@ -136,15 +149,15 @@ class CustomEmbedBuilder {
                             continue;
                         }
                     } else {
-                        // Colored button format: [color] && [txt] && [emote] && [enabled/disabled]
-                        // Parameters: type, label, emoji, enabled
+                        // Colored button format: [color] && [label] && [emoji] && [enabled/disabled]
+                        type = firstParam.toLowerCase()
                         label = buttonData[1] ? buttonData[1].toString().trim() : ''
                         emoji = buttonData[2] ? buttonData[2].toString().trim() : null
 
                         // Handle enabled/disabled parameter
                         if (buttonData[3]) {
                             const enabledParam = buttonData[3].toString().trim().toLowerCase()
-                            enabled = enabledParam !== 'disabled'
+                            enabled = enabledParam === 'enable' || enabledParam === 'enabled'
                         } else {
                             enabled = true // Default to enabled when omitted
                         }
@@ -251,8 +264,14 @@ class CustomEmbedBuilder {
             messageOptions.components = components
         }
 
-        channel.send(messageOptions).catch(() => {
-          return channel.send('invalid embed code, try again')
+        channel.send(messageOptions).catch((error) => {
+          console.error('Embed send error:', error)
+          const errorEmbed = new EmbedBuilder()
+            .setColor(colors.error || '#ff0000')
+            .setDescription(`${emojis.error || '❌'} Failed to send embed: ${error.message || 'Invalid embed code'}`)
+          return channel.send({ embeds: [errorEmbed] }).catch(() => {
+            return channel.send('Invalid embed code, try again')
+          })
         })
     }
 }

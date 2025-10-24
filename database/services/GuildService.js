@@ -2258,7 +2258,8 @@ class GuildService extends BaseService {
     return guild?.Counting || {
       channelId: null,
       currentCount: 0,
-      lastCounterId: null
+      lastCounterId: null,
+      strict: true
     };
   }
 

@@ -57,24 +57,46 @@ async function processCounting(message) {
         const countingData = await guildService.getCounting(message.guild.id);
 
         if (message.channel.id === countingData.channelId) {
-            // Extract number from message (handles cases like "89hello" or "10then")
-            const numMatch = message.content.match(/^\d+/);
-            if (!numMatch) {
-                return message.delete();
+            const { embeds } = require('../../core/embeds');
+            
+            // Try to evaluate the message as a math expression or extract number
+            let num = null;
+            const content = message.content.trim();
+            
+            // First, try to extract just a number (supports "10 hello" or "hello 10" or just "10")
+            const numMatch = content.match(/\d+/);
+            if (numMatch) {
+                num = parseInt(numMatch[0]);
             }
             
-            const num = parseInt(numMatch[0]);
-            const { EmbedBuilder } = require('discord.js');
-            const { colors, emojis } = require('../../config/setup');
+            // If no simple number found, try to evaluate as math expression
+            if (num === null || content.includes('+') || content.includes('-') || content.includes('*') || content.includes('/') || content.includes('√')) {
+                try {
+                    // Replace √ with Math.sqrt
+                    let mathExpr = content.replace(/√(\d+)/g, 'Math.sqrt($1)');
+                    // Remove any non-math characters for safety
+                    mathExpr = mathExpr.replace(/[^0-9+\-*/().\s]/g, '');
+                    
+                    // Safely evaluate the expression
+                    if (mathExpr.trim()) {
+                        const result = Function('"use strict"; return (' + mathExpr + ')')();
+                        if (!isNaN(result) && isFinite(result)) {
+                            num = Math.round(result);
+                        }
+                    }
+                } catch (e) {
+                    // If math evaluation fails, stick with extracted number
+                }
+            }
+            
+            // If still no valid number, ignore the message (don't delete)
+            if (num === null || isNaN(num)) {
+                return;
+            }
 
             // Check if same person is counting twice
             if (message.author.id === countingData.lastCounterId) {
-                const embed = new EmbedBuilder()
-                    .setColor(colors.error)
-                    .setDescription(`${emojis.error} Same person cannot count twice in a row!`);
-                
-                const warning = await message.channel.send({ embeds: [embed] });
-                setTimeout(() => warning.delete().catch(() => {}), 5000);
+                await embeds.deny(message, 'You cannot count twice in a row!');
                 return;
             }
 
@@ -88,20 +110,25 @@ async function processCounting(message) {
                 if (num % 100 === 0) {
                     await message.react('🎉');
                 } else {
+                    const { emojis } = require('../../config/setup');
                     await message.react(emojis.success);
                 }
             } else {
-                // Wrong number - reset count and notify
-                const wrongCount = countingData.currentCount;
-                countingData.currentCount = 0;
-                countingData.lastCounterId = null;
-                await guildService.setCounting(message.guild.id, countingData);
+                // Wrong number - handle based on strict mode
+                const isStrict = countingData.strict !== false; // Default to true if not set
                 
-                const embed = new EmbedBuilder()
-                    .setColor(colors.error)
-                    .setDescription(`${message.author} **RUINED IT AT ${wrongCount}**!! Next number is **\`1\`**.`);
-                
-                await message.channel.send({ embeds: [embed] });
+                if (isStrict) {
+                    // Strict mode: reset count
+                    const wrongCount = countingData.currentCount;
+                    countingData.currentCount = 0;
+                    countingData.lastCounterId = null;
+                    await guildService.setCounting(message.guild.id, countingData);
+                    
+                    await embeds.deny(message, `${message.author} ruined it at **${wrongCount}**! Next number is **1**.`);
+                } else {
+                    // Non-strict mode: just notify but don't reset
+                    await embeds.deny(message, `Wrong number! Expected **${countingData.currentCount + 1}** but got **${num}**. Next number is still **${countingData.currentCount + 1}**.`);
+                }
             }
         }
     } catch (error) {

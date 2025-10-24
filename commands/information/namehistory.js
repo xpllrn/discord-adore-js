@@ -15,6 +15,7 @@ module.exports = {
 {guildprefix}namehistory [user]
 {guildprefix}nh [user]`,
   run: async(client, message, args) => {
+    const userService = getService('user');
 
     let targetUser = message.author;
     let targetMember = message.member;

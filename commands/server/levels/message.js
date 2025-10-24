@@ -25,6 +25,7 @@ module.exports = {
 
       // Get message statistics from guild cache
       const { getService } = require('@services');
+      const guildService = getService('guild');
       const allMessageStats = await guildService.getMessageStats(message.guild.id);
 
       // Filter stats for the target user

@@ -35,7 +35,8 @@ module.exports = {
       return MessageProcessor.process(message.channel, embedInput, variables);
 
     } catch (error) {
-      return embeds.deny(message, 'Invalid embed syntax. Please check your format.');
+      console.error('CreateEmbed error:', error);
+      return embeds.deny(message, `Invalid embed syntax: ${error.message || 'Please check your format.'}`);
     }
   }
 }
