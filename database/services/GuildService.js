@@ -423,6 +423,20 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
+      
+      // Handle nested paths (e.g., "Welcome.channelId")
+      const fieldParts = field.split('.');
+      if (fieldParts.length > 1) {
+        let current = guildData;
+        for (const part of fieldParts) {
+          if (current === null || current === undefined) {
+            return null;
+          }
+          current = current[part];
+        }
+        return current;
+      }
+      
       return guildData[field];
     } catch (error) {
       console.error(`Error getting field ${field} for guild ${guildId}:`, error.message);
@@ -448,7 +462,21 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      guildData[field] = value;
+      
+      // Handle nested paths (e.g., "Welcome.channelId")
+      const fieldParts = field.split('.');
+      if (fieldParts.length > 1) {
+        let current = guildData;
+        for (let i = 0; i < fieldParts.length - 1; i++) {
+          if (!current[fieldParts[i]]) {
+            current[fieldParts[i]] = {};
+          }
+          current = current[fieldParts[i]];
+        }
+        current[fieldParts[fieldParts.length - 1]] = value;
+      } else {
+        guildData[field] = value;
+      }
       
       await this.set(guildId, guildData);
       return true;
@@ -1735,7 +1763,7 @@ class GuildService extends BaseService {
    * @returns {Promise<Object>} Counting configuration
    */
   async getCounting(guildId) {
-    const guild = await this.getGuild(guildId);
+    const guild = await this.ensureGuildData(guildId);
     return guild?.Counting || {
       channelId: null,
       currentCount: 0,

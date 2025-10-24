@@ -175,6 +175,7 @@ async function loadBotStatusFromDatabase(client) {
     // Try to use new service layer first
     try {
       const systemService = getService('system');
+      console.log(chalk.blue('   [~] System service retrieved, fetching system data...'));
       const systemData = await systemService.ensureSystemData('system');
       
       if (!systemData || !systemData.InstanceConfig) {
@@ -204,6 +205,7 @@ async function loadBotStatusFromDatabase(client) {
     } catch (serviceError) {
       // Fall back to direct database access
       console.log(chalk.yellow('   [~] Service layer unavailable, using direct database access'));
+      console.log(chalk.yellow(`   [~] Error: ${serviceError.message}`));
       
       const { System } = require('../../database');
       const systemData = await System.findOne({ _id: 'system' });

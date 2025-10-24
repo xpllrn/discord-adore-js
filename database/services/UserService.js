@@ -853,6 +853,20 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
+      
+      // Handle nested paths (e.g., "Gambling.begCooldown")
+      const fieldParts = field.split('.');
+      if (fieldParts.length > 1) {
+        let current = userData;
+        for (const part of fieldParts) {
+          if (current === null || current === undefined) {
+            return null;
+          }
+          current = current[part];
+        }
+        return current;
+      }
+      
       return userData[field];
     } catch (error) {
       console.error(`Error getting field ${field} for user ${userId}:`, error.message);
@@ -878,7 +892,21 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      userData[field] = value;
+      
+      // Handle nested paths (e.g., "Gambling.begCooldown")
+      const fieldParts = field.split('.');
+      if (fieldParts.length > 1) {
+        let current = userData;
+        for (let i = 0; i < fieldParts.length - 1; i++) {
+          if (!current[fieldParts[i]]) {
+            current[fieldParts[i]] = {};
+          }
+          current = current[fieldParts[i]];
+        }
+        current[fieldParts[fieldParts.length - 1]] = value;
+      } else {
+        userData[field] = value;
+      }
       
       await this.set(userId, userData);
       return true;
