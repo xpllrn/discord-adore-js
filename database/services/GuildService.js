@@ -1453,8 +1453,8 @@ class GuildService extends BaseService {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
 
-    if (typeof limit !== 'number' || limit < 1 || limit > 100) {
-      throw new ValidationError('Limit must be between 1 and 100', 'limit', limit);
+    if (typeof limit !== 'number' || limit < 1 || limit > 10000) {
+      throw new ValidationError('Limit must be between 1 and 10000', 'limit', limit);
     }
 
     try {
@@ -1492,16 +1492,23 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const userLevels = guildData.UserLevels || [];
       
+      // If no users have levels yet, user is rank 1
+      if (userLevels.length === 0) {
+        return 1;
+      }
+      
       const sorted = userLevels.sort((a, b) => {
         if (a.level !== b.level) return b.level - a.level;
         return b.experience - a.experience;
       });
 
       const rank = sorted.findIndex(ul => ul.userId === userId) + 1;
-      return rank > 0 ? rank : null;
+      
+      // If user not found in levels, they're last place (after all ranked users)
+      return rank > 0 ? rank : sorted.length + 1;
     } catch (error) {
       console.error(`Error getting user rank for ${userId} in guild ${guildId}:`, error.message);
-      return null;
+      return 1; // Default to rank 1 on error
     }
   }
 
