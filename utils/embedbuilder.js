@@ -152,14 +152,25 @@ class CustomEmbedBuilder {
                         // Colored button format: [color] && [label] && [emoji] && [enabled/disabled]
                         type = firstParam.toLowerCase()
                         label = buttonData[1] ? buttonData[1].toString().trim() : ''
-                        emoji = buttonData[2] ? buttonData[2].toString().trim() : null
-
-                        // Handle enabled/disabled parameter
-                        if (buttonData[3]) {
-                            const enabledParam = buttonData[3].toString().trim().toLowerCase()
-                            enabled = enabledParam === 'enable' || enabledParam === 'enabled'
+                        
+                        // Check if third parameter is emoji or enabled/disabled
+                        let thirdParam = buttonData[2] ? buttonData[2].toString().trim() : null
+                        
+                        // If third parameter is 'enable' or 'disabled', it's the enabled flag, not emoji
+                        if (thirdParam && (thirdParam.toLowerCase() === 'enable' || thirdParam.toLowerCase() === 'enabled' || thirdParam.toLowerCase() === 'disable' || thirdParam.toLowerCase() === 'disabled')) {
+                            emoji = null
+                            enabled = thirdParam.toLowerCase() === 'enable' || thirdParam.toLowerCase() === 'enabled'
                         } else {
-                            enabled = true // Default to enabled when omitted
+                            // Otherwise it's an emoji
+                            emoji = thirdParam
+                            
+                            // Check fourth parameter for enabled/disabled
+                            if (buttonData[3]) {
+                                const enabledParam = buttonData[3].toString().trim().toLowerCase()
+                                enabled = enabledParam === 'enable' || enabledParam === 'enabled'
+                            } else {
+                                enabled = true // Default to enabled when omitted
+                            }
                         }
 
                         // For colored buttons, generate a unique customId
@@ -203,8 +214,8 @@ class CustomEmbedBuilder {
                         button.setLabel(label)
                     }
 
-                    // Add emoji support for all button types
-                    if (emoji) {
+                    // Add emoji support for all button types - only if emoji is valid
+                    if (emoji && emoji.length > 0) {
                         try {
                             // Check if it's a custom emoji (format: <:name:id> or <a:name:id>)
                             const customEmojiMatch = emoji.match(/^<a?:(\w+):(\d+)>$/)
@@ -215,13 +226,13 @@ class CustomEmbedBuilder {
                                     id: customEmojiMatch[2],
                                     animated: emoji.startsWith('<a:')
                                 })
-                            } else {
-                                // Unicode emoji or emoji name (including :name: format)
+                            } else if (/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(emoji)) {
+                                // Valid unicode emoji
                                 button.setEmoji(emoji)
                             }
+                            // Ignore invalid emojis (like invisible spaces)
                         } catch (error) {
                             // If emoji fails, continue without it
-
                         }
                     }
 
