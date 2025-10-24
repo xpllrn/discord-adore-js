@@ -15,7 +15,7 @@ class SystemService extends BaseService {
       ttl: 120 * 60 * 1000, // 2 hours TTL for system data (longer since it changes less frequently)
       maxSize: 100 // Small cache size since system data is limited
     });
-    
+
     this.initialized = true;
     this.systemKey = 'system'; // Default system document key
   }
@@ -125,8 +125,46 @@ class SystemService extends BaseService {
           }
         };
 
+        // Create default instance config if INSTANCE_ID is set
+        const instanceId = process.env.INSTANCE_ID;
+        if (instanceId) {
+          systemData.InstanceConfig = [{
+            instanceId,
+            botStatus: {
+              activity: 'stalking you',      // Change this to your desired activity
+              type: 'Custom',                 // Options: Playing, Watching, Listening, Streaming, Competing, Custom
+              status: 'dnd'                   // Options: online, idle, dnd, invisible
+            },
+            createdAt: new Date(),
+            lastUpdated: new Date()
+          }];
+        }
+
         // Save to database and cache
         await this.set(key, systemData);
+      } else {
+        // Check if instance config exists for current instance
+        const instanceId = process.env.INSTANCE_ID;
+        if (instanceId) {
+          const instanceConfigs = systemData.InstanceConfig || [];
+          const hasInstanceConfig = instanceConfigs.some(c => c.instanceId === instanceId);
+
+          if (!hasInstanceConfig) {
+            // Add default instance config for this instance
+            instanceConfigs.push({
+              instanceId,
+              botStatus: {
+                activity: 'stalking you',      // Change this to your desired activity
+                type: 'Custom',                 // Options: Playing, Watching, Listening, Streaming, Competing, Custom
+                status: 'dnd'                   // Options: online, idle, dnd, invisible
+              },
+              createdAt: new Date(),
+              lastUpdated: new Date()
+            });
+            systemData.InstanceConfig = instanceConfigs;
+            await this.set(key, systemData);
+          }
+        }
       }
 
       return systemData;
@@ -153,8 +191,8 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
-      return blacklist.users.some(entry => 
+
+      return blacklist.users.some(entry =>
         (typeof entry === 'string' ? entry : entry.userId) === userId
       );
     } catch (error) {
@@ -176,8 +214,8 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
-      return blacklist.servers.some(entry => 
+
+      return blacklist.servers.some(entry =>
         (typeof entry === 'string' ? entry : entry.serverId) === serverId
       );
     } catch (error) {
@@ -209,9 +247,9 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
+
       // Check if user is already blacklisted
-      const existingIndex = blacklist.users.findIndex(entry => 
+      const existingIndex = blacklist.users.findIndex(entry =>
         (typeof entry === 'string' ? entry : entry.userId) === userId
       );
 
@@ -261,9 +299,9 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
+
       // Check if server is already blacklisted
-      const existingIndex = blacklist.servers.findIndex(entry => 
+      const existingIndex = blacklist.servers.findIndex(entry =>
         (typeof entry === 'string' ? entry : entry.serverId) === serverId
       );
 
@@ -303,9 +341,9 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
+
       const initialLength = blacklist.users.length;
-      blacklist.users = blacklist.users.filter(entry => 
+      blacklist.users = blacklist.users.filter(entry =>
         (typeof entry === 'string' ? entry : entry.userId) !== userId
       );
 
@@ -334,9 +372,9 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
+
       const initialLength = blacklist.servers.length;
-      blacklist.servers = blacklist.servers.filter(entry => 
+      blacklist.servers = blacklist.servers.filter(entry =>
         (typeof entry === 'string' ? entry : entry.serverId) !== serverId
       );
 
@@ -360,7 +398,7 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
+
       return {
         users: blacklist.users,
         servers: blacklist.servers,
@@ -409,10 +447,10 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const settings = systemData.GlobalSettings || {};
-      
+
       settings[key] = value;
       systemData.GlobalSettings = settings;
-      
+
       await this.set(this.systemKey, systemData);
       return true;
     } catch (error) {
@@ -436,7 +474,7 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const settings = systemData.GlobalSettings || {};
-      
+
       if (settings[key] !== undefined) {
         delete settings[key];
         systemData.GlobalSettings = settings;
@@ -505,10 +543,10 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const currentStatus = systemData.BotStatus || {};
-      
+
       // Merge status update with current status
       systemData.BotStatus = { ...currentStatus, ...statusUpdate };
-      
+
       await this.set(this.systemKey, systemData);
       return true;
     } catch (error) {
@@ -553,14 +591,14 @@ class SystemService extends BaseService {
 
     try {
       const systemData = await this.ensureSystemData();
-      
+
       systemData.MaintenanceMode = {
         enabled: true,
         reason: reason.trim(),
         enabledAt: new Date(),
         enabledBy
       };
-      
+
       await this.set(this.systemKey, systemData);
       return true;
     } catch (error) {
@@ -578,14 +616,14 @@ class SystemService extends BaseService {
   async disableMaintenanceMode() {
     try {
       const systemData = await this.ensureSystemData();
-      
+
       systemData.MaintenanceMode = {
         enabled: false,
         reason: null,
         enabledAt: null,
         enabledBy: null
       };
-      
+
       await this.set(this.systemKey, systemData);
       return true;
     } catch (error) {
@@ -634,14 +672,14 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const currentStats = systemData.Statistics || {};
-      
+
       // Merge stats update with current stats and update timestamp
-      systemData.Statistics = { 
-        ...currentStats, 
-        ...statsUpdate, 
-        lastUpdated: new Date() 
+      systemData.Statistics = {
+        ...currentStats,
+        ...statsUpdate,
+        lastUpdated: new Date()
       };
-      
+
       await this.set(this.systemKey, systemData);
       return true;
     } catch (error) {
@@ -689,7 +727,7 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData(key);
       systemData[field] = value;
-      
+
       await this.set(key, systemData);
       return true;
     } catch (error) {
@@ -728,10 +766,10 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
+
       const results = new Map();
       const blacklistedUserIds = new Set(
-        blacklist.users.map(entry => 
+        blacklist.users.map(entry =>
           typeof entry === 'string' ? entry : entry.userId
         )
       );
@@ -765,10 +803,10 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const blacklist = systemData.Blacklist || { users: [], servers: [] };
-      
+
       const results = new Map();
       const blacklistedServerIds = new Set(
-        blacklist.servers.map(entry => 
+        blacklist.servers.map(entry =>
           typeof entry === 'string' ? entry : entry.serverId
         )
       );
@@ -804,7 +842,7 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const instanceConfigs = systemData.InstanceConfig || [];
-      
+
       return instanceConfigs.find(config => config.instanceId === instanceId) || null;
     } catch (error) {
       console.error(`Error getting instance config for ${instanceId}:`, error.message);
@@ -830,7 +868,7 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const instanceConfigs = systemData.InstanceConfig || [];
-      
+
       const existingIndex = instanceConfigs.findIndex(c => c.instanceId === instanceId);
 
       if (existingIndex !== -1) {
@@ -902,7 +940,7 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const instanceConfigs = systemData.InstanceConfig || [];
-      
+
       const existingIndex = instanceConfigs.findIndex(c => c.instanceId === instanceId);
 
       if (existingIndex !== -1) {
@@ -943,7 +981,7 @@ class SystemService extends BaseService {
     try {
       const systemData = await this.ensureSystemData();
       const instanceConfigs = systemData.InstanceConfig || [];
-      
+
       const initialLength = instanceConfigs.length;
       systemData.InstanceConfig = instanceConfigs.filter(c => c.instanceId !== instanceId);
 

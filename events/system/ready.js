@@ -165,10 +165,10 @@ async function loadBotStatusFromDatabase(client) {
 
     if (!instanceId) {
       client.user.setPresence({
-        activities: [{ name: 'adore.exe', type: ActivityType.Watching }],
-        status: 'online'
+        activities: [{ name: 'stalking you', type: ActivityType.Custom }],
+        status: 'dnd'
       });
-      console.log(chalk.green('   [+] Status: Watching adore.exe'));
+      console.log(chalk.green('   [+] Status: stalking you'));
       return;
     }
 
@@ -236,10 +236,10 @@ async function loadBotStatusFromDatabase(client) {
   } catch (error) {
     // Fallback to default
     client.user.setPresence({
-      activities: [{ name: 'adore.exe', type: ActivityType.Watching }],
-      status: 'online'
+      activities: [{ name: 'stalking you', type: ActivityType.Custom }],
+      status: 'dnd'
     });
-    console.log(chalk.green('   [+] Status: Watching adore.exe (default)'));
+    console.log(chalk.green('   [+] Status: stalking you (default)'));
   }
 }
 

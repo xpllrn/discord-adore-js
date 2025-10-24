@@ -1315,6 +1315,24 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Enable level system
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async enableLevelSystem(guildId) {
+    return await this.setLevelSystemEnabled(guildId, true);
+  }
+
+  /**
+   * Disable level system
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async disableLevelSystem(guildId) {
+    return await this.setLevelSystemEnabled(guildId, false);
+  }
+
+  /**
    * Get user level data
    * @param {string} guildId - Guild ID
    * @param {string} userId - User ID
@@ -2526,6 +2544,235 @@ class GuildService extends BaseService {
    */
   async addUserExperience(guildId, userId, expGain) {
     return await this.addExperience(guildId, userId, expGain);
+  }
+
+  /**
+   * Remove user level data
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeUserLevel(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const userLevels = guildData.UserLevels || [];
+
+      guildData.UserLevels = userLevels.filter(ul => ul.userId !== userId);
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove user level for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Add level role
+   * @param {string} guildId - Guild ID
+   * @param {number} level - Level requirement
+   * @param {string} roleId - Role ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async addLevelRole(guildId, level, roleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof level !== 'number' || level < 1) {
+      throw new ValidationError('Level must be a positive number', 'level', level);
+    }
+
+    if (!roleId) {
+      throw new ValidationError('Role ID is required', 'roleId', roleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      if (!guildData.LevelSystem) {
+        guildData.LevelSystem = {};
+      }
+
+      const levelRoles = guildData.LevelSystem.levelRoles || [];
+
+      // Check if level already has a role
+      const existingIndex = levelRoles.findIndex(lr => lr.level === level);
+      if (existingIndex !== -1) {
+        levelRoles[existingIndex].roleId = roleId;
+      } else {
+        levelRoles.push({ level, roleId });
+      }
+
+      guildData.LevelSystem.levelRoles = levelRoles;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add level role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove level role
+   * @param {string} guildId - Guild ID
+   * @param {number} level - Level requirement
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeLevelRole(guildId, level) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof level !== 'number' || level < 1) {
+      throw new ValidationError('Level must be a positive number', 'level', level);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      if (!guildData.LevelSystem) {
+        return false;
+      }
+
+      const levelRoles = guildData.LevelSystem.levelRoles || [];
+      const initialLength = levelRoles.length;
+
+      guildData.LevelSystem.levelRoles = levelRoles.filter(lr => lr.level !== level);
+
+      if (guildData.LevelSystem.levelRoles.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove level role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get last sync time for level roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Date|null>} Last sync time or null
+   */
+  async getLastSyncTime(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelSystem = guildData.LevelSystem || {};
+      return levelSystem.lastSyncTime || null;
+    } catch (error) {
+      console.error(`Error getting last sync time for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Update last sync time for level roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateLastSyncTime(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      if (!guildData.LevelSystem) {
+        guildData.LevelSystem = {};
+      }
+
+      guildData.LevelSystem.lastSyncTime = new Date();
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update last sync time for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set level message mode
+   * @param {string} guildId - Guild ID
+   * @param {string} mode - Message mode ('context', 'channel', or 'none')
+   * @returns {Promise<boolean>} Success status
+   */
+  async setLevelMessageMode(guildId, mode) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!['context', 'channel', 'none'].includes(mode)) {
+      throw new ValidationError('Mode must be context, channel, or none', 'mode', mode);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      if (!guildData.LevelSystem) {
+        guildData.LevelSystem = {};
+      }
+
+      guildData.LevelSystem.messageMode = mode;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set level message mode for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set level up channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async setLevelUpChannel(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      if (!guildData.LevelSystem) {
+        guildData.LevelSystem = {};
+      }
+
+      guildData.LevelSystem.levelUpChannel = channelId;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set level up channel for guild ${guildId}`, error);
+    }
   }
 
   // ===== STARBOARD OPERATIONS =====
