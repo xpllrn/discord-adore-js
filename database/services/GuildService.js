@@ -571,6 +571,53 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Get welcome channel (legacy method for backward compatibility)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Welcome channel ID or null
+   */
+  async getWelcomeChannel(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.WelcomeChannel || null;
+    } catch (error) {
+      console.error(`Error getting welcome channel for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get welcome message (legacy method for backward compatibility)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Welcome message or null
+   */
+  async getWelcomeMessage(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.WelcomeMessage || null;
+    } catch (error) {
+      console.error(`Error getting welcome message for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Remove welcome (legacy method for backward compatibility)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeWelcome(guildId) {
+    return this.removeWelcomeSettings(guildId);
+  }
+
+  /**
    * Get welcome messages (multi-message system)
    * @param {string} guildId - Guild ID
    * @returns {Promise<Object[]>} Array of welcome messages
@@ -595,7 +642,7 @@ class GuildService extends BaseService {
    * @param {string} channelId - Channel ID
    * @returns {Promise<Object|null>} Welcome message or null
    */
-  async getWelcomeMessage(guildId, channelId) {
+  async getWelcomeMessageForChannel(guildId, channelId) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -788,6 +835,53 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Get leave channel (legacy method for backward compatibility)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Leave channel ID or null
+   */
+  async getLeaveChannel(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.LeaveChannel || null;
+    } catch (error) {
+      console.error(`Error getting leave channel for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get leave message (legacy method for backward compatibility - returns string not object)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Leave message or null
+   */
+  async getLeaveMessage(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.LeaveMessage || null;
+    } catch (error) {
+      console.error(`Error getting leave message for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Remove leave (legacy method for backward compatibility)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeLeave(guildId) {
+    return this.removeLeaveSettings(guildId);
+  }
+
+  /**
    * Get leave messages (multi-message system)
    * @param {string} guildId - Guild ID
    * @returns {Promise<Object[]>} Array of leave messages
@@ -812,7 +906,7 @@ class GuildService extends BaseService {
    * @param {string} channelId - Channel ID
    * @returns {Promise<Object|null>} Leave message or null
    */
-  async getLeaveMessage(guildId, channelId) {
+  async getLeaveMessageForChannel(guildId, channelId) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -4952,6 +5046,89 @@ class GuildService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to set logging enabled for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get logging configs for a specific log type
+   * @param {string} guildId - Guild ID
+   * @param {string} logType - Log type (moderator, message, events, members)
+   * @returns {Promise<Object[]>} Array of logging configs that include this log type
+   */
+  async getLoggingConfigsForType(guildId, logType) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!logType) {
+      throw new ValidationError('Log type is required', 'logType', logType);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const loggingConfig = guildData.LoggingConfig || [];
+
+      // Filter configs that:
+      // 1. Are enabled
+      // 2. Include the requested log type
+      return loggingConfig.filter(config => 
+        config.enabled && 
+        config.logTypes && 
+        config.logTypes.includes(logType)
+      );
+    } catch (error) {
+      console.error(`Error getting logging configs for type ${logType} in guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Update logging config by channel ID (for webhook recreation)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {Object} updates - Updates to apply (typically new webhookUrl)
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateLoggingConfigByChannel(guildId, channelId, updates) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      throw new ValidationError('Updates object is required', 'updates', updates);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const loggingConfig = guildData.LoggingConfig || [];
+      
+      // Find existing config by channel ID
+      const configIndex = loggingConfig.findIndex(config => config.channelId === channelId);
+      
+      if (configIndex !== -1) {
+        // Apply updates while preserving existing data
+        loggingConfig[configIndex] = {
+          ...loggingConfig[configIndex],
+          ...updates,
+          channelId, // Preserve channel ID
+          updatedAt: new Date()
+        };
+        
+        guildData.LoggingConfig = loggingConfig;
+        await this.set(guildId, guildData);
+        return true;
+      }
+      
+      return false; // Config not found
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update logging config by channel for guild ${guildId}`, error);
     }
   }
 

@@ -79,7 +79,7 @@ module.exports = {
       const welcomechannel = channelResult.channel;
 
       // Check if welcome message exists for this channel
-      const existingWelcomeMessage = await guildService.getWelcomeMessage(message.guild.id, welcomechannel.id);
+      const existingWelcomeMessage = await guildService.getWelcomeMessageForChannel(message.guild.id, welcomechannel.id);
       if (!existingWelcomeMessage) {
         return embeds.warn(message, `No **welcome message** exists for ${welcomechannel}`);
       }
@@ -107,7 +107,7 @@ module.exports = {
       const welcomechannel = channelResult.channel;
 
       // Check if welcome message exists for this channel
-      const existingWelcomeMessage = await guildService.getWelcomeMessage(message.guild.id, welcomechannel.id);
+      const existingWelcomeMessage = await guildService.getWelcomeMessageForChannel(message.guild.id, welcomechannel.id);
       if (!existingWelcomeMessage) {
         return embeds.warn(message, `No **welcome message** to preview for ${welcomechannel}`);
       }

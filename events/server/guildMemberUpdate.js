@@ -4,11 +4,16 @@
 const { ensureGuildData, ensureUserData } = require('../../database');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 const { getService } = require('@services');
+const webhookLogger = require('../../utils/webhookLogger');
+const { AuditLogEvent } = require('discord.js');
 
 module.exports = {
   name: 'guildMemberUpdate',
   async execute(oldMember, newMember, client) {
     try {
+      // Log role changes
+      await logRoleChanges(oldMember, newMember);
+
       // Handle boost events (both new boosts and boost removals)
       await handleBoostEvents(oldMember, newMember);
 
@@ -222,5 +227,61 @@ async function processLegacyBoost(member) {
     }
   } catch (error) {
     // Silent fail for legacy boost system
+  }
+}
+
+// Log role changes
+async function logRoleChanges(oldMember, newMember) {
+  try {
+    // Get role differences
+    const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
+    const removedRoles = oldMember.roles.cache.filter(role => !newMember.roles.cache.has(role.id));
+
+    // Skip if no role changes
+    if (addedRoles.size === 0 && removedRoles.size === 0) return;
+
+    // Get executor from audit logs
+    let executor = null;
+    try {
+      const auditLogs = await newMember.guild.fetchAuditLogs({
+        type: AuditLogEvent.MemberRoleUpdate,
+        limit: 1
+      });
+
+      const auditEntry = auditLogs.entries.first();
+      if (auditEntry && 
+          auditEntry.target?.id === newMember.id &&
+          Date.now() - auditEntry.createdTimestamp < 5000) {
+        executor = auditEntry.executor;
+      }
+    } catch (auditError) {
+      // Silent fail if can't access audit logs
+    }
+
+    // Log each added role
+    for (const [roleId, role] of addedRoles) {
+      const embed = webhookLogger.createMemberRolesLog({
+        action: 'add',
+        member: newMember,
+        role: role,
+        executor: executor
+      });
+
+      await webhookLogger.sendLog(newMember.guild.id, 'events', embed);
+    }
+
+    // Log each removed role
+    for (const [roleId, role] of removedRoles) {
+      const embed = webhookLogger.createMemberRolesLog({
+        action: 'remove',
+        member: newMember,
+        role: role,
+        executor: executor
+      });
+
+      await webhookLogger.sendLog(newMember.guild.id, 'events', embed);
+    }
+  } catch (error) {
+    // Silent fail for role change logging
   }
 }

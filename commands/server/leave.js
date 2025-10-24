@@ -82,7 +82,7 @@ module.exports = {
       const leavechannel = channelResult.channel;
 
       // Check if leave message exists for this channel
-      const existingLeaveMessage = await guildService.getLeaveMessage(message.guild.id, leavechannel.id);
+      const existingLeaveMessage = await guildService.getLeaveMessageForChannel(message.guild.id, leavechannel.id);
       if (!existingLeaveMessage) {
         return embeds.warn(message, `No **leave message** exists for ${leavechannel}`);
       }
@@ -114,7 +114,7 @@ module.exports = {
       const leavechannel = channelResult.channel;
 
       // Check if leave message exists for this channel
-      const existingLeaveMessage = await guildService.getLeaveMessage(message.guild.id, leavechannel.id);
+      const existingLeaveMessage = await guildService.getLeaveMessageForChannel(message.guild.id, leavechannel.id);
       if (!existingLeaveMessage) {
         return embeds.warn(message, `No **leave message** to preview for ${leavechannel}`);
       }

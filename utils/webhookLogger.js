@@ -124,7 +124,7 @@ class WebhookLogger {
       // Update the config with new webhook URL
       const guildService = getService('guild');
       config.webhookUrl = newWebhook.url;
-      await guildService.updateLoggingConfig(guildId, config.channelId, config);
+      await guildService.updateLoggingConfigByChannel(guildId, config.channelId, config);
 
       // Clear old webhook from cache and add new one
       this.webhookClients.delete(config.webhookUrl);
@@ -769,6 +769,9 @@ class WebhookLogger {
       emojiCreate: '😀',
       emojiDelete: '🗑️',
       emojiUpdate: '✏️',
+      stickerCreate: '🎨',
+      stickerDelete: '🗑️',
+      stickerUpdate: '✏️',
       messageDelete: '🗑️',
       messageBulkDelete: '🗑️'
     };
@@ -807,6 +810,9 @@ class WebhookLogger {
       emojiCreate: 'Emoji Created',
       emojiDelete: 'Emoji Deleted',
       emojiUpdate: 'Emoji Updated',
+      stickerCreate: 'Sticker Created',
+      stickerDelete: 'Sticker Deleted',
+      stickerUpdate: 'Sticker Updated',
       messageDelete: 'Message Deleted',
       messageBulkDelete: 'Messages Bulk Deleted'
     };

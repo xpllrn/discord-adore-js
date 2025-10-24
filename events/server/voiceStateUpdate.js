@@ -1,5 +1,6 @@
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
 const { getService } = require('@services');
+const webhookLogger = require('../../utils/webhookLogger');
 
 module.exports = {
   name: 'voiceStateUpdate',
@@ -8,7 +9,10 @@ module.exports = {
       // Skip if no guild
       if (!newState.guild) return;
 
-      // Skip bots
+      // Log voice state changes (before skipping bots)
+      await logVoiceStateChange(oldState, newState);
+
+      // Skip bots for voice manager functionality
       if (newState.member.user.bot) return;
 
       const guild = newState.guild;
@@ -178,5 +182,38 @@ async function handleTempChannelJoin(guild, member, channel, voiceManager) {
 
   } catch (error) {
     console.error('Temp Channel Join Error:', error);
+  }
+}
+
+// Log voice state changes
+async function logVoiceStateChange(oldState, newState) {
+  try {
+    const member = newState.member;
+    const oldChannel = oldState.channel;
+    const newChannel = newState.channel;
+
+    // Determine the action
+    let action = null;
+    if (!oldChannel && newChannel) {
+      action = 'join';
+    } else if (oldChannel && !newChannel) {
+      action = 'leave';
+    } else if (oldChannel && newChannel && oldChannel.id !== newChannel.id) {
+      action = 'move';
+    }
+
+    // Skip if no meaningful action (e.g., mute/unmute, deafen/undeafen)
+    if (!action) return;
+
+    const embed = webhookLogger.createVoiceStateLog({
+      action,
+      member,
+      oldChannel,
+      newChannel
+    });
+
+    await webhookLogger.sendLog(newState.guild.id, 'events', embed);
+  } catch (error) {
+    // Silent fail for voice state logging
   }
 }

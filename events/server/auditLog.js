@@ -59,6 +59,12 @@ module.exports = {
           await logEmojiUpdate(auditLogEntry, guild);
           break;
 
+        case AuditLogEvent.StickerCreate:
+        case AuditLogEvent.StickerDelete:
+        case AuditLogEvent.StickerUpdate:
+          await logStickerUpdate(auditLogEntry, guild);
+          break;
+
         case AuditLogEvent.MessageDelete:
         case AuditLogEvent.MessageBulkDelete:
           await logManualMessageDelete(auditLogEntry, guild);
@@ -290,6 +296,27 @@ async function logEmojiUpdate(auditLogEntry, guild) {
     const embed = webhookLogger.createServerEventLog({
       action: auditLogEntry.action === 60 ? 'emojiCreate' :
               auditLogEntry.action === 62 ? 'emojiDelete' : 'emojiUpdate',
+      executor: auditLogEntry.executor,
+      target: auditLogEntry.target,
+      changes: auditLogEntry.changes,
+      guild: guild
+    });
+
+    await webhookLogger.sendLog(guild.id, 'events', embed);
+  } catch (error) {
+    // Silent fail to avoid infinite loops
+  }
+}
+
+async function logStickerUpdate(auditLogEntry, guild) {
+  try {
+    let actionName = 'Sticker Updated';
+    if (auditLogEntry.action === 90) actionName = 'Sticker Created'; // StickerCreate
+    if (auditLogEntry.action === 92) actionName = 'Sticker Deleted'; // StickerDelete
+
+    const embed = webhookLogger.createServerEventLog({
+      action: auditLogEntry.action === 90 ? 'stickerCreate' :
+              auditLogEntry.action === 92 ? 'stickerDelete' : 'stickerUpdate',
       executor: auditLogEntry.executor,
       target: auditLogEntry.target,
       changes: auditLogEntry.changes,
