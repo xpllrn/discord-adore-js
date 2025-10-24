@@ -4583,6 +4583,27 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Add temp voice channel (alias for addTempChannel)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {string} ownerId - Owner user ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async addTempVoiceChannel(guildId, channelId, ownerId) {
+    return await this.addTempChannel(guildId, channelId, ownerId);
+  }
+
+  /**
+   * Remove temp voice channel (alias for removeTempChannel)
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeTempVoiceChannel(guildId, channelId) {
+    return await this.removeTempChannel(guildId, channelId);
+  }
+
+  /**
    * Get temp voice channel (alias for getTempChannel)
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Channel ID
@@ -4649,6 +4670,57 @@ class GuildService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to transfer voice channel ownership for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Mark invite as joined
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID who sent the invite
+   * @param {string} invitedUserId - User ID who was invited
+   * @returns {Promise<boolean>} Success status
+   */
+  async markInviteAsJoined(guildId, userId, invitedUserId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!invitedUserId) {
+      throw new ValidationError('Invited user ID is required', 'invitedUserId', invitedUserId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+
+      if (!guildData.VoiceManager || !guildData.VoiceManager.inviteCooldowns) {
+        return false;
+      }
+
+      const inviteCooldowns = guildData.VoiceManager.inviteCooldowns;
+      const cooldownIndex = inviteCooldowns.findIndex(
+        cd => cd.userId === userId && cd.invitedUserId === invitedUserId && !cd.hasJoined
+      );
+
+      if (cooldownIndex === -1) {
+        return false;
+      }
+
+      // Mark as joined
+      inviteCooldowns[cooldownIndex].hasJoined = true;
+
+      guildData.VoiceManager.inviteCooldowns = inviteCooldowns;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to mark invite as joined for guild ${guildId}`, error);
     }
   }
 
@@ -6387,6 +6459,61 @@ class GuildService extends BaseService {
   }
 
   // ===== GUILD NAME HISTORY =====
+
+  /**
+   * Add guild name change to history
+   * @param {string} guildId - Guild ID
+   * @param {string} oldName - Old guild name
+   * @param {string} newName - New guild name
+   * @param {string|null} changedBy - User ID who changed the name (null if unknown)
+   * @returns {Promise<Object>} Created history entry
+   */
+  async addGuildNameChange(guildId, oldName, newName, changedBy = null) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!oldName || typeof oldName !== 'string') {
+      throw new ValidationError('Old name is required', 'oldName', oldName);
+    }
+
+    if (!newName || typeof newName !== 'string') {
+      throw new ValidationError('New name is required', 'newName', newName);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const history = guildData.GuildNameHistory || [];
+      
+      const historyEntry = {
+        oldName: oldName.trim(),
+        newName: newName.trim(),
+        changedBy: changedBy || null,
+        changedAt: new Date()
+      };
+      
+      // Check if this exact change already exists as the most recent entry
+      if (history.length > 0) {
+        const mostRecent = history[history.length - 1];
+        if (mostRecent.oldName === historyEntry.oldName && 
+            mostRecent.newName === historyEntry.newName) {
+          // Don't add duplicate consecutive changes
+          return mostRecent;
+        }
+      }
+      
+      history.push(historyEntry);
+      guildData.GuildNameHistory = history;
+      
+      await this.set(guildId, guildData);
+      return historyEntry;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add guild name change for guild ${guildId}`, error);
+    }
+  }
 
   /**
    * Get guild name history
