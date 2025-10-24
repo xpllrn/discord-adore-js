@@ -2164,6 +2164,9 @@ class GuildService extends BaseService {
       today.setHours(0, 0, 0, 0);
 
       for (const swear of userSwears) {
+        // Skip if swear word is undefined or null
+        if (!swear.swear) continue;
+        
         const word = swear.swear.toLowerCase();
         if (!swearCounts[word]) {
           swearCounts[word] = 0;
@@ -2226,6 +2229,9 @@ class GuildService extends BaseService {
       const userSwearCounts = {};
 
       for (const swear of swearTracker) {
+        // Skip if swear word is undefined or null
+        if (!swear.swear) continue;
+        
         if (!userSwearCounts[swear.userId]) {
           userSwearCounts[swear.userId] = {
             userId: swear.userId,

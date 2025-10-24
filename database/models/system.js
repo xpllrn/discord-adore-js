@@ -111,4 +111,7 @@ systemSchema.index({ 'InstanceConfig.instanceId': 1 });
 systemSchema.index({ 'InstanceConfig.botName': 1 });
 systemSchema.index({ 'InstanceConfig.createdAt': -1 }); // Recent instances first
 
-module.exports = mongoose.model('System', systemSchema);
+module.exports = {
+  schema: systemSchema,
+  model: mongoose.model('System', systemSchema)
+};

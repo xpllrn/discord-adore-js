@@ -101,6 +101,7 @@ class SystemService extends BaseService {
             users: [],
             servers: []
           },
+          InstanceConfig: [],
           GlobalSettings: {},
           BotStatus: {
             version: '1.0.0',
@@ -785,6 +786,189 @@ class SystemService extends BaseService {
         results.set(serverId, false);
       }
       return results;
+    }
+  }
+
+  // ===== INSTANCE CONFIGURATION =====
+
+  /**
+   * Get instance configuration by instance ID
+   * @param {string} instanceId - Instance ID
+   * @returns {Promise<Object|null>} Instance configuration or null
+   */
+  async getInstanceConfig(instanceId) {
+    if (!instanceId) {
+      throw new ValidationError('Instance ID is required', 'instanceId', instanceId);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const instanceConfigs = systemData.InstanceConfig || [];
+      
+      return instanceConfigs.find(config => config.instanceId === instanceId) || null;
+    } catch (error) {
+      console.error(`Error getting instance config for ${instanceId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set or update instance configuration
+   * @param {string} instanceId - Instance ID
+   * @param {Object} config - Instance configuration
+   * @returns {Promise<boolean>} Success status
+   */
+  async setInstanceConfig(instanceId, config) {
+    if (!instanceId) {
+      throw new ValidationError('Instance ID is required', 'instanceId', instanceId);
+    }
+
+    if (!config || typeof config !== 'object') {
+      throw new ValidationError('Config object is required', 'config', config);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const instanceConfigs = systemData.InstanceConfig || [];
+      
+      const existingIndex = instanceConfigs.findIndex(c => c.instanceId === instanceId);
+
+      if (existingIndex !== -1) {
+        // Update existing config
+        instanceConfigs[existingIndex] = {
+          ...instanceConfigs[existingIndex],
+          ...config,
+          instanceId,
+          lastUpdated: new Date()
+        };
+      } else {
+        // Add new config
+        instanceConfigs.push({
+          instanceId,
+          ...config,
+          createdAt: new Date(),
+          lastUpdated: new Date()
+        });
+      }
+
+      systemData.InstanceConfig = instanceConfigs;
+      await this.set(this.systemKey, systemData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set instance config for ${instanceId}`, error);
+    }
+  }
+
+  /**
+   * Get bot status for an instance
+   * @param {string} instanceId - Instance ID
+   * @returns {Promise<Object|null>} Bot status configuration or null
+   */
+  async getInstanceBotStatus(instanceId) {
+    if (!instanceId) {
+      throw new ValidationError('Instance ID is required', 'instanceId', instanceId);
+    }
+
+    try {
+      const instanceConfig = await this.getInstanceConfig(instanceId);
+      return instanceConfig?.botStatus || null;
+    } catch (error) {
+      console.error(`Error getting bot status for instance ${instanceId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set bot status for an instance
+   * @param {string} instanceId - Instance ID
+   * @param {Object} botStatus - Bot status configuration
+   * @param {string} botStatus.activity - Activity text
+   * @param {string} botStatus.type - Activity type (Watching, Playing, Listening, Streaming, Competing)
+   * @param {string} botStatus.status - Status (online, idle, dnd, invisible)
+   * @returns {Promise<boolean>} Success status
+   */
+  async setInstanceBotStatus(instanceId, botStatus) {
+    if (!instanceId) {
+      throw new ValidationError('Instance ID is required', 'instanceId', instanceId);
+    }
+
+    if (!botStatus || typeof botStatus !== 'object') {
+      throw new ValidationError('Bot status object is required', 'botStatus', botStatus);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const instanceConfigs = systemData.InstanceConfig || [];
+      
+      const existingIndex = instanceConfigs.findIndex(c => c.instanceId === instanceId);
+
+      if (existingIndex !== -1) {
+        // Update existing config
+        instanceConfigs[existingIndex].botStatus = botStatus;
+        instanceConfigs[existingIndex].lastUpdated = new Date();
+      } else {
+        // Create new config with bot status
+        instanceConfigs.push({
+          instanceId,
+          botStatus,
+          createdAt: new Date(),
+          lastUpdated: new Date()
+        });
+      }
+
+      systemData.InstanceConfig = instanceConfigs;
+      await this.set(this.systemKey, systemData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set bot status for instance ${instanceId}`, error);
+    }
+  }
+
+  /**
+   * Remove instance configuration
+   * @param {string} instanceId - Instance ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeInstanceConfig(instanceId) {
+    if (!instanceId) {
+      throw new ValidationError('Instance ID is required', 'instanceId', instanceId);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const instanceConfigs = systemData.InstanceConfig || [];
+      
+      const initialLength = instanceConfigs.length;
+      systemData.InstanceConfig = instanceConfigs.filter(c => c.instanceId !== instanceId);
+
+      if (systemData.InstanceConfig.length < initialLength) {
+        await this.set(this.systemKey, systemData);
+        return true;
+      }
+
+      return false; // Instance config didn't exist
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to remove instance config for ${instanceId}`, error);
+    }
+  }
+
+  /**
+   * Get all instance configurations
+   * @returns {Promise<Array>} Array of instance configurations
+   */
+  async getAllInstanceConfigs() {
+    try {
+      const systemData = await this.ensureSystemData();
+      return systemData.InstanceConfig || [];
+    } catch (error) {
+      console.error('Error getting all instance configs:', error.message);
+      return [];
     }
   }
 }

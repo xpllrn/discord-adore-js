@@ -1186,4 +1186,7 @@ guildSchema.index({ 'StickyMessages.channelId': 1 });
 guildSchema.index({ 'StickyMessages.lastActivity': 1 }); // For inactivity checks
 guildSchema.index({ 'StickyMessages.createdAt': -1 }); // Recent sticky messages first
 
-module.exports = mongoose.model('Guild', guildSchema);
+module.exports = {
+  schema: guildSchema,
+  model: mongoose.model('Guild', guildSchema)
+};

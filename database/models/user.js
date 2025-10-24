@@ -333,4 +333,7 @@ userSchema.index({ 'Afk.since': -1 }); // Recent AFK users
 userSchema.index({ Timezone: 1 }); // Timezone-based queries
 userSchema.index({ SelfPrefix: 1 }); // Custom prefix lookups
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = {
+  schema: userSchema,
+  model: mongoose.model('User', userSchema)
+};

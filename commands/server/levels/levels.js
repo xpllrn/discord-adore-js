@@ -93,6 +93,7 @@ module.exports = {
 
 // Unlock subcommand
 async function handleUnlock(client, message, args) {
+  const guildService = getService('guild');
   const isEnabled = await guildService.isLevelSystemEnabled(message.guild.id);
   
   if (isEnabled) {
@@ -105,6 +106,7 @@ async function handleUnlock(client, message, args) {
 
 // Lock subcommand
 async function handleLock(client, message, args) {
+  const guildService = getService('guild');
   const isEnabled = await guildService.isLevelSystemEnabled(message.guild.id);
   
   if (!isEnabled) {
@@ -117,6 +119,8 @@ async function handleLock(client, message, args) {
 
 // View level subcommand
 async function handleViewLevel(client, message, args) {
+  const guildService = getService('guild');
+  
   let targetUser = message.author;
   let targetMember = message.member;
 
@@ -177,6 +181,7 @@ async function handleViewLevel(client, message, args) {
 
 // Reset subcommand
 async function handleReset(client, message, args) {
+  const guildService = getService('guild');
   await createConfirmation(
     message,
     'Are you sure you want to **reset all members\' level and XP data**? This action cannot be undone.',
@@ -195,6 +200,7 @@ async function handleReset(client, message, args) {
 
 // Cleanup subcommand
 async function handleCleanup(client, message, args) {
+  const guildService = getService('guild');
 
   const userLevels = await guildService.getUserLeaderboard(message.guild.id, 1000);
   let removedCount = 0;
@@ -218,6 +224,7 @@ async function handleCleanup(client, message, args) {
 
 // Leaderboard subcommand
 async function handleLeaderboard(client, message, args) {
+  const guildService = getService('guild');
   const isEnabled = await guildService.isLevelSystemEnabled(message.guild.id);
   if (!isEnabled) {
     return embeds.warn(message, 'Leveling system is **disabled** in this server');
@@ -314,6 +321,7 @@ async function handleLeaderboard(client, message, args) {
 
 // Add role subcommand
 async function handleAddRole(client, message, args) {
+  const guildService = getService('guild');
   if (!args[1] || !args[2]) {
     return runHelpCommand(message, 'levels');
   }
@@ -348,6 +356,7 @@ async function handleAddRole(client, message, args) {
 
 // Remove role subcommand
 async function handleRemoveRole(client, message, args) {
+  const guildService = getService('guild');
   if (!args[1]) {
     return runHelpCommand(message, 'levels');
   }
@@ -369,6 +378,7 @@ async function handleRemoveRole(client, message, args) {
 
 // Set level subcommand
 async function handleSetLevel(client, message, args) {
+  const guildService = getService('guild');
   if (!args[1] || !args[2]) {
     return runHelpCommand(message, 'levels');
   }
@@ -400,6 +410,7 @@ async function handleSetLevel(client, message, args) {
 
 // Sync subcommand
 async function handleSync(client, message, args) {
+  const guildService = getService('guild');
   const lastSyncTime = await guildService.getLastSyncTime(message.guild.id);
   const now = new Date();
   const twoHoursAgo = new Date(now.getTime() - (2 * 60 * 60 * 1000));
@@ -444,6 +455,7 @@ async function handleSync(client, message, args) {
 
 // Message mode subcommand
 async function handleMessageMode(client, message, args) {
+  const guildService = getService('guild');
   if (!args[1]) {
     const currentMode = await guildService.getLevelMessageMode(message.guild.id);
     return embeds.info(message, `Current level up message mode: **${currentMode}**`);
