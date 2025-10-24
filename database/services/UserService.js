@@ -1274,6 +1274,256 @@ class UserService extends BaseService {
       return [];
     }
   }
+
+  // ===== ROLEPLAY OPERATIONS =====
+
+  /**
+   * Track roleplay interaction and return count
+   * @param {string} userId - User performing the action
+   * @param {string} targetId - User receiving the action
+   * @param {string} action - Action type (hug, kiss, pat, etc.)
+   * @returns {Promise<number>} Total count of this interaction
+   */
+  async trackRoleplayInteraction(userId, targetId, action) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!targetId) {
+      throw new ValidationError('Target ID is required', 'targetId', targetId);
+    }
+
+    if (!action) {
+      throw new ValidationError('Action is required', 'action', action);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const roleplay = userData.Roleplay || { given: [], received: [] };
+
+      if (!roleplay.given) {
+        roleplay.given = [];
+      }
+
+      // Find existing interaction
+      let interaction = roleplay.given.find(
+        r => r.targetId === targetId && r.action === action
+      );
+
+      if (interaction) {
+        interaction.count++;
+        interaction.lastInteraction = new Date();
+      } else {
+        interaction = {
+          targetId,
+          action,
+          count: 1,
+          lastInteraction: new Date()
+        };
+        roleplay.given.push(interaction);
+      }
+
+      userData.Roleplay = roleplay;
+      await this.set(userId, userData);
+
+      // Also track in target's received
+      if (targetId !== userId) {
+        await this.trackRoleplayReceived(targetId, userId, action);
+      }
+
+      return interaction.count;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to track roleplay interaction for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Track received roleplay interaction (internal helper)
+   * @private
+   * @param {string} userId - User receiving the action
+   * @param {string} fromId - User performing the action
+   * @param {string} action - Action type
+   * @returns {Promise<void>}
+   */
+  async trackRoleplayReceived(userId, fromId, action) {
+    try {
+      const userData = await this.ensureUserData(userId);
+      const roleplay = userData.Roleplay || { given: [], received: [] };
+
+      if (!roleplay.received) {
+        roleplay.received = [];
+      }
+
+      // Find existing interaction
+      let interaction = roleplay.received.find(
+        r => r.fromId === fromId && r.action === action
+      );
+
+      if (interaction) {
+        interaction.count++;
+        interaction.lastInteraction = new Date();
+      } else {
+        interaction = {
+          fromId,
+          action,
+          count: 1,
+          lastInteraction: new Date()
+        };
+        roleplay.received.push(interaction);
+      }
+
+      userData.Roleplay = roleplay;
+      await this.set(userId, userData);
+    } catch (error) {
+      // Silent fail for received tracking
+      console.error(`Error tracking received roleplay for user ${userId}:`, error.message);
+    }
+  }
+
+  /**
+   * Get roleplay count between two users
+   * @param {string} userId - User performing the action
+   * @param {string} targetId - User receiving the action
+   * @param {string} action - Action type
+   * @returns {Promise<number>} Count of interactions
+   */
+  async getRoleplayCount(userId, targetId, action) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!targetId) {
+      throw new ValidationError('Target ID is required', 'targetId', targetId);
+    }
+
+    if (!action) {
+      throw new ValidationError('Action is required', 'action', action);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const roleplay = userData.Roleplay || { given: [], received: [] };
+
+      if (!roleplay.given) {
+        return 0;
+      }
+
+      const interaction = roleplay.given.find(
+        r => r.targetId === targetId && r.action === action
+      );
+
+      return interaction ? interaction.count : 0;
+    } catch (error) {
+      console.error(`Error getting roleplay count for user ${userId}:`, error.message);
+      return 0;
+    }
+  }
+
+  /**
+   * Get all roleplay interactions given by user
+   * @param {string} userId - User ID
+   * @param {string} action - Optional action filter
+   * @returns {Promise<Array>} Array of roleplay interactions
+   */
+  async getRoleplayGiven(userId, action = null) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const roleplay = userData.Roleplay || { given: [], received: [] };
+
+      let interactions = roleplay.given || [];
+
+      if (action) {
+        interactions = interactions.filter(r => r.action === action);
+      }
+
+      return interactions;
+    } catch (error) {
+      console.error(`Error getting roleplay given for user ${userId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get all roleplay interactions received by user
+   * @param {string} userId - User ID
+   * @param {string} action - Optional action filter
+   * @returns {Promise<Array>} Array of roleplay interactions
+   */
+  async getRoleplayReceived(userId, action = null) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const roleplay = userData.Roleplay || { given: [], received: [] };
+
+      let interactions = roleplay.received || [];
+
+      if (action) {
+        interactions = interactions.filter(r => r.action === action);
+      }
+
+      return interactions;
+    } catch (error) {
+      console.error(`Error getting roleplay received for user ${userId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get roleplay leaderboard for a specific action
+   * @param {string} action - Action type
+   * @param {number} limit - Number of results to return
+   * @returns {Promise<Array>} Array of top users
+   */
+  async getRoleplayLeaderboard(action, limit = 10) {
+    if (!action) {
+      throw new ValidationError('Action is required', 'action', action);
+    }
+
+    if (typeof limit !== 'number' || limit < 1 || limit > 100) {
+      throw new ValidationError('Limit must be between 1 and 100', 'limit', limit);
+    }
+
+    try {
+      const Model = this.getModel();
+      const users = await Model.find({
+        'Roleplay.given': {
+          $elemMatch: { action: action }
+        }
+      }).lean();
+
+      // Calculate total counts for each user
+      const leaderboard = users.map(user => {
+        const given = user.Roleplay?.given || [];
+        const totalCount = given
+          .filter(r => r.action === action)
+          .reduce((sum, r) => sum + r.count, 0);
+
+        return {
+          userId: user[this.keyField],
+          action,
+          count: totalCount
+        };
+      });
+
+      // Sort by count descending
+      leaderboard.sort((a, b) => b.count - a.count);
+
+      return leaderboard.slice(0, limit);
+    } catch (error) {
+      console.error(`Error getting roleplay leaderboard for ${action}:`, error.message);
+      return [];
+    }
+  }
 }
 
 module.exports = UserService;

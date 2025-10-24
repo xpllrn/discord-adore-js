@@ -2308,6 +2308,355 @@ class GuildService extends BaseService {
   async addUserExperience(guildId, userId, expGain) {
     return await this.addExperience(guildId, userId, expGain);
   }
+
+  // ===== STARBOARD OPERATIONS =====
+
+  /**
+   * Get starboard channel
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Starboard channel ID or null
+   */
+  async getStarboardChannel(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.StarboardChannel || null;
+    } catch (error) {
+      console.error(`Error getting starboard channel for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get starboard threshold
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<number>} Starboard threshold (default: 3)
+   */
+  async getStarboardThreshold(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.StarboardThreshold || 3;
+    } catch (error) {
+      console.error(`Error getting starboard threshold for guild ${guildId}:`, error.message);
+      return 3;
+    }
+  }
+
+  /**
+   * Get starboard emoji
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string>} Starboard emoji (default: ⭐)
+   */
+  async getStarboardEmoji(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.StarboardEmoji || '⭐';
+    } catch (error) {
+      console.error(`Error getting starboard emoji for guild ${guildId}:`, error.message);
+      return '⭐';
+    }
+  }
+
+  /**
+   * Set starboard settings
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Starboard channel ID
+   * @param {number} threshold - Starboard threshold
+   * @param {string} emoji - Starboard emoji
+   * @returns {Promise<boolean>} Success status
+   */
+  async setStarboardSettings(guildId, channelId, threshold = 3, emoji = '⭐') {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.StarboardChannel = channelId;
+      guildData.StarboardThreshold = threshold;
+      guildData.StarboardEmoji = emoji;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set starboard settings for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Find starboard message
+   * @param {string} guildId - Guild ID
+   * @param {string} messageId - Original message ID
+   * @returns {Promise<Object|null>} Starboard message data or null
+   */
+  async findStarboardMessage(guildId, messageId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const starboardMessages = guildData.StarboardMessages || [];
+
+      return starboardMessages.find(sm => sm.messageId === messageId) || null;
+    } catch (error) {
+      console.error(`Error finding starboard message for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Add starboard message
+   * @param {string} guildId - Guild ID
+   * @param {string} messageId - Original message ID
+   * @param {string} starboardMessageId - Starboard message ID
+   * @param {string} channelId - Original channel ID
+   * @param {string} authorId - Original author ID
+   * @param {number} count - Reaction count
+   * @returns {Promise<boolean>} Success status
+   */
+  async addStarboardMessage(guildId, messageId, starboardMessageId, channelId, authorId, count) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const starboardMessages = guildData.StarboardMessages || [];
+
+      starboardMessages.push({
+        messageId,
+        starboardMessageId,
+        channelId,
+        authorId,
+        count,
+        createdAt: new Date()
+      });
+
+      guildData.StarboardMessages = starboardMessages;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add starboard message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Update starboard message count
+   * @param {string} guildId - Guild ID
+   * @param {string} messageId - Original message ID
+   * @param {number} count - New reaction count
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateStarboardMessageCount(guildId, messageId, count) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const starboardMessages = guildData.StarboardMessages || [];
+
+      const message = starboardMessages.find(sm => sm.messageId === messageId);
+      if (message) {
+        message.count = count;
+        guildData.StarboardMessages = starboardMessages;
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update starboard message count for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove starboard message
+   * @param {string} guildId - Guild ID
+   * @param {string} messageId - Original message ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeStarboardMessage(guildId, messageId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const starboardMessages = guildData.StarboardMessages || [];
+
+      guildData.StarboardMessages = starboardMessages.filter(sm => sm.messageId !== messageId);
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove starboard message for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== GIVEAWAY OPERATIONS =====
+
+  /**
+   * Get giveaway by message ID
+   * @param {string} guildId - Guild ID
+   * @param {string} messageId - Giveaway message ID
+   * @returns {Promise<Object|null>} Giveaway data or null
+   */
+  async getGiveawayByMessageId(guildId, messageId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+
+      return giveaways.find(g => g.messageId === messageId) || null;
+    } catch (error) {
+      console.error(`Error getting giveaway by message ID for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get giveaway by ID
+   * @param {string} guildId - Guild ID
+   * @param {number} giveawayId - Giveaway ID
+   * @returns {Promise<Object|null>} Giveaway data or null
+   */
+  async getGiveaway(guildId, giveawayId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof giveawayId !== 'number') {
+      throw new ValidationError('Giveaway ID must be a number', 'giveawayId', giveawayId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+
+      return giveaways.find(g => g.id === giveawayId) || null;
+    } catch (error) {
+      console.error(`Error getting giveaway for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Add giveaway participant
+   * @param {string} guildId - Guild ID
+   * @param {number} giveawayId - Giveaway ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async addGiveawayParticipant(guildId, giveawayId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof giveawayId !== 'number') {
+      throw new ValidationError('Giveaway ID must be a number', 'giveawayId', giveawayId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+
+      const giveaway = giveaways.find(g => g.id === giveawayId);
+      if (giveaway) {
+        if (!giveaway.participants) {
+          giveaway.participants = [];
+        }
+
+        if (!giveaway.participants.includes(userId)) {
+          giveaway.participants.push(userId);
+          guildData.Giveaways = giveaways;
+          await this.set(guildId, guildData);
+        }
+
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add giveaway participant for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get all active giveaways
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of active giveaways
+   */
+  async getActiveGiveaways(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+
+      return giveaways.filter(g => g.isActive);
+    } catch (error) {
+      console.error(`Error getting active giveaways for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
 }
 
 module.exports = GuildService;
