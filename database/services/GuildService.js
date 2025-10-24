@@ -2126,6 +2126,219 @@ class GuildService extends BaseService {
     }
   }
 
+  /**
+   * Get user swear data with aggregated counts
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} User swear data with aggregated counts
+   */
+  async getUserSwearData(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const swearTracker = guildData.SwearTracker || [];
+
+      // Filter swears for this user
+      const userSwears = swearTracker.filter(st => st.userId === userId);
+
+      if (userSwears.length === 0) {
+        return {
+          userId,
+          swears: [],
+          todaySwears: 0,
+          totalSwears: 0
+        };
+      }
+
+      // Aggregate swears by word
+      const swearCounts = {};
+      let todaySwears = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (const swear of userSwears) {
+        const word = swear.swear.toLowerCase();
+        if (!swearCounts[word]) {
+          swearCounts[word] = 0;
+        }
+        swearCounts[word]++;
+
+        // Count today's swears
+        const swearDate = new Date(swear.timestamp);
+        swearDate.setHours(0, 0, 0, 0);
+        if (swearDate.getTime() === today.getTime()) {
+          todaySwears++;
+        }
+      }
+
+      // Convert to array format
+      const swears = Object.entries(swearCounts).map(([word, count]) => ({
+        word,
+        count
+      }));
+
+      const totalSwears = userSwears.length;
+
+      return {
+        userId,
+        swears,
+        todaySwears,
+        totalSwears
+      };
+    } catch (error) {
+      console.error(`Error getting user swear data for guild ${guildId}:`, error.message);
+      return {
+        userId,
+        swears: [],
+        todaySwears: 0,
+        totalSwears: 0
+      };
+    }
+  }
+
+  /**
+   * Get swear leaderboard
+   * @param {string} guildId - Guild ID
+   * @param {number} limit - Number of users to return (default: 100)
+   * @returns {Promise<Array>} Array of user swear data sorted by total
+   */
+  async getSwearLeaderboard(guildId, limit = 100) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const swearTracker = guildData.SwearTracker || [];
+
+      if (swearTracker.length === 0) {
+        return [];
+      }
+
+      // Group by user
+      const userSwearCounts = {};
+
+      for (const swear of swearTracker) {
+        if (!userSwearCounts[swear.userId]) {
+          userSwearCounts[swear.userId] = {
+            userId: swear.userId,
+            swears: {},
+            todaySwears: 0,
+            totalSwears: 0
+          };
+        }
+
+        const word = swear.swear.toLowerCase();
+        if (!userSwearCounts[swear.userId].swears[word]) {
+          userSwearCounts[swear.userId].swears[word] = 0;
+        }
+        userSwearCounts[swear.userId].swears[word]++;
+        userSwearCounts[swear.userId].totalSwears++;
+
+        // Count today's swears
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const swearDate = new Date(swear.timestamp);
+        swearDate.setHours(0, 0, 0, 0);
+        if (swearDate.getTime() === today.getTime()) {
+          userSwearCounts[swear.userId].todaySwears++;
+        }
+      }
+
+      // Convert to array and calculate totals
+      const leaderboard = Object.values(userSwearCounts).map(userData => ({
+        userId: userData.userId,
+        calculatedTotal: userData.totalSwears,
+        todaySwears: userData.todaySwears,
+        swears: Object.entries(userData.swears).map(([word, count]) => ({
+          word,
+          count
+        }))
+      }));
+
+      // Sort by total swears descending
+      leaderboard.sort((a, b) => b.calculatedTotal - a.calculatedTotal);
+
+      return leaderboard.slice(0, limit);
+    } catch (error) {
+      console.error(`Error getting swear leaderboard for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get user's position in swear leaderboard
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<number|null>} User's position or null
+   */
+  async getUserSwearPosition(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const leaderboard = await this.getSwearLeaderboard(guildId, 1000);
+      const position = leaderboard.findIndex(userData => userData.userId === userId);
+
+      return position !== -1 ? position + 1 : null;
+    } catch (error) {
+      console.error(`Error getting user swear position for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get swear tracker data
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of swear tracking entries
+   */
+  async getSwearTracker(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.SwearTracker || [];
+    } catch (error) {
+      console.error(`Error getting swear tracker for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Clear all swear data for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllSwearData(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.SwearTracker = [];
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear all swear data for guild ${guildId}`, error);
+    }
+  }
+
   // ===== MESSAGE TRACKING OPERATIONS =====
 
   /**
@@ -2655,6 +2868,171 @@ class GuildService extends BaseService {
     } catch (error) {
       console.error(`Error getting active giveaways for guild ${guildId}:`, error.message);
       return [];
+    }
+  }
+
+  // ===== LAST.FM CROWN OPERATIONS =====
+
+  /**
+   * Get Last.fm crown for an artist
+   * @param {string} guildId - Guild ID
+   * @param {string} artistName - Artist name
+   * @returns {Promise<Object|null>} Crown data or null
+   */
+  async getLastFMCrown(guildId, artistName) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!artistName) {
+      throw new ValidationError('Artist name is required', 'artistName', artistName);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const crowns = guildData.LastFMCrowns || [];
+
+      return crowns.find(c => c.artistName.toLowerCase() === artistName.toLowerCase()) || null;
+    } catch (error) {
+      console.error(`Error getting Last.fm crown for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set Last.fm crown for an artist
+   * @param {string} guildId - Guild ID
+   * @param {string} artistName - Artist name
+   * @param {string} userId - User ID who owns the crown
+   * @param {number} plays - Number of plays
+   * @returns {Promise<boolean>} Success status
+   */
+  async setLastFMCrown(guildId, artistName, userId, plays) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!artistName) {
+      throw new ValidationError('Artist name is required', 'artistName', artistName);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (typeof plays !== 'number' || plays < 0) {
+      throw new ValidationError('Plays must be a non-negative number', 'plays', plays);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const crowns = guildData.LastFMCrowns || [];
+
+      const existingCrownIndex = crowns.findIndex(c => c.artistName.toLowerCase() === artistName.toLowerCase());
+
+      if (existingCrownIndex !== -1) {
+        // Update existing crown
+        crowns[existingCrownIndex] = {
+          artistName,
+          userId,
+          plays,
+          claimedAt: new Date()
+        };
+      } else {
+        // Add new crown
+        crowns.push({
+          artistName,
+          userId,
+          plays,
+          claimedAt: new Date()
+        });
+      }
+
+      guildData.LastFMCrowns = crowns;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set Last.fm crown for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get all Last.fm crowns for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of crown data
+   */
+  async getAllLastFMCrowns(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.LastFMCrowns || [];
+    } catch (error) {
+      console.error(`Error getting all Last.fm crowns for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get Last.fm crowns for a specific user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Array>} Array of crown data for the user
+   */
+  async getUserLastFMCrowns(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const crowns = guildData.LastFMCrowns || [];
+
+      return crowns.filter(c => c.userId === userId);
+    } catch (error) {
+      console.error(`Error getting user Last.fm crowns for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Remove Last.fm crown for an artist
+   * @param {string} guildId - Guild ID
+   * @param {string} artistName - Artist name
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeLastFMCrown(guildId, artistName) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!artistName) {
+      throw new ValidationError('Artist name is required', 'artistName', artistName);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const crowns = guildData.LastFMCrowns || [];
+
+      guildData.LastFMCrowns = crowns.filter(c => c.artistName.toLowerCase() !== artistName.toLowerCase());
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove Last.fm crown for guild ${guildId}`, error);
     }
   }
 }

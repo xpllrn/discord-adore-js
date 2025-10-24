@@ -402,6 +402,9 @@ function findRandomMove(board) {
 }
 
 async function endGame(interaction, board, players, playerSymbols, winner, isDraw, isAI) {
+  const { getService } = require('@services');
+  const userService = getService('user');
+  
   let gameState = 'draw';
   let winnerIndex = -1;
 

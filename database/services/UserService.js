@@ -1524,6 +1524,249 @@ class UserService extends BaseService {
       return [];
     }
   }
+
+  // ===== LAST.FM OPERATIONS =====
+
+  /**
+   * Get Last.fm username
+   * @param {string} userId - User ID
+   * @returns {Promise<string|null>} Last.fm username or null
+   */
+  async getLastFMUsername(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      return userData.LastFMUsername || null;
+    } catch (error) {
+      console.error(`Error getting Last.fm username for user ${userId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set Last.fm username
+   * @param {string} userId - User ID
+   * @param {string|null} username - Last.fm username or null to clear
+   * @returns {Promise<boolean>} Success status
+   */
+  async setLastFMUsername(userId, username) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (username !== null && typeof username !== 'string') {
+      throw new ValidationError('Username must be a string or null', 'username', username);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      userData.LastFMUsername = username;
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set Last.fm username for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Get Last.fm library
+   * @param {string} userId - User ID
+   * @returns {Promise<Object|null>} Last.fm library data or null
+   */
+  async getLastFMLibrary(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      return userData.LastFMLibrary || null;
+    } catch (error) {
+      console.error(`Error getting Last.fm library for user ${userId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set Last.fm library
+   * @param {string} userId - User ID
+   * @param {Object|null} library - Last.fm library data or null to clear
+   * @returns {Promise<boolean>} Success status
+   */
+  async setLastFMLibrary(userId, library) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (library !== null && typeof library !== 'object') {
+      throw new ValidationError('Library must be an object or null', 'library', library);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      userData.LastFMLibrary = library;
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set Last.fm library for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Get Last.fm settings
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} Last.fm settings
+   */
+  async getLastFMSettings(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      return userData.LastFMSettings || {};
+    } catch (error) {
+      console.error(`Error getting Last.fm settings for user ${userId}:`, error.message);
+      return {};
+    }
+  }
+
+  /**
+   * Set Last.fm settings
+   * @param {string} userId - User ID
+   * @param {Object} settings - Last.fm settings
+   * @returns {Promise<boolean>} Success status
+   */
+  async setLastFMSettings(userId, settings) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!settings || typeof settings !== 'object') {
+      throw new ValidationError('Settings must be an object', 'settings', settings);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      userData.LastFMSettings = settings;
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set Last.fm settings for user ${userId}`, error);
+    }
+  }
+
+  // ===== TIC TAC TOE OPERATIONS =====
+
+  /**
+   * Get TicTacToe stats
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} TicTacToe stats
+   */
+  async getTicTacToeStats(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      return userData.TicTacToe || {
+        wins: 0,
+        losses: 0,
+        draws: 0
+      };
+    } catch (error) {
+      console.error(`Error getting TicTacToe stats for user ${userId}:`, error.message);
+      return {
+        wins: 0,
+        losses: 0,
+        draws: 0
+      };
+    }
+  }
+
+  /**
+   * Update TicTacToe stats
+   * @param {string} userId - User ID
+   * @param {string} result - Result type ('win', 'loss', or 'draw')
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateTicTacToeStats(userId, result) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!['win', 'loss', 'draw'].includes(result)) {
+      throw new ValidationError('Result must be win, loss, or draw', 'result', result);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const stats = userData.TicTacToe || {
+        wins: 0,
+        losses: 0,
+        draws: 0
+      };
+
+      if (result === 'win') {
+        stats.wins++;
+      } else if (result === 'loss') {
+        stats.losses++;
+      } else if (result === 'draw') {
+        stats.draws++;
+      }
+
+      userData.TicTacToe = stats;
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update TicTacToe stats for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Reset TicTacToe stats
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async resetTicTacToeStats(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      userData.TicTacToe = {
+        wins: 0,
+        losses: 0,
+        draws: 0
+      };
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to reset TicTacToe stats for user ${userId}`, error);
+    }
+  }
 }
 
 module.exports = UserService;
