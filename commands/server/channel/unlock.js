@@ -19,6 +19,29 @@ module.exports = {
     }
 
     let targetChannel = message.channel;
+
+    // Handle threads differently - they use setLocked() API
+    if (message.channel.isThread()) {
+      // Threads don't support role-based locking, only full lock/unlock
+      if (args.length > 0) {
+        return embeds.deny(message, 'Threads can only be unlocked entirely, not for specific roles');
+      }
+
+      // Check if thread is already unlocked
+      if (!targetChannel.locked) {
+        return embeds.warn(message, `**${targetChannel.name}** is already **unlocked**`);
+      }
+
+      try {
+        await targetChannel.setLocked(false, 'Unlocked via command');
+        return message.react('🔓');
+      } catch (error) {
+        console.error('Error unlocking thread:', error);
+        return embeds.deny(message, "An error occurred while trying to **unlock** the thread");
+      }
+    }
+
+    // Regular channel logic with role-based permissions
     let targetRole = null;
 
     if (args.length === 0) {
@@ -64,6 +87,7 @@ module.exports = {
 
       return message.react('🔓');
     } catch (error) {
+      console.error('Error unlocking channel:', error);
       return embeds.deny(message, "An error occurred while trying to **unlock** the channel");
     }
   }
