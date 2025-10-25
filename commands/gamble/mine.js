@@ -144,24 +144,32 @@ module.exports = {
           const actionRow = new ActionRowBuilder();
           for (let col = 0; col < 4; col++) {
             const customId = `mine_${message.author.id}_${row}_${col}`;
-            const button = new ButtonBuilder()
-              .setCustomId(customId)
-              .setStyle(ButtonStyle.Secondary);
-
+            
             if (revealed[row][col]) {
-              button.setDisabled(true);
+              // Revealed tile - show content and disable
+              const button = new ButtonBuilder()
+                .setCustomId(customId + '_revealed')
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true);
+
               if (board[row][col] === -1) {
-                button.setEmoji('💣');
+                button.setEmoji('💣').setLabel('​');
               } else if (board[row][col] === 0) {
-                button.setLabel('​'); // Zero-width space for blank
+                button.setLabel('​'); // Blank for zero
               } else {
                 button.setLabel(board[row][col].toString());
               }
+              
+              actionRow.addComponents(button);
             } else {
-              button.setLabel('​'); // Blank unrevealed button
+              // Unrevealed tile - blank and clickable
+              const button = new ButtonBuilder()
+                .setCustomId(customId)
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel('​');
+              
+              actionRow.addComponents(button);
             }
-
-            actionRow.addComponents(button);
           }
           rows.push(actionRow);
         }
@@ -209,15 +217,18 @@ module.exports = {
           return;
         }
 
-        const [, , , rowStr, colStr] = interaction.customId.split('_');
-        const row = parseInt(rowStr);
-        const col = parseInt(colStr);
+        // Parse the button position
+        const parts = interaction.customId.split('_');
+        const row = parseInt(parts[3]);
+        const col = parseInt(parts[4]);
 
+        // Double check it's not already revealed
         if (revealed[row][col]) {
           await interaction.reply({ content: 'This tile is already revealed!', ephemeral: true });
           return;
         }
 
+        // Mark as revealed
         revealed[row][col] = true;
 
         // Check if mine
