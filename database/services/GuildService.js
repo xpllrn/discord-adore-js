@@ -1915,7 +1915,6 @@ class GuildService extends BaseService {
         userId,
         level: 1,
         experience: 0,
-        totalExperience: 0,
         lastMessageTime: null
       };
     } catch (error) {
@@ -1924,7 +1923,6 @@ class GuildService extends BaseService {
         userId,
         level: 1,
         experience: 0,
-        totalExperience: 0,
         lastMessageTime: null
       };
     }
@@ -1964,7 +1962,6 @@ class GuildService extends BaseService {
           userId,
           level: 1,
           experience: 0,
-          totalExperience: 0,
           lastMessageTime: null
         };
         userLevels.push(userData);
@@ -1972,7 +1969,6 @@ class GuildService extends BaseService {
       }
 
       userData.experience += expGain;
-      userData.totalExperience += expGain;
       userData.lastMessageTime = new Date();
 
       // Check for level up
@@ -2023,7 +2019,10 @@ class GuildService extends BaseService {
       
       return userLevels
         .sort((a, b) => {
-          if (a.level !== b.level) return b.level - a.level;
+          // Sort by level first (descending), then by experience (descending)
+          if (a.level !== b.level) {
+            return b.level - a.level;
+          }
           return b.experience - a.experience;
         })
         .slice(0, limit);
@@ -2106,13 +2105,11 @@ class GuildService extends BaseService {
       if (userIndex !== -1) {
         userLevels[userIndex].level = level;
         userLevels[userIndex].experience = experience;
-        userLevels[userIndex].totalExperience = this.calculateTotalExperience(level, experience);
       } else {
         userLevels.push({
           userId,
           level,
           experience,
-          totalExperience: this.calculateTotalExperience(level, experience),
           lastMessageTime: null
         });
       }
@@ -2157,20 +2154,6 @@ class GuildService extends BaseService {
    */
   getRequiredExperience(level) {
     return Math.floor(100 * Math.pow(1.2, level - 1));
-  }
-
-  /**
-   * Calculate total experience for level and current exp
-   * @param {number} level - Current level
-   * @param {number} currentExp - Current experience in level
-   * @returns {number} Total experience
-   */
-  calculateTotalExperience(level, currentExp) {
-    let total = currentExp;
-    for (let i = 1; i < level; i++) {
-      total += this.getRequiredExperience(i);
-    }
-    return total;
   }
 
   // ===== UTILITY METHODS =====

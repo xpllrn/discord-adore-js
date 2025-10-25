@@ -291,7 +291,7 @@ async function handleLeaderboard(client, message, args) {
 
       const leaderboardList = pageUsers.map((userData, index) => {
         const position = startIndex + index + 1;
-        return `\`${position.toString().padStart(2, '0')}\` **${userData.username}** - Level ${userData.level} (${userData.totalExperience} XP)`;
+        return `\`${position.toString().padStart(2, '0')}\` **${userData.username}** - Level ${userData.level} (${userData.experience} XP)`;
       }).join('\n');
 
       const footerText = userPosition

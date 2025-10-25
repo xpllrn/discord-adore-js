@@ -333,6 +333,15 @@ async function addModerationCase(guildId, userId, moderatorId, action, reason, d
 
     // Add the moderation case to the guild's Moderation array
     guild.Moderation.push(moderationCase);
+    
+    // Clean invalid data before saving to avoid validation errors
+    if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
+      guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
+    }
+    if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
+      guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
+    }
+    
     await guild.save();
 
     return moderationCase;
@@ -458,6 +467,14 @@ async function removeModerationCase(guildId, caseId) {
     guild.Moderation = guild.Moderation.filter(mod => mod.caseId !== caseId);
 
     if (guild.Moderation.length < initialLength) {
+      // Clean invalid data before saving
+      if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
+        guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
+      }
+      if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
+        guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
+      }
+      
       await guild.save();
       return { deletedCount: 1 };
     }
@@ -490,6 +507,14 @@ async function removeAllModerationCases(guildId, userId) {
     const deletedCount = initialLength - guild.Moderation.length;
 
     if (deletedCount > 0) {
+      // Clean invalid data before saving
+      if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
+        guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
+      }
+      if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
+        guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
+      }
+      
       await guild.save();
     }
 
@@ -571,6 +596,14 @@ async function removeSavedUserRoles(guildId, userId) {
     guild.Moderation = guild.Moderation.filter(mod =>
       !(mod.userId === userId && mod.action === 'role_save')
     );
+
+    // Clean invalid data before saving
+    if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
+      guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
+    }
+    if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
+      guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
+    }
 
     await guild.save();
   } catch (error) {

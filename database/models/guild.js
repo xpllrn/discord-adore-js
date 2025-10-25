@@ -704,10 +704,6 @@ const guildSchema = new mongoose.Schema({
       type: Number,
       default: 0
     },
-    totalExperience: {
-      type: Number,
-      default: 0
-    },
     lastMessageTime: {
       type: Date,
       default: null
@@ -1138,7 +1134,6 @@ guildSchema.index({ 'LevelSystem.levelRoles.level': 1 });
 guildSchema.index({ 'LevelSystem.levelRoles.roleId': 1 });
 guildSchema.index({ 'UserLevels.userId': 1 });
 guildSchema.index({ 'UserLevels.level': -1 }); // Descending for leaderboard
-guildSchema.index({ 'UserLevels.totalExperience': -1 }); // Descending for leaderboard
 guildSchema.index({ 'UserLevels.userId': 1, 'UserLevels.level': -1 }); // Compound for user level queries
 
 // Giveaway system indexes
