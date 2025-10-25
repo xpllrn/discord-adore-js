@@ -14,7 +14,7 @@ module.exports = {
   aliases: ['lb', 'top', 'rich'],
   description: 'View the top 10 richest users globally',
   usage: `{guildprefix}leaderboard`,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     try {
       const userService = getService('user');
@@ -93,7 +93,7 @@ module.exports = {
         }
 
         // Format like levels/swear leaderboard: `01` **Username** - Amount
-        return `\`${position.toString().padStart(2, '0')}\` **${username}** - \`${formatCurrency(totalWealth)}`\`;
+        return `\`${position.toString().padStart(2, '0')}\` **${username}** - \`${formatCurrency(totalWealth)}\``;
       }));
 
       // Footer shows user position like levels/swear leaderboard
