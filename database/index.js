@@ -568,6 +568,8 @@ async function getSavedUserRoles(guildId, userId) {
     const { getService } = require('@services');
     const guildService = getService('guild');
 
+    console.log(`[getSavedUserRoles] guildService available:`, !!guildService);
+
     let roleCases = [];
 
     if (guildService) {
@@ -578,7 +580,7 @@ async function getSavedUserRoles(guildId, userId) {
       console.log(`[getSavedUserRoles] Found ${roleCases.length} role_save cases via service`);
     } else {
       // Fallback to direct database access
-      console.log(`[getSavedUserRoles] Using direct database access`);
+      console.log(`[getSavedUserRoles] Using direct database access (service not available)`);
 
       if (!Guild) {
         console.log(`[getSavedUserRoles] Guild model not available`);

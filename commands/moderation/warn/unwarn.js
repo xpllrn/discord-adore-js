@@ -1,7 +1,7 @@
 const { checkSelfAction, checkBotAction } = require('../../../utils/permissions');
 const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { addModerationCase, getModerationCase, removeModerationCase } = require('../../../database');
+const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 
 module.exports = {
@@ -10,6 +10,7 @@ module.exports = {
   usage: '{guildprefix}unwarn [user] [case_id]\n{guildprefix}unwarn [user] [case_id] [reason]',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     // Check if user provided input
     if (!args[0] || !args[1]) {
@@ -46,7 +47,7 @@ module.exports = {
 
     try {
       // Get the specific moderation case
-      const moderationCase = await getModerationCase(message.guild.id, caseId);
+      const moderationCase = await moderationService.getModerationCase(message.guild.id, caseId);
       
       if (!moderationCase) {
         return embeds.deny(message, `Case #${caseId} not found`);
@@ -63,10 +64,10 @@ module.exports = {
       }
 
       // Remove the warning case from the database
-      await removeModerationCase(message.guild.id, caseId);
+      await moderationService.removeModerationCase(message.guild.id, caseId);
 
       // Add an unwarn entry to the moderation history
-      await addModerationCase(
+      await moderationService.addModerationCase(
         message.guild.id,
         user.user.id,
         message.author.id,

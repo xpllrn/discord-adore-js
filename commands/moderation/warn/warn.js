@@ -1,7 +1,7 @@
 const { checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
 const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { addModerationCase } = require('../../../database');
+const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
 
@@ -11,6 +11,7 @@ module.exports = {
   usage: '{guildprefix}warn [user]\n{guildprefix}warn [user] [reason]\n{guildprefix}warn list [user]',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     if (!args[0]) {
       return runHelpCommand(message, 'warn');
@@ -58,7 +59,7 @@ module.exports = {
 
     try {
       // Add moderation case to database
-      const moderationCase = await addModerationCase(
+      const moderationCase = await moderationService.addModerationCase(
         message.guild.id,
         warnedMember.user.id,
         message.author.id,

@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require("discord.js");
 const { hasDiscordPermission, checkSelfAction, checkBotAction, checkDiscordActionable } = require('../../../utils/permissions');
 const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { addModerationCase } = require('../../../database');
+const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
 const ms = require('ms');
@@ -15,6 +15,7 @@ module.exports = {
 {guildprefix}mute @user 10m spam`,
   permission: 'Moderate Members',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members')) return;
 
@@ -69,7 +70,7 @@ module.exports = {
       await user.timeout(duration, reason);
 
       try {
-        await addModerationCase(
+        await moderationService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,

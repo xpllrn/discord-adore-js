@@ -13,7 +13,7 @@ module.exports = {
   permission: 'Manage Roles',
   run: async(client, message, args) => {
 
-    const guildService = getService('guild');
+    const moderationService = getService('moderation');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
@@ -74,7 +74,7 @@ module.exports = {
 
     try {
       // Get saved roles using service layer
-      const roleCases = await guildService.getModerationHistory(message.guild.id, user.user.id, 'role_save');
+      const roleCases = await moderationService.getModerationHistory(message.guild.id, user.user.id, 'role_save');
       
       let savedRoles = [];
       if (roleCases.length > 0) {
@@ -124,20 +124,20 @@ module.exports = {
 
       // Remove saved roles from database using service layer
       // Find all role_save cases and remove them
-      const allRoleCases = await guildService.getModerationHistory(message.guild.id, user.user.id, 'role_save');
+      const allRoleCases = await moderationService.getModerationHistory(message.guild.id, user.user.id, 'role_save');
       for (const roleCase of allRoleCases) {
-        await guildService.removeModerationCase(message.guild.id, roleCase.caseId);
+        await moderationService.removeModerationCase(message.guild.id, roleCase.caseId);
       }
 
       // Add to moderation history
       try {
-        await guildService.addModerationCase(message.guild.id, {
-          userId: user.user.id,
-          moderatorId: message.author.id,
-          action: 'unjail',
-          reason: reason,
-          duration: null
-        });
+        await moderationService.addModerationCase(
+          message.guild.id,
+          user.user.id,
+          message.author.id,
+          'unjail',
+          reason
+        );
       } catch (historyError) {
         // Don't fail the command if history logging fails
       }

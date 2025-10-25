@@ -4,7 +4,7 @@ const { embeds } = require('../../../core/embeds');
 const { createPagination } = require('../../../core/buttons');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { colors } = require('../../../config/setup');
-const { getModerationHistoryByModerator } = require('../../../database');
+const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 
 module.exports = {
@@ -14,6 +14,7 @@ module.exports = {
   usage: '{guildprefix}modhistory [moderator]\n{guildprefix}modhistory [moderator] [action]',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
 
@@ -37,9 +38,9 @@ module.exports = {
       const actionTypes = ['warn', 'mute', 'kick', 'ban', 'jail', 'unmute', 'unban', 'unjail'];
 
       if (actionFilter && actionTypes.includes(actionFilter)) {
-        moderationHistory = await getModerationHistoryByModerator(message.guild.id, moderator.user.id, actionFilter);
+        moderationHistory = await moderationService.getModerationHistoryByModerator(message.guild.id, moderator.user.id, actionFilter);
       } else {
-        moderationHistory = await getModerationHistoryByModerator(message.guild.id, moderator.user.id);
+        moderationHistory = await moderationService.getModerationHistoryByModerator(message.guild.id, moderator.user.id);
       }
 
       if (moderationHistory.length === 0) {

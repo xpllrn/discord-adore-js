@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require("discord.js");
 const { checkSelfAction, checkBotAction, checkDiscordActionable } = require('../../../utils/permissions');
 const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { addModerationCase } = require('../../../database');
+const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
 
@@ -13,6 +13,7 @@ module.exports = {
   usage: '{guildprefix}unmute [user] [reason]\n{guildprefix}unmute @user appeal accepted',
   permission: 'Moderate Members',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return embeds.deny(message, 'I need **Moderate Members** permission to use this command');
@@ -57,7 +58,7 @@ module.exports = {
 
       // Add to moderation history
       try {
-        await addModerationCase(
+        await moderationService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,

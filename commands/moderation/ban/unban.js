@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, checkSelfAction, checkBotAction } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { addModerationCase } = require('../../../database');
+const { getService } = require('../../../database/services');
 const webhookLogger = require('../../../utils/webhookLogger');
 
 module.exports = {
@@ -11,6 +11,7 @@ module.exports = {
   usage: '{guildprefix}unban [user]\n{guildprefix}unban [user] [reason]',
   permission: 'Ban Members',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members')) return;
@@ -65,7 +66,7 @@ module.exports = {
 
       // Add to moderation history
       try {
-        await addModerationCase(
+        await moderationService.addModerationCase(
           message.guild.id,
           targetBan.user.id,
           message.author.id,

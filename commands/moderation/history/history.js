@@ -4,13 +4,7 @@ const { embeds } = require('../../../core/embeds');
 const { createPagination } = require('../../../core/buttons');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { colors } = require('../../../config/setup');
-const {
-  getModerationHistory,
-  getModerationCase,
-  getModerationHistoryByAction,
-  removeModerationCase,
-  removeAllModerationCases
-} = require('../../../database');
+const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 
 module.exports = {
@@ -19,6 +13,7 @@ module.exports = {
   usage: '{guildprefix}history [user]\n{guildprefix}history [user] [action]\n{guildprefix}history view [caseid]\n{guildprefix}history remove [user] [caseid]\n{guildprefix}history removeall [user]',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     if (!args[0]) {
       return runHelpCommand(message, 'history');
@@ -35,7 +30,7 @@ module.exports = {
       }
 
       try {
-        const moderationCase = await getModerationCase(message.guild.id, caseId);
+        const moderationCase = await moderationService.getModerationCase(message.guild.id, caseId);
 
         if (!moderationCase) {
           return embeds.deny(message, `Case #${caseId} not found`);
@@ -88,7 +83,7 @@ module.exports = {
       }
 
       try {
-        const moderationCase = await getModerationCase(message.guild.id, caseId);
+        const moderationCase = await moderationService.getModerationCase(message.guild.id, caseId);
 
         if (!moderationCase) {
           return embeds.deny(message, `Case #${caseId} not found`);
@@ -98,7 +93,7 @@ module.exports = {
           return embeds.deny(message, `Case #${caseId} does not belong to **${userResult.user.user.username}**`);
         }
 
-        await removeModerationCase(message.guild.id, caseId);
+        await moderationService.removeModerationCase(message.guild.id, caseId);
         return embeds.success(message, `Removed case #${caseId} for **${userResult.user.user.username}**`);
 
       } catch (error) {
@@ -122,7 +117,7 @@ module.exports = {
       }
 
       try {
-        const result = await removeAllModerationCases(message.guild.id, userResult.user.user.id);
+        const result = await moderationService.removeAllModerationCases(message.guild.id, userResult.user.user.id);
 
         if (result.deletedCount === 0) {
           return embeds.warn(message, `**${userResult.user.user.username}** has no moderation history to remove`);
@@ -155,9 +150,9 @@ module.exports = {
       let moderationHistory;
 
       if (actionFilter && actionTypes.includes(actionFilter)) {
-        moderationHistory = await getModerationHistory(message.guild.id, user.user.id, actionFilter);
+        moderationHistory = await moderationService.getModerationHistory(message.guild.id, user.user.id, actionFilter);
       } else {
-        moderationHistory = await getModerationHistory(message.guild.id, user.user.id);
+        moderationHistory = await moderationService.getModerationHistory(message.guild.id, user.user.id);
       }
 
       if (moderationHistory.length === 0) {

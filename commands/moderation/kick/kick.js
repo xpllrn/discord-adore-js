@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy, checkDiscordActionable } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { addModerationCase } = require('../../../database');
+const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
 
@@ -13,6 +13,7 @@ module.exports = {
   usage: '{guildprefix}kick [user]\n{guildprefix}kick [user] [reason]',
   permission: 'Kick Members',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.KickMembers, 'Kick Members')) return;
@@ -57,7 +58,7 @@ module.exports = {
       // Add to moderation history
       let caseNumber = null;
       try {
-        const moderationCase = await addModerationCase(
+        const moderationCase = await moderationService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,
