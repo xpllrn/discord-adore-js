@@ -6073,6 +6073,40 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Remove a ticket from the database
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Ticket channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeTicket(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const ticketSystem = guildData.TicketSystem || {};
+      let activeTickets = ticketSystem.activeTickets || [];
+      
+      // Remove ticket by channel ID
+      activeTickets = activeTickets.filter(ticket => ticket.channelId !== channelId);
+      
+      guildData.TicketSystem.activeTickets = activeTickets;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove ticket for guild ${guildId}`, error);
+    }
+  }
+
+  /**
    * Reopen a closed ticket
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Ticket channel ID

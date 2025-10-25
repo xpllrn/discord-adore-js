@@ -24,7 +24,7 @@ module.exports = {
       if (!input) return defaultValue;
       const num = parseInt(input);
       if (isNaN(num) || num < 1) return null; // Invalid input
-      return Math.min(num, 500); // Cap at 500
+      return Math.min(num + 1, 500); // Cap at 500, +1 to include command message
     };
 
     // Helper function to perform bulk delete with error handling
@@ -38,10 +38,15 @@ module.exports = {
         // No confirmation message - delete silently
 
       } catch (error) {
+        console.error('Purge error:', error);
         if (error.code === 50034) {
           embeds.deny(message, 'Cannot delete messages **older than 14 days** due to Discord limitations.');
+        } else if (error.code === 50013) {
+          embeds.deny(message, 'I don\'t have permission to delete messages in this channel.');
+        } else if (error.code === 10008) {
+          embeds.deny(message, 'Some messages could not be found (they may have been deleted).');
         } else {
-          embeds.deny(message, 'An error occurred while trying to purge messages.');
+          embeds.deny(message, `An error occurred while trying to purge messages: ${error.message}`);
         }
       }
     };
@@ -100,6 +105,8 @@ module.exports = {
           return; // Silent fail - no messages found
         }
 
+        // Include the command message in deletion
+        messages.set(message.id, message);
         await performBulkDelete(messages);
 
       } catch (error) {

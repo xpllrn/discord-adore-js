@@ -669,19 +669,19 @@ async function handleConfirmDelete(interaction) {
       });
     }
     try {
-      // Create a fake message object for embeds.deny
-      const fakeMessage = {
-        author: { id: interaction.user.id },
-        guild: { id: interaction.guild.id },
-        channel: {
-          send: async (options) => {
-            options.flags = MessageFlags.Ephemeral;
-            return await interaction.reply(options);
-          }
-        }
-      };
-
-      return embeds.deny(fakeMessage, 'An error occurred while deleting the ticket. Please try again.');
+      // Check if interaction has been replied to or deferred
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({
+          content: '❌ An error occurred while deleting the ticket. Please try again.',
+          ephemeral: true
+        });
+      } else {
+        // If already replied, use followUp or editReply
+        await interaction.followUp({
+          content: '❌ An error occurred while deleting the ticket. Please try again.',
+          ephemeral: true
+        }).catch(() => {});
+      }
     } catch (replyError) {
       // Silent fail for reply error
     }
