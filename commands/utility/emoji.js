@@ -123,7 +123,10 @@ module.exports = {
         files: [attachment]
       });
 
-      // Clean up (don't delete loading message)
+      // Update loading message to success
+      await embeds.approve(loadingMessage, `Successfully archived all **${downloaded}** emoji${downloaded === 1 ? '' : 's'}${failed > 0 ? ` (${failed} failed)` : ''} and sent`);
+
+      // Clean up
       fs.rmSync(tempDir, { recursive: true, force: true });
       fs.unlinkSync(zipPath);
 
