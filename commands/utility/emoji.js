@@ -12,7 +12,7 @@ module.exports = {
   name: "emoji",
   aliases: ['emote'],
   description: "Archive and download all server emojis",
-  usage: '{guildprefix}emoji archive - Download all server emojis as a zip file\n{guildprefix}emoji list - Show all server emojis',
+  usage: '{guildprefix}emoji archive - Download them all as ZIP\n{guildprefix}emoji list',
   permission: 'Manage Emojis',
   run: async (client, message, args) => {
 
@@ -28,14 +28,29 @@ module.exports = {
         return embeds.warn(message, 'This server has no custom emojis.');
       }
 
-      const emojiList = guildEmojis.map(emoji => `${emoji} \`${emoji.name}\``).join(' ');
-      const embed = new EmbedBuilder()
-        .setColor(colors.info)
-        .setTitle(`${message.guild.name} Emojis`)
-        .setDescription(emojiList)
-        .setFooter({ text: `Total: ${guildEmojis.size} emoji${guildEmojis.size === 1 ? '' : 's'}` });
+      // Convert to array for pagination
+      const emojiArray = Array.from(guildEmojis.values());
 
-      return message.channel.send({ embeds: [embed] });
+      // Format page function for pagination
+      const formatPage = (pageEmojis, currentPage, totalPages) => {
+        const startIndex = (currentPage - 1) * 10;
+
+        const emojiList = pageEmojis.map((emoji, index) => {
+          const number = (startIndex + index + 1).toString().padStart(2, '0');
+          const emojiUrl = emoji.imageURL();
+          return `\`${number}\` ${emoji} **[\`${emoji.name}\`](${emojiUrl})**`;
+        }).join('\n');
+
+        return new EmbedBuilder()
+          .setColor(colors.info)
+          .setTitle(`${message.guild.name} Emojis`)
+          .setDescription(emojiList)
+          .setFooter({ text: `${guildEmojis.size} emoji${guildEmojis.size === 1 ? '' : 's'} || page ${currentPage}/${totalPages}` });
+      };
+
+      // Use pagination system with 10 items per page
+      const { createPagination } = require('../../core/buttons');
+      return await createPagination(message, emojiArray, formatPage, 10, `${message.guild.name} Emojis`);
     }
 
     // Archive subcommand
@@ -68,7 +83,7 @@ module.exports = {
           const extension = emoji.animated ? 'gif' : 'png';
           const fileName = `${emoji.name}.${extension}`;
           const filePath = path.join(tempDir, fileName);
-          const emojiUrl = emoji.url;
+          const emojiUrl = emoji.imageURL();
 
           await downloadFile(emojiUrl, filePath);
           downloaded++;
@@ -81,7 +96,6 @@ module.exports = {
       if (downloaded === 0) {
         // Clean up
         fs.rmSync(tempDir, { recursive: true, force: true });
-        await loadingMessage.delete();
         return embeds.deny(message, 'Failed to download any emojis. Please try again.');
       }
 
@@ -97,7 +111,6 @@ module.exports = {
         // Clean up
         fs.rmSync(tempDir, { recursive: true, force: true });
         fs.unlinkSync(zipPath);
-        await loadingMessage.delete();
         return embeds.deny(message, `The emoji archive is too large (${fileSizeMB.toFixed(2)}MB). Discord's file limit is 25MB.`);
       }
 
@@ -122,8 +135,7 @@ module.exports = {
         files: [attachment]
       });
 
-      // Clean up
-      await loadingMessage.delete();
+      // Clean up (don't delete loading message)
       fs.rmSync(tempDir, { recursive: true, force: true });
       fs.unlinkSync(zipPath);
 
@@ -149,12 +161,6 @@ module.exports = {
         }
       } catch (cleanupError) {
         console.error('Error cleaning up temp files:', cleanupError);
-      }
-
-      try {
-        await loadingMessage.delete();
-      } catch (deleteError) {
-        // Ignore delete errors
       }
 
       return embeds.deny(message, `An error occurred while archiving emojis: ${error.message}\n\nPlease check the logs for more details.`);
