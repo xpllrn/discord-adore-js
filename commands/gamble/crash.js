@@ -40,7 +40,7 @@ module.exports = {
   usage: `{guildprefix}crash [amount]
 {guildprefix}crash 1000
 {guildprefix}crash all`,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     // Check cooldown
     const cooldownTime = 5000; // 5 seconds
     const now = Date.now();
@@ -57,25 +57,25 @@ module.exports = {
     // Set cooldown
     cooldowns.set(userId, now);
     setTimeout(() => cooldowns.delete(userId), cooldownTime);
-    
+
     if (!args[0]) {
       return embeds.warn(message, 'You must give an **amount** to bet!');
     }
-    
+
     try {
       const userService = getService('user');
-      
+
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);
       const walletBalance = gambling.wallet || 0;
-      
+
       // Parse amount
       let amount = parseAmount(args[0], walletBalance);
-      
+
       if (amount === null || amount <= 0) {
         return embeds.deny(message, 'Please provide a valid amount');
       }
-      
+
       if (amount > walletBalance) {
         return embeds.deny(message, `You only have **${formatCurrency(walletBalance)}** coins in your **wallet**`);
       }
@@ -107,7 +107,7 @@ module.exports = {
           { name: 'Multiplier', value: `${currentMultiplier.toFixed(2)}x`, inline: true },
           { name: 'Winnings', value: `${formatCurrency(Math.floor(amount * currentMultiplier))} 💵`, inline: true }
         );
-      
+
       // Create cashout button
       const row = new ActionRowBuilder()
         .addComponents(
@@ -116,9 +116,9 @@ module.exports = {
             .setLabel('Cashout')
             .setStyle(ButtonStyle.Success)
         );
-      
+
       const gameMessage = await message.channel.send({ embeds: [embed], components: [row] });
-      
+
       // Game loop
       const gameInterval = setInterval(async () => {
         if (!gameActive) {
@@ -151,7 +151,7 @@ module.exports = {
           }
           return;
         }
-        
+
         // Update embed
         const updatedEmbed = new EmbedBuilder()
           .setColor(colors.info)
@@ -161,7 +161,7 @@ module.exports = {
             { name: 'Multiplier', value: `${currentMultiplier.toFixed(2)}x`, inline: true },
             { name: 'Winnings', value: `${formatCurrency(Math.floor(amount * currentMultiplier))}`, inline: true }
           );
-        
+
         try {
           await gameMessage.edit({ embeds: [updatedEmbed], components: [row] });
         } catch (error) {
@@ -170,35 +170,31 @@ module.exports = {
           clearInterval(gameInterval);
         }
       }, 700); // Update every 0.7 seconds
-      
+
       // Button interaction handler
       const filter = (interaction) => {
-        return interaction.customId === `crash_cashout_${message.author.id}` && 
-               interaction.user.id === message.author.id;
+        return interaction.customId === `crash_cashout_${message.author.id}` &&
+          interaction.user.id === message.author.id;
       };
-      
-      const collector = gameMessage.createMessageComponentCollector({ 
-        filter, 
+
+      const collector = gameMessage.createMessageComponentCollector({
+        filter,
         time: 60000 // 1 minute timeout
       });
-      
+
       collector.on('collect', async (interaction) => {
-        if (!gameActive || cashedOut) {
-          await interaction.reply({ content: 'This game has already ended!', flags: MessageFlags.Ephemeral });
-          return;
-        }
-        
+
         cashedOut = true;
         gameActive = false;
         clearInterval(gameInterval);
-        
+
         winnings = Math.floor(amount * currentMultiplier);
         const profit = winnings - amount;
-        
+
         // Add winnings to wallet using service layer
         await userService.updateWallet(message.author.id, winnings);
         await userService.updateGamblingStats(message.author.id, amount, profit, 0);
-        
+
         const winEmbed = new EmbedBuilder()
           .setColor(colors.success)
           .setTitle(`Player Crash with ${formatCurrency(amount)}`)
@@ -208,17 +204,17 @@ module.exports = {
             { name: 'Crash', value: `${crashPoint.toFixed(2)}x`, inline: true },
             { name: 'Winnings', value: `${formatCurrency(winnings)}`, inline: true }
           );
-        
+
         await interaction.update({ embeds: [winEmbed], components: [] });
       });
-      
+
       collector.on('end', () => {
         if (gameActive) {
           gameActive = false;
           clearInterval(gameInterval);
         }
       });
-      
+
     } catch (error) {
       console.error('Error in crash command:', error);
       return embeds.deny(message, 'An error occurred while playing crash');

@@ -146,9 +146,17 @@ module.exports = {
     }
 
     try {
-      // Save user's current roles (excluding @everyone and jailed role)
+      // Save user's current roles (excluding @everyone, jailed role, and booster role)
       const rolesToSave = user.roles.cache
-        .filter(role => role.id !== message.guild.roles.everyone.id && role.id !== jailRole.id)
+        .filter(role => {
+          // Exclude @everyone
+          if (role.id === message.guild.roles.everyone.id) return false;
+          // Exclude jail role
+          if (role.id === jailRole.id) return false;
+          // Exclude booster role (premium subscriber role)
+          if (role.tags?.premiumSubscriberRole) return false;
+          return true;
+        })
         .map(role => role.id);
 
       console.log(`[JAIL DEBUG] User: ${user.user.tag}, Roles to save:`, rolesToSave);
@@ -164,9 +172,16 @@ module.exports = {
       
       console.log(`[JAIL DEBUG] Roles saved successfully`);
 
-      // Remove all roles except @everyone and add jail role
+      // Get roles to keep (booster role if they have it)
+      const rolesToKeep = [jailRole.id];
+      const boosterRole = user.roles.cache.find(role => role.tags?.premiumSubscriberRole);
+      if (boosterRole) {
+        rolesToKeep.push(boosterRole.id);
+      }
+
+      // Remove all roles except @everyone, jail role, and booster role
       try {
-        await user.roles.set([jailRole.id], `Jailed by ${message.author.tag}: ${reason}`);
+        await user.roles.set(rolesToKeep, `Jailed by ${message.author.tag}: ${reason}`);
       } catch (roleError) {
         if (roleError.code === 50013) {
           return embeds.deny(message, `I don't have permission to manage **${user.user.username}**'s roles. Please check my role hierarchy and permissions.`);
