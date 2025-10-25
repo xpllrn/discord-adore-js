@@ -178,9 +178,9 @@ module.exports = {
       };
 
       // Create game content message
-      const createGameContent = (status = 'playing') => {
+      const createGameContent = (status = 'playing', currentSafeRevealed = safeRevealed) => {
         let content = `💣 **Minesweeper** - <@${message.author.id}>\n`;
-        content += `**Bet:** ${formatCurrency(amount)} coins | **Safe Tiles:** ${safeRevealed}/${totalSafe} | **Mines:** 5\n`;
+        content += `**Bet:** ${formatCurrency(amount)} coins | **Safe Tiles:** ${currentSafeRevealed}/${totalSafe} | **Mines:** 5\n`;
 
         if (status === 'lost') {
           content += `\n💥 **You hit a mine!** You lost your bet.`;
@@ -202,6 +202,7 @@ module.exports = {
       // Button collector
       const filter = (interaction) => {
         return interaction.customId.startsWith(`mine_${message.author.id}_`) &&
+          !interaction.customId.endsWith('_revealed') &&
           interaction.user.id === message.author.id;
       };
 
@@ -247,7 +248,7 @@ module.exports = {
           await userService.updateGamblingStats(message.author.id, amount, 0, amount);
 
           await interaction.update({
-            content: createGameContent('lost'),
+            content: createGameContent('lost', safeRevealed),
             components: createButtons()
           });
         } else {
@@ -270,12 +271,12 @@ module.exports = {
             }
 
             await interaction.update({
-              content: createGameContent('won'),
+              content: createGameContent('won', safeRevealed),
               components: createButtons()
             });
           } else {
             await interaction.update({
-              content: createGameContent(),
+              content: createGameContent('playing', safeRevealed),
               components: createButtons()
             });
           }
