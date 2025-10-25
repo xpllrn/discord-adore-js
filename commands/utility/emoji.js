@@ -10,16 +10,37 @@ const archiver = require('archiver');
 
 module.exports = {
   name: "emoji",
-  aliases: ['emojis', 'emojiarchive'],
+  aliases: ['emojis'],
   description: "Archive and download all server emojis",
-  usage: '{guildprefix}emoji archive',
+  usage: '{guildprefix}emoji archive - Download all server emojis as a zip file\n{guildprefix}emoji list - Show all server emojis',
   permission: 'Manage Emojis',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Emojis and Stickers')) return;
 
-    if (!args[0] || args[0].toLowerCase() !== 'archive') {
-      return embeds.info(message, 'Use `,emoji archive` to download all server emojis as a zip file.');
+    const subcommand = args[0]?.toLowerCase();
+
+    // List subcommand
+    if (subcommand === 'list') {
+      const guildEmojis = message.guild.emojis.cache;
+
+      if (guildEmojis.size === 0) {
+        return embeds.warn(message, 'This server has no custom emojis.');
+      }
+
+      const emojiList = guildEmojis.map(emoji => `${emoji} \`${emoji.name}\``).join(' ');
+      const embed = new EmbedBuilder()
+        .setColor(colors.info)
+        .setTitle(`${message.guild.name} Emojis`)
+        .setDescription(emojiList)
+        .setFooter({ text: `Total: ${guildEmojis.size} emoji${guildEmojis.size === 1 ? '' : 's'}` });
+
+      return message.channel.send({ embeds: [embed] });
+    }
+
+    // Archive subcommand
+    if (subcommand !== 'archive') {
+      return embeds.info(message, 'Available subcommands:\n• `,emoji archive` - Download all server emojis as a zip file\n• `,emoji list` - Show all server emojis');
     }
 
     const guildEmojis = message.guild.emojis.cache;
@@ -81,8 +102,8 @@ module.exports = {
       }
 
       // Send the zip file
-      const attachment = new AttachmentBuilder(zipPath, { 
-        name: `${message.guild.name.replace(/[^a-z0-9]/gi, '_')}_emojis.zip` 
+      const attachment = new AttachmentBuilder(zipPath, {
+        name: `${message.guild.name.replace(/[^a-z0-9]/gi, '_')}_emojis.zip`
       });
 
       const successEmbed = new EmbedBuilder()
@@ -96,9 +117,9 @@ module.exports = {
         .setFooter({ text: `Requested by ${message.author.tag}` })
         .setTimestamp();
 
-      await message.channel.send({ 
-        embeds: [successEmbed], 
-        files: [attachment] 
+      await message.channel.send({
+        embeds: [successEmbed],
+        files: [attachment]
       });
 
       // Clean up
@@ -108,7 +129,7 @@ module.exports = {
 
     } catch (error) {
       console.error('Error archiving emojis:', error);
-      
+
       // Log detailed error information
       if (message.client?.errorLogger) {
         message.client.errorLogger.log(error, 'Emoji Archive', {
@@ -119,7 +140,7 @@ module.exports = {
           emojiCount: guildEmojis.size
         });
       }
-      
+
       // Clean up any temporary files
       try {
         const tempDir = path.join(__dirname, '../../temp', `emojis_${message.guild.id}_${Date.now()}`);
@@ -129,13 +150,13 @@ module.exports = {
       } catch (cleanupError) {
         console.error('Error cleaning up temp files:', cleanupError);
       }
-      
+
       try {
         await loadingMessage.delete();
       } catch (deleteError) {
         // Ignore delete errors
       }
-      
+
       return embeds.deny(message, `An error occurred while archiving emojis: ${error.message}\n\nPlease check the logs for more details.`);
     }
   }
@@ -150,7 +171,7 @@ module.exports = {
 function downloadFile(url, filePath) {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https') ? https : http;
-    
+
     protocol.get(url, (response) => {
       if (response.statusCode !== 200) {
         reject(new Error(`Failed to download: ${response.statusCode}`));
@@ -166,7 +187,7 @@ function downloadFile(url, filePath) {
       });
 
       fileStream.on('error', (err) => {
-        fs.unlink(filePath, () => {});
+        fs.unlink(filePath, () => { });
         reject(err);
       });
     }).on('error', (err) => {
