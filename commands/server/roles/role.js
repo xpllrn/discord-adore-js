@@ -257,21 +257,31 @@ module.exports = {
         const color2Int = parseInt(color2.replace('#', ''), 16);
 
         // Check if server has ENHANCED_ROLE_COLORS feature
-        if (!message.guild.features.includes('ENHANCED_ROLE_COLORS')) {
-          return embeds.warn(message, `This server needs **Enhanced Roles** (ENHANCED_ROLE_COLORS) unlocked to use gradient colors. Try using \`,role color\` for a single color instead.`);
+        const hasEnhancedColors = message.guild.features?.includes('ENHANCED_ROLE_COLORS');
+
+        if (!hasEnhancedColors) {
+          return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors.\n\nCurrent server features: ${message.guild.features?.join(', ') || 'None'}\n\nTry using \`,role color\` for a single color instead.`);
         }
 
-        // Use role.edit() with primaryColor and secondaryColor
+        // Use REST API to set gradient colors
         try {
-          await role.edit({
-            primaryColor: color1Int,
-            secondaryColor: color2Int
-          }, `Role gradient colors changed by ${message.author.tag}`);
+          const { Routes } = require('discord.js');
+
+          await client.rest.patch(
+            Routes.guildRole(message.guild.id, role.id),
+            {
+              body: {
+                colors: {
+                  primary_color: color1Int,
+                  secondary_color: color2Int
+                }
+              }
+            }
+          );
 
           return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${color1} → ${color2})`);
         } catch (gradientError) {
-          console.error('Gradient error:', gradientError);
-          if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
+          if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES') || gradientError.message?.includes('guild feature')) {
             return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors.`);
           }
           return embeds.deny(message, `Failed to set gradient colors: ${gradientError.message || 'Unknown error'}`);
@@ -326,7 +336,6 @@ module.exports = {
 
         return embeds.success(message, `Changed **${role.name}** to holographic colors! ✨`);
       } catch (error) {
-        console.error('Holographic error:', error);
         if (error.code === 50035 || error.message?.includes('ENHANCED_ROLES') || error.message?.includes('guild feature')) {
           return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use holographic colors.`);
         }
