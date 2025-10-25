@@ -79,19 +79,19 @@ module.exports = {
 
   // Emojis Configuration
   emojis: {
-    cooldown: '<:cooldown:1431069309412839436>',
-    success: '<:approve:1431069283840168107>',
-    error: '<:deny:1431069291402236084>',
-    warn: '<:warning:1431069300751335477>',
-    left: '<:left:1431069325908770907>',
-    right: '<:right:1431069334113091746>',
-    cancel: '<:cancel:1431069317969215620>',
-    choose: '<:skipto:1431069342346248275>',
-    loading: '<a:loading:1431069298603855964>',
+    cooldown: '<:cooldown:1431572324104278109>',
+    success: '<:approve:1431572311827288154>',
+    error: '<:deny:1431572328298450994>',
+    warn: '<:warning:1431572385726988388>',
+    left: '<:left:1431572343976624209>',
+    right: '<:right:1431572361399894016>',
+    cancel: '<:cancel:1431572321893613649>',
+    choose: '<:skipto:1431572370019188816>',
+    loading: '<a:loading:1431572348489699361>',
 
-    lastfm: '<:lastfm:1431071057317593088>',
-    join: '<:linked:1431407175367921788>',
-    leave: '<:aired:1431407170225967145>',
+    lastfm: '<:lastfm:1431572342018019348>',
+    join: '<:linked:1431572346216513639>',
+    leave: '<:aired:1431572306777604187>',
     cross: '<:deny:1430425037004869682>',
     circle: '<:staff:1430425098657202258>',
     ticket: '🎫',
@@ -107,15 +107,15 @@ module.exports = {
     vmRename: '<:rename:1431402284386091121>',
 
     // Level Progress Bar Emojis
-    blueLeftRounded: '<:blue_left_rounded:1430514041599819837>',
-    blue: '<:blue:1430514035572342784>',
-    blueRightRounded: '<:blue_right_rounded:1430514028924375051>',
-    whiteLeftRounded: '<:white_left_rounded:1430514053620699198>',
-    white: '<:white:1430514047853527091>',
-    whiteRightRounded: '<:white_right_rounded:1430514060054630420>',
+    blueLeftRounded: '<:blue_left_rounded:1431572315283525753>',
+    blue: '<:blue:1431572319595401266>',
+    blueRightRounded: '<:blue_right_rounded:1431572317359702188>',
+    whiteLeftRounded: '<:white_left_rounded:1431572393440186459>',
+    white: '<:white:1431572397341020243>',
+    whiteRightRounded: '<:white_right_rounded:1431572395340075028>',
 
     // Custom Emojis
-    google: '<:google:1431407479610277958>'
+    google: '<:google:1431572332832489533>'
 
   },
 

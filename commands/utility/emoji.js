@@ -65,7 +65,7 @@ module.exports = {
     }
 
     // Send loading message
-    const loadingMessage = await embeds.loading(message, `Please wait, I'm archiving **${guildEmojis.size}** emoji${guildEmojis.size === 1 ? '' : 's'}** for you`);
+    const loadingMessage = await embeds.loading(message, `Please wait, I'm archiving **${guildEmojis.size} emoji${guildEmojis.size === 1 ? '' : 's'}** for you`);
 
     try {
       // Create temporary directory for emojis
@@ -119,19 +119,7 @@ module.exports = {
         name: `${message.guild.name.replace(/[^a-z0-9]/gi, '_')}_emojis.zip`
       });
 
-      const successEmbed = new EmbedBuilder()
-        .setColor(colors.success)
-        .setTitle('✅ Emoji Archive Complete')
-        .setDescription(`Successfully archived **${downloaded}** emoji${downloaded === 1 ? '' : 's'}${failed > 0 ? `\n⚠️ Failed to download ${failed} emoji${failed === 1 ? '' : 's'}` : ''}`)
-        .addFields(
-          { name: 'File Size', value: `${fileSizeMB.toFixed(2)} MB`, inline: true },
-          { name: 'Format', value: 'ZIP Archive', inline: true }
-        )
-        .setFooter({ text: `Requested by ${message.author.tag}` })
-        .setTimestamp();
-
       await message.channel.send({
-        embeds: [successEmbed],
         files: [attachment]
       });
 
