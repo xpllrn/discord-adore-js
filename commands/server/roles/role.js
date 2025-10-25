@@ -555,7 +555,17 @@ module.exports = {
       return embeds.deny(message, userResult.error);
     }
 
-    const user = userResult.user;
+    let user = userResult.user;
+    
+    // If findUser returned a global User object, we need to fetch the GuildMember
+    if (userResult.isGlobal || !user.roles) {
+      try {
+        user = await message.guild.members.fetch(user.id);
+      } catch (error) {
+        return embeds.deny(message, `**${user.username}** is not a member of this server!`);
+      }
+    }
+
     const roleResult = findRole(message.guild, args.slice(1).join(' '));
 
     if (!roleResult.found) {
