@@ -261,17 +261,13 @@ module.exports = {
           return embeds.warn(message, `This server needs **Enhanced Roles** (ENHANCED_ROLE_COLORS) unlocked to use gradient colors. Try using \`,role color\` for a single color instead.`);
         }
 
-        // Use REST API to set gradient colors (array of 2 colors)
+        // Use role.edit() with primaryColor and secondaryColor
         try {
-          await client.rest.patch(
-            `/guilds/${message.guild.id}/roles/${role.id}`,
-            {
-              body: {
-                color: [color1Int, color2Int]
-              },
-              reason: `Role gradient colors changed by ${message.author.tag}`
-            }
-          );
+          await role.edit({
+            primaryColor: color1Int,
+            secondaryColor: color2Int
+          }, `Role gradient colors changed by ${message.author.tag}`);
+
           return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${color1} → ${color2})`);
         } catch (gradientError) {
           console.error('Gradient error:', gradientError);
@@ -312,8 +308,9 @@ module.exports = {
 
       try {
         // Use Discord.js REST API directly to PATCH the role with all three colors
+        const { Routes } = require('discord.js');
         await client.rest.patch(
-          `/guilds/${message.guild.id}/roles/${role.id}`,
+          Routes.guildRole(message.guild.id, role.id),
           {
             body: {
               color: holoColors.primary_color,

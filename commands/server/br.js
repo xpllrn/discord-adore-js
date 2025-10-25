@@ -541,17 +541,12 @@ async function handleGradient(client, message, args) {
       return embeds.warn(message, `This server needs **Enhanced Roles** (ENHANCED_ROLE_COLORS) unlocked to use gradient colors. Try using \`br color\` for a single color instead.`);
     }
 
-    // Use REST API to set gradient colors (array of 2 colors)
+    // Use role.edit() with primaryColor and secondaryColor
     try {
-      await client.rest.patch(
-        `/guilds/${message.guild.id}/roles/${discordRole.id}`,
-        {
-          body: {
-            color: [color1Int, color2Int]
-          },
-          reason: `Booster role gradient colors changed by ${message.author.tag}`
-        }
-      );
+      await discordRole.edit({
+        primaryColor: color1Int,
+        secondaryColor: color2Int
+      }, `Booster role gradient colors changed by ${message.author.tag}`);
 
       // Update in database - store both colors
       await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
@@ -603,8 +598,9 @@ async function handleHolographic(client, message, args) {
 
   try {
     // Use Discord.js REST API directly to PATCH the role with all three colors
+    const { Routes } = require('discord.js');
     await client.rest.patch(
-      `/guilds/${message.guild.id}/roles/${discordRole.id}`,
+      Routes.guildRole(message.guild.id, discordRole.id),
       {
         body: {
           color: holoColors.primary_color,
