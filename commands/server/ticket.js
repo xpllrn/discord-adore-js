@@ -50,6 +50,9 @@ module.exports = {
 
 async function handleSetup(client, message, args) {
   try {
+    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+
+    const guildService = getService('guild');
     const ticketSystem = await guildService.getTicketSystem(message.guild.id);
 
     // Check if there's an existing setup and if the message still exists
@@ -104,6 +107,9 @@ async function handleSetup(client, message, args) {
 
 async function handleReset(client, message, args) {
   try {
+    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+
+    const guildService = getService('guild');
     const ticketSystem = await guildService.getTicketSystem(message.guild.id);
 
     if (!ticketSystem.enabled) {
@@ -138,6 +144,9 @@ async function handleReset(client, message, args) {
 
 async function handleCategory(client, message, args) {
   try {
+    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+
+    const guildService = getService('guild');
     if (!args[1]) {
       const ticketSystem = await guildService.getTicketSystem(message.guild.id);
       if (ticketSystem.categoryId) {
@@ -171,6 +180,7 @@ async function handleCategory(client, message, args) {
 
 async function handleAddUser(client, message, args) {
   try {
+    const guildService = getService('guild');
     const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
@@ -183,7 +193,7 @@ async function handleAddUser(client, message, args) {
     // Check permissions
     const ticketSystem = await guildService.getTicketSystem(message.guild.id);
     const isTicketOwner = ticket.userId === message.author.id;
-    const hasAdminPerms = hasDiscordPermission(message.member, PermissionFlagsBits.Administrator);
+    const hasAdminPerms = message.member.permissions.has(PermissionFlagsBits.Administrator);
     const hasSupportRole = ticketSystem.supportRoleId && message.member.roles.cache.has(ticketSystem.supportRoleId);
 
     if (!isTicketOwner && !hasAdminPerms && !hasSupportRole) {
@@ -217,6 +227,7 @@ async function handleAddUser(client, message, args) {
 
 async function handleRemoveUser(client, message, args) {
   try {
+    const guildService = getService('guild');
     const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
@@ -229,7 +240,7 @@ async function handleRemoveUser(client, message, args) {
     // Check permissions
     const ticketSystem = await guildService.getTicketSystem(message.guild.id);
     const isTicketOwner = ticket.userId === message.author.id;
-    const hasAdminPerms = hasDiscordPermission(message.member, PermissionFlagsBits.Administrator);
+    const hasAdminPerms = message.member.permissions.has(PermissionFlagsBits.Administrator);
     const hasSupportRole = ticketSystem.supportRoleId && message.member.roles.cache.has(ticketSystem.supportRoleId);
 
     if (!isTicketOwner && !hasAdminPerms && !hasSupportRole) {
@@ -267,6 +278,7 @@ async function handleRemoveUser(client, message, args) {
 
 async function handleClose(client, message, args) {
   try {
+    const guildService = getService('guild');
     const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
@@ -307,6 +319,7 @@ async function handleClose(client, message, args) {
 
 async function handleOpen(client, message, args) {
   try {
+    const guildService = getService('guild');
     const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
@@ -346,6 +359,7 @@ async function handleOpen(client, message, args) {
 
 async function handleRename(client, message, args) {
   try {
+    const guildService = getService('guild');
     const ticket = await guildService.getTicket(message.guild.id, message.channel.id);
     if (!ticket) {
       return embeds.deny(message, "This command can only be used in ticket channels.");
@@ -379,6 +393,7 @@ async function handleRename(client, message, args) {
 
 async function handleSupport(client, message, args) {
   try {
+    const guildService = getService('guild');
     const ticketSystem = await guildService.getTicketSystem(message.guild.id);
 
     // If no arguments, show current support role

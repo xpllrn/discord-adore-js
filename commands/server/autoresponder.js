@@ -115,7 +115,11 @@ module.exports = {
       }
 
       // Save using cache system
-      await guildService.addAutoResponder(message.guild.id, trigger, response, options);
+      await guildService.addAutoResponder(message.guild.id, {
+        trigger,
+        response,
+        ...options
+      });
 
       // Build options display
       let optionsDisplay = [];
