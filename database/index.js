@@ -333,7 +333,7 @@ async function addModerationCase(guildId, userId, moderatorId, action, reason, d
 
     // Add the moderation case to the guild's Moderation array
     guild.Moderation.push(moderationCase);
-    
+
     // Clean invalid data before saving to avoid validation errors
     if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
       guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
@@ -341,7 +341,7 @@ async function addModerationCase(guildId, userId, moderatorId, action, reason, d
     if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
       guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
     }
-    
+
     await guild.save();
 
     return moderationCase;
@@ -474,7 +474,7 @@ async function removeModerationCase(guildId, caseId) {
       if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
         guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
       }
-      
+
       await guild.save();
       return { deletedCount: 1 };
     }
@@ -514,7 +514,7 @@ async function removeAllModerationCases(guildId, userId) {
       if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
         guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
       }
-      
+
       await guild.save();
     }
 
@@ -533,8 +533,10 @@ async function removeAllModerationCases(guildId, userId) {
  */
 async function saveUserRoles(guildId, userId, roles) {
   try {
+    console.log(`[saveUserRoles] Saving roles for user ${userId} in guild ${guildId}:`, roles);
+
     // Store roles as a special moderation case type
-    await addModerationCase(
+    const result = await addModerationCase(
       guildId,
       userId,
       'system',
@@ -542,7 +544,10 @@ async function saveUserRoles(guildId, userId, roles) {
       JSON.stringify(roles),
       null
     );
+
+    console.log(`[saveUserRoles] Saved successfully, case ID:`, result.caseId);
   } catch (error) {
+    console.error(`[saveUserRoles] Error saving roles:`, error);
     throw error;
   }
 }
@@ -555,31 +560,58 @@ async function saveUserRoles(guildId, userId, roles) {
  */
 async function getSavedUserRoles(guildId, userId) {
   try {
+    console.log(`[getSavedUserRoles] Looking for saved roles for user ${userId} in guild ${guildId}`);
+
     // Check if Guild model is available
     if (!Guild) {
+      console.log(`[getSavedUserRoles] Guild model not available`);
       return [];
     }
 
     const guild = await Guild.findOne({ GuildID: guildId });
-    if (!guild) return [];
+    if (!guild) {
+      console.log(`[getSavedUserRoles] Guild not found in database`);
+      return [];
+    }
+
+    console.log(`[getSavedUserRoles] Total moderation cases:`, guild.Moderation.length);
 
     // Find all role_save cases for this user and get the most recent one
     const roleCases = guild.Moderation.filter(mod =>
       mod.userId === userId && mod.action === 'role_save'
     );
 
+    console.log(`[getSavedUserRoles] Found ${roleCases.length} role_save cases for user ${userId}`);
+
+    if (roleCases.length > 0) {
+      console.log(`[getSavedUserRoles] Role cases:`, roleCases.map(c => ({
+        caseId: c.caseId,
+        userId: c.userId,
+        action: c.action,
+        reason: c.reason,
+        timestamp: c.timestamp
+      })));
+    }
+
     if (roleCases.length === 0) {
       return [];
     }
 
     // Sort by timestamp descending and get the most recent
-    const latestRoleCase = roleCases.sort((a, b) => 
+    const latestRoleCase = roleCases.sort((a, b) =>
       new Date(b.timestamp) - new Date(a.timestamp)
     )[0];
 
+    console.log(`[getSavedUserRoles] Latest role case:`, {
+      caseId: latestRoleCase.caseId,
+      reason: latestRoleCase.reason
+    });
+
     if (latestRoleCase && latestRoleCase.reason) {
       try {
-        return JSON.parse(latestRoleCase.reason);
+        const parsedRoles = JSON.parse(latestRoleCase.reason);
+        console.log(`[getSavedUserRoles] Parsed roles:`, parsedRoles);
+        return parsedRoles;
       } catch (parseError) {
         console.error('[getSavedUserRoles] Error parsing saved roles:', parseError);
         return [];

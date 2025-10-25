@@ -70,7 +70,7 @@ module.exports = {
       const walletBalance = gambling.wallet || 0;
       
       // Parse amount
-      const amount = parseAmount(args[0], walletBalance);
+      let amount = parseAmount(args[0], walletBalance);
       
       if (amount === null || amount <= 0) {
         return embeds.deny(message, 'Please provide a valid amount');

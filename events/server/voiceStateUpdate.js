@@ -170,14 +170,16 @@ async function handleTempChannelJoin(guild, member, channel, voiceManager) {
     if (!tempChannel) return;
 
     // Check if user was invited and mark as joined
-    const inviteCooldowns = voiceManager.inviteCooldowns.filter(cd => 
-      cd.invitedUserId === member.id && 
-      cd.channelId === channel.id && 
-      !cd.hasJoined
-    );
+    if (voiceManager.inviteCooldowns && Array.isArray(voiceManager.inviteCooldowns)) {
+      const inviteCooldowns = voiceManager.inviteCooldowns.filter(cd => 
+        cd.invitedUserId === member.id && 
+        cd.channelId === channel.id && 
+        !cd.hasJoined
+      );
 
-    for (const cooldown of inviteCooldowns) {
-      await guildService.markInviteAsJoined(guild.id, cooldown.userId, member.id);
+      for (const cooldown of inviteCooldowns) {
+        await guildService.markInviteAsJoined(guild.id, cooldown.userId, member.id);
+      }
     }
 
   } catch (error) {
