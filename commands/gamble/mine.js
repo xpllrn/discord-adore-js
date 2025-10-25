@@ -1,6 +1,7 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
+const { colors } = require('../../config/setup');
 
 // Cooldown map to track user cooldowns
 const cooldowns = new Map();
@@ -144,7 +145,7 @@ module.exports = {
           const actionRow = new ActionRowBuilder();
           for (let col = 0; col < 4; col++) {
             const customId = `mine_${message.author.id}_${row}_${col}`;
-            
+
             if (revealed[row][col]) {
               // Revealed tile - show content and disable
               const button = new ButtonBuilder()
@@ -159,7 +160,7 @@ module.exports = {
               } else {
                 button.setLabel(board[row][col].toString());
               }
-              
+
               actionRow.addComponents(button);
             } else {
               // Unrevealed tile - blank and clickable
@@ -167,7 +168,7 @@ module.exports = {
                 .setCustomId(customId)
                 .setStyle(ButtonStyle.Secondary)
                 .setLabel('​');
-              
+
               actionRow.addComponents(button);
             }
           }
@@ -176,34 +177,32 @@ module.exports = {
         return rows;
       };
 
-      // Create embed
-      const createEmbed = (status = 'playing') => {
-        const embed = new EmbedBuilder()
-          .setColor(status === 'lost' ? '#fc6464' : status === 'won' ? '#a4ec7c' : '#729bb0')
-          .setTitle('💣 Minesweeper')
-          .setDescription(`**Bet:** ${formatCurrency(amount)} coins\n**Safe Tiles:** ${safeRevealed}/${totalSafe}\n**Mines:** 5`);
+      // Create game content message
+      const createGameContent = (status = 'playing') => {
+        let content = `💣 **Minesweeper** - <@${message.author.id}>\n`;
+        content += `**Bet:** ${formatCurrency(amount)} coins | **Safe Tiles:** ${safeRevealed}/${totalSafe} | **Mines:** 5\n`;
 
         if (status === 'lost') {
-          embed.addFields({ name: 'Result', value: '💥 You hit a mine! You lost your bet.' });
+          content += `\n💥 **You hit a mine!** You lost your bet.`;
         } else if (status === 'won') {
           const winnings = Math.floor(amount * 2);
-          embed.addFields({ name: 'Result', value: `🎉 You won **${formatCurrency(winnings)}** coins!` });
+          content += `\n🎉 **You won ${formatCurrency(winnings)} coins!**`;
         } else {
-          embed.addFields({ name: 'Status', value: 'Click tiles to reveal them. Avoid the mines!' });
+          content += `\nClick tiles to reveal them. Avoid the mines!`;
         }
 
-        return embed;
+        return content;
       };
 
       const gameMessage = await message.channel.send({
-        embeds: [createEmbed()],
+        content: createGameContent(),
         components: createButtons()
       });
 
       // Button collector
       const filter = (interaction) => {
         return interaction.customId.startsWith(`mine_${message.author.id}_`) &&
-               interaction.user.id === message.author.id;
+          interaction.user.id === message.author.id;
       };
 
       const collector = gameMessage.createMessageComponentCollector({
@@ -213,7 +212,7 @@ module.exports = {
 
       collector.on('collect', async (interaction) => {
         if (!gameActive) {
-          await interaction.reply({ content: 'This game has already ended!', ephemeral: true });
+          await interaction.reply({ content: 'This game has already ended!', flags: MessageFlags.Ephemeral });
           return;
         }
 
@@ -224,7 +223,7 @@ module.exports = {
 
         // Double check it's not already revealed
         if (revealed[row][col]) {
-          await interaction.reply({ content: 'This tile is already revealed!', ephemeral: true });
+          await interaction.reply({ content: 'This tile is already revealed!', flags: MessageFlags.Ephemeral });
           return;
         }
 
@@ -248,7 +247,7 @@ module.exports = {
           await userService.updateGamblingStats(message.author.id, amount, 0, amount);
 
           await interaction.update({
-            embeds: [createEmbed('lost')],
+            content: createGameContent('lost'),
             components: createButtons()
           });
         } else {
@@ -271,12 +270,12 @@ module.exports = {
             }
 
             await interaction.update({
-              embeds: [createEmbed('won')],
+              content: createGameContent('won'),
               components: createButtons()
             });
           } else {
             await interaction.update({
-              embeds: [createEmbed()],
+              content: createGameContent(),
               components: createButtons()
             });
           }

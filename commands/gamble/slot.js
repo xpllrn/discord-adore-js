@@ -93,23 +93,23 @@ module.exports = {
       await userService.updateWallet(message.author.id, -amount);
 
       // Slot machine outcomes with exact probabilities for 3-matching symbols
-      // WIN RATE: 37% total
-      // - 2% → 3 Diamonds (10x payout)
-      // - 5% → 3 Money Bags (5x payout)
-      // - 10% → 3 Cherries (3x payout)
+      // WIN RATE: 28% total
+      // - 1% → 3 Diamonds (10x payout)
+      // - 2% → 3 Money Bags (5x payout)
+      // - 5% → 3 Cherries (3x payout)
       // - 20% → 3 Strawberries (2x payout)
       // BREAK-EVEN: 20% total
       // - 20% → 3 Bananas (1x break-even)
-      // LOSS RATE: 43% total
-      // - 43% → No match (total loss)
+      // LOSS RATE: 52% total
+      // - 52% → No match (total loss)
 
       const outcomes = [
-        { type: 'triple', emoji: '💎', weight: 2, multiplier: 10 },    // 2% - Triple Diamond
-        { type: 'triple', emoji: '💸', weight: 5, multiplier: 5 },     // 5% - Triple Money Bag
-        { type: 'triple', emoji: '🍒', weight: 10, multiplier: 3 },    // 10% - Triple Cherry
+        { type: 'triple', emoji: '💎', weight: 1, multiplier: 10 },    // 1% - Triple Diamond
+        { type: 'triple', emoji: '💸', weight: 2, multiplier: 5 },     // 2% - Triple Money Bag
+        { type: 'triple', emoji: '🍒', weight: 5, multiplier: 3 },     // 5% - Triple Cherry
         { type: 'triple', emoji: '🍓', weight: 20, multiplier: 2 },    // 20% - Triple Strawberry
         { type: 'triple', emoji: '🍌', weight: 20, multiplier: 1 },    // 20% - Triple Banana (break-even)
-        { type: 'nomatch', emoji: null, weight: 43, multiplier: 0 }    // 43% - No match
+        { type: 'nomatch', emoji: null, weight: 52, multiplier: 0 }    // 52% - No match
       ];
 
       // Create weighted array for outcome selection
