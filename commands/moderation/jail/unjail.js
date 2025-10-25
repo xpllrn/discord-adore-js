@@ -97,10 +97,21 @@ module.exports = {
       // Remove jail role and restore saved roles
       try {
         if (savedRoles && savedRoles.length > 0) {
-          // Filter out roles that no longer exist in the guild
-          const validRoles = savedRoles.filter(roleId => message.guild.roles.cache.has(roleId));
+          // Filter out roles that no longer exist in the guild and exclude booster role
+          const validRoles = savedRoles.filter(roleId => {
+            const role = message.guild.roles.cache.get(roleId);
+            // Check if role exists and is not a booster role
+            return role && !role.tags?.premiumSubscriberRole;
+          });
 
           console.log(`[UNJAIL DEBUG] Valid roles to restore:`, validRoles);
+
+          // Keep booster role if user has it
+          const boosterRole = user.roles.cache.find(role => role.tags?.premiumSubscriberRole);
+          if (boosterRole) {
+            validRoles.push(boosterRole.id);
+            console.log(`[UNJAIL DEBUG] Keeping booster role:`, boosterRole.id);
+          }
 
           if (validRoles.length > 0) {
             // Set roles to the saved ones (this removes jail role and adds back the saved roles)
@@ -111,9 +122,16 @@ module.exports = {
             await user.roles.remove(jailRole.id, `Unjailed by ${message.author.tag}: ${reason}`);
           }
         } else {
-          // If no saved roles, just remove the jail role
+          // If no saved roles, just remove the jail role but keep booster role
           console.log(`[UNJAIL DEBUG] No saved roles found in database, just removing jail role`);
-          await user.roles.remove(jailRole.id, `Unjailed by ${message.author.tag}: ${reason}`);
+          
+          // Keep booster role if user has it
+          const boosterRole = user.roles.cache.find(role => role.tags?.premiumSubscriberRole);
+          if (boosterRole) {
+            await user.roles.set([boosterRole.id], `Unjailed by ${message.author.tag}: ${reason}`);
+          } else {
+            await user.roles.remove(jailRole.id, `Unjailed by ${message.author.tag}: ${reason}`);
+          }
         }
       } catch (roleError) {
         if (roleError.code === 50013) {
