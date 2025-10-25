@@ -6,6 +6,9 @@ const { colors } = require('../../config/setup');
 // Cooldown map to track user cooldowns
 const cooldowns = new Map();
 
+// Active games map to track game state
+const activeGames = new Map();
+
 // Utility functions
 function formatCurrency(amount) {
   return Math.floor(amount).toLocaleString();
@@ -131,34 +134,43 @@ module.exports = {
       // Deduct the bet amount
       await userService.updateWallet(message.author.id, -amount);
 
-      // Generate board
+      // Generate board and create game state
       const board = generateBoard();
-      const revealed = Array(4).fill(null).map(() => Array(4).fill(false));
-      let gameActive = true;
-      let safeRevealed = 0;
-      const totalSafe = 11; // 16 tiles - 5 mines = 11 safe tiles
+      const gameId = `${message.author.id}_${Date.now()}`;
+      const gameState = {
+        board: board,
+        revealed: Array(4).fill(null).map(() => Array(4).fill(false)),
+        gameActive: true,
+        safeRevealed: 0,
+        totalSafe: 11,
+        amount: amount,
+        userId: message.author.id
+      };
+
+      // Store game state
+      activeGames.set(gameId, gameState);
 
       // Create buttons
-      const createButtons = () => {
+      const createButtons = (state) => {
         const rows = [];
         for (let row = 0; row < 4; row++) {
           const actionRow = new ActionRowBuilder();
           for (let col = 0; col < 4; col++) {
-            const customId = `mine_${message.author.id}_${row}_${col}`;
+            const customId = `mine_${gameId}_${row}_${col}`;
 
-            if (revealed[row][col]) {
+            if (state.revealed[row][col]) {
               // Revealed tile - show content and disable
               const button = new ButtonBuilder()
-                .setCustomId(customId + '_revealed')
+                .setCustomId(customId + '_d')
                 .setStyle(ButtonStyle.Secondary)
                 .setDisabled(true);
 
-              if (board[row][col] === -1) {
+              if (state.board[row][col] === -1) {
                 button.setEmoji('💣').setLabel('​');
-              } else if (board[row][col] === 0) {
+              } else if (state.board[row][col] === 0) {
                 button.setLabel('​'); // Blank for zero
               } else {
-                button.setLabel(board[row][col].toString());
+                button.setLabel(state.board[row][col].toString());
               }
 
               actionRow.addComponents(button);
@@ -178,14 +190,14 @@ module.exports = {
       };
 
       // Create game content message
-      const createGameContent = (status = 'playing', currentSafeRevealed = safeRevealed) => {
+      const createGameContent = (state, status = 'playing') => {
         let content = `💣 **Minesweeper** - <@${message.author.id}>\n`;
-        content += `**Bet:** ${formatCurrency(amount)} coins | **Safe Tiles:** ${currentSafeRevealed}/${totalSafe} | **Mines:** 5\n`;
+        content += `**Bet:** ${formatCurrency(state.amount)} coins | **Safe Tiles:** ${state.safeRevealed}/${state.totalSafe} | **Mines:** 5\n`;
 
         if (status === 'lost') {
           content += `\n💥 **You hit a mine!** You lost your bet.`;
         } else if (status === 'won') {
-          const winnings = Math.floor(amount * 2);
+          const winnings = Math.floor(state.amount * 2);
           content += `\n🎉 **You won ${formatCurrency(winnings)} coins!**`;
         } else {
           content += `\nClick tiles to reveal them. Avoid the mines!`;
@@ -195,14 +207,14 @@ module.exports = {
       };
 
       const gameMessage = await message.channel.send({
-        content: createGameContent(),
-        components: createButtons()
+        content: createGameContent(gameState),
+        components: createButtons(gameState)
       });
 
       // Button collector
       const filter = (interaction) => {
-        return interaction.customId.startsWith(`mine_${message.author.id}_`) &&
-          !interaction.customId.endsWith('_revealed') &&
+        return interaction.customId.startsWith(`mine_${gameId}_`) &&
+          !interaction.customId.endsWith('_d') &&
           interaction.user.id === message.author.id;
       };
 
@@ -212,9 +224,10 @@ module.exports = {
       });
 
       collector.on('collect', async (interaction) => {
-        if (!gameActive) {
-          await interaction.reply({ content: 'This game has already ended!', flags: MessageFlags.Ephemeral });
-          return;
+        const state = activeGames.get(gameId);
+
+        if (!state || !state.gameActive) {
+          return; // Ignore if game ended
         }
 
         // Parse the button position
@@ -222,70 +235,76 @@ module.exports = {
         const row = parseInt(parts[3]);
         const col = parseInt(parts[4]);
 
-        // Double check it's not already revealed
-        if (revealed[row][col]) {
-          await interaction.reply({ content: 'This tile is already revealed!', flags: MessageFlags.Ephemeral });
+        // Check if already revealed (shouldn't happen with filter, but safety check)
+        if (state.revealed[row][col]) {
           return;
         }
 
         // Mark as revealed
-        revealed[row][col] = true;
+        state.revealed[row][col] = true;
 
         // Check if mine
-        if (board[row][col] === -1) {
-          gameActive = false;
+        if (state.board[row][col] === -1) {
+          state.gameActive = false;
           collector.stop();
 
           // Reveal all mines
           for (let r = 0; r < 4; r++) {
             for (let c = 0; c < 4; c++) {
-              if (board[r][c] === -1) {
-                revealed[r][c] = true;
+              if (state.board[r][c] === -1) {
+                state.revealed[r][c] = true;
               }
             }
           }
 
-          await userService.updateGamblingStats(message.author.id, amount, 0, amount);
+          await userService.updateGamblingStats(message.author.id, state.amount, 0, state.amount);
 
           await interaction.update({
-            content: createGameContent('lost', safeRevealed),
-            components: createButtons()
+            content: createGameContent(state, 'lost'),
+            components: createButtons(state)
           });
+
+          // Clean up game state
+          activeGames.delete(gameId);
         } else {
-          safeRevealed++;
+          state.safeRevealed++;
 
           // Check if won (all safe tiles revealed)
-          if (safeRevealed >= totalSafe) {
-            gameActive = false;
+          if (state.safeRevealed >= state.totalSafe) {
+            state.gameActive = false;
             collector.stop();
 
-            const winnings = Math.floor(amount * 2);
+            const winnings = Math.floor(state.amount * 2);
             await userService.updateWallet(message.author.id, winnings);
-            await userService.updateGamblingStats(message.author.id, amount, winnings - amount, 0);
+            await userService.updateGamblingStats(message.author.id, state.amount, winnings - state.amount, 0);
 
             // Reveal all tiles
             for (let r = 0; r < 4; r++) {
               for (let c = 0; c < 4; c++) {
-                revealed[r][c] = true;
+                state.revealed[r][c] = true;
               }
             }
 
             await interaction.update({
-              content: createGameContent('won', safeRevealed),
-              components: createButtons()
+              content: createGameContent(state, 'won'),
+              components: createButtons(state)
             });
+
+            // Clean up game state
+            activeGames.delete(gameId);
           } else {
             await interaction.update({
-              content: createGameContent('playing', safeRevealed),
-              components: createButtons()
+              content: createGameContent(state, 'playing'),
+              components: createButtons(state)
             });
           }
         }
       });
 
       collector.on('end', () => {
-        if (gameActive) {
-          gameActive = false;
+        // Clean up game state after timeout
+        if (activeGames.has(gameId)) {
+          activeGames.delete(gameId);
         }
       });
 
