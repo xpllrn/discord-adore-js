@@ -116,7 +116,19 @@ module.exports = {
       await logModerationAction('unjail', message.author, user.user, reason, message.guild);
 
     } catch (error) {
-      embeds.deny(message, `An error occurred while unjailing **${user.user.username}**`);
+      console.error('Error in unjail command:', error);
+      
+      // Log error to webhook if available
+      if (message.client?.errorLogger) {
+        message.client.errorLogger.log(error, 'Unjail Command', {
+          command: 'unjail',
+          args: args.join(' '),
+          user: message.author,
+          guild: message.guild
+        });
+      }
+      
+      embeds.deny(message, `An error occurred while unjailing **${user.user.username}**: ${error.message}`);
     }
   }
 }

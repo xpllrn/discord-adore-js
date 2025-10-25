@@ -199,7 +199,19 @@ module.exports = {
       await jailChannel.send({ content: `${user}`, embeds: [jailEmbed] });
 
     } catch (error) {
-      embeds.deny(message, `An error occurred while jailing **${user.user.username}**`);
+      console.error('Error in jail command:', error);
+      
+      // Log error to webhook if available
+      if (message.client?.errorLogger) {
+        message.client.errorLogger.log(error, 'Jail Command', {
+          command: 'jail',
+          args: args.join(' '),
+          user: message.author,
+          guild: message.guild
+        });
+      }
+      
+      embeds.deny(message, `An error occurred while jailing **${user.user.username}**: ${error.message}`);
     }
   }
 }

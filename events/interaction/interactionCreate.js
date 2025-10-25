@@ -638,9 +638,16 @@ async function handleConfirmDelete(interaction) {
     const channelId = interaction.customId.split('_')[2];
 
     // Respond to the interaction first before deleting the channel
+    const { EmbedBuilder } = require('discord.js');
+    const { colors, emojis } = require('../../config/setup');
+
+    const loadingEmbed = new EmbedBuilder()
+      .setColor(colors.info)
+      .setDescription(`${emojis.loading} Deleting ticket...`);
+
     await interaction.update({
-      content: '🗑️ **Ticket is being deleted...**',
-      embeds: [],
+      content: null,
+      embeds: [loadingEmbed],
       components: []
     });
 
@@ -680,7 +687,7 @@ async function handleConfirmDelete(interaction) {
         await interaction.followUp({
           content: '❌ An error occurred while deleting the ticket. Please try again.',
           ephemeral: true
-        }).catch(() => {});
+        }).catch(() => { });
       }
     } catch (replyError) {
       // Silent fail for reply error

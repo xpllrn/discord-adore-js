@@ -144,6 +144,8 @@ module.exports = {
         await guildService.setJail(message.guild.id, jailRole.id, jailChannel.id);
       } catch (error) {
         console.error('Error saving jail setup to database:', error);
+        await loadingMessage.delete();
+        return embeds.deny(message, `Jail system was created but failed to save to database. Please try running the command again.`);
       }
 
       await loadingMessage.delete();
@@ -154,6 +156,18 @@ module.exports = {
 
     } catch (error) {
       // Update loading message with error
+      console.error('Error in jailsetup command:', error);
+      
+      // Log error to webhook if available
+      if (message.client?.errorLogger) {
+        message.client.errorLogger.log(error, 'Jail Setup Command', {
+          command: 'jailsetup',
+          args: args.join(' '),
+          user: message.author,
+          guild: message.guild
+        });
+      }
+      
       await loadingMessage.delete();
       embeds.deny(message, `An error occurred during jail setup: ${error.message}`);
     }

@@ -124,7 +124,7 @@ async function processCounting(message) {
                     countingData.lastCounterId = null;
                     await guildService.setCounting(message.guild.id, countingData);
                     
-                    await embeds.deny(message, `${message.author} ruined it at **${wrongCount}**! Next number is **1**.`);
+                    await embeds.deny(message, `ruined it at **${wrongCount}**! Next number is **1**.`);
                 } else {
                     // Non-strict mode: just notify but don't reset
                     await embeds.deny(message, `Wrong number! Expected **${countingData.currentCount + 1}** but got **${num}**. Next number is still **${countingData.currentCount + 1}**.`);
