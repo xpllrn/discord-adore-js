@@ -42,7 +42,7 @@ module.exports = {
 {guildprefix}slot half`,
   run: async (client, message, args) => {
     // Check cooldown
-    const cooldownTime = 5000; // 5 seconds
+    const cooldownTime = 10000; // 10 seconds
     const now = Date.now();
     const userId = message.author.id;
 

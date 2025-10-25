@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { colors } = require('../../config/setup');
@@ -84,7 +84,7 @@ module.exports = {
 {guildprefix}mine all`,
   run: async (client, message, args) => {
     // Check cooldown
-    const cooldownTime = 5000; // 5 seconds
+    const cooldownTime = 10000; // 10 seconds
     const now = Date.now();
     const userId = message.author.id;
 
@@ -151,7 +151,7 @@ module.exports = {
       activeGames.set(gameId, gameState);
 
       // Create buttons
-      const createButtons = (state) => {
+      const createButtons = (state, gameLost = false) => {
         const rows = [];
         for (let row = 0; row < 4; row++) {
           const actionRow = new ActionRowBuilder();
@@ -160,12 +160,13 @@ module.exports = {
 
             if (state.revealed[row][col]) {
               // Revealed tile - show content and disable
+              const isMine = state.board[row][col] === -1;
               const button = new ButtonBuilder()
                 .setCustomId(customId + '_d')
-                .setStyle(ButtonStyle.Secondary)
+                .setStyle(gameLost && isMine ? ButtonStyle.Danger : ButtonStyle.Secondary)
                 .setDisabled(true);
 
-              if (state.board[row][col] === -1) {
+              if (isMine) {
                 button.setEmoji('💣').setLabel('​');
               } else if (state.board[row][col] === 0) {
                 button.setLabel('​'); // Blank for zero
@@ -189,25 +190,25 @@ module.exports = {
         return rows;
       };
 
-      // Create game content message
-      const createGameContent = (state, status = 'playing') => {
-        let content = `💣 **Minesweeper** - <@${message.author.id}>\n`;
-        content += `**Bet:** ${formatCurrency(state.amount)} coins | **Safe Tiles:** ${state.safeRevealed}/${state.totalSafe} | **Mines:** 5\n`;
+      // Create game embed
+      const createGameEmbed = (state, status = 'playing') => {
+        const embed = new EmbedBuilder()
+          .setColor(status === 'lost' ? colors.error : status === 'won' ? colors.success : colors.info)
+          .setTitle('💣 Minesweeper')
+          .setDescription(`> **Bet**: ${formatCurrency(state.amount)}\n> **Safe Tiles**: \`${state.safeRevealed}/${state.totalSafe}\` & **Mines**: \`5\``);
 
         if (status === 'lost') {
-          content += `\n💥 **You hit a mine!** You lost your bet.`;
+          embed.addFields({ name: 'Result', value: '💥 You hit a mine! You lost your bet.' });
         } else if (status === 'won') {
           const winnings = Math.floor(state.amount * 2);
-          content += `\n🎉 **You won ${formatCurrency(winnings)} coins!**`;
-        } else {
-          content += `\nClick tiles to reveal them. Avoid the mines!`;
+          embed.addFields({ name: 'Result', value: `🎉 You won **${formatCurrency(winnings)}** coins!` });
         }
 
-        return content;
+        return embed;
       };
 
       const gameMessage = await message.channel.send({
-        content: createGameContent(gameState),
+        embeds: [createGameEmbed(gameState)],
         components: createButtons(gameState)
       });
 
@@ -260,8 +261,8 @@ module.exports = {
           await userService.updateGamblingStats(message.author.id, state.amount, 0, state.amount);
 
           await interaction.update({
-            content: createGameContent(state, 'lost'),
-            components: createButtons(state)
+            embeds: [createGameEmbed(state, 'lost')],
+            components: createButtons(state, true)
           });
 
           // Clean up game state
@@ -286,7 +287,7 @@ module.exports = {
             }
 
             await interaction.update({
-              content: createGameContent(state, 'won'),
+              embeds: [createGameEmbed(state, 'won')],
               components: createButtons(state)
             });
 
@@ -294,7 +295,7 @@ module.exports = {
             activeGames.delete(gameId);
           } else {
             await interaction.update({
-              content: createGameContent(state, 'playing'),
+              embeds: [createGameEmbed(state, 'playing')],
               components: createButtons(state)
             });
           }
