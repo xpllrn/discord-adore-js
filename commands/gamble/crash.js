@@ -126,7 +126,7 @@ module.exports = {
           return;
         }
 
-        currentMultiplier += 0.01 + (Math.random() * 0.05); // Increase by 0.01-0.06x each tick
+        currentMultiplier += 0.10 + (Math.random() * 0.15); // Increase by 0.10-0.25x each tick
 
         // Check if we've reached the predetermined crash point
         if (currentMultiplier >= crashPoint) {
@@ -169,7 +169,7 @@ module.exports = {
           gameActive = false;
           clearInterval(gameInterval);
         }
-      }, 2000); // Update every 2 seconds
+      }, 1000); // Update every 1 second
       
       // Button interaction handler
       const filter = (interaction) => {

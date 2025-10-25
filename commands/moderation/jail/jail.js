@@ -3,10 +3,10 @@ const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHi
 const { embeds } = require('../../../core/embeds');
 const { createPagination } = require('../../../core/buttons');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { addModerationCase, saveUserRoles } = require('../../../database');
 const { colors } = require('../../../config/setup');
 const { findUser, findRole, findChannel } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
+const { getService } = require('@services');
 
 module.exports = {
   name: "jail",
@@ -15,6 +15,8 @@ module.exports = {
   usage: '{guildprefix}jail [user]\n{guildprefix}jail [user] [reason]\n{guildprefix}jail list',
   permission: 'Manage Roles',
   run: async(client, message, args) => {
+
+    const guildService = getService('guild');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
@@ -151,8 +153,14 @@ module.exports = {
 
       console.log(`[JAIL DEBUG] User: ${user.user.tag}, Roles to save:`, rolesToSave);
 
-      // Save roles to database
-      await saveUserRoles(message.guild.id, user.user.id, rolesToSave);
+      // Save roles using service layer
+      await guildService.addModerationCase(message.guild.id, {
+        userId: user.user.id,
+        moderatorId: 'system',
+        action: 'role_save',
+        reason: JSON.stringify(rolesToSave),
+        duration: null
+      });
       
       console.log(`[JAIL DEBUG] Roles saved successfully`);
 
@@ -168,13 +176,13 @@ module.exports = {
 
       // Add to moderation history
       try {
-        await addModerationCase(
-          message.guild.id,
-          user.user.id,
-          message.author.id,
-          'jail',
-          reason
-        );
+        await guildService.addModerationCase(message.guild.id, {
+          userId: user.user.id,
+          moderatorId: message.author.id,
+          action: 'jail',
+          reason: reason,
+          duration: null
+        });
       } catch (historyError) {
         // Don't fail the command if history logging fails
       }

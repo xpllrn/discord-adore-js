@@ -535,17 +535,19 @@ async function saveUserRoles(guildId, userId, roles) {
   try {
     console.log(`[saveUserRoles] Saving roles for user ${userId} in guild ${guildId}:`, roles);
 
-    // Store roles as a special moderation case type
-    const result = await addModerationCase(
-      guildId,
-      userId,
-      'system',
-      'role_save',
-      JSON.stringify(roles),
-      null
-    );
+    // Use service layer (with caching)
+    const { getService } = require('@services');
+    const guildService = getService('guild');
 
-    console.log(`[saveUserRoles] Saved successfully, case ID:`, result.caseId);
+    const result = await guildService.addModerationCase(guildId, {
+      userId,
+      moderatorId: 'system',
+      action: 'role_save',
+      reason: JSON.stringify(roles),
+      duration: null
+    });
+
+    console.log(`[saveUserRoles] Saved successfully via service, case ID:`, result.caseId);
   } catch (error) {
     console.error(`[saveUserRoles] Error saving roles:`, error);
     throw error;
@@ -562,26 +564,42 @@ async function getSavedUserRoles(guildId, userId) {
   try {
     console.log(`[getSavedUserRoles] Looking for saved roles for user ${userId} in guild ${guildId}`);
 
-    // Check if Guild model is available
-    if (!Guild) {
-      console.log(`[getSavedUserRoles] Guild model not available`);
-      return [];
+    // Check if we should use the service layer
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+
+    let roleCases = [];
+
+    if (guildService) {
+      // Use service layer (with caching)
+      console.log(`[getSavedUserRoles] Using service layer`);
+      const allCases = await guildService.getModerationHistory(guildId, userId, 'role_save');
+      roleCases = allCases;
+      console.log(`[getSavedUserRoles] Found ${roleCases.length} role_save cases via service`);
+    } else {
+      // Fallback to direct database access
+      console.log(`[getSavedUserRoles] Using direct database access`);
+
+      if (!Guild) {
+        console.log(`[getSavedUserRoles] Guild model not available`);
+        return [];
+      }
+
+      const guild = await Guild.findOne({ GuildID: guildId });
+      if (!guild) {
+        console.log(`[getSavedUserRoles] Guild not found in database`);
+        return [];
+      }
+
+      console.log(`[getSavedUserRoles] Total moderation cases:`, guild.Moderation.length);
+
+      // Find all role_save cases for this user
+      roleCases = guild.Moderation.filter(mod =>
+        mod.userId === userId && mod.action === 'role_save'
+      );
+
+      console.log(`[getSavedUserRoles] Found ${roleCases.length} role_save cases via direct DB`);
     }
-
-    const guild = await Guild.findOne({ GuildID: guildId });
-    if (!guild) {
-      console.log(`[getSavedUserRoles] Guild not found in database`);
-      return [];
-    }
-
-    console.log(`[getSavedUserRoles] Total moderation cases:`, guild.Moderation.length);
-
-    // Find all role_save cases for this user and get the most recent one
-    const roleCases = guild.Moderation.filter(mod =>
-      mod.userId === userId && mod.action === 'role_save'
-    );
-
-    console.log(`[getSavedUserRoles] Found ${roleCases.length} role_save cases for user ${userId}`);
 
     if (roleCases.length > 0) {
       console.log(`[getSavedUserRoles] Role cases:`, roleCases.map(c => ({

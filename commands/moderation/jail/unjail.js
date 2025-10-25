@@ -2,9 +2,9 @@ const { PermissionFlagsBits } = require("discord.js");
 const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy, checkDiscordActionable, checkBotRoleHierarchy } = require('../../../utils/permissions');
 const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { addModerationCase, getSavedUserRoles, removeSavedUserRoles } = require('../../../database');
 const { findUser, findRole } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
+const { getService } = require('@services');
 
 module.exports = {
   name: "unjail",
@@ -12,6 +12,8 @@ module.exports = {
   usage: '{guildprefix}unjail [user]\n{guildprefix}unjail [user] [reason]',
   permission: 'Manage Roles',
   run: async(client, message, args) => {
+
+    const guildService = getService('guild');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
@@ -71,8 +73,24 @@ module.exports = {
     }
 
     try {
-      // Get saved roles from database
-      const savedRoles = await getSavedUserRoles(message.guild.id, user.user.id);
+      // Get saved roles using service layer
+      const roleCases = await guildService.getModerationHistory(message.guild.id, user.user.id, 'role_save');
+      
+      let savedRoles = [];
+      if (roleCases.length > 0) {
+        // Get the most recent role_save case
+        const latestRoleCase = roleCases.sort((a, b) => 
+          new Date(b.timestamp) - new Date(a.timestamp)
+        )[0];
+        
+        if (latestRoleCase && latestRoleCase.reason) {
+          try {
+            savedRoles = JSON.parse(latestRoleCase.reason);
+          } catch (parseError) {
+            console.error('[UNJAIL] Error parsing saved roles:', parseError);
+          }
+        }
+      }
 
       console.log(`[UNJAIL DEBUG] User: ${user.user.tag}, Saved roles:`, savedRoles);
 
@@ -104,18 +122,22 @@ module.exports = {
         throw roleError; // Re-throw if it's not a permission error
       }
 
-      // Remove saved roles from database
-      await removeSavedUserRoles(message.guild.id, user.user.id);
+      // Remove saved roles from database using service layer
+      // Find all role_save cases and remove them
+      const allRoleCases = await guildService.getModerationHistory(message.guild.id, user.user.id, 'role_save');
+      for (const roleCase of allRoleCases) {
+        await guildService.removeModerationCase(message.guild.id, roleCase.caseId);
+      }
 
       // Add to moderation history
       try {
-        await addModerationCase(
-          message.guild.id,
-          user.user.id,
-          message.author.id,
-          'unjail',
-          reason
-        );
+        await guildService.addModerationCase(message.guild.id, {
+          userId: user.user.id,
+          moderatorId: message.author.id,
+          action: 'unjail',
+          reason: reason,
+          duration: null
+        });
       } catch (historyError) {
         // Don't fail the command if history logging fails
       }
