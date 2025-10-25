@@ -10,7 +10,7 @@ const archiver = require('archiver');
 
 module.exports = {
   name: "emoji",
-  aliases: ['emojis'],
+  aliases: ['emote'],
   description: "Archive and download all server emojis",
   usage: '{guildprefix}emoji archive - Download all server emojis as a zip file\n{guildprefix}emoji list - Show all server emojis',
   permission: 'Manage Emojis',
