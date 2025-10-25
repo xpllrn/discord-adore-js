@@ -3,6 +3,9 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 
+// Cooldown map to track user cooldowns
+const cooldowns = new Map();
+
 // Utility functions embedded within the command
 function formatCurrency(amount) {
   return Math.floor(amount).toLocaleString();
@@ -38,6 +41,22 @@ module.exports = {
 {guildprefix}slot all
 {guildprefix}slot half`,
   run: async (client, message, args) => {
+    // Check cooldown
+    const cooldownTime = 5000; // 5 seconds
+    const now = Date.now();
+    const userId = message.author.id;
+
+    if (cooldowns.has(userId)) {
+      const expirationTime = cooldowns.get(userId) + cooldownTime;
+      if (now < expirationTime) {
+        const timeLeft = ((expirationTime - now) / 1000).toFixed(1);
+        return embeds.warn(message, `Please wait **${timeLeft}** seconds before playing slots again`);
+      }
+    }
+
+    // Set cooldown
+    cooldowns.set(userId, now);
+    setTimeout(() => cooldowns.delete(userId), cooldownTime);
 
     if (!args[0]) {
       return embeds.warn(message, 'You must give an **amount** to bet!');
@@ -74,20 +93,21 @@ module.exports = {
       await userService.updateWallet(message.author.id, -amount);
 
       // Slot machine outcomes with exact probabilities for 3-matching symbols
-      // WIN RATE: 50% total
-      // - 10% → 3 Diamonds (10x payout)
-      // - 20% → 3 Cherries (3x payout)
+      // WIN RATE: 35% total
+      // - 5% → 3 Diamonds (10x payout)
+      // - 10% → 3 Cherries (3x payout)
       // - 20% → 3 Strawberries (2x payout)
-      // LOSS RATE: 50% total
-      // - 10% → 3 Bananas (1x break-even)
-      // - 40% → No match (total loss)
+      // BREAK-EVEN: 20% total
+      // - 20% → 3 Bananas (1x break-even)
+      // LOSS RATE: 45% total
+      // - 45% → No match (total loss)
 
       const outcomes = [
-        { type: 'triple', emoji: '💎', weight: 10, multiplier: 10 },   // 10% - Triple Diamond
-        { type: 'triple', emoji: '🍒', weight: 20, multiplier: 3 },    // 20% - Triple Cherry
+        { type: 'triple', emoji: '💎', weight: 5, multiplier: 10 },    // 5% - Triple Diamond
+        { type: 'triple', emoji: '🍒', weight: 10, multiplier: 3 },    // 10% - Triple Cherry
         { type: 'triple', emoji: '🍓', weight: 20, multiplier: 2 },    // 20% - Triple Strawberry
-        { type: 'triple', emoji: '🍌', weight: 10, multiplier: 1 },    // 10% - Triple Banana (break-even)
-        { type: 'nomatch', emoji: null, weight: 40, multiplier: 0 }    // 40% - No match
+        { type: 'triple', emoji: '🍌', weight: 20, multiplier: 1 },    // 20% - Triple Banana (break-even)
+        { type: 'nomatch', emoji: null, weight: 45, multiplier: 0 }    // 45% - No match
       ];
 
       // Create weighted array for outcome selection

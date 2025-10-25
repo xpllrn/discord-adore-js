@@ -4,6 +4,9 @@ const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 const { colors } = require('../../config/setup');
 
+// Cooldown map to track user cooldowns
+const cooldowns = new Map();
+
 // Utility functions embedded within the command
 function formatCurrency(amount) {
   return Math.floor(amount).toLocaleString();
@@ -38,6 +41,22 @@ module.exports = {
 {guildprefix}crash 1000
 {guildprefix}crash all`,
   run: async(client, message, args) => {
+    // Check cooldown
+    const cooldownTime = 5000; // 5 seconds
+    const now = Date.now();
+    const userId = message.author.id;
+
+    if (cooldowns.has(userId)) {
+      const expirationTime = cooldowns.get(userId) + cooldownTime;
+      if (now < expirationTime) {
+        const timeLeft = ((expirationTime - now) / 1000).toFixed(1);
+        return embeds.warn(message, `Please wait **${timeLeft}** seconds before playing crash again`);
+      }
+    }
+
+    // Set cooldown
+    cooldowns.set(userId, now);
+    setTimeout(() => cooldowns.delete(userId), cooldownTime);
     
     if (!args[0]) {
       return embeds.warn(message, 'You must give an **amount** to bet!');
