@@ -5850,17 +5850,9 @@ class GuildService extends BaseService {
    * @param {string} supportRoleId - Support role ID
    * @returns {Promise<boolean>} Success status
    */
-  async enableTicketSystem(guildId, categoryId, supportRoleId) {
+  async enableTicketSystem(guildId, categoryId = null, supportRoleId = null) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    if (!categoryId) {
-      throw new ValidationError('Category ID is required', 'categoryId', categoryId);
-    }
-
-    if (!supportRoleId) {
-      throw new ValidationError('Support role ID is required', 'supportRoleId', supportRoleId);
     }
 
     try {
@@ -5879,8 +5871,12 @@ class GuildService extends BaseService {
       }
       
       guildData.TicketSystem.enabled = true;
-      guildData.TicketSystem.categoryId = categoryId;
-      guildData.TicketSystem.supportRoleId = supportRoleId;
+      if (categoryId !== undefined) {
+        guildData.TicketSystem.categoryId = categoryId;
+      }
+      if (supportRoleId !== undefined) {
+        guildData.TicketSystem.supportRoleId = supportRoleId;
+      }
       
       // Initialize activeTickets if needed
       if (!guildData.TicketSystem.activeTickets) {
@@ -5949,14 +5945,6 @@ class GuildService extends BaseService {
   async setTicketSetup(guildId, channelId, messageId) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    if (!channelId) {
-      throw new ValidationError('Channel ID is required', 'channelId', channelId);
-    }
-
-    if (!messageId) {
-      throw new ValidationError('Message ID is required', 'messageId', messageId);
     }
 
     try {
@@ -6053,6 +6041,34 @@ class GuildService extends BaseService {
     } catch (error) {
       console.error(`Error getting ticket for channel ${channelId} in guild ${guildId}:`, error.message);
       return null;
+    }
+  }
+
+  /**
+   * Get all tickets for a specific user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Array>} Array of user's tickets
+   */
+  async getUserTickets(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const ticketSystem = guildData.TicketSystem || {};
+      const activeTickets = ticketSystem.activeTickets || [];
+      
+      // Return all tickets for this user that are not closed
+      return activeTickets.filter(ticket => ticket.userId === userId && ticket.status !== 'closed');
+    } catch (error) {
+      console.error(`Error getting tickets for user ${userId} in guild ${guildId}:`, error.message);
+      return [];
     }
   }
 

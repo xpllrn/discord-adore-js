@@ -149,10 +149,37 @@ module.exports = {
       await loadingMessage.delete();
       embeds.success(message, 'Jail system setup complete!');
 
+      // Log the jail setup action
+      await logJailSetup(message.author, jailRole, jailChannel, message.guild, roleCreated, channelCreated, permissionUpdates);
+
     } catch (error) {
       // Update loading message with error
       await loadingMessage.delete();
       embeds.deny(message, `An error occurred during jail setup: ${error.message}`);
     }
+  }
+}
+
+async function logJailSetup(executor, jailRole, jailChannel, guild, roleCreated, channelCreated, permissionUpdates) {
+  try {
+    const webhookLogger = require('../../../utils/webhookLogger');
+    const { EmbedBuilder } = require('discord.js');
+    const { colors } = require('../../../config/setup');
+
+    const embed = new EmbedBuilder()
+      .setColor(colors.success)
+      .setAuthor({ name: `${executor.tag} (${executor.id})`, iconURL: executor.displayAvatarURL() })
+      .setTitle('🔧 Jail System Setup')
+      .addFields(
+        { name: 'Executor', value: `${executor}`, inline: true },
+        { name: 'Jail Role', value: `${jailRole} ${roleCreated ? '(Created)' : '(Existing)'}`, inline: true },
+        { name: 'Jail Channel', value: `${jailChannel} ${channelCreated ? '(Created)' : '(Existing)'}`, inline: true },
+        { name: 'Permissions Updated', value: `${permissionUpdates} channels`, inline: true }
+      )
+      .setTimestamp();
+
+    await webhookLogger.sendLog(guild.id, 'moderator', embed);
+  } catch (error) {
+    // Silent fail for logging
   }
 }
