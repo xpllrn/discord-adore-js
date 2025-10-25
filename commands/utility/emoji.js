@@ -29,11 +29,7 @@ module.exports = {
     }
 
     // Send loading message
-    const loadingEmbed = new EmbedBuilder()
-      .setColor(colors.info)
-      .setDescription(`${emojis.loading} Archiving **${guildEmojis.size}** emoji${guildEmojis.size === 1 ? '' : 's'}... This may take a moment.`);
-
-    const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
+    const loadingMessage = await embeds.loading(message, `Please wait, I'm archiving **${guildEmojis.size}** emoji${guildEmojis.size === 1 ? '' : 's'}** for you`);
 
     try {
       // Create temporary directory for emojis
@@ -56,6 +52,7 @@ module.exports = {
           await downloadFile(emojiUrl, filePath);
           downloaded++;
         } catch (error) {
+          console.error(`Failed to download emoji ${emoji.name}:`, error.message);
           failed++;
         }
       }
@@ -111,8 +108,35 @@ module.exports = {
 
     } catch (error) {
       console.error('Error archiving emojis:', error);
-      await loadingMessage.delete();
-      return embeds.deny(message, 'An error occurred while archiving emojis. Please try again.');
+      
+      // Log detailed error information
+      if (message.client?.errorLogger) {
+        message.client.errorLogger.log(error, 'Emoji Archive', {
+          command: 'emoji archive',
+          args: args.join(' '),
+          user: message.author,
+          guild: message.guild,
+          emojiCount: guildEmojis.size
+        });
+      }
+      
+      // Clean up any temporary files
+      try {
+        const tempDir = path.join(__dirname, '../../temp', `emojis_${message.guild.id}_${Date.now()}`);
+        if (fs.existsSync(tempDir)) {
+          fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+      } catch (cleanupError) {
+        console.error('Error cleaning up temp files:', cleanupError);
+      }
+      
+      try {
+        await loadingMessage.delete();
+      } catch (deleteError) {
+        // Ignore delete errors
+      }
+      
+      return embeds.deny(message, `An error occurred while archiving emojis: ${error.message}\n\nPlease check the logs for more details.`);
     }
   }
 };
