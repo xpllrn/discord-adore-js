@@ -26,39 +26,10 @@ module.exports = {
       // Get message statistics from guild cache
       const { getService } = require('@services');
       const guildService = getService('guild');
-      const allMessageStats = await guildService.getMessageStats(message.guild.id);
+      const userMessageStats = await guildService.getMessageStats(message.guild.id, targetUser.id);
 
-      // Filter stats for the target user
-      const messageStats = allMessageStats.filter(stat => stat.userId === targetUser.id);
-
-      // Calculate time periods
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const sevenDaysAgo = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
-      const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-
-      // Count messages for different periods
-      let todayCount = 0;
-      let sevenDayCount = 0;
-      let thirtyDayCount = 0;
-      let totalCount = 0;
-
-      if (messageStats && messageStats.length > 0) {
-        messageStats.forEach(stat => {
-          const statDate = new Date(stat.date);
-          totalCount += stat.count;
-
-          if (statDate >= today) {
-            todayCount += stat.count;
-          }
-          if (statDate >= sevenDaysAgo) {
-            sevenDayCount += stat.count;
-          }
-          if (statDate >= thirtyDaysAgo) {
-            thirtyDayCount += stat.count;
-          }
-        });
-      }
+      // Get total count from user stats
+      const totalCount = userMessageStats?.count || 0;
 
       // Create embed
       const embed = new EmbedBuilder()
@@ -67,12 +38,7 @@ module.exports = {
           name: `${targetUser.username}'s Messages`,
           iconURL: targetUser.displayAvatarURL({ dynamic: true })
         })
-        .setDescription([
-          `**Today:** ${todayCount}`,
-          `**Last 7 days:** ${sevenDayCount}`,
-          `**Last 30 days:** ${thirtyDayCount}`,
-          `**Total:** ${totalCount}`
-        ].join('\n'));
+        .setDescription(`**Total Messages:** ${totalCount}`);
 
       return message.channel.send({ embeds: [embed] });
 

@@ -172,7 +172,10 @@ module.exports = {
 
         await guildService.removeForceNick(message.guild.id, member.user.id);
 
-        return embeds.success(message, `Removed forced nickname for **${member.user.tag}**`);
+        // Reset their actual nickname to default
+        await member.setNickname(null, `Forced nickname removed by ${message.author.tag}`);
+
+        return embeds.success(message, `Removed forced nickname for **${member.user.tag}** and reset their name`);
 
       } else {
         // Set forced nickname
