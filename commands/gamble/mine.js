@@ -84,7 +84,7 @@ module.exports = {
 {guildprefix}mine all`,
   run: async (client, message, args) => {
     // Check cooldown
-    const cooldownTime = 10000; // 10 seconds
+    const cooldownTime = 5000; // 5 seconds
     const now = Date.now();
     const userId = message.author.id;
 
