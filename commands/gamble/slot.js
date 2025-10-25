@@ -93,21 +93,23 @@ module.exports = {
       await userService.updateWallet(message.author.id, -amount);
 
       // Slot machine outcomes with exact probabilities for 3-matching symbols
-      // WIN RATE: 35% total
-      // - 5% → 3 Diamonds (10x payout)
+      // WIN RATE: 37% total
+      // - 2% → 3 Diamonds (10x payout)
+      // - 5% → 3 Money Bags (5x payout)
       // - 10% → 3 Cherries (3x payout)
       // - 20% → 3 Strawberries (2x payout)
       // BREAK-EVEN: 20% total
       // - 20% → 3 Bananas (1x break-even)
-      // LOSS RATE: 45% total
-      // - 45% → No match (total loss)
+      // LOSS RATE: 43% total
+      // - 43% → No match (total loss)
 
       const outcomes = [
-        { type: 'triple', emoji: '💎', weight: 5, multiplier: 10 },    // 5% - Triple Diamond
+        { type: 'triple', emoji: '💎', weight: 2, multiplier: 10 },    // 2% - Triple Diamond
+        { type: 'triple', emoji: '💸', weight: 5, multiplier: 5 },     // 5% - Triple Money Bag
         { type: 'triple', emoji: '🍒', weight: 10, multiplier: 3 },    // 10% - Triple Cherry
         { type: 'triple', emoji: '🍓', weight: 20, multiplier: 2 },    // 20% - Triple Strawberry
         { type: 'triple', emoji: '🍌', weight: 20, multiplier: 1 },    // 20% - Triple Banana (break-even)
-        { type: 'nomatch', emoji: null, weight: 45, multiplier: 0 }    // 45% - No match
+        { type: 'nomatch', emoji: null, weight: 43, multiplier: 0 }    // 43% - No match
       ];
 
       // Create weighted array for outcome selection
@@ -119,7 +121,7 @@ module.exports = {
       });
 
       // All possible symbols for no-match scenarios
-      const allSymbols = ['💎', '🍒', '🍓', '🍌'];
+      const allSymbols = ['💎', '💸', '🍒', '🍓', '🍌'];
 
       // Create spinning slot machine embed
       const createSpinningEmbed = (slot1, slot2, slot3) => {
@@ -134,7 +136,7 @@ module.exports = {
       };
 
       // Animation symbols for spinning effect
-      const spinSymbols = ['🍒', '🍓', '💎', '🍌', '🍊', '🍇', '🍎'];
+      const spinSymbols = ['🍒', '🍓', '💎', '💸', '🍌', '🍊', '🍇', '🍎'];
 
       // Start with spinning animation
       let currentSlot1 = spinSymbols[0];

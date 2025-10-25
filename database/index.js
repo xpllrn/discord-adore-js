@@ -563,16 +563,32 @@ async function getSavedUserRoles(guildId, userId) {
     const guild = await Guild.findOne({ GuildID: guildId });
     if (!guild) return [];
 
-    const roleCase = guild.Moderation.find(mod =>
+    // Find all role_save cases for this user and get the most recent one
+    const roleCases = guild.Moderation.filter(mod =>
       mod.userId === userId && mod.action === 'role_save'
     );
 
-    if (roleCase) {
-      return JSON.parse(roleCase.reason);
+    if (roleCases.length === 0) {
+      return [];
+    }
+
+    // Sort by timestamp descending and get the most recent
+    const latestRoleCase = roleCases.sort((a, b) => 
+      new Date(b.timestamp) - new Date(a.timestamp)
+    )[0];
+
+    if (latestRoleCase && latestRoleCase.reason) {
+      try {
+        return JSON.parse(latestRoleCase.reason);
+      } catch (parseError) {
+        console.error('[getSavedUserRoles] Error parsing saved roles:', parseError);
+        return [];
+      }
     }
 
     return [];
   } catch (error) {
+    console.error('[getSavedUserRoles] Error:', error);
     throw error;
   }
 }

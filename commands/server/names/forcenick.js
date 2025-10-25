@@ -16,13 +16,16 @@ module.exports = {
 {guildprefix}forcenick list
 {guildprefix}forcenick reset`,
   permission: "Manage Nicknames",
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageNicknames)) {
       return embeds.deny(message, 'I need **Manage Nicknames** permission to use this command');
     }
+
+    // Get guild service
+    const guildService = getService('guild');
 
     // Check if user provided input
     if (!args[0]) {

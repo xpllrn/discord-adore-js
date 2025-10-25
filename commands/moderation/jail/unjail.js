@@ -74,16 +74,27 @@ module.exports = {
       // Get saved roles from database
       const savedRoles = await getSavedUserRoles(message.guild.id, user.user.id);
 
+      console.log(`[UNJAIL DEBUG] User: ${user.user.tag}, Saved roles:`, savedRoles);
+
       // Remove jail role and restore saved roles
       try {
         if (savedRoles && savedRoles.length > 0) {
           // Filter out roles that no longer exist in the guild
           const validRoles = savedRoles.filter(roleId => message.guild.roles.cache.has(roleId));
 
-          // Set roles to the saved ones (this removes jail role and adds back the saved roles)
-          await user.roles.set(validRoles, `Unjailed by ${message.author.tag}: ${reason}`);
+          console.log(`[UNJAIL DEBUG] Valid roles to restore:`, validRoles);
+
+          if (validRoles.length > 0) {
+            // Set roles to the saved ones (this removes jail role and adds back the saved roles)
+            await user.roles.set(validRoles, `Unjailed by ${message.author.tag}: ${reason}`);
+          } else {
+            // If no valid roles remain, just remove the jail role
+            console.log(`[UNJAIL DEBUG] No valid roles found, just removing jail role`);
+            await user.roles.remove(jailRole.id, `Unjailed by ${message.author.tag}: ${reason}`);
+          }
         } else {
           // If no saved roles, just remove the jail role
+          console.log(`[UNJAIL DEBUG] No saved roles found in database, just removing jail role`);
           await user.roles.remove(jailRole.id, `Unjailed by ${message.author.tag}: ${reason}`);
         }
       } catch (roleError) {

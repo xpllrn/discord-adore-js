@@ -149,8 +149,12 @@ module.exports = {
         .filter(role => role.id !== message.guild.roles.everyone.id && role.id !== jailRole.id)
         .map(role => role.id);
 
+      console.log(`[JAIL DEBUG] User: ${user.user.tag}, Roles to save:`, rolesToSave);
+
       // Save roles to database
       await saveUserRoles(message.guild.id, user.user.id, rolesToSave);
+      
+      console.log(`[JAIL DEBUG] Roles saved successfully`);
 
       // Remove all roles except @everyone and add jail role
       try {
