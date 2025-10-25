@@ -525,6 +525,10 @@ async function handleGradient(client, message, args) {
     const color1 = parseColor(args[0]);
     const color2 = parseColor(args[1]);
 
+    // Convert hex to integer
+    const color1Int = parseInt(color1.replace('#', ''), 16);
+    const color2Int = parseInt(color2.replace('#', ''), 16);
+
     // Get the Discord role
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     if (!discordRole) {
@@ -532,15 +536,22 @@ async function handleGradient(client, message, args) {
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
-    // Try to set gradient colors using Discord's API
+    // Check if server has ENHANCED_ROLE_COLORS feature
+    if (!message.guild.features.includes('ENHANCED_ROLE_COLORS')) {
+      return embeds.warn(message, `This server needs **Enhanced Roles** (ENHANCED_ROLE_COLORS) unlocked to use gradient colors. Try using \`br color\` for a single color instead.`);
+    }
+
+    // Use REST API to set gradient colors (array of 2 colors)
     try {
-      if (discordRole.setColors && typeof discordRole.setColors === 'function') {
-        await discordRole.setColors([color1, color2], `Booster role gradient colors changed by ${message.author.tag}`);
-      } else {
-        await discordRole.edit({
-          color: [color1, color2]
-        }, `Booster role gradient colors changed by ${message.author.tag}`);
-      }
+      await client.rest.patch(
+        `/guilds/${message.guild.id}/roles/${discordRole.id}`,
+        {
+          body: {
+            color: [color1Int, color2Int]
+          },
+          reason: `Booster role gradient colors changed by ${message.author.tag}`
+        }
+      );
 
       // Update in database - store both colors
       await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
@@ -551,10 +562,11 @@ async function handleGradient(client, message, args) {
       return embeds.success(message, `Changed your booster role to gradient colors **${args[0]}** → **${args[1]}** (${color1} → ${color2})`);
 
     } catch (gradientError) {
+      console.error('Gradient error:', gradientError);
       if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
-        return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors. Try using \`br color\` for a single color instead.`);
+        return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors.`);
       }
-      return embeds.deny(message, `Failed to set gradient colors. This feature may not be supported.`);
+      return embeds.deny(message, `Failed to set gradient colors: ${gradientError.message || 'Unknown error'}`);
     }
 
   } catch (error) {

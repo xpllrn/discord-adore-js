@@ -252,21 +252,33 @@ module.exports = {
         const color1 = parseColor(colorArgs[0]);
         const color2 = parseColor(colorArgs[1]);
 
-        // Try to set gradient colors using Discord's API
+        // Convert hex to integer
+        const color1Int = parseInt(color1.replace('#', ''), 16);
+        const color2Int = parseInt(color2.replace('#', ''), 16);
+
+        // Check if server has ENHANCED_ROLE_COLORS feature
+        if (!message.guild.features.includes('ENHANCED_ROLE_COLORS')) {
+          return embeds.warn(message, `This server needs **Enhanced Roles** (ENHANCED_ROLE_COLORS) unlocked to use gradient colors. Try using \`,role color\` for a single color instead.`);
+        }
+
+        // Use REST API to set gradient colors (array of 2 colors)
         try {
-          if (role.setColors && typeof role.setColors === 'function') {
-            await role.setColors([color1, color2], `Role gradient colors changed by ${message.author.tag}`);
-          } else {
-            await role.edit({
-              color: [color1, color2]
-            }, `Role gradient colors changed by ${message.author.tag}`);
-          }
+          await client.rest.patch(
+            `/guilds/${message.guild.id}/roles/${role.id}`,
+            {
+              body: {
+                color: [color1Int, color2Int]
+              },
+              reason: `Role gradient colors changed by ${message.author.tag}`
+            }
+          );
           return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${color1} → ${color2})`);
         } catch (gradientError) {
+          console.error('Gradient error:', gradientError);
           if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES')) {
-            return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors. Try using \`,role color\` for a single color instead.`);
+            return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors.`);
           }
-          return embeds.deny(message, `Failed to set gradient colors. This feature may not be supported.`);
+          return embeds.deny(message, `Failed to set gradient colors: ${gradientError.message || 'Unknown error'}`);
         }
       } catch (error) {
         return embeds.deny(message, `Could not parse colors. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\``);
