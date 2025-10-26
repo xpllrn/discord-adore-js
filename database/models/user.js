@@ -282,6 +282,28 @@ const userSchema = new mongoose.Schema({
     }
   }],
 
+  // Spotify Integration
+  SpotifyAccessToken: {
+    type: String,
+    default: null // Encrypted access token
+  },
+  SpotifyRefreshToken: {
+    type: String,
+    default: null // Encrypted refresh token
+  },
+  SpotifyTokenExpiry: {
+    type: Date,
+    default: null // When the access token expires
+  },
+  SpotifyUserId: {
+    type: String,
+    default: null // Spotify user ID
+  },
+  SpotifyLinkedAt: {
+    type: Date,
+    default: null // When the account was linked
+  },
+
 
 
 
@@ -305,8 +327,8 @@ userSchema.index({ 'LastFMLibrary.tracks.plays': -1 }); // Top tracks by plays
 userSchema.index({ 'LastFMLibrary.lastUpdated': -1 }); // Recent library updates
 
 // Spotify indexes
-userSchema.index({ 'Spotify.spotifyId': 1 });
-userSchema.index({ 'Spotify.accessToken': 1 }); // For token validation
+userSchema.index({ SpotifyUserId: 1 });
+userSchema.index({ SpotifyLinkedAt: -1 }); // Recent Spotify links
 
 // Gambling system indexes
 userSchema.index({ 'Gambling.wallet': -1 }); // Richest users by wallet
