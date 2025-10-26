@@ -77,9 +77,9 @@ async function handleUserBlacklist(client, message, args) {
 
     let success;
     if (newBlacklistStatus) {
-      success = await systemService.addUserBlacklist(userId, reason, message.author.id);
+      success = await systemService.addUserToBlacklist(userId, reason, message.author.id);
     } else {
-      success = await systemService.removeUserBlacklist(userId);
+      success = await systemService.removeUserFromBlacklist(userId);
     }
 
     if (!success) {
@@ -116,9 +116,9 @@ async function handleServerBlacklist(client, message, args) {
 
     let success;
     if (newBlacklistStatus) {
-      success = await systemService.addServerBlacklist(serverId, reason, message.author.id);
+      success = await systemService.addServerToBlacklist(serverId, reason, message.author.id);
     } else {
-      success = await systemService.removeServerBlacklist(serverId);
+      success = await systemService.removeServerFromBlacklist(serverId);
     }
 
     if (!success) {
@@ -182,7 +182,8 @@ function createPaginatedList(message, items, title, itemsPerPage = 6) {
 async function listBlacklistedUsers(client, message) {
   try {
     const { getService } = require('@services'); const systemService = getService('system');
-    const blacklistedUsers = await systemService.getAllBlacklistedUsers();
+    const blacklistInfo = await systemService.getBlacklistInfo();
+    const blacklistedUsers = blacklistInfo.users || [];
 
     if (blacklistedUsers.length === 0) {
       return embeds.info(message, 'No users are currently **blacklisted**.');
@@ -191,11 +192,14 @@ async function listBlacklistedUsers(client, message) {
     const userList = [];
     for (let i = 0; i < blacklistedUsers.length; i++) {
       const user = blacklistedUsers[i];
+      const userId = typeof user === 'string' ? user : user.userId;
+      const reason = typeof user === 'string' ? 'No reason provided' : (user.reason || 'No reason provided');
+      
       try {
-        const discordUser = await client.users.fetch(user.userId);
-        userList.push(`\`${i + 1}\` **${discordUser.username}** (\`${user.userId}\`) - ${user.reason}`);
+        const discordUser = await client.users.fetch(userId);
+        userList.push(`\`${i + 1}\` **${discordUser.username}** (\`${userId}\`) - ${reason}`);
       } catch {
-        userList.push(`\`${i + 1}\` **Blacklisted User** (\`${user.userId}\`) - ${user.reason}`);
+        userList.push(`\`${i + 1}\` **Blacklisted User** (\`${userId}\`) - ${reason}`);
       }
     }
 
@@ -209,7 +213,8 @@ async function listBlacklistedUsers(client, message) {
 async function listBlacklistedServers(client, message) {
   try {
     const { getService } = require('@services'); const systemService = getService('system');
-    const blacklistedServers = await systemService.getAllBlacklistedServers();
+    const blacklistInfo = await systemService.getBlacklistInfo();
+    const blacklistedServers = blacklistInfo.servers || [];
 
     if (blacklistedServers.length === 0) {
       return embeds.info(message, 'No servers are currently **blacklisted**.');
@@ -218,12 +223,15 @@ async function listBlacklistedServers(client, message) {
     const serverList = [];
     for (let i = 0; i < blacklistedServers.length; i++) {
       const server = blacklistedServers[i];
+      const serverId = typeof server === 'string' ? server : server.serverId;
+      const reason = typeof server === 'string' ? 'No reason provided' : (server.reason || 'No reason provided');
+      
       try {
-        const guild = client.guilds.cache.get(server.serverId);
+        const guild = client.guilds.cache.get(serverId);
         const serverName = guild ? guild.name : 'Unknown Server';
-        serverList.push(`\`${i + 1}\` **${serverName}** (\`${server.serverId}\`) - ${server.reason}`);
+        serverList.push(`\`${i + 1}\` **${serverName}** (\`${serverId}\`) - ${reason}`);
       } catch {
-        serverList.push(`\`${i + 1}\` **blacklisted srv** (\`${server.serverId}\`) - ${server.reason}`);
+        serverList.push(`\`${i + 1}\` **blacklisted srv** (\`${serverId}\`) - ${reason}`);
       }
     }
 

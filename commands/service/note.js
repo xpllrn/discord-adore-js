@@ -70,7 +70,7 @@ module.exports = {
     } else if (args[0] === 'list' || !args[0]) {
 
       try {
-        const notes = await userService.getNotesData(message.author.id);
+        const notes = await userService.getNotes(message.author.id);
 
         if (notes && notes.length > 0) {
           // Sort notes by ID for consistent display
@@ -110,7 +110,7 @@ module.exports = {
     } else if (args[0] === 'reset' || args[0] === 'clear') {
 
       try {
-        const notes = await userService.getNotesData(message.author.id);
+        const notes = await userService.getNotes(message.author.id);
 
         if (notes && notes.length > 0) {
           // Show confirmation dialog
@@ -119,7 +119,7 @@ module.exports = {
             'Are you sure you want to **remove all notes**?',
             async (interaction) => {
               // On approve: delete all notes using service layer
-              await userService.clearAllNotes(message.author.id);
+              await userService.clearNotes(message.author.id);
 
               // Edit the confirmation embed to show success message
               const successEmbed = embeds.createSuccess(message, 'Removed all notes');
