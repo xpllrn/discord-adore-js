@@ -41,9 +41,19 @@ module.exports = {
 
     // Handle modal submission
     if (interaction.isModalSubmit() && interaction.customId.startsWith('spotify_submit_')) {
-      const parts = interaction.customId.split('_');
-      const userId = parts[2];
-      const state = parts[3];
+      // Extract userId and state from customId
+      // Format: spotify_submit_${userId}_${state}
+      const customId = interaction.customId;
+      const prefix = 'spotify_submit_';
+      const afterPrefix = customId.substring(prefix.length);
+      const firstUnderscoreIndex = afterPrefix.indexOf('_');
+      
+      const userId = afterPrefix.substring(0, firstUnderscoreIndex);
+      const state = afterPrefix.substring(firstUnderscoreIndex + 1);
+      
+      console.log(`[Spotify Modal] CustomId: ${customId}`);
+      console.log(`[Spotify Modal] Extracted userId: ${userId}`);
+      console.log(`[Spotify Modal] Extracted state: ${state}`);
 
       // Check if the submitter is the authorized user
       if (interaction.user.id !== userId) {
