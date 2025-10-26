@@ -38,11 +38,17 @@ class SpotifyService extends BaseService {
     if (!this.authSessionModel) {
       const { getConnectionManager } = require('./core/ConnectionManager');
       const connectionManager = getConnectionManager();
-      const connections = connectionManager.getConnections();
-      const connection = connections.global || connections.local;
       
-      if (!connection) {
-        throw new ServiceError('No database connection available');
+      // Try to get global connection first, fallback to local
+      let connection;
+      try {
+        connection = connectionManager.getConnection('global');
+      } catch (error) {
+        try {
+          connection = connectionManager.getConnection('local');
+        } catch (localError) {
+          throw new ServiceError('No database connection available');
+        }
       }
 
       const { schema } = require('../models/spotifyAuthSession');
