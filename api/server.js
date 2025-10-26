@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const { getService } = require('@services');
 
 const app = express();
@@ -8,6 +9,9 @@ const HOST = process.env.BOT_API_HOST || '0.0.0.0';
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Request logging middleware
 app.use((req, res, next) => {
