@@ -30,7 +30,7 @@ module.exports = {
           }
 
           // Create auth session and get OAuth URL
-          const { authUrl, state } = await spotifyService.createAuthSession(
+          const { authUrl, stateToken } = await spotifyService.createAuthSession(
             message.author.id,
             message.guild.id
           );
@@ -62,7 +62,7 @@ module.exports = {
                 .setURL(authUrl)
                 .setEmoji('🎵'),
               new ButtonBuilder()
-                .setCustomId(`spotify_code_${message.author.id}_${state}`)
+                .setCustomId(`spotify_code_${message.author.id}_${stateToken}`)
                 .setLabel('Enter Code')
                 .setStyle(ButtonStyle.Success)
                 .setEmoji('📝')
