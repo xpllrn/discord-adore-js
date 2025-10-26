@@ -5,11 +5,13 @@ const { getShutdownManager } = require('./utils/GracefulShutdown');
 const userSchema = require('./models/user');
 const guildSchema = require('./models/guild');
 const systemSchema = require('./models/system');
+const spotifyAuthSessionSchema = require('./models/spotifyAuthSession');
 
 // Model instances (will be created after connection)
 let User = null;
 let Guild = null;
 let System = null;
+let SpotifyAuthSession = null;
 
 // Database readiness state
 let isDatabaseFullyReady = false;
@@ -44,6 +46,7 @@ async function _performInitialization(connectionStrings) {
       // User data goes to global database
       User = connections.global.model('User', userSchema.schema);
       System = connections.global.model('System', systemSchema.schema);
+      SpotifyAuthSession = connections.global.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
     }
 
     if (connections.local) {
@@ -54,6 +57,7 @@ async function _performInitialization(connectionStrings) {
       if (!connections.global) {
         User = connections.local.model('User', userSchema.schema);
         System = connections.local.model('System', systemSchema.schema);
+        SpotifyAuthSession = connections.local.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
       }
     }
 
@@ -709,13 +713,14 @@ module.exports = {
     if (!isDatabaseFullyReady) {
       return null;
     }
-    return { User, Guild, System };
+    return { User, Guild, System, SpotifyAuthSession };
   },
 
   // Model getters (since models are created dynamically)
   get User() { return User; },
   get Guild() { return Guild; },
   get System() { return System; },
+  get SpotifyAuthSession() { return SpotifyAuthSession; },
 
   // Deprecated model aliases for backward compatibility
   // These should be migrated to use cache system instead

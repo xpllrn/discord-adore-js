@@ -36,23 +36,21 @@ class SpotifyService extends BaseService {
    */
   getAuthSessionModel() {
     if (!this.authSessionModel) {
-      const { getConnectionManager } = require('./core/ConnectionManager');
-      const connectionManager = getConnectionManager();
+      const { getModels } = require('../../database');
+      const models = getModels();
       
-      // Try to get global connection first, fallback to local
-      let connection;
-      try {
-        connection = connectionManager.getConnection('global');
-      } catch (error) {
-        try {
-          connection = connectionManager.getConnection('local');
-        } catch (localError) {
-          throw new ServiceError('No database connection available');
-        }
+      if (!models) {
+        throw new ServiceError('Database models not available');
       }
 
-      const { schema } = require('../models/spotifyAuthSession');
-      this.authSessionModel = connection.model('SpotifyAuthSession', schema);
+      // Check if SpotifyAuthSession model exists, if not create it
+      if (!models.SpotifyAuthSession) {
+        const { schema } = require('../models/spotifyAuthSession');
+        const mongoose = require('mongoose');
+        this.authSessionModel = mongoose.model('SpotifyAuthSession', schema);
+      } else {
+        this.authSessionModel = models.SpotifyAuthSession;
+      }
     }
     return this.authSessionModel;
   }
