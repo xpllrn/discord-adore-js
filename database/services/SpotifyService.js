@@ -1,6 +1,6 @@
 const BaseService = require('./core/BaseService');
 const { ValidationError, NotFoundError, DatabaseWriteError, ServiceError } = require('./core/errors');
-const { encrypt, decrypt, generateStateToken } = require('../../utils/encryption');
+const crypto = require('crypto');
 const axios = require('axios');
 
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
@@ -65,7 +65,7 @@ class SpotifyService extends BaseService {
    */
   async createAuthSession(userId, guildId) {
     try {
-      const stateToken = generateStateToken();
+      const stateToken = crypto.randomBytes(32).toString('hex');
       const AuthSessionModel = this.getAuthSessionModel();
 
       // Create auth session in database
@@ -191,22 +191,21 @@ class SpotifyService extends BaseService {
 
       if (expiry <= fiveMinutesFromNow) {
         // Token expired or expiring soon, refresh it
-        const decryptedRefreshToken = decrypt(userData.SpotifyRefreshToken);
-        const newTokens = await this.refreshAccessToken(decryptedRefreshToken);
+        const newTokens = await this.refreshAccessToken(userData.SpotifyRefreshToken);
         
         // Store new tokens
         await this.storeTokens(
           userId,
           newTokens.accessToken,
-          decryptedRefreshToken,
+          userData.SpotifyRefreshToken,
           newTokens.expiresIn
         );
 
         return newTokens.accessToken;
       }
 
-      // Token is still valid, decrypt and return
-      return decrypt(userData.SpotifyAccessToken);
+      // Token is still valid, return it
+      return userData.SpotifyAccessToken;
     } catch (error) {
       console.error('Error getting access token:', error.message);
       return null;
@@ -258,13 +257,11 @@ class SpotifyService extends BaseService {
    */
   async storeTokens(userId, accessToken, refreshToken, expiresIn) {
     try {
-      const encryptedAccessToken = encrypt(accessToken);
-      const encryptedRefreshToken = encrypt(refreshToken);
       const expiry = new Date(Date.now() + expiresIn * 1000);
 
       await this.update(userId, {
-        SpotifyAccessToken: encryptedAccessToken,
-        SpotifyRefreshToken: encryptedRefreshToken,
+        SpotifyAccessToken: accessToken,
+        SpotifyRefreshToken: refreshToken,
         SpotifyTokenExpiry: expiry,
         SpotifyLinkedAt: new Date()
       });
