@@ -259,15 +259,20 @@ class SpotifyService extends BaseService {
     try {
       const expiry = new Date(Date.now() + expiresIn * 1000);
 
-      await this.update(userId, {
-        SpotifyAccessToken: accessToken,
-        SpotifyRefreshToken: refreshToken,
-        SpotifyTokenExpiry: expiry,
-        SpotifyLinkedAt: new Date()
-      });
+      // Get existing user data
+      const userData = await this.get(userId);
+      if (!userData) {
+        throw new ServiceError('User data not found');
+      }
 
-      // Invalidate cache to force fresh read
-      this.cache.delete(userId);
+      // Update with Spotify tokens
+      userData.SpotifyAccessToken = accessToken;
+      userData.SpotifyRefreshToken = refreshToken;
+      userData.SpotifyTokenExpiry = expiry;
+      userData.SpotifyLinkedAt = new Date();
+
+      // Save updated data
+      await this.set(userId, userData);
     } catch (error) {
       throw new ServiceError('Failed to store Spotify tokens', error);
     }
@@ -281,9 +286,13 @@ class SpotifyService extends BaseService {
    */
   async storeSpotifyUserId(userId, spotifyUserId) {
     try {
-      await this.update(userId, {
-        SpotifyUserId: spotifyUserId
-      });
+      const userData = await this.get(userId);
+      if (!userData) {
+        throw new ServiceError('User data not found');
+      }
+
+      userData.SpotifyUserId = spotifyUserId;
+      await this.set(userId, userData);
     } catch (error) {
       throw new ServiceError('Failed to store Spotify user ID', error);
     }
@@ -296,16 +305,18 @@ class SpotifyService extends BaseService {
    */
   async revokeTokens(userId) {
     try {
-      await this.update(userId, {
-        SpotifyAccessToken: null,
-        SpotifyRefreshToken: null,
-        SpotifyTokenExpiry: null,
-        SpotifyUserId: null,
-        SpotifyLinkedAt: null
-      });
+      const userData = await this.get(userId);
+      if (!userData) {
+        throw new ServiceError('User data not found');
+      }
 
-      // Invalidate cache
-      this.cache.delete(userId);
+      userData.SpotifyAccessToken = null;
+      userData.SpotifyRefreshToken = null;
+      userData.SpotifyTokenExpiry = null;
+      userData.SpotifyUserId = null;
+      userData.SpotifyLinkedAt = null;
+
+      await this.set(userId, userData);
     } catch (error) {
       throw new ServiceError('Failed to revoke Spotify tokens', error);
     }
