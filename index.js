@@ -135,18 +135,9 @@ client.findUser = findUser;
 client.findChannel = findChannel;
 client.findGuild = findGuild;
 
-// Start API server for Spotify OAuth callbacks
-const { startServer, stopServer } = require('./api/server');
-startServer().catch(error => {
-  console.error('Failed to start API server:', error);
-});
-
 // Graceful shutdown handlers
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down bot...');
-
-  // Stop API server
-  await stopServer();
 
   // Close Discord client
   client.destroy();
@@ -155,9 +146,6 @@ process.on('SIGINT', async () => {
 
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
-
-  // Stop API server
-  await stopServer();
 
   // Close Discord client
   client.destroy();
