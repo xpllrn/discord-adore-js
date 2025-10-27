@@ -43,7 +43,7 @@ module.exports = {
             })
             .setDescription(
               `Authorize **adore** to use your Spotify account. You give us permission to control your active player and show your music statistics through commands.\n\n` +
-              `If you want to remove your account with adore, run \`${guildprefix}spotify logout\`.\n\n -# first time adore user's have to **create a ticket** in [support server](https://discord.gg/qsJMaTURqf) first to use spotify commands.`
+              `If you want to remove your account with adore, run \`${guildprefix}spotify logout\`.\n\n-# First time adore users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) first to use spotify commands.`
             );
 
           // Create buttons
@@ -114,7 +114,7 @@ module.exports = {
               // Edit the confirmation message with success
               const successEmbed = new EmbedBuilder()
                 .setColor(config.colors.success)
-                .setDescription(`${config.emojis.success} ${message.author}: Your **Spotify** account has been unlinked!`);
+                .setDescription(`${config.emojis.success} ${message.author}: Your **Spotify** account has been **unlinked**!`);
 
               await interaction.update({ embeds: [successEmbed], components: [] });
             }

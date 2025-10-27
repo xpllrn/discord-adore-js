@@ -190,7 +190,7 @@ async function playFromUser(client, message, args, spotifyService, accessToken) 
       const spotifyActivity = member.presence?.activities?.find(activity => activity.name === 'Spotify' && activity.type === 2);
 
       if (!spotifyActivity) {
-        return embeds.warn(message, `**${targetUser.username}** is not currently playing anything on Spotify.`);
+        return embeds.warn(message, `**${targetUser.username}** isn't listening to any **music** right now!`);
       }
 
       // Extract track info from presence

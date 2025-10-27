@@ -37,7 +37,7 @@ async function checkActiveDevices(message, accessToken) {
   const devices = await spotifyService.getActiveDevices(accessToken);
 
   if (!devices || devices.length === 0) {
-    embeds.warn(message, 'No active **Spotify** device found. Please open Spotify on a device first.');
+    embeds.warn(message, '**Player command failed**: No `active device` found!');
     return null;
   }
 
@@ -53,11 +53,11 @@ function handleSpotifyError(message, error) {
   const errorCode = error.message || error.code;
 
   if (errorCode === 'NO_ACTIVE_DEVICE') {
-    return embeds.warn(message, 'No active **Spotify** device found. Please open Spotify on a device first.');
+    return embeds.warn(message, '**Player command failed**: No `active device` found!');
   }
 
   if (errorCode === 'PREMIUM_REQUIRED') {
-    return embeds.warn(message, '**Spotify Premium** is required for this feature.');
+    return embeds.warn(message, '**Premium** is required for **playback** feature.');
   }
 
   if (errorCode === 'TOKEN_EXPIRED') {
@@ -65,7 +65,7 @@ function handleSpotifyError(message, error) {
   }
 
   if (errorCode === 'PLAYBACK_ERROR') {
-    return embeds.warn(message, 'Failed to control playback. Make sure **Spotify** is open on a device.');
+    return embeds.warn(message, '**Player command failed**: No `active device` found!');
   }
 
   // Default error

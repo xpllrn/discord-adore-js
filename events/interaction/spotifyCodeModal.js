@@ -152,11 +152,12 @@ module.exports = {
           );
 
           if (authMessage) {
-            // Edit the original message with success
+            // Edit the original message with success and ticket requirement
             const successEmbed = new EmbedBuilder()
               .setColor(config.colors.success)
               .setDescription(
-                `${config.emojis.success} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
+                `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
+                `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`
               );
 
             await authMessage.edit({ embeds: [successEmbed], components: [] });
@@ -165,7 +166,8 @@ module.exports = {
             const successEmbed = new EmbedBuilder()
               .setColor(config.colors.success)
               .setDescription(
-                `${config.emojis.success} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
+                `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
+                `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`
               );
 
             await interaction.channel.send({ embeds: [successEmbed] });
@@ -177,7 +179,8 @@ module.exports = {
           const successEmbed = new EmbedBuilder()
             .setColor(config.colors.success)
             .setDescription(
-              `${config.emojis.success} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
+              `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
+              `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`
             );
 
           await interaction.channel.send({ embeds: [successEmbed] }).catch(() => {});
