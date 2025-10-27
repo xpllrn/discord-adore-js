@@ -151,37 +151,40 @@ module.exports = {
             msg.embeds[0].author?.name === 'Connect your Spotify account'
           );
 
-          if (authMessage) {
-            // Edit the original message with success and ticket requirement
-            const successEmbed = new EmbedBuilder()
-              .setColor(config.colors.success)
-              .setDescription(
-                `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-                `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`
-              );
+          let successMessage;
+          
+          // If we got the profile name, show it. Otherwise show ticket message
+          if (profileName !== 'your Spotify account') {
+            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!`;
+          } else {
+            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
+              `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`;
+          }
 
+          const successEmbed = new EmbedBuilder()
+            .setColor(config.colors.success)
+            .setDescription(successMessage);
+
+          if (authMessage) {
             await authMessage.edit({ embeds: [successEmbed], components: [] });
           } else {
-            // Fallback: send success message to channel if we can't find the original
-            const successEmbed = new EmbedBuilder()
-              .setColor(config.colors.success)
-              .setDescription(
-                `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-                `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`
-              );
-
             await interaction.channel.send({ embeds: [successEmbed] });
           }
         } catch (err) {
           // Couldn't edit original message, send to channel as fallback
           console.log('[Spotify Modal] Could not edit original message:', err.message);
           
+          let successMessage;
+          if (profileName !== 'your Spotify account') {
+            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!`;
+          } else {
+            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
+              `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`;
+          }
+
           const successEmbed = new EmbedBuilder()
             .setColor(config.colors.success)
-            .setDescription(
-              `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`
-            );
+            .setDescription(successMessage);
 
           await interaction.channel.send({ embeds: [successEmbed] }).catch(() => {});
         }

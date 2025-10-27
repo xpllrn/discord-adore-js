@@ -70,7 +70,7 @@ async function logGuildJoin(guild, client) {
 
     const embed = new EmbedBuilder()
       .setColor(colors.success)
-      .setDescription(`${emojis.join} adore successfully **linked** with **${guild.name}**\n\n> created on : <t:${Math.floor(guild.createdTimestamp / 1000)}:D>\n> created by : ${ownerInfo}`)
+      .setDescription(`adore successfully **linked** with **${guild.name}**\n\n> **created on** : <t:${Math.floor(guild.createdTimestamp / 1000)}:D>\n> **created by** : ${ownerInfo}`)
       .setAuthor({
         name: `${guild.name} (${guild.id})`,
         iconURL: guild.iconURL({ dynamic: true })
