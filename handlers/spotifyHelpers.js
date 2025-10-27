@@ -1,6 +1,4 @@
-const { EmbedBuilder } = require("discord.js");
-const { embeds } = require('../../core/embeds');
-const config = require('../../config/setup');
+const { embeds } = require('../core/embeds');
 const { getService } = require('@services');
 
 /**
