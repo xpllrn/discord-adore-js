@@ -52,13 +52,11 @@ module.exports = {
               new ButtonBuilder()
                 .setLabel('Authorize Spotify')
                 .setStyle(ButtonStyle.Link)
-                .setURL(authUrl)
-                .setEmoji(config.emojis.spotify),
+                .setURL(authUrl),
               new ButtonBuilder()
                 .setCustomId(`spotify_code_${message.author.id}_${stateToken}`)
                 .setLabel('Enter Code')
                 .setStyle(ButtonStyle.Secondary)
-                .setEmoji('📝')
             );
 
           const sentMessage = await message.channel.send({ embeds: [embed], components: [row] });
@@ -72,13 +70,11 @@ module.exports = {
                     .setLabel('Authorize Spotify')
                     .setStyle(ButtonStyle.Link)
                     .setURL(authUrl)
-                    .setEmoji(config.emojis.spotify)
                     .setDisabled(true),
                   new ButtonBuilder()
                     .setCustomId(`spotify_code_expired`)
                     .setLabel('Enter Code')
                     .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('📝')
                     .setDisabled(true)
                 );
 
@@ -111,10 +107,16 @@ module.exports = {
           await createConfirmation(
             message,
             'Are you sure that you would like to unlink your **Spotify**?',
-            async () => {
+            async (interaction, confirmMessage) => {
               // On approve - revoke tokens
               await spotifyService.revokeTokens(message.author.id);
-              return embeds.success(message, 'Your **Spotify** account has been unlinked!');
+              
+              // Edit the confirmation message with success
+              const successEmbed = new EmbedBuilder()
+                .setColor(config.colors.success)
+                .setDescription(`${config.emojis.success} ${message.author}: Your **Spotify** account has been unlinked!`);
+              
+              await interaction.update({ embeds: [successEmbed], components: [] });
             }
           );
 

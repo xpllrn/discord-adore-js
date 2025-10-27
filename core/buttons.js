@@ -284,24 +284,9 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                 }
 
                 if (interaction.customId === 'confirm_approve') {
-                    // Disable buttons
-                    const disabledButtons = createButtons(true);
-                    try {
-                        await interaction.update({
-                            components: [disabledButtons]
-                        });
-                    } catch (error) {
-                        if (error.code === 10062) {
-
-                            await sentMessage.edit({ components: [disabledButtons] });
-                        } else {
-                            throw error;
-                        }
-                    }
-
-                    // Execute approve function
+                    // Execute approve function and pass interaction for editing
                     if (onApprove) {
-                        await onApprove(interaction);
+                        await onApprove(interaction, sentMessage);
                     }
 
                     collector.stop();

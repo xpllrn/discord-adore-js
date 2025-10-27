@@ -30,6 +30,9 @@ module.exports = {
 {guildprefix}vm claim`,
   permission: 'Manage Channels',
   run: async (client, message, args) => {
+    // Initialize guildService
+    const guildService = getService('guild');
+    
     // Prevent multiple executions
     const executionKey = `${message.author.id}-${message.guild.id}-${Date.now()}`;
     const lastExecution = executionTracker.get(message.author.id);

@@ -1,4 +1,4 @@
-const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getService } = require('@services');
 const config = require('../../config/setup');
 
@@ -142,19 +142,42 @@ module.exports = {
         const successEmbed = new EmbedBuilder()
           .setColor(config.colors.success)
           .setDescription(
-            `${config.emojis.spotify} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
+            `${config.emojis.success} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
           );
 
         await interaction.editReply({ embeds: [successEmbed] });
 
-        // Also send to channel
+        // Find and edit the original authorization message
         try {
-          await interaction.channel.send({
-            content: `<@${userId}>`,
-            embeds: [successEmbed]
-          });
+          // Get the message that contains the authorization buttons
+          const messages = await interaction.channel.messages.fetch({ limit: 20 });
+          const authMessage = messages.find(msg => 
+            msg.author.id === interaction.client.user.id &&
+            msg.embeds.length > 0 &&
+            msg.embeds[0].author?.name === 'Connect your Spotify account'
+          );
+
+          if (authMessage) {
+            // Disable the buttons on the original message
+            const disabledRow = new ActionRowBuilder()
+              .addComponents(
+                new ButtonBuilder()
+                  .setLabel('Authorize Spotify')
+                  .setStyle(ButtonStyle.Link)
+                  .setURL('https://spotify.com')
+                  .setDisabled(true),
+                new ButtonBuilder()
+                  .setCustomId(`spotify_code_disabled`)
+                  .setLabel('Enter Code')
+                  .setStyle(ButtonStyle.Secondary)
+                  .setDisabled(true)
+              );
+
+            await authMessage.edit({ components: [disabledRow] });
+          }
         } catch (err) {
-          // Channel message failed, that's okay
+          // Couldn't edit original message, that's okay
+          console.log('[Spotify Modal] Could not edit original message:', err.message);
         }
 
       } catch (error) {
