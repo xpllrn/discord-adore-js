@@ -8,7 +8,7 @@ module.exports = {
   aliases: ['next'],
   description: 'Skip to the next track on Spotify',
   usage: '{guildprefix}skip',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const spotifyService = getService('spotify');
 
     try {
@@ -19,14 +19,14 @@ module.exports = {
 
       // Wait a moment then get the new track
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       const nowPlaying = await spotifyService.getCurrentlyPlaying(accessToken);
-      
+
       if (nowPlaying && nowPlaying.item) {
         const track = nowPlaying.item;
         const trackName = track.name;
         const artistName = track.artists.map(a => a.name).join(', ');
-        
+
         const embed = new EmbedBuilder()
           .setColor(config.colors.embed)
           .setDescription(`${config.emojis.spotifyNext} Skipped current track — now playing **${trackName}** by **${artistName}**`);

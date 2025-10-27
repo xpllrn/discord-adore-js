@@ -4,44 +4,13 @@ const config = require('../../config/setup');
 const { getService } = require('@services');
 const { getGuildPrefix, runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
-
-/**
- * Handle Spotify service errors with user-friendly messages
- */
-function handleSpotifyError(message, error) {
-  const errorCode = error.message || error.code;
-  
-  if (errorCode === 'NO_ACTIVE_DEVICE') {
-    const embed = new EmbedBuilder()
-      .setColor(config.colors.warn)
-      .setDescription(`${config.emojis.warn} No active **Spotify** device found. Please open Spotify on a device first.`);
-    return message.channel.send({ embeds: [embed] });
-  }
-  
-  if (errorCode === 'PREMIUM_REQUIRED') {
-    const embed = new EmbedBuilder()
-      .setColor(config.colors.warn)
-      .setDescription(`${config.emojis.warn} **Spotify Premium** is required for this feature.`);
-    return message.channel.send({ embeds: [embed] });
-  }
-  
-  if (errorCode === 'TOKEN_EXPIRED') {
-    return embeds.warn(message, 'Your **Spotify** session expired. Please run `,spotify login` again.');
-  }
-  
-  if (errorCode === 'PLAYBACK_ERROR') {
-    return embeds.warn(message, 'Failed to control playback. Make sure **Spotify** is open on a device.');
-  }
-  
-  // Default error
-  return embeds.warn(message, error.message || 'An error occurred with **Spotify**.');
-}
+const { handleSpotifyError, checkSpotifyAccess, checkActiveDevices } = require('./spotifyHelpers');
 
 module.exports = {
   name: "play",
   aliases: [],
   description: 'Play a song on your Spotify',
-  usage: '{guildprefix}play [song name]\n{guildprefix}play [@user]',
+  usage: '{guildprefix}play [song name]\n{guildprefix}play [@user]\n{guildprefix}play [spotify link]\n{guildprefix}play [artist name]',
   run: async(client, message, args) => {
     const spotifyService = getService('spotify');
     const guildprefix = await getGuildPrefix(message.guild.id);
@@ -52,23 +21,27 @@ module.exports = {
 
     try {
       // Check if requesting user has linked Spotify
-      const isLinked = await spotifyService.isLinked(message.author.id);
-      
-      if (!isLinked) {
-        return embeds.warn(message, 'You haven\'t linked your Spotify account. Use `' + guildprefix + 'spotify link` to get started.');
-      }
+      const { isLinked, accessToken } = await checkSpotifyAccess(message);
+      if (!isLinked || !accessToken) return;
 
-      // Check if first argument is a user mention
+      // Check for active devices
+      const devices = await checkActiveDevices(message, accessToken);
+      if (!devices) return;
+
       const firstArg = args[0];
-      const isMention = firstArg.startsWith('<@') && firstArg.endsWith('>');
-
-      if (isMention) {
-        // Play from another user's currently playing track
-        await playFromUser(client, message, args, spotifyService, guildprefix);
-      } else {
-        // Play by song name
-        await playBySongName(client, message, args, spotifyService);
+      
+      // Check if it's a user mention
+      if (firstArg.startsWith('<@') && firstArg.endsWith('>')) {
+        return await playFromUser(client, message, args, spotifyService, accessToken);
       }
+      
+      // Check if it's a Spotify link
+      if (firstArg.includes('spotify.com/') || firstArg.startsWith('spotify:')) {
+        return await playFromSpotifyLink(message, args, spotifyService, accessToken);
+      }
+      
+      // Otherwise, search by query (song name or artist)
+      return await playBySearch(message, args, spotifyService, accessToken);
 
     } catch (error) {
       console.error('[Play Command] Error:', error);
@@ -78,21 +51,65 @@ module.exports = {
 };
 
 /**
- * Play a song by searching for it
+ * Play from a Spotify link (track, album, or playlist)
  */
-async function playBySongName(client, message, args, spotifyService) {
+async function playFromSpotifyLink(message, args, spotifyService, accessToken) {
   try {
-    const query = args.join(' ');
-    
-    // Show typing indicator
+    const link = args[0];
     await message.channel.sendTyping();
 
-    // Get access token (auto-refreshes if needed)
-    const accessToken = await spotifyService.getAccessToken(message.author.id);
-    
-    if (!accessToken) {
-      return embeds.warn(message, 'Failed to get Spotify access token. Please try linking your account again.');
+    // Parse Spotify URI/URL
+    let uri = link;
+    if (link.includes('spotify.com/')) {
+      // Convert URL to URI
+      const match = link.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
+      if (!match) {
+        return embeds.warn(message, 'Invalid **Spotify** link. Please provide a track, album, or playlist link.');
+      }
+      uri = `spotify:${match[1]}:${match[2]}`;
     }
+
+    // Validate URI format
+    if (!uri.match(/^spotify:(track|album|playlist):[a-zA-Z0-9]+$/)) {
+      return embeds.warn(message, 'Invalid **Spotify** URI format.');
+    }
+
+    const [, type, id] = uri.split(':');
+
+    // Start playback based on type
+    if (type === 'track') {
+      await spotifyService.startPlayback(uri, accessToken);
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.embed)
+        .setDescription(`${config.emojis.musicNote} ${message.author}: Now playing track from **Spotify** link`);
+      return message.channel.send({ embeds: [embed] });
+    } else if (type === 'album' || type === 'playlist') {
+      // For albums and playlists, use context_uri
+      const axios = require('axios');
+      await axios.put(
+        'https://api.spotify.com/v1/me/player/play',
+        { context_uri: uri },
+        { headers: { 'Authorization': `Bearer ${accessToken}` } }
+      );
+      const typeLabel = type === 'album' ? 'album' : 'playlist';
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.embed)
+        .setDescription(`${config.emojis.musicNote} ${message.author}: Now playing **Spotify** ${typeLabel}`);
+      return message.channel.send({ embeds: [embed] });
+    }
+
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Play by searching for a song or artist
+ */
+async function playBySearch(message, args, spotifyService, accessToken) {
+  try {
+    const query = args.join(' ');
+    await message.channel.sendTyping();
 
     // Search for tracks
     const tracks = await spotifyService.searchTrack(query, accessToken);
@@ -102,16 +119,6 @@ async function playBySongName(client, message, args, spotifyService) {
     }
 
     const track = tracks[0]; // Use first result
-
-    // Check for active devices
-    const devices = await spotifyService.getActiveDevices(accessToken);
-
-    if (!devices || devices.length === 0) {
-      const embed = new EmbedBuilder()
-        .setColor(config.colors.warn)
-        .setDescription(`${config.emojis.warn} No active **Spotify** device found. Please open Spotify on a device first.`);
-      return message.channel.send({ embeds: [embed] });
-    }
 
     // Start playback
     await spotifyService.startPlayback(track.uri, accessToken);
@@ -137,7 +144,7 @@ async function playBySongName(client, message, args, spotifyService) {
 /**
  * Play the track that another user is currently listening to
  */
-async function playFromUser(client, message, args, spotifyService, guildprefix) {
+async function playFromUser(client, message, args, spotifyService, accessToken) {
   try {
     // Parse user mention
     const userResult = await findUser(message.guild, args[0], client);
@@ -155,7 +162,6 @@ async function playFromUser(client, message, args, spotifyService, guildprefix) 
       return embeds.warn(message, `**${targetUser.tag}** hasn't linked their Spotify account.`);
     }
 
-    // Show typing indicator
     await message.channel.sendTyping();
 
     // Get target user's access token
@@ -174,23 +180,6 @@ async function playFromUser(client, message, args, spotifyService, guildprefix) 
 
     const track = currentlyPlaying.item;
 
-    // Get requesting user's access token
-    const accessToken = await spotifyService.getAccessToken(message.author.id);
-    
-    if (!accessToken) {
-      return embeds.warn(message, 'Failed to get your Spotify access token. Please try linking your account again.');
-    }
-
-    // Check for active devices
-    const devices = await spotifyService.getActiveDevices(accessToken);
-
-    if (!devices || devices.length === 0) {
-      const embed = new EmbedBuilder()
-        .setColor(config.colors.warn)
-        .setDescription(`${config.emojis.warn} No active **Spotify** device found. Please open Spotify on a device first.`);
-      return message.channel.send({ embeds: [embed] });
-    }
-
     // Start playback on requesting user's device
     await spotifyService.startPlayback(track.uri, accessToken);
 
@@ -202,7 +191,7 @@ async function playFromUser(client, message, args, spotifyService, guildprefix) 
     const embed = new EmbedBuilder()
       .setColor(config.colors.embed)
       .setDescription(
-        `${config.emojis.musicNote} ${message.author}: Now playing [\`${trackName}\`](${trackUrl}) by \`${artistName}\``
+        `${config.emojis.musicNote} ${message.author}: Now playing [\`${trackName}\`](${trackUrl}) by \`${artistName}\` (from **${targetUser.username}**'s Spotify)`
       );
 
     return message.channel.send({ embeds: [embed] });
