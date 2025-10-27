@@ -154,40 +154,62 @@ async function playFromUser(client, message, args, spotifyService, accessToken) 
     }
 
     const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
+    let trackUri = null;
+    let trackName = null;
+    let artistName = null;
+    let trackUrl = null;
 
     // Check if target user has linked Spotify
     const isTargetLinked = await spotifyService.isLinked(targetUser.id);
     
-    if (!isTargetLinked) {
-      return embeds.warn(message, `**${targetUser.tag}** hasn't linked their Spotify account.`);
+    if (isTargetLinked) {
+      // Try to get from linked Spotify account
+      await message.channel.sendTyping();
+
+      const targetAccessToken = await spotifyService.getAccessToken(targetUser.id);
+      
+      if (targetAccessToken) {
+        const currentlyPlaying = await spotifyService.getCurrentlyPlaying(targetAccessToken);
+
+        if (currentlyPlaying && currentlyPlaying.item) {
+          const track = currentlyPlaying.item;
+          trackUri = track.uri;
+          trackName = track.name;
+          artistName = track.artists.map(a => a.name).join(', ');
+          trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
+        }
+      }
     }
 
-    await message.channel.sendTyping();
+    // Fallback: Check Discord presence for Spotify activity
+    if (!trackUri) {
+      await message.channel.sendTyping();
+      
+      // Fetch the guild member to get fresh presence data
+      const member = await message.guild.members.fetch(targetUser.id);
+      const spotifyActivity = member.presence?.activities?.find(activity => activity.name === 'Spotify' && activity.type === 2);
 
-    // Get target user's access token
-    const targetAccessToken = await spotifyService.getAccessToken(targetUser.id);
-    
-    if (!targetAccessToken) {
-      return embeds.warn(message, `Failed to get Spotify access for **${targetUser.tag}**.`);
+      if (!spotifyActivity) {
+        return embeds.warn(message, `**${targetUser.username}** is not currently playing anything on Spotify.`);
+      }
+
+      // Extract track info from presence
+      trackName = spotifyActivity.details; // Song name
+      artistName = spotifyActivity.state; // Artist name
+      const trackId = spotifyActivity.syncId; // Spotify track ID
+      
+      if (!trackId) {
+        return embeds.warn(message, `Could not get track information from **${targetUser.username}**'s Spotify status.`);
+      }
+
+      trackUri = `spotify:track:${trackId}`;
+      trackUrl = `https://open.spotify.com/track/${trackId}`;
     }
-
-    // Get target user's currently playing track
-    const currentlyPlaying = await spotifyService.getCurrentlyPlaying(targetAccessToken);
-
-    if (!currentlyPlaying || !currentlyPlaying.item) {
-      return embeds.warn(message, `**${targetUser.tag}** is not currently playing anything on Spotify.`);
-    }
-
-    const track = currentlyPlaying.item;
 
     // Start playback on requesting user's device
-    await spotifyService.startPlayback(track.uri, accessToken);
+    await spotifyService.startPlayback(trackUri, accessToken);
 
     // Send success message
-    const trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
-    const trackName = track.name;
-    const artistName = track.artists.map(a => a.name).join(', ');
-    
     const embed = new EmbedBuilder()
       .setColor(config.colors.embed)
       .setDescription(
