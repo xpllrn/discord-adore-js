@@ -241,12 +241,17 @@ module.exports = {
         const messageId = interaction.customId.replace('sprint_update_modal_', '');
         const currentTabStr = interaction.fields.getTextInputValue('current_tab').trim();
 
-        const currentTab = parseInt(currentTabStr);
+        let currentTab = parseInt(currentTabStr);
         if (isNaN(currentTab) || currentTab < 0) {
           return interaction.reply({
             content: '❌ Invalid page number. Please enter a valid number.',
             flags: MessageFlags.Ephemeral
           });
+        }
+
+        // Cap at 9999
+        if (currentTab > 9999) {
+          currentTab = 9999;
         }
 
         // Find sprint

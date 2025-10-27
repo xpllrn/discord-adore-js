@@ -40,7 +40,11 @@ module.exports = {
         })
         .setDescription(`**Total Messages:** ${totalCount}`);
 
-      return message.channel.send({ content: `<@${targetUser.id}>`, embeds: [embed] });
+      return message.channel.send({
+        content: `<@${targetUser.id}>`,
+        embeds: [embed],
+        allowedMentions: { users: [targetUser.id] }
+      });
 
     } catch (error) {
       // Send error to webhook instead of console

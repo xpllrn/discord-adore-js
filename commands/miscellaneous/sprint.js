@@ -220,13 +220,42 @@ async function autoEndSprint(client, guildId, messageId) {
     // Save to user history
     await saveSprintHistory(sprint);
 
-    // Update the sprint message
+    // Create new message with results
     try {
       const channel = await client.channels.fetch(sprint.channelId);
       const sprintMessage = await channel.messages.fetch(sprint.messageId);
 
       const endedEmbed = createSprintEndedEmbed(sprint);
-      await sprintMessage.edit({ embeds: [endedEmbed], components: [] });
+
+      // Create mentions for all participants (hidden in spoiler)
+      let content = '**The reading sprint has ended!**';
+      if (sprint.participants.length > 0) {
+        const mentions = sprint.participants.map(p => `<@${p.userId}>`).join(' ');
+        content += ` ||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​|| _ _ _ _ _ _  ${mentions} `;
+      }
+
+      // Reply to the original message with the ended embed
+      await sprintMessage.reply({
+        content,
+        embeds: [endedEmbed],
+        allowedMentions: { users: sprint.participants.map(p => p.userId) }
+      });
+
+      // Disable buttons on original message but keep the embed unchanged
+      const disabledRow = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('sprint_join')
+            .setLabel('Join')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId('sprint_update')
+            .setLabel('Update')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true)
+        );
+      await sprintMessage.edit({ components: [disabledRow] });
     } catch (err) {
       console.error('[Sprint Auto-End] Could not update message:', err);
     }
@@ -287,7 +316,7 @@ function createSprintEndedEmbed(sprint) {
     description += '**Final Leaderboard**\n';
     results.forEach((p, index) => {
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `\`${String(index + 1).padStart(2, '0')}\``;
-      description += `${medal} **${p.username}**: \`${p.progress}\` tabs (${p.startTab} → ${p.currentTab}) - **${p.bookName}**\n`;
+      description += `${medal} **${p.username}**: ${p.progress} tabs - **${p.bookName}**\n`;
     });
   }
 
@@ -468,9 +497,14 @@ async function updateSprint(client, message, args) {
       return embeds.warn(message, 'You are not part of the current sprint!');
     }
 
-    const currentTab = parseInt(args[0]);
+    let currentTab = parseInt(args[0]);
     if (isNaN(currentTab) || currentTab < 0) {
       return embeds.warn(message, 'Usage: `,sprint update [page number]`\nExample: `,sprint update 45`');
+    }
+
+    // Cap at 9999
+    if (currentTab > 9999) {
+      currentTab = 9999;
     }
 
     const oldTab = participant.currentTab;
@@ -488,7 +522,7 @@ async function updateSprint(client, message, args) {
     }
 
     const progress = currentTab - participant.startTab;
-    return embeds.success(message, `Progress updated! **${oldTab}** → **${currentTab}** (Total progress: **${progress}** tabs)`);
+    return embeds.success(message, `Progress updated to tab **${currentTab}**! (Total progress: **${progress}** tabs)`);
 
   } catch (error) {
     console.error('[Sprint Update] Error:', error);
@@ -714,7 +748,7 @@ async function sendSprintReminder(client, guildId, messageId) {
 
     // Send reminder
     await sprintMessage.reply({
-      content: `${mentions}\n⏰ **Hurry up!** Update your tabs before the sprint closes!`,
+      content: `**Hurry up everyone!** Update your tabs before the sprint closes! ||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​|| _ _ _ _ _ _  ${mentions} `,
       allowedMentions: { users: sprint.participants.map(p => p.userId) }
     });
 
