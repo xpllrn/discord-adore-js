@@ -601,7 +601,7 @@ async function handleGradient(client, message, args) {
 
     // Check if server has ENHANCED_ROLE_COLORS feature
     const hasEnhancedColors = message.guild.features?.includes('ENHANCED_ROLE_COLORS');
-    
+
     if (!hasEnhancedColors) {
       return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors.\n\nCurrent server features: ${message.guild.features?.join(', ') || 'None'}\n\nTry using \`br color\` for a single color instead.`);
     }
@@ -609,7 +609,7 @@ async function handleGradient(client, message, args) {
     // Use REST API to set gradient colors
     try {
       const { Routes } = require('discord.js');
-      
+
       await client.rest.patch(
         Routes.guildRole(message.guild.id, discordRole.id),
         {

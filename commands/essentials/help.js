@@ -72,6 +72,29 @@ module.exports = {
             return message.channel.send({ embeds: [embed] });
           }
 
+          // Check if user is asking for a specific subcommand (e.g., "h ar add")
+          if (args[1]) {
+            const requestedSubcommand = args[1].toLowerCase();
+            
+            // Find the matching subcommand (check both name and aliases)
+            const matchedSubcommand = subcommands.find(sub => 
+              sub.name.toLowerCase() === requestedSubcommand || 
+              (sub.aliases && sub.aliases.some(alias => alias.toLowerCase() === requestedSubcommand))
+            );
+
+            if (matchedSubcommand) {
+              // Show ONLY this subcommand's info (no pagination, no buttons)
+              const singleSubcommandEmbed = createSubcommandPage(command, matchedSubcommand, 1, 1);
+              // Remove the footer with page numbers since it's a single page
+              singleSubcommandEmbed.setFooter({ text: `Module: ${command.name}` });
+              return message.channel.send({ embeds: [singleSubcommandEmbed] });
+            } else {
+              // Subcommand not found, fall back to showing full group command help
+              console.log(`Subcommand "${requestedSubcommand}" not found for ${command.name}, showing full help`);
+              // Continue to show paginated help below
+            }
+          }
+
           // Create page array: parent page + subcommand pages
           const pages = [];
           

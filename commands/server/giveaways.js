@@ -12,20 +12,8 @@ module.exports = {
   name: "giveaways",
   aliases: ['giveaway', 'gw'],
   description: `Manage server giveaways`,
-  usage: `{guildprefix}giveaways start [duration] [winners] [title]
-{guildprefix}giveaways start [channel] [duration] [winners] [title]
-
-{guildprefix}giveaways end [message_link]
-{guildprefix}giveaways list
-{guildprefix}giveaways cancel [message_link]
-{guildprefix}giveaways reroll [message_link] [winners]
-
-{guildprefix}giveaways edit level [message_link] [level]
-{guildprefix}giveaways edit role [message_link] [role]
-{guildprefix}giveaways edit host [message_link] [user]
-{guildprefix}giveaways edit description [message_link] [description]
-{guildprefix}giveaways edit image [message_link] [image_url]`,
   permission: "Manage Channels",
+  isGroupCommand: true,
 
   run: async(client, message, args) => {
 
@@ -41,18 +29,66 @@ module.exports = {
     const subcommand = args[0].toLowerCase();
 
     switch (subcommand) {
-      case 'start':
+      case 'start': {
+        const subcommandInfo = {
+          description: 'Start a new giveaway',
+          usage: '{guildprefix}giveaways start [duration] [winners] [title]',
+          aliases: [],
+          parameters: ['duration', 'winners', 'title'],
+          example: '{guildprefix}giveaways start 1d 1 Nitro'
+        };
         return await handleStart(client, message, args.slice(1));
-      case 'end':
+      }
+      case 'end': {
+        const subcommandInfo = {
+          description: 'End a giveaway early',
+          usage: '{guildprefix}giveaways end [message_link]',
+          aliases: [],
+          parameters: ['message_link'],
+          example: '{guildprefix}giveaways end https://discord.com/channels/...'
+        };
         return await handleEnd(client, message, args.slice(1));
-      case 'list':
+      }
+      case 'list': {
+        const subcommandInfo = {
+          description: 'List all active giveaways',
+          usage: '{guildprefix}giveaways list',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}giveaways list'
+        };
         return await handleList(client, message, args.slice(1));
-      case 'cancel':
+      }
+      case 'cancel': {
+        const subcommandInfo = {
+          description: 'Cancel a giveaway',
+          usage: '{guildprefix}giveaways cancel [message_link]',
+          aliases: [],
+          parameters: ['message_link'],
+          example: '{guildprefix}giveaways cancel https://discord.com/channels/...'
+        };
         return await handleCancel(client, message, args.slice(1));
-      case 'reroll':
+      }
+      case 'reroll': {
+        const subcommandInfo = {
+          description: 'Reroll giveaway winners',
+          usage: '{guildprefix}giveaways reroll [message_link] [winners]',
+          aliases: [],
+          parameters: ['message_link', 'winners (optional)'],
+          example: '{guildprefix}giveaways reroll https://discord.com/channels/... 2'
+        };
         return await handleReroll(client, message, args.slice(1));
-      case 'edit':
+      }
+      case 'edit': {
+        const subcommandInfo = {
+          description: 'Edit giveaway settings',
+          usage: '{guildprefix}giveaways edit [type] [message_link] [value]',
+          aliases: [],
+          parameters: ['type', 'message_link', 'value'],
+          example: '{guildprefix}giveaways edit level https://discord.com/channels/... 10'
+        };
         return await handleEdit(client, message, args.slice(1));
+      }
       default:
         return runHelpCommand(message, 'giveaways');
     }

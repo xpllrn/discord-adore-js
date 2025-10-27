@@ -12,19 +12,7 @@ module.exports = {
   name: "levels",
   aliases: ['lvl', 'level', 'rank'],
   description: "Manage the leveling system for your server",
-  usage: `{guildprefix}levels [@user]
-{guildprefix}levels leaderboard
-
-{guildprefix}levels unlock / enable
-{guildprefix}levels lock / disable
-{guildprefix}levels add [@role] [level]
-{guildprefix}levels remove [level]
-{guildprefix}levels set [@user] [level]
-{guildprefix}levels sync
-{guildprefix}levels messagemode [none/channel #channel/context]
-
-{guildprefix}levels reset
-{guildprefix}levels cleanup`,
+  isGroupCommand: true,
   run: async (client, message, args) => {
     try {
       await ensureGuildData(message.guild.id);
@@ -48,29 +36,109 @@ module.exports = {
 
       switch (subcommand) {
         case 'unlock':
-        case 'enable':
+        case 'enable': {
+          const subcommandInfo = {
+            description: 'Enable the leveling system',
+            usage: '{guildprefix}levels unlock',
+            aliases: ['enable'],
+            parameters: [],
+            example: '{guildprefix}levels unlock'
+          };
           return await handleUnlock(client, message, args);
+        }
         case 'lock':
-        case 'disable':
+        case 'disable': {
+          const subcommandInfo = {
+            description: 'Disable the leveling system',
+            usage: '{guildprefix}levels lock',
+            aliases: ['disable'],
+            parameters: [],
+            example: '{guildprefix}levels lock'
+          };
           return await handleLock(client, message, args);
-        case 'reset':
+        }
+        case 'reset': {
+          const subcommandInfo = {
+            description: 'Reset all level data',
+            usage: '{guildprefix}levels reset',
+            aliases: [],
+            parameters: [],
+            example: '{guildprefix}levels reset'
+          };
           return await handleReset(client, message, args);
-        case 'cleanup':
+        }
+        case 'cleanup': {
+          const subcommandInfo = {
+            description: 'Remove level data for users who left',
+            usage: '{guildprefix}levels cleanup',
+            aliases: [],
+            parameters: [],
+            example: '{guildprefix}levels cleanup'
+          };
           return await handleCleanup(client, message, args);
+        }
         case 'leaderboard':
-        case 'lb':
+        case 'lb': {
+          const subcommandInfo = {
+            description: 'Show the server level leaderboard',
+            usage: '{guildprefix}levels leaderboard',
+            aliases: ['lb'],
+            parameters: [],
+            example: '{guildprefix}levels lb'
+          };
           return await handleLeaderboard(client, message, args);
-        case 'add':
+        }
+        case 'add': {
+          const subcommandInfo = {
+            description: 'Add a level role reward',
+            usage: '{guildprefix}levels add [@role] [level]',
+            aliases: [],
+            parameters: ['role', 'level'],
+            example: '{guildprefix}levels add @VIP 10'
+          };
           return await handleAddRole(client, message, args);
+        }
         case 'remove':
-        case 'rm':
+        case 'rm': {
+          const subcommandInfo = {
+            description: 'Remove a level role reward',
+            usage: '{guildprefix}levels remove [level]',
+            aliases: ['rm'],
+            parameters: ['level'],
+            example: '{guildprefix}levels remove 10'
+          };
           return await handleRemoveRole(client, message, args);
-        case 'set':
+        }
+        case 'set': {
+          const subcommandInfo = {
+            description: 'Set a user\'s level',
+            usage: '{guildprefix}levels set [@user] [level]',
+            aliases: [],
+            parameters: ['user', 'level'],
+            example: '{guildprefix}levels set @user 25'
+          };
           return await handleSetLevel(client, message, args);
-        case 'sync':
+        }
+        case 'sync': {
+          const subcommandInfo = {
+            description: 'Sync level roles for all members',
+            usage: '{guildprefix}levels sync',
+            aliases: [],
+            parameters: [],
+            example: '{guildprefix}levels sync'
+          };
           return await handleSync(client, message, args);
-        case 'messagemode':
+        }
+        case 'messagemode': {
+          const subcommandInfo = {
+            description: 'Configure level up message mode',
+            usage: '{guildprefix}levels messagemode [none/channel/context] [#channel]',
+            aliases: [],
+            parameters: ['mode', 'channel (optional)'],
+            example: '{guildprefix}levels messagemode channel #level-ups'
+          };
           return await handleMessageMode(client, message, args);
+        }
         default:
           // Try to find user for level viewing
           return await handleViewLevel(client, message, args);
@@ -95,7 +163,7 @@ module.exports = {
 async function handleUnlock(client, message, args) {
   const guildService = getService('guild');
   const isEnabled = await guildService.isLevelSystemEnabled(message.guild.id);
-  
+
   if (isEnabled) {
     return embeds.warn(message, 'Leveling system is already **enabled**');
   }
@@ -108,7 +176,7 @@ async function handleUnlock(client, message, args) {
 async function handleLock(client, message, args) {
   const guildService = getService('guild');
   const isEnabled = await guildService.isLevelSystemEnabled(message.guild.id);
-  
+
   if (!isEnabled) {
     return embeds.warn(message, 'Leveling system is already **disabled**');
   }
@@ -120,7 +188,7 @@ async function handleLock(client, message, args) {
 // View level subcommand
 async function handleViewLevel(client, message, args) {
   const guildService = getService('guild');
-  
+
   let targetUser = message.author;
   let targetMember = message.member;
 
@@ -473,12 +541,12 @@ async function handleMessageMode(client, message, args) {
   }
 
   let description;
-  
+
   if (mode === 'channel') {
     // Find the target channel
-    const targetChannel = message.mentions.channels.first() || 
-                         message.guild.channels.cache.get(args[2]) ||
-                         message.guild.channels.cache.find(ch => ch.name.toLowerCase() === args[2].toLowerCase());
+    const targetChannel = message.mentions.channels.first() ||
+      message.guild.channels.cache.get(args[2]) ||
+      message.guild.channels.cache.find(ch => ch.name.toLowerCase() === args[2].toLowerCase());
 
     if (!targetChannel) {
       return embeds.deny(message, 'Channel not found! Please mention a valid channel or provide a valid channel ID/name.');
@@ -496,12 +564,12 @@ async function handleMessageMode(client, message, args) {
     // Set both the mode and the channel
     await guildService.setLevelMessageMode(message.guild.id, mode);
     await guildService.setLevelUpChannel(message.guild.id, targetChannel.id);
-    
+
     description = `Level up messages will now be sent in ${targetChannel}`;
   } else {
     // For 'none' and 'context' modes
     await guildService.setLevelMessageMode(message.guild.id, mode);
-    
+
     switch (mode) {
       case 'none':
         description = 'Level up messages are now **disabled**';

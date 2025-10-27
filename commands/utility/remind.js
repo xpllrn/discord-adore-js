@@ -11,19 +11,21 @@ module.exports = {
   name: "remind",
   aliases: ['reminder', 'remindme'],
   description: `set personal reminders with optional daily repeating`,
-  usage: `{guildprefix}remind [time] [message]
-{guildprefix}remind [message]
-{guildprefix}remind add [time] [message]
-{guildprefix}remind [time] [message] --daily
-{guildprefix}remind list
-{guildprefix}remind remove [id]
-{guildprefix}remind reset`,
+  isGroupCommand: true,
   run: async (client, message, args) => {
 
     // Ensure user data exists in the database
     await ensureUserData(message.author.id);
 
     if (args[0] === 'list' || !args[0]) {
+      const subcommandInfo = {
+        description: 'List all your reminders',
+        usage: '{guildprefix}remind list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}remind list'
+      };
+
       // List user's reminders
       try {
         const userService = getService('user');
@@ -62,6 +64,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
+      const subcommandInfo = {
+        description: 'Remove a specific reminder',
+        usage: '{guildprefix}remind remove [id]',
+        aliases: ['delete', 'rm', 'del'],
+        parameters: ['id'],
+        example: '{guildprefix}remind remove 1'
+      };
+
       // Remove a specific reminder
       const reminderId = parseInt(args[1]);
 
@@ -84,6 +94,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'reset' || args[0] === 'clear') {
+      const subcommandInfo = {
+        description: 'Clear all your reminders',
+        usage: '{guildprefix}remind reset',
+        aliases: ['clear'],
+        parameters: [],
+        example: '{guildprefix}remind reset'
+      };
+
       // Clear all reminders
       try {
         const userService = getService('user');
@@ -109,6 +127,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Create a new reminder',
+        usage: '{guildprefix}remind add [duration] [content] [--daily]',
+        aliases: [],
+        parameters: ['duration (optional)', 'content', '--daily (optional)'],
+        example: '{guildprefix}remind add 1h Take a break --daily'
+      };
+
       // Handle "add" subcommand - shift args and process normally
       args.shift(); // Remove "add" from args
       // Fall through to the reminder creation logic below

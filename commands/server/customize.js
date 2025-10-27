@@ -6,14 +6,9 @@ module.exports = {
   name: "customize",
   aliases: ['custom'],
   description: 'Customize the bot\'s server profile (avatar, banner, bio)',
-  usage: `{guildprefix}customize avatar [image url/attachment]
-{guildprefix}customize avatar (no args to reset)
-{guildprefix}customize banner [image url/attachment]
-{guildprefix}customize banner (no args to reset)
-{guildprefix}customize bio [bio text]
-{guildprefix}customize bio (no args to reset)`,
   permission: "Server Owner",
   cooldowns: 300, // 5 minutes in seconds
+  isGroupCommand: true,
 
   run: async (client, message, args) => {
 
@@ -35,6 +30,14 @@ module.exports = {
 
     // Handle avatar customization
     if (subcommand === 'avatar') {
+      const subcommandInfo = {
+        description: 'Customize the bot\'s server avatar',
+        usage: '{guildprefix}customize avatar [image url/attachment]',
+        aliases: [],
+        parameters: ['image (optional)'],
+        example: '{guildprefix}customize avatar https://example.com/image.png'
+      };
+
       // Get image URL from attachment or argument
       let imageUrl = args[1];
 
@@ -139,6 +142,14 @@ module.exports = {
 
     // Handle banner customization
     if (subcommand === 'banner') {
+      const subcommandInfo = {
+        description: 'Customize the bot\'s server banner',
+        usage: '{guildprefix}customize banner [image url/attachment]',
+        aliases: [],
+        parameters: ['image (optional)'],
+        example: '{guildprefix}customize banner https://example.com/banner.png'
+      };
+
       // Get image URL from attachment or argument
       let imageUrl = args[1];
 
@@ -243,6 +254,14 @@ module.exports = {
 
     // Handle bio customization
     if (subcommand === 'bio') {
+      const subcommandInfo = {
+        description: 'Customize the bot\'s server bio',
+        usage: '{guildprefix}customize bio [text]',
+        aliases: [],
+        parameters: ['text (optional)'],
+        example: '{guildprefix}customize bio Best bot ever!'
+      };
+
       // Get bio text
       const bioText = args.slice(1).join(' ');
 

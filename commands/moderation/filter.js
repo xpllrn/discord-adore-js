@@ -9,20 +9,8 @@ module.exports = {
   name: "automod",
   aliases: ['filter'],
   description: "Manage Discord's built-in AutoMod filtering system",
-  usage: `{guildprefix}filter invites on
-{guildprefix}filter invites off
-
-{guildprefix}filter invites ignore [role/user/channel]
-{guildprefix}filter invites ignore list
-
-{guildprefix}filter add [word]
-{guildprefix}filter remove [word]
-{guildprefix}filter list
-{guildprefix}filter reset
-
-{guildprefix}filter ignore [role/user/channel]
-{guildprefix}filter ignore list`,
   permission: "Manage Guild",
+  isGroupCommand: true,
   run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
@@ -40,18 +28,66 @@ module.exports = {
 
     try {
       switch (category) {
-        case 'invites':
+        case 'invites': {
+          const subcommandInfo = {
+            description: 'Manage invite link filtering',
+            usage: '{guildprefix}filter invites [on/off]',
+            aliases: [],
+            parameters: ['on/off'],
+            example: '{guildprefix}filter invites on'
+          };
           return await handleInvitesCategory(message, subcommand, args.slice(2));
-        case 'add':
+        }
+        case 'add': {
+          const subcommandInfo = {
+            description: 'Add a word to the filter',
+            usage: '{guildprefix}filter add [word]',
+            aliases: [],
+            parameters: ['word'],
+            example: '{guildprefix}filter add badword'
+          };
           return await handleWordsAdd(message, args.slice(1));
-        case 'remove':
+        }
+        case 'remove': {
+          const subcommandInfo = {
+            description: 'Remove a word from the filter',
+            usage: '{guildprefix}filter remove [word]',
+            aliases: [],
+            parameters: ['word'],
+            example: '{guildprefix}filter remove badword'
+          };
           return await handleWordsRemove(message, args.slice(1));
-        case 'list':
+        }
+        case 'list': {
+          const subcommandInfo = {
+            description: 'List all filtered words',
+            usage: '{guildprefix}filter list',
+            aliases: [],
+            parameters: [],
+            example: '{guildprefix}filter list'
+          };
           return await handleWordsList(message);
-        case 'reset':
+        }
+        case 'reset': {
+          const subcommandInfo = {
+            description: 'Reset the word filter',
+            usage: '{guildprefix}filter reset',
+            aliases: [],
+            parameters: [],
+            example: '{guildprefix}filter reset'
+          };
           return await handleWordsReset(message);
-        case 'ignore':
+        }
+        case 'ignore': {
+          const subcommandInfo = {
+            description: 'Manage filter ignore list',
+            usage: '{guildprefix}filter ignore [role/user/channel]',
+            aliases: [],
+            parameters: ['role/user/channel'],
+            example: '{guildprefix}filter ignore @Moderator'
+          };
           return await handleWordsIgnore(message, subcommand, args.slice(2));
+        }
         default:
           return runHelpCommand(message, 'automod');
       }

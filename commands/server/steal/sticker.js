@@ -109,11 +109,8 @@ async function processImage(imageUrl, maxSize = 512) {
 module.exports = {
   name: "sticker",
   description: "Manage server stickers - add, remove, and tag stickers",
-  usage: `{guildprefix}sticker add [image url] [name]
-{guildprefix}sticker add [name] (with image attached)
-{guildprefix}sticker remove [message link]
-{guildprefix}sticker tag`,
   permission: "Manage Expressions",
+  isGroupCommand: true,
 
   run: async(client, message, args) => {
     await ensureGuildData(message.guild.id);
@@ -132,13 +129,37 @@ module.exports = {
 
     // Handle different subcommands
     switch (subcommand) {
-      case 'add':
+      case 'add': {
+        const subcommandInfo = {
+          description: 'Add a sticker to the server',
+          usage: '{guildprefix}sticker add [name] [image/url]',
+          aliases: [],
+          parameters: ['name', 'image'],
+          example: '{guildprefix}sticker add cool_sticker [attach image]'
+        };
         return await handleAdd(client, message, args.slice(1));
+      }
       case 'remove':
-      case 'delete':
+      case 'delete': {
+        const subcommandInfo = {
+          description: 'Remove a sticker from the server',
+          usage: '{guildprefix}sticker remove [message_link]',
+          aliases: ['delete'],
+          parameters: ['message_link'],
+          example: '{guildprefix}sticker remove https://discord.com/channels/...'
+        };
         return await handleRemove(client, message, args.slice(1));
-      case 'tag':
+      }
+      case 'tag': {
+        const subcommandInfo = {
+          description: 'Tag all stickers with server vanity',
+          usage: '{guildprefix}sticker tag',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}sticker tag'
+        };
         return await handleTag(client, message, args.slice(1));
+      }
       default:
         return runHelpCommand(message, 'sticker');
     }

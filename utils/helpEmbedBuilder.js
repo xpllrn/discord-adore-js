@@ -28,7 +28,7 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
   }
 
   // Usage field
-  const usageValue = `\`\`\`html\nSyntax: ${guildPrefix}${command.name} (subcommand) <args>\nExample: ${guildPrefix}${command.name} add (role)\`\`\``;
+  const usageValue = `\`\`\`yaml\nSyntax: ${guildPrefix}${command.name} (subcommand) <args>\nExample: ${guildPrefix}${command.name} add (role)\`\`\``;
   fields.push({ name: '**Usage**', value: usageValue, inline: false });
 
   embed.addFields(...fields);
@@ -79,7 +79,7 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
   }
 
   if (usageLines.length > 0) {
-    const usageValue = `\`\`\`html\n${usageLines.join('\n')}\`\`\``;
+    const usageValue = `\`\`\`yaml\n${usageLines.join('\n')}\`\`\``;
     fields.push({ name: '**Usage**', value: usageValue, inline: false });
   }
 

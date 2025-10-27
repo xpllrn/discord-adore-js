@@ -11,11 +11,8 @@ module.exports = {
   name: "forcenick",
   aliases: ['fn'],
   description: `force a nickname on a user that will be automatically restored if they try to change it`,
-  usage: `{guildprefix}forcenick [user] [nickname]
-{guildprefix}forcenick [user]
-{guildprefix}forcenick list
-{guildprefix}forcenick reset`,
   permission: "Manage Nicknames",
+  isGroupCommand: true,
   run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames')) return;
@@ -34,6 +31,14 @@ module.exports = {
 
     // Handle list subcommand
     if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'List all forced nicknames',
+        usage: '{guildprefix}forcenick list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}forcenick list'
+      };
+
       try {
         const forcedNicks = await guildService.getAllForceNicks(message.guild.id);
 
@@ -109,6 +114,14 @@ module.exports = {
 
     // Handle reset subcommand
     if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Remove all forced nicknames',
+        usage: '{guildprefix}forcenick reset',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}forcenick reset'
+      };
+
       try {
         const forcedNicks = await guildService.getAllForceNicks(message.guild.id);
 

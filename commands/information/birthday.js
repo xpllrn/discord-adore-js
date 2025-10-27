@@ -12,15 +12,19 @@ module.exports = {
   name: "bday",
   aliases: ['birthday'],
   description: `manage birthday settings`,
-  usage: `{guildprefix}bday
-{guildprefix}bday [user]
-{guildprefix}bday set [day] [month]
-{guildprefix}bday reset [user]
-{guildprefix}bday list`,
+  isGroupCommand: true,
   run: async (client, message, args) => {
     const userService = getService('user');
 
     if (args[0] === 'set') {
+      const subcommandInfo = {
+        description: 'Set your birthday',
+        usage: '{guildprefix}bday set [day] [month]',
+        aliases: [],
+        parameters: ['day', 'month'],
+        example: '{guildprefix}bday set 15 March'
+      };
+
       // Set birthday (universal)
       if (!args[1] || !args[2]) {
         return runHelpCommand(message, 'bday');
@@ -88,6 +92,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Reset a user\'s birthday (dev only)',
+        usage: '{guildprefix}bday reset [user]',
+        aliases: [],
+        parameters: ['user'],
+        example: '{guildprefix}bday reset @user'
+      };
+
       // Reset user's birthday (dev only)
       if (!await hasPermissionLevel(message, 'dev')) return;
 
@@ -145,6 +157,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'List all birthdays in the server',
+        usage: '{guildprefix}bday list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}bday list'
+      };
+
       // List all birthdays in the server
       try {
         const guildMembers = await message.guild.members.fetch();
