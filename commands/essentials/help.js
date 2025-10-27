@@ -1,6 +1,10 @@
 const { EmbedBuilder } = require('discord.js')
+const path = require('path')
 const config = require('./../../config/setup')
 const { embeds } = require('../../core/embeds')
+const { hasSubcommands, parseSubcommands, getCommandFilePath } = require('../../utils/subcommandParser')
+const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed } = require('../../utils/helpEmbedBuilder')
+const { createHelpPagination } = require('../../utils/helpPagination')
 
 module.exports = {
   name: "help",
@@ -44,45 +48,57 @@ module.exports = {
     const command = client.commands.get(args[0]) || client.commands.get(client.aliases.get(args[0]))
   
     if (command) {
+      // Check if this is a group command with subcommands
+      if (hasSubcommands(command)) {
+        try {
+          // Get the command file path
+          const commandsDir = path.join(__dirname, '..');
+          const commandFilePath = getCommandFilePath(command.name, commandsDir);
+          
+          if (!commandFilePath) {
+            console.error(`Could not find command file for ${command.name}`);
+            // Fall back to traditional embed
+            const embed = createTraditionalEmbed(command, guildprefix);
+            return message.channel.send({ embeds: [embed] });
+          }
 
-      const embed = new EmbedBuilder()
+          // Parse subcommands from the file
+          const subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
+          
+          if (subcommands.length === 0) {
+            console.error(`No subcommands found for ${command.name}`);
+            // Fall back to traditional embed
+            const embed = createTraditionalEmbed(command, guildprefix);
+            return message.channel.send({ embeds: [embed] });
+          }
 
-      .setColor(config.colors.embed)
-      .setTitle(`Command: ${command.name}`)
-      .setDescription(`${command.description}`)
+          // Create page array: parent page + subcommand pages
+          const pages = [];
+          
+          // Page 1: Parent command overview
+          pages.push(createParentCommandPage(command, guildprefix, subcommands.length));
+          
+          // Pages 2+: Individual subcommand pages
+          const totalPages = subcommands.length + 1;
+          subcommands.forEach((subcommand, index) => {
+            const pageNumber = index + 2; // +2 because page 1 is parent
+            pages.push(createSubcommandPage(command, subcommand, pageNumber, totalPages));
+          });
 
-      const fields = [];
+          // Display paginated help
+          return createHelpPagination(message, pages, command.name);
 
-      if (command.subcommands) {
-        let subcommands = command.subcommands
-        subcommands = subcommands.replaceAll('{guildprefix}', guildprefix)
-        fields.push({ name: '**subcommands**', value: `${subcommands}`, inline: false });
-      }
-
-      // Add aliases and permission as inline fields (always show both)
-      const aliasValue = command.aliases ? command.aliases.join(', ') : 'na';
-      const permissionValue = command.permission ? command.permission : 'na';
-
-      fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
-      fields.push({ name: '**Permission**', value: permissionValue, inline: true });
-
-      // Add syntax with JavaScript highlighting
-      if (command.usage) {
-        let usage = command.usage
-        usage = usage.replaceAll('{guildprefix}', guildprefix)
-        console.log(`🔍 [HELP] After replacement - usage contains: "${usage.substring(0, 100)}..."`);
-        if (usage.includes(message.guild.id)) {
-          console.log(`⚠️ [HELP] WARNING: Usage contains guild ID! Full usage: "${usage}"`);
+        } catch (error) {
+          console.error('Error creating paginated help:', error);
+          // Fall back to traditional embed on error
+          const embed = createTraditionalEmbed(command, guildprefix);
+          return message.channel.send({ embeds: [embed] });
         }
-        fields.push({ name: '**Syntax**', value: `\`\`\`js\n${usage}\`\`\``, inline: false });
+      } else {
+        // Traditional single-embed help for commands without subcommands
+        const embed = createTraditionalEmbed(command, guildprefix);
+        return message.channel.send({ embeds: [embed] });
       }
-
-
-      if (fields.length > 0) {
-        embed.addFields(...fields);
-      }
-
-      return message.channel.send({ embeds: [embed] })
 
     } else if (args.length > 0) {
 

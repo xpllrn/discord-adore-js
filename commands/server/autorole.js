@@ -12,17 +12,21 @@ module.exports = {
   name: "autorole",
   aliases: ['ar'],
   description: `Set up automatic role assign on member join`,
-  usage: `{guildprefix}autorole add [role]
-{guildprefix}autorole remove [role]
-{guildprefix}autorole list
-{guildprefix}autorole reset`,
   permission: 'Manage Guild & Manage Roles',
+  isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');
 
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Adds a autorole and assigns on join to member',
+        usage: '{guildprefix}autorole add [role]',
+        aliases: ['create'],
+        parameters: ['role'],
+        example: '{guildprefix}autorole add Member'
+      };
 
       const roleName = args.slice(1).join(' ');
 
@@ -65,6 +69,13 @@ module.exports = {
 
 
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Clears every autorole for guild',
+        usage: '{guildprefix}autorole reset',
+        aliases: ['clear'],
+        parameters: [],
+        example: '{guildprefix}autorole reset'
+      };
 
       const autoRoles = await guildService.getAutoRoles(message.guild.id);
 
@@ -90,6 +101,13 @@ module.exports = {
 
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'Lists all autoroles configured for the guild',
+        usage: '{guildprefix}autorole list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}autorole list'
+      };
 
       const autoRoles = await guildService.getAutoRoles(message.guild.id);
 
@@ -131,6 +149,13 @@ module.exports = {
 
 
     } else if (args[0] === 'remove' || args[0] === 'rm' || args[0] === 'delete' || args[0] === 'del') {
+      const subcommandInfo = {
+        description: 'Removes a autorole and stops assigning on join',
+        usage: '{guildprefix}autorole remove [role]',
+        aliases: ['delete', 'del', 'rm'],
+        parameters: ['role'],
+        example: '{guildprefix}autorole remove Member'
+      };
 
       const roleName = args.slice(1).join(' ');
 

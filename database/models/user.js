@@ -150,7 +150,7 @@ const userSchema = new mongoose.Schema({
   Roleplay: {
     // Track interactions given by this user to others
     given: [{
-      targetUserId: {
+      targetId: {
         type: String,
         required: true
       },
@@ -161,11 +161,15 @@ const userSchema = new mongoose.Schema({
       count: {
         type: Number,
         default: 1
+      },
+      lastInteraction: {
+        type: Date,
+        default: Date.now
       }
     }],
     // Track interactions received by this user from others
     received: [{
-      fromUserId: {
+      fromId: {
         type: String,
         required: true
       },
@@ -176,6 +180,10 @@ const userSchema = new mongoose.Schema({
       count: {
         type: Number,
         default: 1
+      },
+      lastInteraction: {
+        type: Date,
+        default: Date.now
       }
     }]
   },
