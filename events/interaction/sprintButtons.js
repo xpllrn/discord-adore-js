@@ -1,5 +1,6 @@
-const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const config = require('../../config/setup');
+const { embeds } = require('../../core/embeds');
 
 // Get Sprint model from database
 function getSprintModel() {
@@ -18,7 +19,7 @@ module.exports = {
         if (!Sprint) {
           return interaction.reply({
             content: '❌ Database not ready. Please try again.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -32,7 +33,7 @@ module.exports = {
         if (!sprint) {
           return interaction.reply({
             content: '❌ This sprint is no longer active.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -41,7 +42,7 @@ module.exports = {
         if (alreadyJoined) {
           return interaction.reply({
             content: '❌ You have already joined this sprint!',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -76,7 +77,7 @@ module.exports = {
         console.error('[Sprint Join Button] Error:', error);
         return interaction.reply({
           content: '❌ An error occurred. Please try again.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         }).catch(() => {});
       }
     }
@@ -88,7 +89,7 @@ module.exports = {
         if (!Sprint) {
           return interaction.reply({
             content: '❌ Database not ready. Please try again.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -102,7 +103,7 @@ module.exports = {
         if (!sprint) {
           return interaction.reply({
             content: '❌ This sprint is no longer active.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -111,7 +112,7 @@ module.exports = {
         if (!participant) {
           return interaction.reply({
             content: '❌ You are not part of the current sprint!',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -137,7 +138,7 @@ module.exports = {
         console.error('[Sprint Update Button] Error:', error);
         return interaction.reply({
           content: '❌ An error occurred. Please try again.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         }).catch(() => {});
       }
     }
@@ -149,7 +150,7 @@ module.exports = {
         if (!Sprint) {
           return interaction.reply({
             content: '❌ Database not ready. Please try again.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -161,7 +162,7 @@ module.exports = {
         if (isNaN(startTab) || startTab < 0) {
           return interaction.reply({
             content: '❌ Invalid page number. Please enter a valid number.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -175,7 +176,7 @@ module.exports = {
         if (!sprint) {
           return interaction.reply({
             content: '❌ This sprint is no longer active.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -183,7 +184,7 @@ module.exports = {
         if (sprint.participants.some(p => p.userId === interaction.user.id)) {
           return interaction.reply({
             content: '❌ You have already joined this sprint!',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -203,16 +204,21 @@ module.exports = {
         const updatedEmbed = createSprintEmbed(sprint);
         await interaction.message.edit({ embeds: [updatedEmbed] });
 
+        // Send success embed
+        const successEmbed = new EmbedBuilder()
+          .setColor(config.colors.success)
+          .setDescription(`${config.emojis.success} You have joined the sprint! Reading **${bookName}** starting at tab **${startTab}**.`);
+
         await interaction.reply({
-          content: `✅ You have joined the sprint! Reading **${bookName}** starting at tab ${startTab}.`,
-          ephemeral: true
+          embeds: [successEmbed],
+          flags: MessageFlags.Ephemeral
         });
 
       } catch (error) {
         console.error('[Sprint Join Modal] Error:', error);
         return interaction.reply({
           content: '❌ An error occurred. Please try again.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         }).catch(() => {});
       }
     }
@@ -224,7 +230,7 @@ module.exports = {
         if (!Sprint) {
           return interaction.reply({
             content: '❌ Database not ready. Please try again.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -235,7 +241,7 @@ module.exports = {
         if (isNaN(currentTab) || currentTab < 0) {
           return interaction.reply({
             content: '❌ Invalid page number. Please enter a valid number.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -249,7 +255,7 @@ module.exports = {
         if (!sprint) {
           return interaction.reply({
             content: '❌ This sprint is no longer active.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -258,7 +264,7 @@ module.exports = {
         if (!participant) {
           return interaction.reply({
             content: '❌ You are not part of the current sprint!',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
         }
 
@@ -272,16 +278,22 @@ module.exports = {
         await interaction.message.edit({ embeds: [updatedEmbed] });
 
         const progress = currentTab - participant.startTab;
+        
+        // Send success embed
+        const successEmbed = new EmbedBuilder()
+          .setColor(config.colors.success)
+          .setDescription(`${config.emojis.success} Progress updated! **${oldTab}** → **${currentTab}** (Total progress: **${progress}** tabs)`);
+
         await interaction.reply({
-          content: `✅ Progress updated! ${oldTab} → ${currentTab} (Total progress: ${progress} tabs)`,
-          ephemeral: true
+          embeds: [successEmbed],
+          flags: MessageFlags.Ephemeral
         });
 
       } catch (error) {
         console.error('[Sprint Update Modal] Error:', error);
         return interaction.reply({
           content: '❌ An error occurred. Please try again.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         }).catch(() => {});
       }
     }

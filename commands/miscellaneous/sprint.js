@@ -16,7 +16,7 @@ module.exports = {
   aliases: [],
   description: 'Manage reading sprints',
   usage: '{guildprefix}sprint start [duration] [name]\n{guildprefix}sprint end',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const subcommand = args[0]?.toLowerCase();
 
     if (!subcommand || !['start', 'end'].includes(subcommand)) {
@@ -45,9 +45,9 @@ async function startSprint(client, message, args) {
     }
 
     // Check if there's already an active sprint
-    const existingSprint = await Sprint.findOne({ 
-      guildId: message.guild.id, 
-      isActive: true 
+    const existingSprint = await Sprint.findOne({
+      guildId: message.guild.id,
+      isActive: true
     });
 
     if (existingSprint) {
@@ -87,13 +87,11 @@ async function startSprint(client, message, args) {
         new ButtonBuilder()
           .setCustomId('sprint_join')
           .setLabel('Join')
-          .setStyle(ButtonStyle.Success)
-          .setEmoji('📚'),
+          .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('sprint_update')
           .setLabel('Update')
-          .setStyle(ButtonStyle.Primary)
-          .setEmoji('📝')
+          .setStyle(ButtonStyle.Secondary)
       );
 
     const sentMessage = await message.channel.send({ embeds: [embed], components: [row] });
@@ -135,9 +133,9 @@ async function endSprint(client, message) {
       return embeds.warn(message, 'Database not ready. Please try again in a moment.');
     }
 
-    const sprint = await Sprint.findOne({ 
-      guildId: message.guild.id, 
-      isActive: true 
+    const sprint = await Sprint.findOne({
+      guildId: message.guild.id,
+      isActive: true
     });
 
     if (!sprint) {
@@ -187,10 +185,10 @@ async function autoEndSprint(client, guildId, messageId) {
     const Sprint = getSprintModel();
     if (!Sprint) return;
 
-    const sprint = await Sprint.findOne({ 
-      guildId, 
+    const sprint = await Sprint.findOne({
+      guildId,
       messageId,
-      isActive: true 
+      isActive: true
     });
 
     if (!sprint) return;
@@ -218,10 +216,10 @@ async function autoEndSprint(client, guildId, messageId) {
  */
 function createSprintEmbed(name, startTime, endTime, participants) {
   const title = name ? `READING SPRINT: ${name.toUpperCase()}` : 'READING SPRINT STARTED!';
-  
+
   let description = `**Start Time:** <t:${Math.floor(startTime.getTime() / 1000)}:F> (<t:${Math.floor(startTime.getTime() / 1000)}:R>)\n`;
   description += `**End Time:** <t:${Math.floor(endTime.getTime() / 1000)}:F> (<t:${Math.floor(endTime.getTime() / 1000)}:R>)\n\n`;
-  
+
   if (participants.length === 0) {
     description += '**Present Attendees**\nNo participants yet. Click **Join** to participate!';
   } else {
@@ -242,10 +240,10 @@ function createSprintEmbed(name, startTime, endTime, participants) {
  */
 function createSprintEndedEmbed(sprint) {
   const title = sprint.name ? `READING SPRINT ENDED: ${sprint.name.toUpperCase()}` : 'READING SPRINT ENDED!';
-  
+
   let description = `**Start Time:** <t:${Math.floor(sprint.startTime.getTime() / 1000)}:F>\n`;
   description += `**End Time:** <t:${Math.floor(sprint.endTime.getTime() / 1000)}:F>\n\n`;
-  
+
   if (sprint.participants.length === 0) {
     description += '**Final Results**\nNo participants.';
   } else {
