@@ -51,7 +51,7 @@ module.exports = {
             .addComponents(
               new ButtonBuilder()
                 .setLabel('Authorize Spotify')
-                .setStyle(ButtonStyle.Secondary)
+                .setStyle(ButtonStyle.Link)
                 .setURL(authUrl)
                 .setEmoji(config.emojis.spotify),
               new ButtonBuilder()
@@ -70,7 +70,7 @@ module.exports = {
                 .addComponents(
                   new ButtonBuilder()
                     .setLabel('Authorize Spotify')
-                    .setStyle(ButtonStyle.Secondary)
+                    .setStyle(ButtonStyle.Link)
                     .setURL(authUrl)
                     .setEmoji(config.emojis.spotify)
                     .setDisabled(true),
@@ -105,72 +105,18 @@ module.exports = {
             return embeds.warn(message, 'You don\'t have a **Spotify** account linked. Use `' + guildprefix + 'spotify login` to link one.');
           }
 
-          // Create confirmation embed
-          const confirmEmbed = new EmbedBuilder()
-            .setColor(config.colors.warn)
-            .setDescription(`${config.emojis.warn} Are you sure that you would like to unlink your **Spotify**?`);
-
-          const confirmRow = new ActionRowBuilder()
-            .addComponents(
-              new ButtonBuilder()
-                .setCustomId(`spotify_unlink_confirm_${message.author.id}`)
-                .setLabel('Confirm')
-                .setStyle(ButtonStyle.Success)
-                .setEmoji(config.emojis.success),
-              new ButtonBuilder()
-                .setCustomId(`spotify_unlink_cancel_${message.author.id}`)
-                .setLabel('Cancel')
-                .setStyle(ButtonStyle.Danger)
-                .setEmoji(config.emojis.cancel)
-            );
-
-          const confirmMessage = await message.channel.send({ embeds: [confirmEmbed], components: [confirmRow] });
-
-          // Create collector for button interaction
-          const filter = i => i.user.id === message.author.id && (i.customId.startsWith('spotify_unlink_confirm_') || i.customId.startsWith('spotify_unlink_cancel_'));
-          const collector = confirmMessage.createMessageComponentCollector({ filter, time: 30000, max: 1 });
-
-          collector.on('collect', async i => {
-            if (i.customId.startsWith('spotify_unlink_confirm_')) {
-              // Revoke tokens
+          // Use the createConfirmation helper
+          const { createConfirmation } = require('../../core/buttons');
+          
+          await createConfirmation(
+            message,
+            'Are you sure that you would like to unlink your **Spotify**?',
+            async () => {
+              // On approve - revoke tokens
               await spotifyService.revokeTokens(message.author.id);
-
-              const successEmbed = new EmbedBuilder()
-                .setColor(config.colors.success)
-                .setDescription(`${config.emojis.spotify} ${message.author}: Your **Spotify** account has been unlinked!`);
-
-              await i.update({ embeds: [successEmbed], components: [] });
-            } else {
-              const cancelEmbed = new EmbedBuilder()
-                .setColor(config.colors.error)
-                .setDescription(`${config.emojis.cancel} Cancelled **Spotify** unlink.`);
-
-              await i.update({ embeds: [cancelEmbed], components: [] });
+              return embeds.success(message, 'Your **Spotify** account has been unlinked!');
             }
-          });
-
-          collector.on('end', collected => {
-            if (collected.size === 0) {
-              // Timeout - disable buttons
-              const disabledRow = new ActionRowBuilder()
-                .addComponents(
-                  new ButtonBuilder()
-                    .setCustomId('spotify_unlink_confirm_expired')
-                    .setLabel('Confirm')
-                    .setStyle(ButtonStyle.Success)
-                    .setEmoji(config.emojis.success)
-                    .setDisabled(true),
-                  new ButtonBuilder()
-                    .setCustomId('spotify_unlink_cancel_expired')
-                    .setLabel('Cancel')
-                    .setStyle(ButtonStyle.Danger)
-                    .setEmoji(config.emojis.cancel)
-                    .setDisabled(true)
-                );
-
-              confirmMessage.edit({ components: [disabledRow] }).catch(() => {});
-            }
-          });
+          );
 
         } catch (error) {
           console.error('[Spotify Unlink] Error:', error);

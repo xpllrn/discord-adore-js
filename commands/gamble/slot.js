@@ -84,9 +84,9 @@ module.exports = {
         return embeds.deny(message, `You only have **${formatCurrency(walletBalance)}** coins in your **wallet**`);
       }
 
-      // Cap amount at 250,000 coins maximum
-      if (amount > 250000) {
-        amount = 250000;
+      // Cap amount at 100,000 coins maximum
+      if (amount > 100000) {
+        amount = 100000;
       }
 
       // Deduct the bet amount first using service layer
