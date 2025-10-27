@@ -17,7 +17,7 @@ module.exports = {
 {guildprefix}autorole list
 {guildprefix}autorole reset`,
   permission: 'Manage Guild & Manage Roles',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const guildService = getService('guild');
 
     await ensureGuildData(message.guild.id);
@@ -78,11 +78,9 @@ module.exports = {
             await guildService.clearAllAutoRoles(message.guild.id);
 
             // Edit the confirmation embed to show success message
-            const successEmbed = new EmbedBuilder()
-              .setColor(config.colors.success)
-              .setDescription(`✅ <@${message.author.id}>: Removed all auto roles`);
+            const successEmbed = embeds.createSuccess(message, 'Removed all auto roles');
 
-            await interaction.editReply({ embeds: [successEmbed], components: [] });
+            await interaction.update({ embeds: [successEmbed], components: [] });
           }
         );
       } else {
@@ -167,6 +165,6 @@ module.exports = {
     } else {
       return runHelpCommand(message, 'autorole');
     }
-      
+
   }
 }

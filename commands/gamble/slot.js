@@ -219,14 +219,7 @@ module.exports = {
             finalSlot3 = differentSymbol;
           }
 
-          // Add near-miss message based on symbol
-          if (nearMissSymbol === '💎') {
-            nearMissMessage = '\n💫 **SO CLOSE!** One more 💎 for the **JACKPOT** (10x)!';
-          } else if (nearMissSymbol === '💸') {
-            nearMissMessage = '\n💫 **ALMOST!** One more 💸 for **5x** payout!';
-          } else if (nearMissSymbol === '🍒') {
-            nearMissMessage = '\n💫 **NEARLY!** One more 🍒 for **3x** win!';
-          }
+          // Near-miss logic kept but message removed
         } else {
           // Regular no-match (no near-miss)
           const shuffledSymbols = [...allSymbols].sort(() => Math.random() - 0.5);
@@ -269,7 +262,7 @@ module.exports = {
       } else {
         // No match - lose bet (money already deducted at the beginning)
         await userService.updateGamblingStats(message.author.id, amount, 0, amount);
-        resultText = 'You **lost**. Better luck next time!' + nearMissMessage;
+        resultText = 'You **lost**. Better luck next time!';
       }
 
       // Create final result embed with proper format

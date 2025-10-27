@@ -521,8 +521,8 @@ async function updateSprint(client, message, args) {
       console.error('[Sprint Update] Could not update message:', err);
     }
 
-    const progress = currentTab - participant.startTab;
-    return embeds.success(message, `Progress updated to tab **${currentTab}**! (Total progress: **${progress}** tabs)`);
+    // Just react to confirm the update
+    await message.react('✅').catch(() => { });
 
   } catch (error) {
     console.error('[Sprint Update] Error:', error);
