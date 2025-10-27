@@ -13,12 +13,13 @@ const sprintSchema = new mongoose.Schema({
   guildId: { type: String, required: true, index: true },
   messageId: { type: String, required: true },
   channelId: { type: String, required: true },
-  name: { type: String, default: null },
+  roleId: { type: String, default: null },
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
   participants: [sprintParticipantSchema],
   isActive: { type: Boolean, default: true },
   createdBy: { type: String, required: true },
+  reminderSent: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 

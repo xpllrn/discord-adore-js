@@ -204,11 +204,15 @@ module.exports = {
         const updatedEmbed = createSprintEmbed(sprint);
         await interaction.message.edit({ embeds: [updatedEmbed] });
 
-        // Send success embed
-        const successEmbed = new EmbedBuilder()
-          .setColor(config.colors.success)
-          .setDescription(`${config.emojis.success} You have joined the sprint! Reading **${bookName}** starting at tab **${startTab}**.`);
+        // Create a fake message object for embeds helper
+        const fakeMessage = {
+          author: interaction.user,
+          channel: interaction.channel
+        };
 
+        // Send success using premade embed
+        const successEmbed = embeds.createSuccess(fakeMessage, `You have joined the sprint! Reading **${bookName}** starting at tab **${startTab}**.`);
+        
         await interaction.reply({
           embeds: [successEmbed],
           flags: MessageFlags.Ephemeral
@@ -279,10 +283,14 @@ module.exports = {
 
         const progress = currentTab - participant.startTab;
         
-        // Send success embed
-        const successEmbed = new EmbedBuilder()
-          .setColor(config.colors.success)
-          .setDescription(`${config.emojis.success} Progress updated! **${oldTab}** → **${currentTab}** (Total progress: **${progress}** tabs)`);
+        // Create a fake message object for embeds helper
+        const fakeMessage = {
+          author: interaction.user,
+          channel: interaction.channel
+        };
+
+        // Send success using premade embed
+        const successEmbed = embeds.createSuccess(fakeMessage, `Progress updated! **${oldTab}** → **${currentTab}** (Total progress: **${progress}** tabs)`);
 
         await interaction.reply({
           embeds: [successEmbed],

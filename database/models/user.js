@@ -304,10 +304,25 @@ const userSchema = new mongoose.Schema({
     default: null // When the account was linked
   },
 
-
-
-
-
+  // Sprint/Reading history
+  SprintHistory: [{
+    bookName: {
+      type: String,
+      required: true
+    },
+    tabsRead: {
+      type: Number,
+      required: true
+    },
+    completedAt: {
+      type: Date,
+      required: true
+    },
+    sprintId: {
+      type: String,
+      required: true
+    }
+  }]
 
 }, {
   timestamps: true
