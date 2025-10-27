@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { getService } = require('@services');
@@ -9,7 +9,7 @@ module.exports = {
   aliases: ['sp'],
   description: 'Manage your Spotify account connection',
   usage: '{guildprefix}spotify login\n{guildprefix}spotify logout',
-  run: async(client, message, args) => {
+  run: async(_client, message, args) => {
     const spotifyService = getService('spotify');
     const guildprefix = await getGuildPrefix(message.guild.id);
     const subcommand = String(args[0] || '').toLowerCase();

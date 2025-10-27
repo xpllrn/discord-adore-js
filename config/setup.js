@@ -116,7 +116,20 @@ module.exports = {
 
     // Custom Emojis
     google: '<:google:1431572332832489533>',
-    spotify: '<:spotify:1432275371881140344>'
+    spotify: '<:spotify:1432275371881140344>',
+    
+    // Spotify Control Emojis
+    spotifyPlay: '<:play:1432294396828848170>',
+    spotifyPause: '<:pause:1432294414457376848>',
+    spotifyPrevious: '<:previous:1432294387009851402>',
+    spotifyNext: '<:next:1432294327727554570>',
+    spotifyVolume: '<:volume:1432294374846496908>',
+    spotifyQueue: '<:queue:1432294322388074516>',
+    spotifyQueueAdd: '<:queueadd:1432294384799449170>',
+    spotifyRepeat: '<:repeat:1432294357465042944>',
+    spotifyShuffle: '<:shuffle:1432294336917143663>',
+    spotifyShare: '<:share:1432294350250971136>',
+    musicNote: '<:9008musicnote:1432298234692370482>'
 
   },
 

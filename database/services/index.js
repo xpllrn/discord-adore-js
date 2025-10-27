@@ -8,6 +8,7 @@ const GuildService = require('./GuildService');
 const UserService = require('./UserService');
 const PrefixService = require('./PrefixService');
 const SpotifyService = require('./SpotifyService');
+const ModerationService = require('./ModerationService');
 // const SystemService = require('./SystemService'); // Will be implemented in subsequent tasks
 
 // Core infrastructure
@@ -35,6 +36,7 @@ let serviceInstances = {
   user: null,
   prefix: null,
   spotify: null,
+  moderation: null,
   // system: null,
   connectionManager: null
 };
@@ -59,6 +61,7 @@ async function initializeServices(config = {}) {
     serviceInstances.guild = new GuildService();
     serviceInstances.user = new UserService();
     serviceInstances.spotify = new SpotifyService();
+    serviceInstances.moderation = new ModerationService();
     const SystemService = require('./SystemService');
     serviceInstances.system = new SystemService();
     serviceInstances.prefix = new PrefixService(serviceInstances.guild, serviceInstances.user);
@@ -145,6 +148,7 @@ function getServiceHealth() {
   health.user = serviceInstances.user?.initialized || false;
   health.prefix = serviceInstances.prefix?.initialized || false;
   health.spotify = serviceInstances.spotify?.initialized || false;
+  health.moderation = serviceInstances.moderation?.initialized || false;
   health.system = serviceInstances.system?.initialized || false;
 
   // Overall health is true if connection manager and core services are healthy
@@ -231,5 +235,6 @@ module.exports = {
   GuildService,
   UserService,
   PrefixService,
-  SpotifyService
+  SpotifyService,
+  ModerationService
 };

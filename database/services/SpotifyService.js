@@ -1,5 +1,5 @@
 const BaseService = require('./core/BaseService');
-const { ValidationError, NotFoundError, DatabaseWriteError, ServiceError } = require('./core/errors');
+const { DatabaseWriteError, ServiceError } = require('./core/errors');
 const crypto = require('crypto');
 const axios = require('axios');
 
@@ -406,6 +406,135 @@ class SpotifyService extends BaseService {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
+          }
+        }
+      );
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Pause playback
+   * @param {string} accessToken - Valid access token
+   * @returns {Promise<void>}
+   */
+  async pausePlayback(accessToken) {
+    try {
+      await axios.put(
+        `${SPOTIFY_API_BASE}/me/player/pause`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Skip to next track
+   * @param {string} accessToken - Valid access token
+   * @returns {Promise<void>}
+   */
+  async skipToNext(accessToken) {
+    try {
+      await axios.post(
+        `${SPOTIFY_API_BASE}/me/player/next`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Skip to previous track
+   * @param {string} accessToken - Valid access token
+   * @returns {Promise<void>}
+   */
+  async skipToPrevious(accessToken) {
+    try {
+      await axios.post(
+        `${SPOTIFY_API_BASE}/me/player/previous`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Set playback volume
+   * @param {number} volumePercent - Volume percentage (0-100)
+   * @param {string} accessToken - Valid access token
+   * @returns {Promise<void>}
+   */
+  async setVolume(volumePercent, accessToken) {
+    try {
+      await axios.put(
+        `${SPOTIFY_API_BASE}/me/player/volume?volume_percent=${volumePercent}`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Set repeat mode
+   * @param {string} state - 'track', 'context', or 'off'
+   * @param {string} accessToken - Valid access token
+   * @returns {Promise<void>}
+   */
+  async setRepeatMode(state, accessToken) {
+    try {
+      await axios.put(
+        `${SPOTIFY_API_BASE}/me/player/repeat?state=${state}`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Set shuffle mode
+   * @param {boolean} state - true or false
+   * @param {string} accessToken - Valid access token
+   * @returns {Promise<void>}
+   */
+  async setShuffleMode(state, accessToken) {
+    try {
+      await axios.put(
+        `${SPOTIFY_API_BASE}/me/player/shuffle?state=${state}`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
           }
         }
       );

@@ -129,8 +129,8 @@ module.exports = {
           return embeds.deny(message, 'Missing permissions to edit server profile');
         }
 
-        if (error.response && error.response.status === 404) {
-          return embeds.deny(message, 'Could not download the image from the provided URL');
+        if (error.code === 'ERR_BAD_REQUEST' || (error.response && error.response.status === 404) || error.status === 404) {
+          return embeds.deny(message, 'Could not download the image. The URL may be invalid or the content has been deleted.');
         }
 
         return embeds.deny(message, `Failed to set avatar: ${error.message || 'Unknown error'}`);
@@ -233,8 +233,8 @@ module.exports = {
           return embeds.deny(message, 'Missing permissions to edit server profile');
         }
 
-        if (error.response && error.response.status === 404) {
-          return embeds.deny(message, 'Could not download the image from the provided URL');
+        if (error.code === 'ERR_BAD_REQUEST' || (error.response && error.response.status === 404) || error.status === 404) {
+          return embeds.deny(message, 'Could not download the image. The URL may be invalid or the content has been deleted.');
         }
 
         return embeds.deny(message, `Failed to set banner: ${error.message || 'Unknown error'}`);

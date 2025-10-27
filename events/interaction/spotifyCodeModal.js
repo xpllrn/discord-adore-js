@@ -47,10 +47,10 @@ module.exports = {
       const prefix = 'spotify_submit_';
       const afterPrefix = customId.substring(prefix.length);
       const firstUnderscoreIndex = afterPrefix.indexOf('_');
-      
+
       const userId = afterPrefix.substring(0, firstUnderscoreIndex);
       const state = afterPrefix.substring(firstUnderscoreIndex + 1);
-      
+
       console.log(`[Spotify Modal] CustomId: ${customId}`);
       console.log(`[Spotify Modal] Extracted userId: ${userId}`);
       console.log(`[Spotify Modal] Extracted state: ${state}`);
@@ -77,14 +77,14 @@ module.exports = {
         // Verify state token
         console.log(`[Spotify Modal] Looking up auth session for state: ${state}`);
         const authSession = await spotifyService.getAuthSession(state);
-        
+
         console.log(`[Spotify Modal] Auth session found:`, authSession ? 'YES' : 'NO');
         if (authSession) {
           console.log(`[Spotify Modal] Auth session userId: ${authSession.userId}`);
           console.log(`[Spotify Modal] Expected userId: ${userId}`);
           console.log(`[Spotify Modal] Auth session created: ${authSession.createdAt}`);
         }
-        
+
         if (!authSession) {
           console.log(`[Spotify Modal] ERROR: No auth session found for state ${state}`);
           return interaction.editReply({
@@ -107,7 +107,7 @@ module.exports = {
         console.log(`[Spotify Modal] Exchanging code for tokens...`);
         const tokens = await spotifyService.exchangeCodeForTokens(code);
         console.log(`[Spotify Modal] Tokens received successfully`);
-        
+
         // Store tokens
         console.log(`[Spotify Modal] Storing tokens for user ${userId}`);
         await spotifyService.storeTokens(
@@ -125,7 +125,7 @@ module.exports = {
           const profile = await spotifyService.getUserProfile(tokens.accessToken);
           console.log(`[Spotify Modal] Profile fetched: ${profile.display_name || profile.id}`);
           profileName = profile.display_name || profile.id;
-          
+
           await spotifyService.storeSpotifyUserId(userId, profile.id);
           console.log(`[Spotify Modal] Spotify user ID stored`);
         } catch (profileError) {
@@ -159,9 +159,9 @@ module.exports = {
 
       } catch (error) {
         console.error('[Spotify Code Submit] Error:', error);
-        
+
         let errorMessage = 'Failed to link Spotify account. ';
-        
+
         if (error.message.includes('invalid_grant') || error.message.includes('Invalid authorization code')) {
           errorMessage += 'The authorization code is invalid or has expired. Please try again.';
         } else if (error.message.includes('redirect_uri')) {

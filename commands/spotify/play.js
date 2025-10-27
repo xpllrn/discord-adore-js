@@ -9,20 +9,32 @@ const { findUser } = require('../../handlers/finder');
  * Handle Spotify service errors with user-friendly messages
  */
 function handleSpotifyError(message, error) {
-  const errorMessages = {
-    'NO_ACTIVE_DEVICE': 'Please open Spotify on a device first (phone, computer, web player, etc.).',
-    'TOKEN_EXPIRED': 'Your Spotify session expired. Please run `,spotify link` again.',
-    'NOT_LINKED': 'You haven\'t linked your Spotify account. Use `,spotify link` to get started.',
-    'TRACK_NOT_FOUND': 'No tracks found for your search.',
-    'RATE_LIMIT': 'Too many requests. Please wait a moment and try again.',
-    'PREMIUM_REQUIRED': 'This feature requires Spotify Premium.',
-    'PLAYBACK_ERROR': 'Failed to control playback. Make sure Spotify is open on a device.',
-    'NETWORK_ERROR': 'Failed to connect to Spotify. Please try again.',
-    'SPOTIFY_API_ERROR': 'Spotify API error. Please try again later.'
-  };
-
-  const errorMessage = errorMessages[error.message] || error.message || 'An error occurred with Spotify.';
-  return embeds.warn(message, errorMessage);
+  const errorCode = error.message || error.code;
+  
+  if (errorCode === 'NO_ACTIVE_DEVICE') {
+    const embed = new EmbedBuilder()
+      .setColor(config.colors.warn)
+      .setDescription(`${config.emojis.warn} No active **Spotify** device found. Please open Spotify on a device first.`);
+    return message.channel.send({ embeds: [embed] });
+  }
+  
+  if (errorCode === 'PREMIUM_REQUIRED') {
+    const embed = new EmbedBuilder()
+      .setColor(config.colors.warn)
+      .setDescription(`${config.emojis.warn} **Spotify Premium** is required for this feature.`);
+    return message.channel.send({ embeds: [embed] });
+  }
+  
+  if (errorCode === 'TOKEN_EXPIRED') {
+    return embeds.warn(message, 'Your **Spotify** session expired. Please run `,spotify login` again.');
+  }
+  
+  if (errorCode === 'PLAYBACK_ERROR') {
+    return embeds.warn(message, 'Failed to control playback. Make sure **Spotify** is open on a device.');
+  }
+  
+  // Default error
+  return embeds.warn(message, error.message || 'An error occurred with **Spotify**.');
 }
 
 module.exports = {
@@ -95,32 +107,25 @@ async function playBySongName(client, message, args, spotifyService) {
     const devices = await spotifyService.getActiveDevices(accessToken);
 
     if (!devices || devices.length === 0) {
-      return embeds.warn(message, 'No active Spotify device found. Please open Spotify on a device first.');
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.warn)
+        .setDescription(`${config.emojis.warn} No active **Spotify** device found. Please open Spotify on a device first.`);
+      return message.channel.send({ embeds: [embed] });
     }
 
     // Start playback
     await spotifyService.startPlayback(track.uri, accessToken);
 
-    // Send success embed with track info
+    // Send success message
+    const trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
+    const trackName = track.name;
+    const artistName = track.artists.map(a => a.name).join(', ');
+    
     const embed = new EmbedBuilder()
-      .setColor(0x1DB954) // Spotify green
-      .setAuthor({
-        name: message.author.tag,
-        iconURL: message.author.displayAvatarURL({ dynamic: true })
-      })
-      .setTitle('🎵 Now Playing')
+      .setColor(config.colors.embed)
       .setDescription(
-        `**${track.name}**\n` +
-        `by ${track.artists.map(a => a.name).join(', ')}\n\n` +
-        `Album: ${track.album.name}`
-      )
-      .setThumbnail(track.album.images[0]?.url || null)
-      .setFooter({ text: 'Spotify' })
-      .setTimestamp();
-
-    if (track.external_urls?.spotify) {
-      embed.setURL(track.external_urls.spotify);
-    }
+        `${config.emojis.musicNote} ${message.author}: Now playing [\`${trackName}\`](${trackUrl}) by \`${artistName}\``
+      );
 
     return message.channel.send({ embeds: [embed] });
 
@@ -180,33 +185,25 @@ async function playFromUser(client, message, args, spotifyService, guildprefix) 
     const devices = await spotifyService.getActiveDevices(accessToken);
 
     if (!devices || devices.length === 0) {
-      return embeds.warn(message, 'No active Spotify device found. Please open Spotify on a device first.');
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.warn)
+        .setDescription(`${config.emojis.warn} No active **Spotify** device found. Please open Spotify on a device first.`);
+      return message.channel.send({ embeds: [embed] });
     }
 
     // Start playback on requesting user's device
     await spotifyService.startPlayback(track.uri, accessToken);
 
-    // Send success embed
+    // Send success message
+    const trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
+    const trackName = track.name;
+    const artistName = track.artists.map(a => a.name).join(', ');
+    
     const embed = new EmbedBuilder()
-      .setColor(0x1DB954) // Spotify green
-      .setAuthor({
-        name: message.author.tag,
-        iconURL: message.author.displayAvatarURL({ dynamic: true })
-      })
-      .setTitle('🎵 Now Playing')
+      .setColor(config.colors.embed)
       .setDescription(
-        `Playing what **${targetUser.tag}** is listening to:\n\n` +
-        `**${track.name}**\n` +
-        `by ${track.artists.map(a => a.name).join(', ')}\n\n` +
-        `Album: ${track.album.name}`
-      )
-      .setThumbnail(track.album.images[0]?.url || null)
-      .setFooter({ text: 'Spotify' })
-      .setTimestamp();
-
-    if (track.external_urls?.spotify) {
-      embed.setURL(track.external_urls.spotify);
-    }
+        `${config.emojis.musicNote} ${message.author}: Now playing [\`${trackName}\`](${trackUrl}) by \`${artistName}\``
+      );
 
     return message.channel.send({ embeds: [embed] });
 

@@ -80,9 +80,9 @@ module.exports = {
         return embeds.deny(message, `You only have **${formatCurrency(walletBalance)}** coins in your **wallet**`);
       }
 
-      // Cap amount at 100,000 coins maximum
-      if (amount > 100000) {
-        amount = 100000;
+      // Cap amount at 250,000 coins maximum
+      if (amount > 250000) {
+        amount = 250000;
       }
 
       // Deduct the bet amount immediately using service layer
@@ -126,7 +126,7 @@ module.exports = {
           return;
         }
 
-        currentMultiplier += 0.15 + (Math.random() * 0.25); // Increase by 0.15-0.40x each tick
+        currentMultiplier += 0.08 + (Math.random() * 0.07); // Increase by 0.08-0.15x each tick
 
         // Check if we've reached the predetermined crash point
         if (currentMultiplier >= crashPoint) {
@@ -169,7 +169,7 @@ module.exports = {
           gameActive = false;
           clearInterval(gameInterval);
         }
-      }, 700); // Update every 0.7 seconds
+      }, 1000); // Update every 1 second
 
       // Button interaction handler
       const filter = (interaction) => {

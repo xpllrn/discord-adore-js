@@ -132,6 +132,7 @@ class UserService extends BaseService {
             lastWorked: null,
             begCooldown: null,
             lastInterestClaim: null,
+            lastVote: null,
             totalGambled: 0,
             totalWon: 0,
             totalLost: 0
@@ -192,6 +193,7 @@ class UserService extends BaseService {
       lastWorked: null,
       begCooldown: null,
       lastInterestClaim: null,
+      lastVote: null,
       totalGambled: 0,
       totalWon: 0,
       totalLost: 0

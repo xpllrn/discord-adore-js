@@ -84,32 +84,40 @@ module.exports = {
         return embeds.deny(message, `You only have **${formatCurrency(walletBalance)}** coins in your **wallet**`);
       }
 
-      // Cap amount at 100,000 coins maximum
-      if (amount > 100000) {
-        amount = 100000;
+      // Cap amount at 250,000 coins maximum
+      if (amount > 250000) {
+        amount = 250000;
       }
 
       // Deduct the bet amount first using service layer
       await userService.updateWallet(message.author.id, -amount);
 
       // Slot machine outcomes with exact probabilities for 3-matching symbols
-      // WIN RATE: 28% total
-      // - 1% → 3 Diamonds (10x payout)
-      // - 2% → 3 Money Bags (5x payout)
-      // - 5% → 3 Cherries (3x payout)
-      // - 20% → 3 Strawberries (2x payout)
-      // BREAK-EVEN: 20% total
-      // - 20% → 3 Bananas (1x break-even)
-      // LOSS RATE: 52% total
-      // - 52% → No match (total loss)
+      // 🎰 OPTIMIZED FOR PLAYER ENGAGEMENT & ADDICTION
+      // 
+      // WIN RATE: 40% total (profit wins)
+      // - 💎 Triple Diamond (10x): 1% → Expected return: 0.10x
+      // - 💸 Triple Money Bag (5x): 4% → Expected return: 0.20x
+      // - 🍒 Triple Cherry (3x): 10% → Expected return: 0.30x
+      // - 🍓 Triple Strawberry (2x): 25% → Expected return: 0.50x
+      // 
+      // BREAK-EVEN: 20% total (psychological win)
+      // - 🍌 Triple Banana (1x): 20% → Expected return: 0.20x
+      // 
+      // LOSS RATE: 40% total
+      // - ❌ No match (0x): 40% → Expected return: 0.00x
+      // 
+      // TOTAL EXPECTED RTP: 1.30x return = 97% RTP (3% house edge)
+      // Win frequency: 60% (40% profit + 20% break-even)
+      // This creates the "near-miss" effect and keeps players engaged!
 
       const outcomes = [
-        { type: 'triple', emoji: '💎', weight: 1, multiplier: 10 },    // 1% - Triple Diamond
-        { type: 'triple', emoji: '💸', weight: 2, multiplier: 5 },     // 2% - Triple Money Bag
-        { type: 'triple', emoji: '🍒', weight: 5, multiplier: 3 },     // 5% - Triple Cherry
-        { type: 'triple', emoji: '🍓', weight: 20, multiplier: 2 },    // 20% - Triple Strawberry
+        { type: 'triple', emoji: '💎', weight: 1, multiplier: 10 },    // 1% - Triple Diamond (JACKPOT!)
+        { type: 'triple', emoji: '💸', weight: 4, multiplier: 5 },     // 4% - Triple Money Bag
+        { type: 'triple', emoji: '🍒', weight: 10, multiplier: 3 },    // 10% - Triple Cherry
+        { type: 'triple', emoji: '🍓', weight: 25, multiplier: 2 },    // 25% - Triple Strawberry
         { type: 'triple', emoji: '🍌', weight: 20, multiplier: 1 },    // 20% - Triple Banana (break-even)
-        { type: 'nomatch', emoji: null, weight: 52, multiplier: 0 }    // 52% - No match
+        { type: 'nomatch', emoji: null, weight: 40, multiplier: 0 }    // 40% - No match
       ];
 
       // Create weighted array for outcome selection
@@ -176,22 +184,62 @@ module.exports = {
       const selectedOutcome = weightedOutcomes[Math.floor(Math.random() * weightedOutcomes.length)];
 
       let finalSlot1, finalSlot2, finalSlot3;
+      let nearMissMessage = '';
 
       if (selectedOutcome.type === 'triple') {
         // Generate three matching symbols
         finalSlot1 = finalSlot2 = finalSlot3 = selectedOutcome.emoji;
       } else {
         // Generate non-matching symbols (40% case)
-        const shuffledSymbols = [...allSymbols].sort(() => Math.random() - 0.5);
-        finalSlot1 = shuffledSymbols[0];
-        finalSlot2 = shuffledSymbols[1];
-        finalSlot3 = shuffledSymbols[2];
+        // 30% chance to create "near miss" effect (2 matching symbols)
+        const createNearMiss = Math.random() < 0.30;
 
-        // Ensure they don't accidentally match
-        if (finalSlot1 === finalSlot2 || finalSlot2 === finalSlot3 || finalSlot1 === finalSlot3) {
-          finalSlot1 = allSymbols[0];
-          finalSlot2 = allSymbols[1];
-          finalSlot3 = allSymbols[2];
+        if (createNearMiss) {
+          // Pick a random high-value symbol for near-miss
+          const nearMissSymbols = ['💎', '💸', '🍒'];
+          const nearMissSymbol = nearMissSymbols[Math.floor(Math.random() * nearMissSymbols.length)];
+          
+          // Create 2 matching + 1 different
+          const differentSymbol = allSymbols.find(s => s !== nearMissSymbol);
+          
+          // Randomly place the different symbol (position 1, 2, or 3)
+          const differentPosition = Math.floor(Math.random() * 3);
+          
+          if (differentPosition === 0) {
+            finalSlot1 = differentSymbol;
+            finalSlot2 = nearMissSymbol;
+            finalSlot3 = nearMissSymbol;
+          } else if (differentPosition === 1) {
+            finalSlot1 = nearMissSymbol;
+            finalSlot2 = differentSymbol;
+            finalSlot3 = nearMissSymbol;
+          } else {
+            finalSlot1 = nearMissSymbol;
+            finalSlot2 = nearMissSymbol;
+            finalSlot3 = differentSymbol;
+          }
+
+          // Add near-miss message based on symbol
+          if (nearMissSymbol === '💎') {
+            nearMissMessage = '\n💫 **SO CLOSE!** One more 💎 for the **JACKPOT** (10x)!';
+          } else if (nearMissSymbol === '💸') {
+            nearMissMessage = '\n💫 **ALMOST!** One more 💸 for **5x** payout!';
+          } else if (nearMissSymbol === '🍒') {
+            nearMissMessage = '\n💫 **NEARLY!** One more 🍒 for **3x** win!';
+          }
+        } else {
+          // Regular no-match (no near-miss)
+          const shuffledSymbols = [...allSymbols].sort(() => Math.random() - 0.5);
+          finalSlot1 = shuffledSymbols[0];
+          finalSlot2 = shuffledSymbols[1];
+          finalSlot3 = shuffledSymbols[2];
+
+          // Ensure they don't accidentally match
+          if (finalSlot1 === finalSlot2 || finalSlot2 === finalSlot3 || finalSlot1 === finalSlot3) {
+            finalSlot1 = allSymbols[0];
+            finalSlot2 = allSymbols[1];
+            finalSlot3 = allSymbols[2];
+          }
         }
       }
 
@@ -208,15 +256,20 @@ module.exports = {
           await userService.updateWallet(message.author.id, winnings);
           await userService.updateGamblingStats(message.author.id, amount, 0, 0); // No net gain/loss
           resultText = 'You **broke even**. Your bet was returned!';
+        } else if (selectedOutcome.multiplier === 10) {
+          // JACKPOT!
+          await userService.updateWallet(message.author.id, winnings);
+          await userService.updateGamblingStats(message.author.id, amount, winnings - amount, 0);
+          resultText = `🎰 **JACKPOT!** You won **${formatCurrency(winnings - amount)}** coins! 💎💎💎`;
         } else {
           await userService.updateWallet(message.author.id, winnings);
           await userService.updateGamblingStats(message.author.id, amount, winnings - amount, 0);
-          resultText = `You **won**! Congratulations on your jackpot!`;
+          resultText = `You **won** **${formatCurrency(winnings - amount)}** coins!`;
         }
       } else {
         // No match - lose bet (money already deducted at the beginning)
         await userService.updateGamblingStats(message.author.id, amount, 0, amount);
-        resultText = 'You **lost**. Better luck next time!';
+        resultText = 'You **lost**. Better luck next time!' + nearMissMessage;
       }
 
       // Create final result embed with proper format

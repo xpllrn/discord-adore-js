@@ -53,7 +53,7 @@ module.exports = {
       } else {
         // Payout: 8–20% of total balance (amount decreases as user gets richer)
         const basePercentage = 20; // Start at 20%
-        const reductionFactor = Math.min(totalWealth / 100000, 0.6); // Reduce up to 60% as wealth increases
+        const reductionFactor = Math.min(totalWealth / 250000, 0.6); // Reduce up to 60% as wealth increases
         const finalPercentage = basePercentage * (1 - reductionFactor);
         const actualPercentage = Math.max(finalPercentage, 8); // Minimum 8%
 
