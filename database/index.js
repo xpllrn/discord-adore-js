@@ -6,12 +6,14 @@ const userSchema = require('./models/user');
 const guildSchema = require('./models/guild');
 const systemSchema = require('./models/system');
 const spotifyAuthSessionSchema = require('./models/spotifyAuthSession');
+const sprintSchema = require('./models/sprint');
 
 // Model instances (will be created after connection)
 let User = null;
 let Guild = null;
 let System = null;
 let SpotifyAuthSession = null;
+let Sprint = null;
 
 // Database readiness state
 let isDatabaseFullyReady = false;
@@ -52,6 +54,7 @@ async function _performInitialization(connectionStrings) {
     if (connections.local) {
       // Guild data goes to local database
       Guild = connections.local.model('Guild', guildSchema.schema);
+      Sprint = connections.local.model('Sprint', sprintSchema.schema);
 
       // If no global connection, put user data in local (backward compatibility)
       if (!connections.global) {
@@ -713,7 +716,7 @@ module.exports = {
     if (!isDatabaseFullyReady) {
       return null;
     }
-    return { User, Guild, System, SpotifyAuthSession };
+    return { User, Guild, System, SpotifyAuthSession, Sprint };
   },
 
   // Model getters (since models are created dynamically)
@@ -721,6 +724,7 @@ module.exports = {
   get Guild() { return Guild; },
   get System() { return System; },
   get SpotifyAuthSession() { return SpotifyAuthSession; },
+  get Sprint() { return Sprint; },
 
   // Deprecated model aliases for backward compatibility
   // These should be migrated to use cache system instead

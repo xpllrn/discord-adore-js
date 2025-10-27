@@ -1,6 +1,12 @@
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder } = require('discord.js');
-const { Sprint } = require('../../database/models/sprint');
 const config = require('../../config/setup');
+
+// Get Sprint model from database
+function getSprintModel() {
+  const { getModels } = require('../../database');
+  const models = getModels();
+  return models ? models.Sprint : null;
+}
 
 module.exports = {
   name: 'interactionCreate',
@@ -8,6 +14,14 @@ module.exports = {
     // Handle Join button
     if (interaction.isButton() && interaction.customId === 'sprint_join') {
       try {
+        const Sprint = getSprintModel();
+        if (!Sprint) {
+          return interaction.reply({
+            content: '❌ Database not ready. Please try again.',
+            ephemeral: true
+          });
+        }
+
         // Find active sprint
         const sprint = await Sprint.findOne({
           guildId: interaction.guild.id,
@@ -70,6 +84,14 @@ module.exports = {
     // Handle Update button
     if (interaction.isButton() && interaction.customId === 'sprint_update') {
       try {
+        const Sprint = getSprintModel();
+        if (!Sprint) {
+          return interaction.reply({
+            content: '❌ Database not ready. Please try again.',
+            ephemeral: true
+          });
+        }
+
         // Find active sprint
         const sprint = await Sprint.findOne({
           guildId: interaction.guild.id,
@@ -123,6 +145,14 @@ module.exports = {
     // Handle Join modal submission
     if (interaction.isModalSubmit() && interaction.customId.startsWith('sprint_join_modal_')) {
       try {
+        const Sprint = getSprintModel();
+        if (!Sprint) {
+          return interaction.reply({
+            content: '❌ Database not ready. Please try again.',
+            ephemeral: true
+          });
+        }
+
         const messageId = interaction.customId.replace('sprint_join_modal_', '');
         const bookName = interaction.fields.getTextInputValue('book_name').trim();
         const startTabStr = interaction.fields.getTextInputValue('start_tab').trim();
@@ -190,6 +220,14 @@ module.exports = {
     // Handle Update modal submission
     if (interaction.isModalSubmit() && interaction.customId.startsWith('sprint_update_modal_')) {
       try {
+        const Sprint = getSprintModel();
+        if (!Sprint) {
+          return interaction.reply({
+            content: '❌ Database not ready. Please try again.',
+            ephemeral: true
+          });
+        }
+
         const messageId = interaction.customId.replace('sprint_update_modal_', '');
         const currentTabStr = interaction.fields.getTextInputValue('current_tab').trim();
 

@@ -2,8 +2,14 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const { embeds } = require('../../core/embeds');
 const { createConfirmation } = require('../../core/buttons');
 const config = require('../../config/setup');
-const { Sprint } = require('../../database/models/sprint');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+
+// Get Sprint model from database
+function getSprintModel() {
+  const { getModels } = require('../../database');
+  const models = getModels();
+  return models ? models.Sprint : null;
+}
 
 module.exports = {
   name: "sprint",
@@ -33,6 +39,11 @@ module.exports = {
  */
 async function startSprint(client, message, args) {
   try {
+    const Sprint = getSprintModel();
+    if (!Sprint) {
+      return embeds.warn(message, 'Database not ready. Please try again in a moment.');
+    }
+
     // Check if there's already an active sprint
     const existingSprint = await Sprint.findOne({ 
       guildId: message.guild.id, 
@@ -119,6 +130,11 @@ async function startSprint(client, message, args) {
  */
 async function endSprint(client, message) {
   try {
+    const Sprint = getSprintModel();
+    if (!Sprint) {
+      return embeds.warn(message, 'Database not ready. Please try again in a moment.');
+    }
+
     const sprint = await Sprint.findOne({ 
       guildId: message.guild.id, 
       isActive: true 
@@ -168,6 +184,9 @@ async function endSprint(client, message) {
  */
 async function autoEndSprint(client, guildId, messageId) {
   try {
+    const Sprint = getSprintModel();
+    if (!Sprint) return;
+
     const sprint = await Sprint.findOne({ 
       guildId, 
       messageId,
