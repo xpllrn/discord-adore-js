@@ -115,7 +115,8 @@ module.exports = {
     whiteRightRounded: '<:white_right_rounded:1431572395340075028>',
 
     // Custom Emojis
-    google: '<:google:1431572332832489533>'
+    google: '<:google:1431572332832489533>',
+    spotify: '<:spotify:1432275371881140344>'
 
   },
 

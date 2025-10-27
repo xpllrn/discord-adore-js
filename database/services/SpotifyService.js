@@ -25,7 +25,7 @@ class SpotifyService extends BaseService {
       ttl: 30 * 60 * 1000, // 30 minutes TTL
       maxSize: 5000
     });
-    
+
     this.initialized = true;
     this.authSessionModel = null;
   }
@@ -38,7 +38,7 @@ class SpotifyService extends BaseService {
     if (!this.authSessionModel) {
       const { getModels } = require('../../database');
       const models = getModels();
-      
+
       if (!models) {
         throw new ServiceError('Database models not available');
       }
@@ -179,7 +179,7 @@ class SpotifyService extends BaseService {
   async getAccessToken(userId) {
     try {
       const userData = await this.get(userId);
-      
+
       if (!userData || !userData.SpotifyAccessToken || !userData.SpotifyRefreshToken) {
         return null;
       }
@@ -192,7 +192,7 @@ class SpotifyService extends BaseService {
       if (expiry <= fiveMinutesFromNow) {
         // Token expired or expiring soon, refresh it
         const newTokens = await this.refreshAccessToken(userData.SpotifyRefreshToken);
-        
+
         // Store new tokens
         await this.storeTokens(
           userId,

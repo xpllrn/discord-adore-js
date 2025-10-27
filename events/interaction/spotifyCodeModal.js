@@ -118,13 +118,20 @@ module.exports = {
         );
         console.log(`[Spotify Modal] Tokens stored successfully`);
 
-        // Get Spotify user profile
+        // Get Spotify user profile (optional - not critical for linking)
         console.log(`[Spotify Modal] Fetching Spotify user profile...`);
-        const profile = await spotifyService.getUserProfile(tokens.accessToken);
-        console.log(`[Spotify Modal] Profile fetched: ${profile.display_name || profile.id}`);
-        
-        await spotifyService.storeSpotifyUserId(userId, profile.id);
-        console.log(`[Spotify Modal] Spotify user ID stored`);
+        let profileName = 'your Spotify account';
+        try {
+          const profile = await spotifyService.getUserProfile(tokens.accessToken);
+          console.log(`[Spotify Modal] Profile fetched: ${profile.display_name || profile.id}`);
+          profileName = profile.display_name || profile.id;
+          
+          await spotifyService.storeSpotifyUserId(userId, profile.id);
+          console.log(`[Spotify Modal] Spotify user ID stored`);
+        } catch (profileError) {
+          console.log(`[Spotify Modal] Could not fetch profile (non-critical): ${profileError.message}`);
+          // Continue anyway - profile is not critical for basic functionality
+        }
 
         // Delete auth session
         console.log(`[Spotify Modal] Deleting auth session`);
@@ -133,15 +140,10 @@ module.exports = {
 
         // Send success message
         const successEmbed = new EmbedBuilder()
-          .setColor(0x1DB954)
-          .setTitle('✅ Spotify Linked Successfully')
+          .setColor(config.colors.success)
           .setDescription(
-            `Your Spotify account **${profile.display_name || profile.id}** has been linked!\n\n` +
-            `You can now use Spotify commands like \`,play\``
-          )
-          .setThumbnail(profile.images?.[0]?.url || null)
-          .setFooter({ text: 'Spotify Integration' })
-          .setTimestamp();
+            `${config.emojis.spotify} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
+          );
 
         await interaction.editReply({ embeds: [successEmbed] });
 
