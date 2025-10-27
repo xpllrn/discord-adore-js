@@ -15,10 +15,11 @@ module.exports = {
   usage: `{guildprefix}bday
 {guildprefix}bday [user]
 {guildprefix}bday set [day] [month]
+{guildprefix}bday reset [user]
 {guildprefix}bday list`,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const userService = getService('user');
-    
+
     if (args[0] === 'set') {
       // Set birthday (universal)
       if (!args[1] || !args[2]) {
@@ -50,10 +51,10 @@ module.exports = {
           return embeds.warn(message, 'Month must be a number between **1** and **12**');
         }
       } else {
-        const monthIndex = monthNames.indexOf(monthInput) !== -1 ? 
-          monthNames.indexOf(monthInput) : 
+        const monthIndex = monthNames.indexOf(monthInput) !== -1 ?
+          monthNames.indexOf(monthInput) :
           monthShort.indexOf(monthInput);
-        
+
         if (monthIndex === -1) {
           return embeds.warn(message, 'Invalid month. Use month name (e.g., March) or number (1-12)');
         }
@@ -61,8 +62,8 @@ module.exports = {
       }
 
       // Validate day for specific month (basic validation)
-      if ((month === 2 && day > 29) || 
-          ([4, 6, 9, 11].includes(month) && day > 30)) {
+      if ((month === 2 && day > 29) ||
+        ([4, 6, 9, 11].includes(month) && day > 30)) {
         return embeds.warn(message, 'Invalid day for the specified month');
       }
 
@@ -95,8 +96,8 @@ module.exports = {
       }
 
       // Find the target user
-      const userResult = await findUser(message.guild, args[1], client);
-      
+      const userResult = await findUser(message.guild, args.slice(1).join(' '), client);
+
       if (!userResult.found) {
         return embeds.warn(message, userResult.error || 'User not found');
       }
@@ -207,7 +208,7 @@ module.exports = {
           const birthdayList = pageBirthdays.map((data, index) => {
             const number = (startIndex + index + 1).toString().padStart(2, '0');
             const displayName = data.member.displayName;
-            
+
             if (data.isBirthdayToday) {
               return `\`${number}\` 🎂 **${displayName}** - ${data.formattedBirthday} **(Today!)**`;
             } else {
@@ -235,7 +236,7 @@ module.exports = {
     } else if (args[0]) {
       // Show specific user's birthday
       const userResult = await findUser(message.guild, args[0], client);
-      
+
       if (!userResult.found) {
         return embeds.warn(message, userResult.error || 'User not found');
       }
@@ -252,7 +253,7 @@ module.exports = {
       try {
         const formattedBirthday = await userService.getFormattedBirthday(targetUser.id);
         const username = targetMember ? targetMember.displayName : targetUser.username;
-        
+
         if (!formattedBirthday) {
           return embeds.info(message, `🎂 **${username}** has no birthday set`);
         }
@@ -276,7 +277,7 @@ module.exports = {
       // Show user's own birthday
       try {
         const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
-        
+
         if (!formattedBirthday) {
           return embeds.info(message, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`);
         }

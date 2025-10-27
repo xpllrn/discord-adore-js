@@ -43,7 +43,7 @@ module.exports = {
             })
             .setDescription(
               `Authorize **adore** to use your Spotify account. You give us permission to control your active player and show your music statistics through commands.\n\n` +
-              `If you want to remove your account with adore, run \`${guildprefix}spotify logout\` and visit your settings on **Spotify** to unauthorize our application.`
+              `If you want to remove your account with adore, run \`${guildprefix}spotify logout\`.\n -# First time adore user's have to **create a ticket** in [support server](https://discord.gg/qsJMaTURqf) first to use spotify commands.`
             );
 
           // Create buttons

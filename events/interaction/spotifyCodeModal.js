@@ -138,14 +138,8 @@ module.exports = {
         await spotifyService.deleteAuthSession(state);
         console.log(`[Spotify Modal] Auth session deleted`);
 
-        // Send success message
-        const successEmbed = new EmbedBuilder()
-          .setColor(config.colors.success)
-          .setDescription(
-            `${config.emojis.success} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
-          );
-
-        await interaction.editReply({ embeds: [successEmbed] });
+        // Dismiss the ephemeral modal reply
+        await interaction.deleteReply().catch(() => {});
 
         // Find and edit the original authorization message
         try {
@@ -158,26 +152,35 @@ module.exports = {
           );
 
           if (authMessage) {
-            // Disable the buttons on the original message
-            const disabledRow = new ActionRowBuilder()
-              .addComponents(
-                new ButtonBuilder()
-                  .setLabel('Authorize Spotify')
-                  .setStyle(ButtonStyle.Link)
-                  .setURL('https://spotify.com')
-                  .setDisabled(true),
-                new ButtonBuilder()
-                  .setCustomId(`spotify_code_disabled`)
-                  .setLabel('Enter Code')
-                  .setStyle(ButtonStyle.Secondary)
-                  .setDisabled(true)
+            // Edit the original message with success
+            const successEmbed = new EmbedBuilder()
+              .setColor(config.colors.success)
+              .setDescription(
+                `${config.emojis.success} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
               );
 
-            await authMessage.edit({ components: [disabledRow] });
+            await authMessage.edit({ embeds: [successEmbed], components: [] });
+          } else {
+            // Fallback: send success message to channel if we can't find the original
+            const successEmbed = new EmbedBuilder()
+              .setColor(config.colors.success)
+              .setDescription(
+                `${config.emojis.success} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
+              );
+
+            await interaction.channel.send({ embeds: [successEmbed] });
           }
         } catch (err) {
-          // Couldn't edit original message, that's okay
+          // Couldn't edit original message, send to channel as fallback
           console.log('[Spotify Modal] Could not edit original message:', err.message);
+          
+          const successEmbed = new EmbedBuilder()
+            .setColor(config.colors.success)
+            .setDescription(
+              `${config.emojis.success} <@${userId}>: Your Discord account has been connected to **${profileName}**!`
+            );
+
+          await interaction.channel.send({ embeds: [successEmbed] }).catch(() => {});
         }
 
       } catch (error) {

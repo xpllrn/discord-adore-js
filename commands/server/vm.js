@@ -28,7 +28,6 @@ module.exports = {
 {guildprefix}vm status [status]
 {guildprefix}vm transfer @user
 {guildprefix}vm claim`,
-  permission: 'Manage Channels',
   run: async (client, message, args) => {
     // Initialize guildService
     const guildService = getService('guild');
