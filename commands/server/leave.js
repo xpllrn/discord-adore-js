@@ -10,13 +10,8 @@ module.exports = {
   name: "leave",
   aliases: ['bye'],
   description: `Set up a leave message for when members leave`,
-  usage: `{guildprefix}leave add [channel] [message]
-{guildprefix}leave remove [channel]
-{guildprefix}leave view [channel]
-{guildprefix}leave list
-
-{guildprefix}leave variables`,
   permission: "Manage Guild",
+  isGroupCommand: true,
 
   run: async(client, message, args) => {
     const guildService = getService('guild');
@@ -28,6 +23,13 @@ module.exports = {
     const globaldata = await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Add or update a leave message for a channel',
+        usage: '{guildprefix}leave add [channel] [message]',
+        aliases: [],
+        parameters: ['channel', 'message'],
+        example: '{guildprefix}leave add #general Goodbye {user.name}!'
+      };
 
       const channelInput = args[1];
       const leavemessage = args.slice(2).join(' ');
@@ -66,6 +68,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'remove') {
+      const subcommandInfo = {
+        description: 'Remove a leave message from a channel',
+        usage: '{guildprefix}leave remove [channel]',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}leave remove #general'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -98,6 +107,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'view') {
+      const subcommandInfo = {
+        description: 'Preview the leave message for a channel',
+        usage: '{guildprefix}leave view [channel]',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}leave view #general'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -127,6 +143,13 @@ module.exports = {
       });
 
     } else if (args[0] === 'variables') {
+      const subcommandInfo = {
+        description: 'Shows available variables for leave messages',
+        usage: '{guildprefix}leave variables',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}leave variables'
+      };
 
       const member = message.author;
       const ordinal = (message.guild.memberCount.toString().endsWith(1) && !message.guild.memberCount.toString().endsWith(11)) ? 'st' : (message.guild.memberCount.toString().endsWith(2) && !message.guild.memberCount.toString().endsWith(12)) ? 'nd' : (message.guild.memberCount.toString().endsWith(3) && !message.guild.memberCount.toString().endsWith(13)) ? 'rd' : 'th';
@@ -139,6 +162,13 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'Lists all configured leave messages',
+        usage: '{guildprefix}leave list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}leave list'
+      };
 
       const leaveMessages = await guildService.getLeaveMessages(message.guild.id) || [];
 

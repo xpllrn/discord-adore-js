@@ -9,12 +9,8 @@ module.exports = {
   name: "blacklist",
   aliases: ['bl', 'globalban'],
   description: 'Universal blacklist system for users and servers',
-  usage: `{guildprefix}blacklist users
-{guildprefix}blacklist users {user.id} {reason}
-
-{guildprefix}blacklist servers
-{guildprefix}blacklist servers {server.id} {reason}`,
   permission: 'dev',
+  isGroupCommand: true,
   run: async(client, message, args) => {
 
     if (!args[0]) {
@@ -24,6 +20,14 @@ module.exports = {
     const subcommand = args[0].toLowerCase();
 
     if (subcommand === 'users' || subcommand === 'user') {
+      const subcommandInfo = {
+        description: 'Manage user blacklist - add/remove users or list all blacklisted users',
+        usage: '{guildprefix}blacklist users [user.id] [reason]',
+        aliases: ['user'],
+        parameters: ['user.id (optional)', 'reason (optional)'],
+        example: '{guildprefix}blacklist users 123456789 Spam'
+      };
+
       if (args[1]) {
 
         await handleUserBlacklist(client, message, args);
@@ -32,6 +36,14 @@ module.exports = {
         await listBlacklistedUsers(client, message);
       }
     } else if (subcommand === 'servers' || subcommand === 'server') {
+      const subcommandInfo = {
+        description: 'Manage server blacklist - add/remove servers or list all blacklisted servers',
+        usage: '{guildprefix}blacklist servers [server.id] [reason]',
+        aliases: ['server'],
+        parameters: ['server.id (optional)', 'reason (optional)'],
+        example: '{guildprefix}blacklist servers 987654321 Abuse'
+      };
+
       if (args[1]) {
 
         await handleServerBlacklist(client, message, args);

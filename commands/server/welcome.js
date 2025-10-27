@@ -10,13 +10,8 @@ module.exports = {
   name: "welcome",
   aliases: ['welc'],
   description: `Set up a welcome message for when new members join`,
-  usage: `{guildprefix}welcome add [channel] [message]
-{guildprefix}welcome remove [channel]
-{guildprefix}welcome view [channel]
-{guildprefix}welcome list
-
-{guildprefix}welcome variables`,
   permission: "Manage Guild",
+  isGroupCommand: true,
 
   run: async(client, message, args) => {
     const guildService = getService('guild');
@@ -27,6 +22,14 @@ module.exports = {
     const globaldata = await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Add or update a welcome message for a channel',
+        usage: '{guildprefix}welcome add [channel] [message]',
+        aliases: [],
+        parameters: ['channel', 'message'],
+        example: '{guildprefix}welcome add #general Welcome {user.mention}!'
+      };
+
       try {
         const channelInput = args[1];
         const welcomemessage = args.slice(2).join(' ');
@@ -63,6 +66,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'remove') {
+      const subcommandInfo = {
+        description: 'Remove a welcome message from a channel',
+        usage: '{guildprefix}welcome remove [channel]',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}welcome remove #general'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -91,6 +101,13 @@ module.exports = {
 
 
     } else if (args[0] === 'view') {
+      const subcommandInfo = {
+        description: 'Preview the welcome message for a channel',
+        usage: '{guildprefix}welcome view [channel]',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}welcome view #general'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -120,6 +137,13 @@ module.exports = {
       });
 
     } else if (args[0] === 'variables') {
+      const subcommandInfo = {
+        description: 'Shows available variables for welcome messages',
+        usage: '{guildprefix}welcome variables',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}welcome variables'
+      };
 
       const member = message.author;
       const ordinal = (message.guild.memberCount.toString().endsWith(1) && !message.guild.memberCount.toString().endsWith(11)) ? 'st' : (message.guild.memberCount.toString().endsWith(2) && !message.guild.memberCount.toString().endsWith(12)) ? 'nd' : (message.guild.memberCount.toString().endsWith(3) && !message.guild.memberCount.toString().endsWith(13)) ? 'rd' : 'th';
@@ -132,6 +156,13 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'Lists all configured welcome messages',
+        usage: '{guildprefix}welcome list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}welcome list'
+      };
 
       const welcomeMessages = await guildService.getWelcomeMessages(message.guild.id) || [];
 

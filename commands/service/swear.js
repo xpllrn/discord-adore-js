@@ -55,16 +55,20 @@ module.exports = {
   name: "swear",
   aliases: ['swears'],
   description: `track swear usage in the server`,
-  usage: `{guildprefix}swear
-{guildprefix}swear list
-{guildprefix}swear [user]
-{guildprefix}swear leaderboard
-{guildprefix}swear reset`,
+  isGroupCommand: true,
   run: async(client, message, args) => {
     const guildService = getService('guild');
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'List all swears used by you or another user',
+        usage: '{guildprefix}swear list [user]',
+        aliases: [],
+        parameters: ['user (optional)'],
+        example: '{guildprefix}swear list @user'
+      };
+
       let targetUser = message.author;
       let targetMember = message.member;
       
@@ -123,6 +127,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'leaderboard' || args[0] === 'lb') {
+      const subcommandInfo = {
+        description: 'Show the server swear leaderboard',
+        usage: '{guildprefix}swear leaderboard',
+        aliases: ['lb'],
+        parameters: [],
+        example: '{guildprefix}swear leaderboard'
+      };
+
       try {
         const leaderboard = await guildService.getSwearLeaderboard(message.guild.id);
 
@@ -205,6 +217,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Reset all swear data for the server',
+        usage: '{guildprefix}swear reset',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}swear reset'
+      };
+
       if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
 
       try {

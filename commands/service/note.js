@@ -10,10 +10,7 @@ module.exports = {
   name: "note",
   aliases: ['notes', 'todo'],
   description: `manage your personal notes`,
-  usage: `{guildprefix}note add [content]
-{guildprefix}note remove [id]
-{guildprefix}note list
-{guildprefix}note reset`,
+  isGroupCommand: true,
   run: async(client, message, args) => {
     const userService = getService('user');
 
@@ -21,6 +18,13 @@ module.exports = {
     await ensureUserData(message.author.id);
 
     if (args[0] === 'add' || args[0] === 'create') {
+      const subcommandInfo = {
+        description: 'Add a new note',
+        usage: '{guildprefix}note add [content]',
+        aliases: ['create'],
+        parameters: ['content'],
+        example: '{guildprefix}note add Remember to update the bot'
+      };
 
       if (!args[1]) {
         return runHelpCommand(message, 'note');
@@ -47,6 +51,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
+      const subcommandInfo = {
+        description: 'Remove a note by ID',
+        usage: '{guildprefix}note remove [id]',
+        aliases: ['delete', 'rm', 'del'],
+        parameters: ['id'],
+        example: '{guildprefix}note remove 1'
+      };
 
       const noteId = parseInt(args[1]);
 
@@ -68,6 +79,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'list' || !args[0]) {
+      const subcommandInfo = {
+        description: 'List all your notes',
+        usage: '{guildprefix}note list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}note list'
+      };
 
       try {
         const notes = await userService.getNotes(message.author.id);
@@ -108,6 +126,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'reset' || args[0] === 'clear') {
+      const subcommandInfo = {
+        description: 'Clear all your notes',
+        usage: '{guildprefix}note reset',
+        aliases: ['clear'],
+        parameters: [],
+        example: '{guildprefix}note reset'
+      };
 
       try {
         const notes = await userService.getNotes(message.author.id);

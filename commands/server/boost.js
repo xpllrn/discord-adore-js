@@ -10,14 +10,8 @@ module.exports = {
   name: "boost",
   aliases: ['boosts'],
   description: `Set up a boost message and role for when members boost the server`,
-  usage: `{guildprefix}boost add [channel] [message]
-{guildprefix}boost remove [channel]
-{guildprefix}boost view [channel]
-{guildprefix}boost role [@role/none]
-{guildprefix}boost list
-
-{guildprefix}boost variables`,
   permission: "Manage Guild",
+  isGroupCommand: true,
 
   run: async(client, message, args) => {
     const guildService = getService('guild');
@@ -28,6 +22,13 @@ module.exports = {
     const globaldata = await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Add or update a boost message for a channel',
+        usage: '{guildprefix}boost add [channel] [message]',
+        aliases: [],
+        parameters: ['channel', 'message'],
+        example: '{guildprefix}boost add #boosts Thanks for boosting {user.mention}!'
+      };
 
       const channelInput = args[1];
       const boostmessage = args.slice(2).join(' ');
@@ -64,6 +65,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'remove') {
+      const subcommandInfo = {
+        description: 'Remove a boost message from a channel',
+        usage: '{guildprefix}boost remove [channel]',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}boost remove #boosts'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -95,6 +103,13 @@ module.exports = {
 
 
     } else if (args[0] === 'view') {
+      const subcommandInfo = {
+        description: 'Preview the boost message for a channel',
+        usage: '{guildprefix}boost view [channel]',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}boost view #boosts'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -122,6 +137,13 @@ module.exports = {
       });
 
     } else if (args[0] === 'variables') {
+      const subcommandInfo = {
+        description: 'Shows available variables for boost messages',
+        usage: '{guildprefix}boost variables',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}boost variables'
+      };
 
       const member = message.author;
       const ordinal = (message.guild.memberCount.toString().endsWith(1) && !message.guild.memberCount.toString().endsWith(11)) ? 'st' : (message.guild.memberCount.toString().endsWith(2) && !message.guild.memberCount.toString().endsWith(12)) ? 'nd' : (message.guild.memberCount.toString().endsWith(3) && !message.guild.memberCount.toString().endsWith(13)) ? 'rd' : 'th';
@@ -134,6 +156,13 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'role') {
+      const subcommandInfo = {
+        description: 'Set or remove the boost role',
+        usage: '{guildprefix}boost role [@role/none]',
+        aliases: [],
+        parameters: ['role'],
+        example: '{guildprefix}boost role @Booster'
+      };
 
       const roleInput = args[1];
       if (!roleInput) return false;
@@ -170,6 +199,13 @@ module.exports = {
       return embeds.success(message, `Set **${boostRole.name}** as the boost role`);
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'Lists all configured boost messages',
+        usage: '{guildprefix}boost list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}boost list'
+      };
 
       const boostMessages = await guildService.getBoostMessages(message.guild.id) || [];
 

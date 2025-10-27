@@ -11,11 +11,8 @@ module.exports = {
   name: "autoresponder",
   aliases: ['autoresponse', 'autorespond', 'trigger'],
   description: `automatically respond to specific triggers`,
-  usage: `{guildprefix}autoresponder add [trigger], [response] [--options]
-{guildprefix}autoresponder remove [trigger]
-{guildprefix}autoresponder list
-{guildprefix}autoresponder reset`,
   permission: 'Manage Channels',
+  isGroupCommand: true,
   run: async(client, message, args) => {
     const guildService = getService('guild');
 
@@ -25,6 +22,13 @@ module.exports = {
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add' || args[0] === 'create') {
+      const subcommandInfo = {
+        description: 'Add a new autoresponder trigger',
+        usage: '{guildprefix}autoresponder add [trigger], [response] [--options]',
+        aliases: ['create'],
+        parameters: ['trigger', 'response', 'options (optional)'],
+        example: '{guildprefix}autoresponder add hello, Hi there! --reply'
+      };
 
       const fullInput = args.slice(1).join(' ');
 
@@ -134,6 +138,13 @@ module.exports = {
 
       
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Remove all autoresponders',
+        usage: '{guildprefix}autoresponder reset',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}autoresponder reset'
+      };
 
       const data = await guildService.getAutoResponders(message.guild.id);
 
@@ -161,6 +172,13 @@ module.exports = {
 
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'List all autoresponders',
+        usage: '{guildprefix}autoresponder list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}autoresponder list'
+      };
 
       const data = await guildService.getAutoResponders(message.guild.id);
 
@@ -194,6 +212,13 @@ module.exports = {
 
 
     } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
+      const subcommandInfo = {
+        description: 'Remove an autoresponder',
+        usage: '{guildprefix}autoresponder remove [trigger]',
+        aliases: ['delete', 'rm', 'del'],
+        parameters: ['trigger'],
+        example: '{guildprefix}autoresponder remove hello'
+      };
 
       const trigger = args[1];
 

@@ -17,33 +17,26 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
   const fields = [];
 
   // Aliases field
-  const aliasValue = command.aliases && command.aliases.length > 0 
-    ? command.aliases.join(', ') 
+  const aliasValue = command.aliases && command.aliases.length > 0
+    ? command.aliases.join(', ')
     : 'n/a';
   fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
-  // Parameters field (n/a for parent command)
-  fields.push({ name: '**Parameters**', value: 'n/a', inline: true });
-
-  // Information field (permissions with warning emoji)
+  // Permission field
   if (command.permission) {
-    const permissionValue = `${config.emojis.warn} ${command.permission}`;
-    fields.push({ name: '**Information**', value: permissionValue, inline: false });
+    fields.push({ name: '**Permission**', value: command.permission, inline: true });
   }
 
   // Usage field
-  const usageLines = [
-    `**Syntax:** ${guildPrefix}${command.name} (subcommand) <args>`,
-    `**Example:** ${guildPrefix}${command.name} add (role)`
-  ];
-  fields.push({ name: '**Usage**', value: usageLines.join('\n'), inline: false });
+  const usageValue = `\`\`\`html\nSyntax: ${guildPrefix}${command.name} (subcommand) <args>\nExample: ${guildPrefix}${command.name} add (role)\`\`\``;
+  fields.push({ name: '**Usage**', value: usageValue, inline: false });
 
   embed.addFields(...fields);
 
   // Footer with page counter and module name
   const totalPages = totalSubcommands + 1; // +1 for parent page
-  embed.setFooter({ 
-    text: `Page 1/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}` 
+  embed.setFooter({
+    text: `Page 1/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}`
   });
 
   return embed;
@@ -66,42 +59,36 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
   const fields = [];
 
   // Aliases field
-  const aliasValue = subcommand.aliases && subcommand.aliases.length > 0 
-    ? subcommand.aliases.join(', ') 
+  const aliasValue = subcommand.aliases && subcommand.aliases.length > 0
+    ? subcommand.aliases.join(', ')
     : 'n/a';
   fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
-  // Parameters field
-  const paramValue = subcommand.parameters && subcommand.parameters.length > 0 
-    ? subcommand.parameters.join(', ') 
-    : 'n/a';
-  fields.push({ name: '**Parameters**', value: paramValue, inline: true });
-
-  // Information field (permissions with warning emoji)
+  // Permission field
   if (command.permission) {
-    const permissionValue = `${config.emojis.warn} ${command.permission}`;
-    fields.push({ name: '**Information**', value: permissionValue, inline: false });
+    fields.push({ name: '**Permission**', value: command.permission, inline: true });
   }
 
   // Usage field
   const usageLines = [];
   if (subcommand.syntax) {
-    usageLines.push(`**Syntax:** ${subcommand.syntax}`);
+    usageLines.push(`Syntax: ${subcommand.syntax}`);
   }
   if (subcommand.example) {
-    usageLines.push(`**Example:** ${subcommand.example}`);
+    usageLines.push(`Example: ${subcommand.example}`);
   }
-  
+
   if (usageLines.length > 0) {
-    fields.push({ name: '**Usage**', value: usageLines.join('\n'), inline: false });
+    const usageValue = `\`\`\`html\n${usageLines.join('\n')}\`\`\``;
+    fields.push({ name: '**Usage**', value: usageValue, inline: false });
   }
 
   embed.addFields(...fields);
 
   // Footer with page counter and module name
   const totalSubcommands = totalPages - 1; // -1 for parent page
-  embed.setFooter({ 
-    text: `Page ${pageNumber}/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}` 
+  embed.setFooter({
+    text: `Page ${pageNumber}/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}`
   });
 
   return embed;
@@ -128,8 +115,8 @@ function createTraditionalEmbed(command, guildPrefix) {
   }
 
   // Aliases and permission as inline fields
-  const aliasValue = command.aliases && command.aliases.length > 0 
-    ? command.aliases.join(', ') 
+  const aliasValue = command.aliases && command.aliases.length > 0
+    ? command.aliases.join(', ')
     : 'n/a';
   const permissionValue = command.permission || 'n/a';
 

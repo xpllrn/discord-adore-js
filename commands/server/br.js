@@ -15,16 +15,7 @@ module.exports = {
   name: "br",
   aliases: ['boosterrole', 'boostrole'],
   description: `Manage booster roles`,
-  usage: `{guildprefix}br baserole [@role]
-{guildprefix}br create [name]
-{guildprefix}br rename [name]
-{guildprefix}br icon [emoji/url]
-{guildprefix}br color [color]
-{guildprefix}br gradient [color1] [color2]
-{guildprefix}br holographic
-{guildprefix}br share [@user]
-{guildprefix}br remove/delete
-{guildprefix}br cleanup`,
+  isGroupCommand: true,
   run: async (client, message, args) => {
 
     if (!args[0]) {
@@ -38,12 +29,28 @@ module.exports = {
 
     // Base role management requires Manage Guild permission
     if (subcommand === 'baserole') {
+      const subcommandInfo = {
+        description: 'Set the base role for booster role positioning',
+        usage: '{guildprefix}br baserole [@role]',
+        aliases: [],
+        parameters: ['role'],
+        example: '{guildprefix}br baserole @Booster'
+      };
+
       if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
       return await handleBaseRole(client, message, args.slice(1));
     }
 
     // Cleanup requires Manage Guild permission
     if (subcommand === 'cleanup') {
+      const subcommandInfo = {
+        description: 'Remove unused booster roles',
+        usage: '{guildprefix}br cleanup [days]',
+        aliases: [],
+        parameters: ['days (optional)'],
+        example: '{guildprefix}br cleanup 30'
+      };
+
       if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
       return await handleCleanup(client, message, args.slice(1));
     }
@@ -57,22 +64,78 @@ module.exports = {
     // Handle other subcommands
     switch (subcommand) {
       case 'create':
+        const createInfo = {
+          description: 'Create your personal booster role',
+          usage: '{guildprefix}br create [name]',
+          aliases: [],
+          parameters: ['name'],
+          example: '{guildprefix}br create My Cool Role'
+        };
         return await handleCreate(client, message, args.slice(1));
       case 'rename':
+        const renameInfo = {
+          description: 'Rename your booster role',
+          usage: '{guildprefix}br rename [name]',
+          aliases: [],
+          parameters: ['name'],
+          example: '{guildprefix}br rename New Name'
+        };
         return await handleRename(client, message, args.slice(1));
       case 'icon':
+        const iconInfo = {
+          description: 'Set an icon for your booster role',
+          usage: '{guildprefix}br icon [emoji/url]',
+          aliases: [],
+          parameters: ['emoji or url'],
+          example: '{guildprefix}br icon :star:'
+        };
         return await handleIcon(client, message, args.slice(1));
       case 'color':
+        const colorInfo = {
+          description: 'Set a color for your booster role',
+          usage: '{guildprefix}br color [color]',
+          aliases: [],
+          parameters: ['color'],
+          example: '{guildprefix}br color #FF0000'
+        };
         return await handleColor(client, message, args.slice(1));
       case 'gradient':
+        const gradientInfo = {
+          description: 'Set a gradient color for your booster role',
+          usage: '{guildprefix}br gradient [color1] [color2]',
+          aliases: [],
+          parameters: ['color1', 'color2'],
+          example: '{guildprefix}br gradient red blue'
+        };
         return await handleGradient(client, message, args.slice(1));
       case 'holographic':
       case 'holo':
+        const holoInfo = {
+          description: 'Set your booster role to holographic colors',
+          usage: '{guildprefix}br holographic',
+          aliases: ['holo'],
+          parameters: [],
+          example: '{guildprefix}br holographic'
+        };
         return await handleHolographic(client, message, args.slice(1));
       case 'share':
+        const shareInfo = {
+          description: 'Share your booster role with another user',
+          usage: '{guildprefix}br share [@user]',
+          aliases: [],
+          parameters: ['user'],
+          example: '{guildprefix}br share @friend'
+        };
         return await handleShare(client, message, args.slice(1));
       case 'remove':
       case 'delete':
+        const removeInfo = {
+          description: 'Remove your booster role',
+          usage: '{guildprefix}br remove',
+          aliases: ['delete'],
+          parameters: [],
+          example: '{guildprefix}br remove'
+        };
         return await handleRemove(client, message, args.slice(1));
       default:
         return runHelpCommand(message, 'br');

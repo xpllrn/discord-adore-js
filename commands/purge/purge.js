@@ -6,13 +6,8 @@ module.exports = {
   name: "purge",
   aliases: ['clear', 'c'],
   description: `bulk delete messages from a channel`,
-  usage: `{guildprefix}purge [number]
-{guildprefix}purge bots [number]
-{guildprefix}purge humans [number]
-{guildprefix}purge @user [number]
-{guildprefix}purge media [number]
-{guildprefix}purge between [topMsgID] [lastMsgID]`,
   permission: 'Manage Messages',
+  isGroupCommand: true,
   run: async(client, message, args) => {
     try {
       if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageMessages)) {
@@ -94,6 +89,14 @@ module.exports = {
 
       // Handle different purge types
       if (args[0] === 'bots') {
+        const subcommandInfo = {
+          description: 'Delete messages from bots only',
+          usage: '{guildprefix}purge bots [number]',
+          aliases: [],
+          parameters: ['number'],
+          example: '{guildprefix}purge bots 50'
+        };
+
         const number = validateNumber(args[1]);
         if (number === null) {
           return runHelpCommand(message, 'purge');
@@ -103,6 +106,14 @@ module.exports = {
         await performBulkDelete(messages);
 
       } else if (args[0] === 'humans') {
+        const subcommandInfo = {
+          description: 'Delete messages from humans only',
+          usage: '{guildprefix}purge humans [number]',
+          aliases: [],
+          parameters: ['number'],
+          example: '{guildprefix}purge humans 50'
+        };
+
         const number = validateNumber(args[1]);
         if (number === null) {
           return runHelpCommand(message, 'purge');
@@ -112,6 +123,14 @@ module.exports = {
         await performBulkDelete(messages);
 
       } else if (args[0] === 'media') {
+        const subcommandInfo = {
+          description: 'Delete messages with attachments or embeds',
+          usage: '{guildprefix}purge media [number]',
+          aliases: [],
+          parameters: ['number'],
+          example: '{guildprefix}purge media 50'
+        };
+
         const number = validateNumber(args[1]);
         if (number === null) {
           return runHelpCommand(message, 'purge');
@@ -121,6 +140,14 @@ module.exports = {
         await performBulkDelete(messages);
 
       } else if (args[0] === 'between') {
+        const subcommandInfo = {
+          description: 'Delete messages between two message IDs',
+          usage: '{guildprefix}purge between [topMsgID] [lastMsgID]',
+          aliases: [],
+          parameters: ['topMsgID', 'lastMsgID'],
+          example: '{guildprefix}purge between 123456789 987654321'
+        };
+
         if (!args[1] || !args[2]) {
           return runHelpCommand(message, 'purge');
         }

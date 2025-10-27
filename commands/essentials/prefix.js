@@ -6,14 +6,22 @@ module.exports = {
   name: "prefix",
   aliases: ['setprefix'],
   description: `Manage server prefix`,
-  usage: `{guildprefix}prefix
-{guildprefix}prefix set [prefix]`,
+  permission: 'Administrator',
+  isGroupCommand: true,
 
   run: async (_, message, args) => {
     const subcommand = args[0]?.toLowerCase();
     const newPrefix = args[1];
 
     if (!subcommand) {
+      const subcommandInfo = {
+        description: 'Shows the current server prefix',
+        usage: '{guildprefix}prefix',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}prefix'
+      };
+
       try {
         const prefixService = getService('prefix');
         const guildPrefix = await prefixService.getGuildPrefix(message.guild.id);
@@ -27,6 +35,14 @@ module.exports = {
 
     // Handle subcommands
     if (subcommand === 'set') {
+      const subcommandInfo = {
+        description: 'Sets a new prefix for the server',
+        usage: '{guildprefix}prefix set [prefix]',
+        aliases: [],
+        parameters: ['prefix'],
+        example: '{guildprefix}prefix set !'
+      };
+
       return handleSetGuildPrefix(message, newPrefix);
     } else {
       const { processCommand } = require('../../utils/commandProcessor');
