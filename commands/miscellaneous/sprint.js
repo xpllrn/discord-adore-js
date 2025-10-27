@@ -64,18 +64,23 @@ async function startSprint(client, message, args) {
       return embeds.warn(message, 'There is already an active **reading sprint** in this server!');
     }
 
-    // Parse duration (default 24h)
+    // Parse duration (default 24h) and optional role
     let duration = '24h';
-    let sprintName = null;
+    let roleId = null;
 
     if (args[0]) {
       // Check if first arg is duration format
       if (/^\d+[hdm]$/.test(args[0])) {
         duration = args[0];
-        sprintName = args.slice(1).join(' ') || null;
-      } else {
-        // First arg is name
-        sprintName = args.join(' ');
+
+        // Check for role in second arg
+        if (args[1]) {
+          const { findRole } = require('../../handlers/finder');
+          const roleResult = findRole(message.guild, args[1]);
+          if (roleResult.found) {
+            roleId = roleResult.role.id;
+          }
+        }
       }
     }
 
@@ -89,7 +94,7 @@ async function startSprint(client, message, args) {
     const endTime = new Date(startTime.getTime() + durationMs);
 
     // Create embed
-    const embed = createSprintEmbed(sprintName, startTime, endTime, []);
+    const embed = createSprintEmbed(null, startTime, endTime, []);
 
     // Create buttons
     const row = new ActionRowBuilder()
@@ -104,28 +109,31 @@ async function startSprint(client, message, args) {
           .setStyle(ButtonStyle.Secondary)
       );
 
-    const sentMessage = await message.channel.send({ embeds: [embed], components: [row] });
+    // Send with role mention if provided
+    const messageOptions = { embeds: [embed], components: [row] };
+    if (roleId) {
+      messageOptions.content = `<@&${roleId}>`;
+      messageOptions.allowedMentions = { roles: [roleId] };
+    }
+
+    const sentMessage = await message.channel.send(messageOptions);
 
     // Save sprint to database
-    await Sprint.create({
+    const sprint = await Sprint.create({
       guildId: message.guild.id,
       messageId: sentMessage.id,
       channelId: message.channel.id,
-      name: sprintName,
+      roleId: roleId,
       startTime,
       endTime,
       participants: [],
       isActive: true,
+      reminderSent: false,
       createdBy: message.author.id
     });
 
-    // Schedule auto-end
-    const timeUntilEnd = endTime.getTime() - Date.now();
-    if (timeUntilEnd > 0 && timeUntilEnd < 2147483647) { // Max setTimeout value
-      setTimeout(async () => {
-        await autoEndSprint(client, message.guild.id, sentMessage.id);
-      }, timeUntilEnd);
-    }
+    // Schedule reminder and auto-end
+    scheduleSprintTimers(client, sprint, durationMs);
 
   } catch (error) {
     console.error('[Sprint Start] Error:', error);
@@ -255,7 +263,7 @@ function createSprintEmbed(name, startTime, endTime, participants) {
  * Create sprint ended embed
  */
 function createSprintEndedEmbed(sprint) {
-  const title = sprint.name ? `READING SPRINT ENDED: ${sprint.name.toUpperCase()}` : 'READING SPRINT ENDED!';
+  const title = 'READING SPRINT ENDED!';
 
   let description = `**Start Time:** <t:${Math.floor(sprint.startTime.getTime() / 1000)}:F>\n`;
   description += `**End Time:** <t:${Math.floor(sprint.endTime.getTime() / 1000)}:F>\n\n`;
@@ -362,7 +370,7 @@ async function joinSprint(client, message, args) {
     try {
       const channel = await client.channels.fetch(sprint.channelId);
       const sprintMessage = await channel.messages.fetch(sprint.messageId);
-      const updatedEmbed = createSprintEmbed(sprint.name, sprint.startTime, sprint.endTime, sprint.participants);
+      const updatedEmbed = createSprintEmbed(null, sprint.startTime, sprint.endTime, sprint.participants);
       await sprintMessage.edit({ embeds: [updatedEmbed] });
     } catch (err) {
       console.error('[Sprint Join] Could not update message:', err);
@@ -414,7 +422,7 @@ async function leaveSprint(client, message) {
         try {
           const channel = await client.channels.fetch(sprint.channelId);
           const sprintMessage = await channel.messages.fetch(sprint.messageId);
-          const updatedEmbed = createSprintEmbed(sprint.name, sprint.startTime, sprint.endTime, sprint.participants);
+          const updatedEmbed = createSprintEmbed(null, sprint.startTime, sprint.endTime, sprint.participants);
           await sprintMessage.edit({ embeds: [updatedEmbed] });
         } catch (err) {
           console.error('[Sprint Leave] Could not update message:', err);
@@ -473,7 +481,7 @@ async function updateSprint(client, message, args) {
     try {
       const channel = await client.channels.fetch(sprint.channelId);
       const sprintMessage = await channel.messages.fetch(sprint.messageId);
-      const updatedEmbed = createSprintEmbed(sprint.name, sprint.startTime, sprint.endTime, sprint.participants);
+      const updatedEmbed = createSprintEmbed(null, sprint.startTime, sprint.endTime, sprint.participants);
       await sprintMessage.edit({ embeds: [updatedEmbed] });
     } catch (err) {
       console.error('[Sprint Update] Could not update message:', err);
@@ -640,5 +648,77 @@ async function saveSprintHistory(sprint) {
     }
   } catch (error) {
     console.error('[Save Sprint History] Error:', error);
+  }
+}
+
+/**
+ * Schedule sprint timers (reminder and auto-end)
+ */
+function scheduleSprintTimers(client, sprint, durationMs) {
+  const timeUntilEnd = sprint.endTime.getTime() - Date.now();
+
+  // Calculate reminder time (30 min before end, or 20% of duration if less than 30 min)
+  let reminderTime;
+  const thirtyMinutes = 30 * 60 * 1000;
+
+  if (durationMs <= thirtyMinutes) {
+    // If sprint is 30 min or less, remind at 20% of remaining time
+    reminderTime = timeUntilEnd * 0.8;
+  } else {
+    // Otherwise remind 30 min before end
+    reminderTime = timeUntilEnd - thirtyMinutes;
+  }
+
+  // Schedule reminder
+  if (reminderTime > 0 && reminderTime < 2147483647) {
+    setTimeout(async () => {
+      await sendSprintReminder(client, sprint.guildId, sprint.messageId);
+    }, reminderTime);
+  }
+
+  // Schedule auto-end
+  if (timeUntilEnd > 0 && timeUntilEnd < 2147483647) {
+    setTimeout(async () => {
+      await autoEndSprint(client, sprint.guildId, sprint.messageId);
+    }, timeUntilEnd);
+  }
+}
+
+/**
+ * Send reminder to sprint participants
+ */
+async function sendSprintReminder(client, guildId, messageId) {
+  try {
+    const Sprint = getSprintModel();
+    if (!Sprint) return;
+
+    const sprint = await Sprint.findOne({
+      guildId,
+      messageId,
+      isActive: true,
+      reminderSent: false
+    });
+
+    if (!sprint || sprint.participants.length === 0) return;
+
+    // Mark reminder as sent
+    sprint.reminderSent = true;
+    await sprint.save();
+
+    // Get channel and message
+    const channel = await client.channels.fetch(sprint.channelId);
+    const sprintMessage = await channel.messages.fetch(sprint.messageId);
+
+    // Create mentions for all participants
+    const mentions = sprint.participants.map(p => `<@${p.userId}>`).join(' ');
+
+    // Send reminder
+    await sprintMessage.reply({
+      content: `${mentions}\n⏰ **Hurry up!** Update your tabs before the sprint closes!`,
+      allowedMentions: { users: sprint.participants.map(p => p.userId) }
+    });
+
+  } catch (error) {
+    console.error('[Sprint Reminder] Error:', error);
   }
 }
