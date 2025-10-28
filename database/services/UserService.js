@@ -36,15 +36,8 @@ class UserService extends BaseService {
       const updateData = { ...data };
       delete updateData._id;
 
-      // Log roleplay data being written
-      if (updateData.Roleplay) {
-        console.log(`[Roleplay DB Write] Writing for ${key}: given=${updateData.Roleplay.given?.length || 0}, received=${updateData.Roleplay.received?.length || 0}`);
-      }
-
-      const result = await Model.updateOne(query, { $set: updateData }, { upsert: true });
-      console.log(`[Roleplay DB Write] Result for ${key}: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}`);
+      await Model.updateOne(query, { $set: updateData }, { upsert: true });
     } catch (error) {
-      console.error(`[Roleplay DB Write] Error writing for ${key}:`, error);
       throw new DatabaseWriteError(`Failed to write user data for ${key}`, error);
     }
   }
@@ -60,15 +53,9 @@ class UserService extends BaseService {
       const query = { [this.keyField]: key };
 
       const doc = await Model.findOne(query).lean();
-      
-      // Log roleplay data being read
-      if (doc && doc.Roleplay) {
-        console.log(`[Roleplay DB Read] Reading for ${key}: given=${doc.Roleplay.given?.length || 0}, received=${doc.Roleplay.received?.length || 0}`);
-      }
-      
       return doc || null;
     } catch (error) {
-      console.error(`[Roleplay DB Read] Error reading user data for ${key}:`, error.message);
+      console.error(`Error reading user data for ${key}:`, error.message);
       return null;
     }
   }
@@ -1326,7 +1313,6 @@ class UserService extends BaseService {
       if (interaction) {
         interaction.count++;
         interaction.lastInteraction = new Date();
-        console.log(`[Roleplay] Updated ${action} count for ${userId} -> ${targetId}: ${interaction.count}`);
       } else {
         interaction = {
           targetId,
@@ -1335,12 +1321,10 @@ class UserService extends BaseService {
           lastInteraction: new Date()
         };
         roleplay.given.push(interaction);
-        console.log(`[Roleplay] Created new ${action} interaction for ${userId} -> ${targetId}: count=1`);
       }
 
       userData.Roleplay = roleplay;
       await this.set(userId, userData);
-      console.log(`[Roleplay] Saved to database for ${userId}, total given interactions: ${roleplay.given.length}`);
 
       // Also track in target's received
       if (targetId !== userId) {
@@ -1349,7 +1333,6 @@ class UserService extends BaseService {
 
       return interaction.count;
     } catch (error) {
-      console.error(`[Roleplay] Error tracking interaction for ${userId}:`, error);
       if (error instanceof ValidationError) {
         throw error;
       }
@@ -1382,7 +1365,6 @@ class UserService extends BaseService {
       if (interaction) {
         interaction.count++;
         interaction.lastInteraction = new Date();
-        console.log(`[Roleplay] Updated received ${action} count for ${userId} from ${fromId}: ${interaction.count}`);
       } else {
         interaction = {
           fromId,
@@ -1391,15 +1373,13 @@ class UserService extends BaseService {
           lastInteraction: new Date()
         };
         roleplay.received.push(interaction);
-        console.log(`[Roleplay] Created new received ${action} interaction for ${userId} from ${fromId}: count=1`);
       }
 
       userData.Roleplay = roleplay;
       await this.set(userId, userData);
-      console.log(`[Roleplay] Saved received to database for ${userId}, total received interactions: ${roleplay.received.length}`);
     } catch (error) {
       // Silent fail for received tracking
-      console.error(`[Roleplay] Error tracking received roleplay for user ${userId}:`, error.message);
+      console.error(`Error tracking received roleplay for user ${userId}:`, error.message);
     }
   }
 
@@ -1428,7 +1408,6 @@ class UserService extends BaseService {
       const roleplay = userData.Roleplay || { given: [], received: [] };
 
       if (!roleplay.given) {
-        console.log(`[Roleplay] No given interactions found for ${userId}`);
         return 0;
       }
 
@@ -1436,11 +1415,9 @@ class UserService extends BaseService {
         r => r.targetId === targetId && r.action === action
       );
 
-      const count = interaction ? interaction.count : 0;
-      console.log(`[Roleplay] Retrieved ${action} count for ${userId} -> ${targetId}: ${count}`);
-      return count;
+      return interaction ? interaction.count : 0;
     } catch (error) {
-      console.error(`[Roleplay] Error getting roleplay count for user ${userId}:`, error.message);
+      console.error(`Error getting roleplay count for user ${userId}:`, error.message);
       return 0;
     }
   }
