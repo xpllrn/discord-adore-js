@@ -93,7 +93,7 @@ module.exports = {
                     parameters: [],
                     example: '{guildprefix}lastfm howto'
                 };
-                
+
                 const embed = new EmbedBuilder()
                     .setColor(config.colors.info)
                     .setTitle('**Last.fm Setup Guide**')
@@ -114,7 +114,7 @@ module.exports = {
                     parameters: ['username'],
                     example: '{guildprefix}lastfm set vwsn'
                 };
-                
+
                 const fmuser = args[1];
 
                 if (!fmuser) {
@@ -177,7 +177,7 @@ module.exports = {
                     parameters: [],
                     example: '{guildprefix}lastfm update'
                 };
-                
+
                 try {
                     const fmUsername = await userService.getLastFMUsername(message.author.id);
                     if (!fmUsername) {
@@ -198,6 +198,14 @@ module.exports = {
 
             // FMBot-style short commands (auto-detect current track)
             case 'wa': {
+                const subcommandInfo = {
+                    description: 'Who knows this artist (auto-detect from current track)',
+                    usage: '{guildprefix}lastfm wa',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm wa'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsArtist = new WhoKnows(message.author.id, 'artist');
                 await whoknowsArtist.execute(message, []); // Empty args to auto-detect
@@ -205,6 +213,14 @@ module.exports = {
             }
 
             case 'wt': {
+                const subcommandInfo = {
+                    description: 'Who knows this track (auto-detect from current track)',
+                    usage: '{guildprefix}lastfm wt',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm wt'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsTrack = new WhoKnows(message.author.id, 'track');
                 await whoknowsTrack.execute(message, []); // Empty args to auto-detect
@@ -212,6 +228,14 @@ module.exports = {
             }
 
             case 'wal': {
+                const subcommandInfo = {
+                    description: 'Who knows this album (auto-detect from current track)',
+                    usage: '{guildprefix}lastfm wal',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm wal'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsAlbum = new WhoKnows(message.author.id, 'album');
                 await whoknowsAlbum.execute(message, []); // Empty args to auto-detect
@@ -219,6 +243,14 @@ module.exports = {
             }
 
             case 'pa': {
+                const subcommandInfo = {
+                    description: 'Your plays for this artist (auto-detect from current track)',
+                    usage: '{guildprefix}lastfm pa',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm pa'
+                };
+
                 message.channel.sendTyping();
                 const playsArtist = new Plays(message.author.id, 'artist');
                 await playsArtist.execute(message, []); // Empty args to auto-detect
@@ -226,6 +258,14 @@ module.exports = {
             }
 
             case 'pt': {
+                const subcommandInfo = {
+                    description: 'Your plays for this track (auto-detect from current track)',
+                    usage: '{guildprefix}lastfm pt',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm pt'
+                };
+
                 message.channel.sendTyping();
                 const playsTrack = new Plays(message.author.id, 'track');
                 await playsTrack.execute(message, []); // Empty args to auto-detect
@@ -233,6 +273,14 @@ module.exports = {
             }
 
             case 'pal': {
+                const subcommandInfo = {
+                    description: 'Your plays for this album (auto-detect from current track)',
+                    usage: '{guildprefix}lastfm pal',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm pal'
+                };
+
                 message.channel.sendTyping();
                 const playsAlbum = new Plays(message.author.id, 'album');
                 await playsAlbum.execute(message, []); // Empty args to auto-detect
@@ -241,6 +289,14 @@ module.exports = {
 
             case 'recent':
             case 'r': {
+                const subcommandInfo = {
+                    description: 'Show your recent tracks',
+                    usage: '{guildprefix}lastfm recent [user] [limit]',
+                    aliases: ['r'],
+                    parameters: ['user (optional)', 'limit (optional)'],
+                    example: '{guildprefix}lastfm recent @vwsn 10'
+                };
+
                 message.channel.sendTyping();
                 const recent = new Recent(message.author.id);
                 await recent.execute(message, args);
@@ -248,6 +304,14 @@ module.exports = {
             }
 
             case 'chart': {
+                const subcommandInfo = {
+                    description: 'Generate a chart of your top albums/artists',
+                    usage: '{guildprefix}lastfm chart [user] [type] [period] [size]',
+                    aliases: [],
+                    parameters: ['user (optional)', 'type (optional)', 'period (optional)', 'size (optional)'],
+                    example: '{guildprefix}lastfm chart album weekly 3x3'
+                };
+
                 message.channel.sendTyping();
                 const chart = new Chart(message.author.id);
                 await chart.execute(message, args);
@@ -255,6 +319,14 @@ module.exports = {
             }
 
             case 'streak': {
+                const subcommandInfo = {
+                    description: 'Show your current listening streak',
+                    usage: '{guildprefix}lastfm streak [user]',
+                    aliases: [],
+                    parameters: ['user (optional)'],
+                    example: '{guildprefix}lastfm streak @vwsn'
+                };
+
                 message.channel.sendTyping();
                 const streak = new Streak(message.author.id);
                 await streak.execute(message, args);
@@ -262,6 +334,14 @@ module.exports = {
             }
 
             case 'pace': {
+                const subcommandInfo = {
+                    description: 'Show your scrobbling pace and statistics',
+                    usage: '{guildprefix}lastfm pace [user]',
+                    aliases: [],
+                    parameters: ['user (optional)'],
+                    example: '{guildprefix}lastfm pace @vwsn'
+                };
+
                 message.channel.sendTyping();
                 const pace = new Pace(message.author.id);
                 await pace.execute(message, args);
@@ -270,6 +350,14 @@ module.exports = {
 
             case 'whoknows':
             case 'wk': {
+                const subcommandInfo = {
+                    description: 'Show who knows an artist in this server',
+                    usage: '{guildprefix}lastfm whoknows [artist]',
+                    aliases: ['wk'],
+                    parameters: ['artist'],
+                    example: '{guildprefix}lastfm whoknows Taylor Swift'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsArtist = new WhoKnows(message.author.id, 'artist');
                 await whoknowsArtist.execute(message, args);
@@ -279,6 +367,14 @@ module.exports = {
             case 'wkalbum':
             case 'whoknowsalbum':
             case 'wka': {
+                const subcommandInfo = {
+                    description: 'Show who knows an album in this server',
+                    usage: '{guildprefix}lastfm wkalbum [album]',
+                    aliases: ['whoknowsalbum', 'wka'],
+                    parameters: ['album'],
+                    example: '{guildprefix}lastfm wkalbum 1989'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsAlbum = new WhoKnows(message.author.id, 'album');
                 await whoknowsAlbum.execute(message, args);
@@ -288,6 +384,14 @@ module.exports = {
             case 'wktrack':
             case 'whoknowstrack':
             case 'wkt': {
+                const subcommandInfo = {
+                    description: 'Show who knows a track in this server',
+                    usage: '{guildprefix}lastfm wktrack [track]',
+                    aliases: ['whoknowstrack', 'wkt'],
+                    parameters: ['track'],
+                    example: '{guildprefix}lastfm wktrack Shake It Off'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsTrack = new WhoKnows(message.author.id, 'track');
                 await whoknowsTrack.execute(message, args);
@@ -297,6 +401,14 @@ module.exports = {
             case 'globalwhoknows':
             case 'globalwk':
             case 'gwk': {
+                const subcommandInfo = {
+                    description: 'Show who knows an artist globally',
+                    usage: '{guildprefix}lastfm globalwhoknows [artist]',
+                    aliases: ['globalwk', 'gwk'],
+                    parameters: ['artist'],
+                    example: '{guildprefix}lastfm globalwhoknows Taylor Swift'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsArtist = new WhoKnows(message.author.id, 'artist', true);
                 await whoknowsArtist.execute(message, args);
@@ -306,6 +418,14 @@ module.exports = {
             case 'globalwkalbum':
             case 'globalwka':
             case 'gwka': {
+                const subcommandInfo = {
+                    description: 'Show who knows an album globally',
+                    usage: '{guildprefix}lastfm globalwkalbum [album]',
+                    aliases: ['globalwka', 'gwka'],
+                    parameters: ['album'],
+                    example: '{guildprefix}lastfm globalwkalbum 1989'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsAlbum = new WhoKnows(message.author.id, 'album', true);
                 await whoknowsAlbum.execute(message, args);
@@ -315,6 +435,14 @@ module.exports = {
             case 'globalwktrack':
             case 'globalwkt':
             case 'gwkt': {
+                const subcommandInfo = {
+                    description: 'Show who knows a track globally',
+                    usage: '{guildprefix}lastfm globalwktrack [track]',
+                    aliases: ['globalwkt', 'gwkt'],
+                    parameters: ['track'],
+                    example: '{guildprefix}lastfm globalwktrack Shake It Off'
+                };
+
                 message.channel.sendTyping();
                 const whoknowsTrack = new WhoKnows(message.author.id, 'track', true);
                 await whoknowsTrack.execute(message, args);
@@ -327,6 +455,14 @@ module.exports = {
             case 'artist':
             case 'tar':
             case 'ta': {
+                const subcommandInfo = {
+                    description: 'Show your top artists',
+                    usage: '{guildprefix}lastfm topartists [user] [period]',
+                    aliases: ['topartist', 'artists', 'artist', 'tar', 'ta'],
+                    parameters: ['user (optional)', 'period (optional)'],
+                    example: '{guildprefix}lastfm topartists @vwsn weekly'
+                };
+
                 message.channel.sendTyping();
                 const topArtists = new Top('artist');
                 await topArtists.execute(message, args);
@@ -339,6 +475,14 @@ module.exports = {
             case 'album':
             case 'tab':
             case 'tl': {
+                const subcommandInfo = {
+                    description: 'Show your top albums',
+                    usage: '{guildprefix}lastfm topalbums [user] [period]',
+                    aliases: ['topalbum', 'albums', 'album', 'tab', 'tl'],
+                    parameters: ['user (optional)', 'period (optional)'],
+                    example: '{guildprefix}lastfm topalbums @vwsn monthly'
+                };
+
                 message.channel.sendTyping();
                 const topAlbums = new Top('album');
                 await topAlbums.execute(message, args);
@@ -351,6 +495,14 @@ module.exports = {
             case 'track':
             case 'ttr':
             case 'tt': {
+                const subcommandInfo = {
+                    description: 'Show your top tracks',
+                    usage: '{guildprefix}lastfm toptracks [user] [period]',
+                    aliases: ['toptrack', 'tracks', 'track', 'ttr', 'tt'],
+                    parameters: ['user (optional)', 'period (optional)'],
+                    example: '{guildprefix}lastfm toptracks @vwsn yearly'
+                };
+
                 message.channel.sendTyping();
                 const topTracks = new Top('track');
                 await topTracks.execute(message, args);
@@ -358,6 +510,14 @@ module.exports = {
             }
 
             case 'plays': {
+                const subcommandInfo = {
+                    description: 'Show your plays for a specific artist',
+                    usage: '{guildprefix}lastfm plays [user] [artist]',
+                    aliases: [],
+                    parameters: ['user (optional)', 'artist'],
+                    example: '{guildprefix}lastfm plays @vwsn Taylor Swift'
+                };
+
                 message.channel.sendTyping();
                 const playsArtist = new Plays(message.author.id, 'artist');
                 await playsArtist.execute(message, args);
@@ -367,6 +527,14 @@ module.exports = {
             case 'playsalbum':
             case 'playsa':
             case 'aplays': {
+                const subcommandInfo = {
+                    description: 'Show your plays for a specific album',
+                    usage: '{guildprefix}lastfm playsalbum [user] [album]',
+                    aliases: ['playsa', 'aplays'],
+                    parameters: ['user (optional)', 'album'],
+                    example: '{guildprefix}lastfm playsalbum @vwsn 1989'
+                };
+
                 message.channel.sendTyping();
                 const playsAlbum = new Plays(message.author.id, 'album');
                 await playsAlbum.execute(message, args);
@@ -376,6 +544,14 @@ module.exports = {
             case 'playstrack':
             case 'playst':
             case 'tplays': {
+                const subcommandInfo = {
+                    description: 'Show your plays for a specific track',
+                    usage: '{guildprefix}lastfm playstrack [user] [track]',
+                    aliases: ['playst', 'tplays'],
+                    parameters: ['user (optional)', 'track'],
+                    example: '{guildprefix}lastfm playstrack @vwsn Shake It Off'
+                };
+
                 message.channel.sendTyping();
                 const playsTrack = new Plays(message.author.id, 'track');
                 await playsTrack.execute(message, args);
@@ -386,6 +562,14 @@ module.exports = {
             case 'taste':
             case 'mutual':
             case 'match': {
+                const subcommandInfo = {
+                    description: 'Compare your music taste with another user',
+                    usage: '{guildprefix}lastfm compare [user]',
+                    aliases: ['taste', 'mutual', 'match'],
+                    parameters: ['user'],
+                    example: '{guildprefix}lastfm compare @vwsn'
+                };
+
                 if (!args[1]) {
                     return embeds.warn(message, `Please specify a user to compare with. Usage: \`${guildprefix}lastfm compare [user]\``);
                 }
@@ -529,6 +713,9 @@ class Library {
 
     async saveUserLibrary() {
         // Save library using service layer
+        const { getService } = require('@services');
+        const userService = getService('user');
+        
         const libraryData = {
             artists: this.artists.map(({ name, playcount }) => ({
                 name: name,
@@ -560,6 +747,9 @@ class WhoKnows {
 
     async execute(message, args) {
         try {
+            const { getService } = require('@services');
+            const userService = getService('user');
+            
             let name, artist;
 
             if (!args[1]) {
@@ -781,6 +971,9 @@ class Top {
 
     async execute(message, args) {
         try {
+            const { getService } = require('@services');
+            const userService = getService('user');
+            
             let targetUser = message.author;
             let isArgs = false;
 
@@ -859,6 +1052,9 @@ class Plays {
 
     async execute(message, args) {
         try {
+            const { getService } = require('@services');
+            const userService = getService('user');
+            
             let targetUser = message.author;
             let isArgs = false;
 
@@ -967,6 +1163,9 @@ class Compare {
 
     async execute(message) {
         try {
+            const { getService } = require('@services');
+            const userService = getService('user');
+            
             const [user1Data, user2Data] = await Promise.all([
                 userService.getLastFMUsername(this.userId1),
                 userService.getLastFMUsername(this.userId2)
@@ -1049,6 +1248,9 @@ class Recent {
 
     async execute(message, args) {
         try {
+            const { getService } = require('@services');
+            const userService = getService('user');
+            
             let targetUser = message.author;
             let limit = 10;
 
@@ -1123,6 +1325,9 @@ class Chart {
 
     async execute(message, args) {
         try {
+            const { getService } = require('@services');
+            const userService = getService('user');
+            
             let targetUser = message.author;
             let type = 'album';  // Default to album for collages
             let period = 'overall';
@@ -1514,6 +1719,9 @@ class Streak {
 
     async execute(message, args) {
         try {
+            const { getService } = require('@services');
+            const userService = getService('user');
+            
             let targetUser = message.author;
 
             if (args[1]) {
@@ -1595,6 +1803,9 @@ class Pace {
 
     async execute(message, args) {
         try {
+            const { getService } = require('@services');
+            const userService = getService('user');
+            
             let targetUser = message.author;
 
             if (args[1]) {

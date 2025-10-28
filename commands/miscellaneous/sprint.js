@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { createConfirmation } = require('../../core/buttons');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+const { autoEndSprint, sendSprintReminder } = require('../../utils/sprintManager');
 
 // Get Sprint model from database
 function getSprintModel() {
@@ -264,71 +265,7 @@ async function endSprint(client, message) {
   }
 }
 
-/**
- * Auto-end sprint when time expires
- */
-async function autoEndSprint(client, guildId, messageId) {
-  try {
-    const Sprint = getSprintModel();
-    if (!Sprint) return;
 
-    const sprint = await Sprint.findOne({
-      guildId,
-      messageId,
-      isActive: true
-    });
-
-    if (!sprint) return;
-
-    sprint.isActive = false;
-    await sprint.save();
-
-    // Save to user history
-    await saveSprintHistory(sprint);
-
-    // Create new message with results
-    try {
-      const channel = await client.channels.fetch(sprint.channelId);
-      const sprintMessage = await channel.messages.fetch(sprint.messageId);
-
-      const endedEmbed = createSprintEndedEmbed(sprint);
-
-      // Create mentions for all participants (hidden in spoiler)
-      let content = '';
-      if (sprint.participants.length > 0) {
-        const mentions = sprint.participants.map(p => `<@${p.userId}>`).join(' ');
-        content = `||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||${mentions}`;
-      }
-
-      // Reply to the original message with the ended embed
-      await sprintMessage.reply({
-        content,
-        embeds: [endedEmbed],
-        allowedMentions: { users: sprint.participants.map(p => p.userId) }
-      });
-
-      // Disable buttons on original message but keep the embed unchanged
-      const disabledRow = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('sprint_join')
-            .setLabel('Join')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true),
-          new ButtonBuilder()
-            .setCustomId('sprint_update')
-            .setLabel('Update')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true)
-        );
-      await sprintMessage.edit({ components: [disabledRow] });
-    } catch (err) {
-      console.error('[Sprint Auto-End] Could not update message:', err);
-    }
-  } catch (error) {
-    console.error('[Sprint Auto-End] Error:', error);
-  }
-}
 
 /**
  * Create sprint embed
@@ -871,56 +808,72 @@ function scheduleSprintTimers(client, sprint, durationMs) {
     reminderTime = timeUntilEnd - thirtyMinutes;
   }
 
-  // Schedule reminder
+  // Schedule reminder with better error handling
   if (reminderTime > 0 && reminderTime < 2147483647) {
     setTimeout(async () => {
-      await sendSprintReminder(client, sprint.guildId, sprint.messageId);
+      try {
+        await sendSprintReminder(client, sprint.guildId, sprint.messageId);
+      } catch (error) {
+        console.error('[Sprint Reminder Timer] Error:', error);
+      }
     }, reminderTime);
   }
 
-  // Schedule auto-end
+  // Schedule auto-end with better error handling
   if (timeUntilEnd > 0 && timeUntilEnd < 2147483647) {
     setTimeout(async () => {
-      await autoEndSprint(client, sprint.guildId, sprint.messageId);
+      try {
+        await autoEndSprint(client, sprint.guildId, sprint.messageId);
+      } catch (error) {
+        console.error('[Sprint Auto-End Timer] Error:', error);
+      }
     }, timeUntilEnd);
   }
-}
 
-/**
- * Send reminder to sprint participants
- */
-async function sendSprintReminder(client, guildId, messageId) {
-  try {
-    const Sprint = getSprintModel();
-    if (!Sprint) return;
+  // Also set up a backup check system for long-running sprints
+  if (timeUntilEnd > 2147483647) {
+    // For very long sprints, check every hour
+    const checkInterval = setInterval(async () => {
+      try {
+        const Sprint = getSprintModel();
+        if (!Sprint) {
+          clearInterval(checkInterval);
+          return;
+        }
 
-    const sprint = await Sprint.findOne({
-      guildId,
-      messageId,
-      isActive: true,
-      reminderSent: false
-    });
+        const currentSprint = await Sprint.findOne({
+          guildId: sprint.guildId,
+          messageId: sprint.messageId,
+          isActive: true
+        });
 
-    if (!sprint || sprint.participants.length === 0) return;
+        if (!currentSprint) {
+          clearInterval(checkInterval);
+          return;
+        }
 
-    // Mark reminder as sent
-    sprint.reminderSent = true;
-    await sprint.save();
+        const now = Date.now();
+        const endTime = currentSprint.endTime.getTime();
 
-    // Get channel and message
-    const channel = await client.channels.fetch(sprint.channelId);
-    const sprintMessage = await channel.messages.fetch(sprint.messageId);
+        // Check if sprint should end
+        if (now >= endTime) {
+          clearInterval(checkInterval);
+          await autoEndSprint(client, sprint.guildId, sprint.messageId);
+        }
+        // Check if reminder should be sent
+        else if (!currentSprint.reminderSent && (endTime - now) <= thirtyMinutes) {
+          await sendSprintReminder(client, sprint.guildId, sprint.messageId);
+        }
+      } catch (error) {
+        console.error('[Sprint Backup Check] Error:', error);
+      }
+    }, 60 * 60 * 1000); // Check every hour
 
-    // Create mentions for all participants
-    const mentions = sprint.participants.map(p => `<@${p.userId}>`).join(' ');
-
-    // Send reminder
-    await sprintMessage.reply({
-      content: `**Hurry up everyone!** Update your tabs before the sprint closes! ||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​|| _ _ _ _ _ _  ${mentions} `,
-      allowedMentions: { users: sprint.participants.map(p => p.userId) }
-    });
-
-  } catch (error) {
-    console.error('[Sprint Reminder] Error:', error);
+    // Clear interval after maximum possible time
+    setTimeout(() => {
+      clearInterval(checkInterval);
+    }, 7 * 24 * 60 * 60 * 1000); // 7 days max
   }
 }
+
+// Functions moved to sprintManager.js

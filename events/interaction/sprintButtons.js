@@ -17,8 +17,13 @@ module.exports = {
       try {
         const Sprint = getSprintModel();
         if (!Sprint) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'Database not ready. Please try again.');
           return interaction.reply({
-            content: '❌ Database not ready. Please try again.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -31,8 +36,13 @@ module.exports = {
         });
 
         if (!sprint) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'This sprint is no longer active.');
           return interaction.reply({
-            content: '❌ This sprint is no longer active.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -80,8 +90,23 @@ module.exports = {
 
       } catch (error) {
         console.error('[Sprint Join Button] Error:', error);
+        
+        // Log to webhook if available
+        if (interaction.client.errorLogger) {
+          interaction.client.errorLogger.log(error, 'Sprint Join Button Error', {
+            command: 'Sprint Join Button',
+            args: `User: ${interaction.user.id} | Guild: ${interaction.guild.id}`,
+            error: error.message
+          }).catch(() => {});
+        }
+        
+        const fakeMessage = {
+          author: interaction.user,
+          channel: interaction.channel
+        };
+        const errorEmbed = embeds.createWarn(fakeMessage, 'An error occurred. Please try again.');
         return interaction.reply({
-          content: '❌ An error occurred. Please try again.',
+          embeds: [errorEmbed],
           flags: MessageFlags.Ephemeral
         }).catch(() => {});
       }
@@ -92,8 +117,13 @@ module.exports = {
       try {
         const Sprint = getSprintModel();
         if (!Sprint) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'Database not ready. Please try again.');
           return interaction.reply({
-            content: '❌ Database not ready. Please try again.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -106,8 +136,13 @@ module.exports = {
         });
 
         if (!sprint) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'This sprint is no longer active.');
           return interaction.reply({
-            content: '❌ This sprint is no longer active.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -115,8 +150,13 @@ module.exports = {
         // Check if user is a participant
         const participant = sprint.participants.find(p => p.userId === interaction.user.id);
         if (!participant) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createDeny(fakeMessage, 'You are not part of the current sprint!');
           return interaction.reply({
-            content: '❌ You are not part of the current sprint!',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -141,8 +181,23 @@ module.exports = {
 
       } catch (error) {
         console.error('[Sprint Update Button] Error:', error);
+        
+        // Log to webhook if available
+        if (interaction.client.errorLogger) {
+          interaction.client.errorLogger.log(error, 'Sprint Update Button Error', {
+            command: 'Sprint Update Button',
+            args: `User: ${interaction.user.id} | Guild: ${interaction.guild.id}`,
+            error: error.message
+          }).catch(() => {});
+        }
+        
+        const fakeMessage = {
+          author: interaction.user,
+          channel: interaction.channel
+        };
+        const errorEmbed = embeds.createWarn(fakeMessage, 'An error occurred. Please try again.');
         return interaction.reply({
-          content: '❌ An error occurred. Please try again.',
+          embeds: [errorEmbed],
           flags: MessageFlags.Ephemeral
         }).catch(() => {});
       }
@@ -153,8 +208,13 @@ module.exports = {
       try {
         const Sprint = getSprintModel();
         if (!Sprint) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'Database not ready. Please try again.');
           return interaction.reply({
-            content: '❌ Database not ready. Please try again.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -165,8 +225,13 @@ module.exports = {
 
         const startTab = parseInt(startTabStr);
         if (isNaN(startTab) || startTab < 0) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'Invalid page number. Please enter a valid number.');
           return interaction.reply({
-            content: '❌ Invalid page number. Please enter a valid number.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -179,8 +244,13 @@ module.exports = {
         });
 
         if (!sprint) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'This sprint is no longer active.');
           return interaction.reply({
-            content: '❌ This sprint is no longer active.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -233,8 +303,23 @@ module.exports = {
 
       } catch (error) {
         console.error('[Sprint Join Modal] Error:', error);
+        
+        // Log to webhook if available
+        if (interaction.client.errorLogger) {
+          interaction.client.errorLogger.log(error, 'Sprint Join Modal Error', {
+            command: 'Sprint Join Modal',
+            args: `User: ${interaction.user.id} | Guild: ${interaction.guild.id}`,
+            error: error.message
+          }).catch(() => {});
+        }
+        
+        const fakeMessage = {
+          author: interaction.user,
+          channel: interaction.channel
+        };
+        const errorEmbed = embeds.createWarn(fakeMessage, 'An error occurred. Please try again.');
         return interaction.reply({
-          content: '❌ An error occurred. Please try again.',
+          embeds: [errorEmbed],
           flags: MessageFlags.Ephemeral
         }).catch(() => {});
       }
@@ -245,8 +330,13 @@ module.exports = {
       try {
         const Sprint = getSprintModel();
         if (!Sprint) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'Database not ready. Please try again.');
           return interaction.reply({
-            content: '❌ Database not ready. Please try again.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -256,8 +346,13 @@ module.exports = {
 
         let currentTab = parseInt(currentTabStr);
         if (isNaN(currentTab) || currentTab < 0) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'Invalid page number. Please enter a valid number.');
           return interaction.reply({
-            content: '❌ Invalid page number. Please enter a valid number.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -275,8 +370,13 @@ module.exports = {
         });
 
         if (!sprint) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createWarn(fakeMessage, 'This sprint is no longer active.');
           return interaction.reply({
-            content: '❌ This sprint is no longer active.',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -284,8 +384,13 @@ module.exports = {
         // Find participant
         const participant = sprint.participants.find(p => p.userId === interaction.user.id);
         if (!participant) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createDeny(fakeMessage, 'You are not part of the current sprint!');
           return interaction.reply({
-            content: '❌ You are not part of the current sprint!',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -315,8 +420,23 @@ module.exports = {
 
       } catch (error) {
         console.error('[Sprint Update Modal] Error:', error);
+        
+        // Log to webhook if available
+        if (interaction.client.errorLogger) {
+          interaction.client.errorLogger.log(error, 'Sprint Update Modal Error', {
+            command: 'Sprint Update Modal',
+            args: `User: ${interaction.user.id} | Guild: ${interaction.guild.id}`,
+            error: error.message
+          }).catch(() => {});
+        }
+        
+        const fakeMessage = {
+          author: interaction.user,
+          channel: interaction.channel
+        };
+        const errorEmbed = embeds.createWarn(fakeMessage, 'An error occurred. Please try again.');
         return interaction.reply({
-          content: '❌ An error occurred. Please try again.',
+          embeds: [errorEmbed],
           flags: MessageFlags.Ephemeral
         }).catch(() => {});
       }

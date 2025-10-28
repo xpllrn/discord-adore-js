@@ -138,6 +138,16 @@ async function initializeDatabaseConnection(client) {
     // Mark services as ready for command processing
     client.cacheReady = true;
     
+    // Resume active sprints
+    console.log(chalk.blue('   [~] Resuming active sprints...'));
+    try {
+      const { resumeActiveSprints } = require('../../utils/sprintManager');
+      await resumeActiveSprints(client);
+      console.log(chalk.green('   [+] Sprint system initialized'));
+    } catch (error) {
+      console.log(chalk.yellow('   [~] Sprint initialization warning:', error.message));
+    }
+    
     // Emit ready events
     console.log(chalk.blue('   [~] Triggering delayed ready events...'));
     client.emit('databaseReady');
