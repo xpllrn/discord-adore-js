@@ -4,7 +4,7 @@ const config = require('./../../config/setup')
 const { embeds } = require('../../core/embeds')
 const { hasSubcommands, parseSubcommands, getCommandFilePath } = require('../../utils/subcommandParser')
 const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed } = require('../../utils/helpEmbedBuilder')
-const { createHelpPagination } = require('../../utils/helpPagination')
+const { createPagination } = require('../../core/buttons')
 
 module.exports = {
   name: "help",
@@ -95,8 +95,14 @@ module.exports = {
             pages.push(createSubcommandPage(command, subcommand, pageNumber, totalPages));
           });
 
-          // Display paginated help
-          return createHelpPagination(message, pages, command.name);
+          // Display paginated help using prebuilt pagination
+          return createPagination(
+            message,
+            pages,
+            (pageItems, currentPage, totalPages) => pageItems[0], // formatPage function returns the embed
+            1, // 1 item per page (each item is already a full embed)
+            command.name
+          );
 
         } catch (error) {
           // Fall back to traditional embed on error

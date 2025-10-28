@@ -20,7 +20,7 @@ module.exports = {
   run: async (client, message, args) => {
     const subcommand = args[0]?.toLowerCase();
 
-    if (!subcommand || !['start', 'end', 'join', 'leave', 'update', 'leaderboard', 'history'].includes(subcommand)) {
+    if (!subcommand || !['start', 'end', 'join', 'leave', 'update', 'flow', 'leaderboard', 'history'].includes(subcommand)) {
       return runHelpCommand(message, 'sprint');
     }
 
@@ -74,6 +74,16 @@ module.exports = {
           example: '{guildprefix}sprint update 175'
         };
         return await updateSprint(client, message, args.slice(1));
+      }
+      case 'flow': {
+        const subcommandInfo = {
+          description: 'Pause or resume your time tracking',
+          usage: '{guildprefix}sprint flow',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}sprint flow'
+        };
+        return await toggleFlow(client, message);
       }
       case 'leaderboard': {
         const subcommandInfo = {
@@ -285,10 +295,10 @@ async function autoEndSprint(client, guildId, messageId) {
       const endedEmbed = createSprintEndedEmbed(sprint);
 
       // Create mentions for all participants (hidden in spoiler)
-      let content = '**The reading sprint has ended!**';
+      let content = '';
       if (sprint.participants.length > 0) {
         const mentions = sprint.participants.map(p => `<@${p.userId}>`).join(' ');
-        content += ` ||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​|| _ _ _ _ _ _  ${mentions} `;
+        content = `||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||${mentions}`;
       }
 
       // Reply to the original message with the ended embed
@@ -360,20 +370,23 @@ function createSprintEndedEmbed(sprint) {
     // Calculate progress for each participant
     const results = sprint.participants.map(p => {
       const participant = p.toObject ? p.toObject() : p;
+      const activeTime = calculateActiveTime(participant, sprint.endTime);
       return {
         userId: participant.userId,
         username: participant.username,
         bookName: participant.bookName,
         startTab: participant.startTab,
         currentTab: participant.currentTab,
-        progress: participant.currentTab - participant.startTab
+        progress: participant.currentTab - participant.startTab,
+        activeTime: activeTime
       };
     }).sort((a, b) => b.progress - a.progress);
 
     description += '**Final Leaderboard**\n';
     results.forEach((p, index) => {
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `\`${String(index + 1).padStart(2, '0')}\``;
-      description += `${medal} **${p.username}**: ${p.progress} tabs - **${p.bookName}**\n`;
+      const timeStr = formatDuration(p.activeTime);
+      description += `${medal} **${p.username}**: ${p.progress} tabs of **${p.bookName}** in \`${timeStr}\`\n`;
     });
   }
 
@@ -443,11 +456,14 @@ async function joinSprint(client, message, args) {
     // Add participant
     sprint.participants.push({
       userId: message.author.id,
-      username: message.author.displayName || message.author.username,
+      username: message.author.username,
       bookName: bookName,
       startTab: startTab,
       currentTab: startTab,
-      joinedAt: new Date()
+      joinedAt: new Date(),
+      isPaused: false,
+      totalPausedTime: 0,
+      lastPauseTime: null
     });
 
     await sprint.save();
@@ -588,6 +604,92 @@ async function updateSprint(client, message, args) {
 }
 
 /**
+ * Toggle flow (pause/resume time tracking)
+ */
+async function toggleFlow(client, message) {
+  try {
+    const Sprint = getSprintModel();
+    if (!Sprint) {
+      return embeds.warn(message, 'Database not ready. Please try again in a moment.');
+    }
+
+    const sprint = await Sprint.findOne({
+      guildId: message.guild.id,
+      isActive: true
+    });
+
+    if (!sprint) {
+      return embeds.warn(message, 'There is no active **reading sprint** in this server!');
+    }
+
+    // Check if user is in sprint
+    const participant = sprint.participants.find(p => p.userId === message.author.id);
+    if (!participant) {
+      return embeds.warn(message, 'You are not part of the current sprint!');
+    }
+
+    const now = new Date();
+
+    if (participant.isPaused) {
+      // Resume - calculate paused time and add to total
+      const pauseDuration = now.getTime() - participant.lastPauseTime.getTime();
+      participant.totalPausedTime += pauseDuration;
+      participant.isPaused = false;
+      participant.lastPauseTime = null;
+
+      await sprint.save();
+      return embeds.success(message, 'Time tracking **resumed**! Your timer is now running.');
+    } else {
+      // Pause - record pause start time
+      participant.isPaused = true;
+      participant.lastPauseTime = now;
+
+      await sprint.save();
+      return embeds.success(message, 'Time tracking **paused**! Use `,sprint flow` again to resume.');
+    }
+
+  } catch (error) {
+    console.error('[Sprint Flow] Error:', error);
+    return embeds.warn(message, 'Failed to toggle flow. Please try again.');
+  }
+}
+
+/**
+ * Calculate active time for a participant
+ */
+function calculateActiveTime(participant, sprintEndTime = null) {
+  const now = sprintEndTime || new Date();
+  const joinTime = participant.joinedAt.getTime();
+  const totalElapsed = now.getTime() - joinTime;
+
+  let totalPaused = participant.totalPausedTime || 0;
+
+  // If currently paused, add current pause duration
+  if (participant.isPaused && participant.lastPauseTime) {
+    const currentPauseDuration = now.getTime() - participant.lastPauseTime.getTime();
+    totalPaused += currentPauseDuration;
+  }
+
+  const activeTime = totalElapsed - totalPaused;
+  return Math.max(0, activeTime);
+}
+
+/**
+ * Format time duration to readable string
+ */
+function formatDuration(milliseconds) {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  if (hours > 0) {
+    return `${hours} hr${hours !== 1 ? 's' : ''}, ${minutes} min`;
+  } else {
+    return `${minutes} min`;
+  }
+}
+
+/**
  * Show sprint leaderboard
  */
 async function showLeaderboard(client, message) {
@@ -613,13 +715,16 @@ async function showLeaderboard(client, message) {
     // Calculate progress and sort
     const results = sprint.participants.map(p => {
       const participant = p.toObject ? p.toObject() : p;
+      const activeTime = calculateActiveTime(participant);
       return {
         userId: participant.userId,
         username: participant.username,
         bookName: participant.bookName,
         startTab: participant.startTab,
         currentTab: participant.currentTab,
-        progress: participant.currentTab - participant.startTab
+        progress: participant.currentTab - participant.startTab,
+        activeTime: activeTime,
+        isPaused: participant.isPaused
       };
     }).sort((a, b) => b.progress - a.progress);
 
@@ -631,7 +736,9 @@ async function showLeaderboard(client, message) {
 
     top10.forEach((p, index) => {
       const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `\`${String(index + 1).padStart(2, '0')}\``;
-      description += `${medal} **${p.username}**: \`${p.progress}\` tabs - **${p.bookName}**\n`;
+      const timeStr = formatDuration(p.activeTime);
+      const pausedIndicator = p.isPaused ? ' ⏸️' : '';
+      description += `${medal} **${p.username}**: \`${p.progress}\` tabs of **${p.bookName}** in \`${timeStr}\`${pausedIndicator}\n`;
     });
 
     const embed = new EmbedBuilder()

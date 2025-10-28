@@ -205,7 +205,10 @@ module.exports = {
           bookName: bookName,
           startTab: startTab,
           currentTab: startTab,
-          joinedAt: new Date()
+          joinedAt: new Date(),
+          isPaused: false,
+          totalPausedTime: 0,
+          lastPauseTime: null
         });
 
         await sprint.save();

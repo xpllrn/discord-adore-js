@@ -155,22 +155,22 @@ module.exports = {
 
       return message.channel.send({ embeds: [embed] });
 
-    } else if (args[0] === 'role') {
+    } else if (args[0] === 'award') {
       const subcommandInfo = {
-        description: 'Set or remove the boost role',
-        usage: '{guildprefix}boost role [@role/none]',
+        description: 'Set or remove the boost award role',
+        usage: '{guildprefix}boost award [@role/none]',
         aliases: [],
         parameters: ['role'],
-        example: '{guildprefix}boost role @Booster'
+        example: '{guildprefix}boost award @Booster'
       };
 
       const roleInput = args[1];
       if (!roleInput) return false;
 
       if (roleInput.toLowerCase() === 'none') {
-        // Remove boost role
+        // Remove boost award role
         await guildService.removeBoostRole(message.guild.id);
-        return embeds.success(message, 'Removed the **boost role**');
+        return embeds.success(message, 'Removed the **boost award role**');
       }
 
       // Find the role using universal finder
@@ -194,9 +194,9 @@ module.exports = {
         return embeds.deny(message, 'I do not have permission to manage that role');
       }
 
-      // Set the boost role
+      // Set the boost award role
       await guildService.setBoostRole(message.guild.id, boostRole.id);
-      return embeds.success(message, `Set **${boostRole.name}** as the boost role`);
+      return embeds.success(message, `Set **${boostRole.name}** as the boost award role`);
 
     } else if (args[0] === 'list') {
       const subcommandInfo = {
