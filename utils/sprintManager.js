@@ -43,92 +43,24 @@ async function resumeActiveSprints(client) {
         await sendSprintReminder(client, sprint.guildId, sprint.messageId);
       }
 
-      // Schedule auto-end
-      if (timeUntilEnd > 0 && timeUntilEnd < 2147483647) {
+      // Schedule auto-end with better error handling
+      if (timeUntilEnd > 0) {
         setTimeout(async () => {
           try {
             await autoEndSprint(client, sprint.guildId, sprint.messageId);
           } catch (error) {
-            console.error('[Sprint Resume Auto-End] Error:', error);
-            
-            // Log to webhook if available
-            if (client.errorLogger) {
-              client.errorLogger.log(error, 'Sprint Auto-End Timer Error', {
-                command: 'Sprint Auto-End Timer',
-                args: `Guild: ${sprint.guildId} | Message: ${sprint.messageId}`,
-                error: error.message
-              }).catch(() => {});
-            }
+            console.error('[Sprint Auto-End] Error:', error);
           }
         }, timeUntilEnd);
         console.log(`[Sprint Manager] Scheduled auto-end for sprint ${sprint.messageId} in ${Math.round(timeUntilEnd / 1000 / 60)} minutes`);
       }
-
-      // For very long sprints, set up backup check
-      if (timeUntilEnd > 2147483647) {
-        setupBackupCheck(client, sprint);
-      }
     }
   } catch (error) {
     console.error('[Sprint Manager] Error resuming sprints:', error);
-    
-    // Log to webhook if available
-    if (client.errorLogger) {
-      client.errorLogger.log(error, 'Sprint Manager Resume Error', {
-        command: 'Sprint Manager',
-        args: 'Resume Active Sprints',
-        error: error.message
-      }).catch(() => {});
-    }
   }
 }
 
-/**
- * Setup backup check for long-running sprints
- */
-function setupBackupCheck(client, sprint) {
-  const checkInterval = setInterval(async () => {
-    try {
-      const Sprint = getSprintModel();
-      if (!Sprint) {
-        clearInterval(checkInterval);
-        return;
-      }
 
-      const currentSprint = await Sprint.findOne({
-        guildId: sprint.guildId,
-        messageId: sprint.messageId,
-        isActive: true
-      });
-
-      if (!currentSprint) {
-        clearInterval(checkInterval);
-        return;
-      }
-
-      const now = Date.now();
-      const endTime = currentSprint.endTime.getTime();
-      const thirtyMinutes = 30 * 60 * 1000;
-
-      // Check if sprint should end
-      if (now >= endTime) {
-        clearInterval(checkInterval);
-        await autoEndSprint(client, sprint.guildId, sprint.messageId);
-      }
-      // Check if reminder should be sent
-      else if (!currentSprint.reminderSent && (endTime - now) <= thirtyMinutes) {
-        await sendSprintReminder(client, sprint.guildId, sprint.messageId);
-      }
-    } catch (error) {
-      console.error('[Sprint Backup Check] Error:', error);
-    }
-  }, 60 * 60 * 1000); // Check every hour
-
-  // Clear interval after maximum possible time
-  setTimeout(() => {
-    clearInterval(checkInterval);
-  }, 7 * 24 * 60 * 60 * 1000); // 7 days max
-}
 
 /**
  * Auto-end sprint when time expires

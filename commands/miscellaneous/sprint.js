@@ -809,70 +809,25 @@ function scheduleSprintTimers(client, sprint, durationMs) {
   }
 
   // Schedule reminder with better error handling
-  if (reminderTime > 0 && reminderTime < 2147483647) {
+  if (reminderTime > 0) {
     setTimeout(async () => {
       try {
         await sendSprintReminder(client, sprint.guildId, sprint.messageId);
       } catch (error) {
-        console.error('[Sprint Reminder Timer] Error:', error);
+        console.error('[Sprint Reminder] Error:', error);
       }
     }, reminderTime);
   }
 
   // Schedule auto-end with better error handling
-  if (timeUntilEnd > 0 && timeUntilEnd < 2147483647) {
+  if (timeUntilEnd > 0) {
     setTimeout(async () => {
       try {
         await autoEndSprint(client, sprint.guildId, sprint.messageId);
       } catch (error) {
-        console.error('[Sprint Auto-End Timer] Error:', error);
+        console.error('[Sprint Auto-End] Error:', error);
       }
     }, timeUntilEnd);
-  }
-
-  // Also set up a backup check system for long-running sprints
-  if (timeUntilEnd > 2147483647) {
-    // For very long sprints, check every hour
-    const checkInterval = setInterval(async () => {
-      try {
-        const Sprint = getSprintModel();
-        if (!Sprint) {
-          clearInterval(checkInterval);
-          return;
-        }
-
-        const currentSprint = await Sprint.findOne({
-          guildId: sprint.guildId,
-          messageId: sprint.messageId,
-          isActive: true
-        });
-
-        if (!currentSprint) {
-          clearInterval(checkInterval);
-          return;
-        }
-
-        const now = Date.now();
-        const endTime = currentSprint.endTime.getTime();
-
-        // Check if sprint should end
-        if (now >= endTime) {
-          clearInterval(checkInterval);
-          await autoEndSprint(client, sprint.guildId, sprint.messageId);
-        }
-        // Check if reminder should be sent
-        else if (!currentSprint.reminderSent && (endTime - now) <= thirtyMinutes) {
-          await sendSprintReminder(client, sprint.guildId, sprint.messageId);
-        }
-      } catch (error) {
-        console.error('[Sprint Backup Check] Error:', error);
-      }
-    }, 60 * 60 * 1000); // Check every hour
-
-    // Clear interval after maximum possible time
-    setTimeout(() => {
-      clearInterval(checkInterval);
-    }, 7 * 24 * 60 * 60 * 1000); // 7 days max
   }
 }
 
