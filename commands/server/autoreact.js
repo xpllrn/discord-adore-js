@@ -11,8 +11,8 @@ module.exports = {
   name: "autoreact",
   aliases: ['react'],
   description: `automatically react to messages containing specific words`,
-  usage: '{guildprefix}autoreact add [emoji] word\n{guildprefix}autoreact remove [word]\n{guildprefix}autoreact list\n{guildprefix}autoreact reset',
   permission: 'Manage Channels',
+  isGroupCommand: true,
   run: async(client, message, args) => {
     const guildService = getService('guild');
 
@@ -22,6 +22,13 @@ module.exports = {
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add' || args[0] === 'create') {
+      const subcommandInfo = {
+        description: 'Add an autoreact for a word',
+        usage: '{guildprefix}autoreact add [emoji] [word]',
+        aliases: ['create'],
+        parameters: ['emoji', 'word'],
+        example: '{guildprefix}autoreact add :star: hello'
+      };
 
       if (!args[1] || !args[2]) {
         return runHelpCommand(message, 'autoreact');
@@ -80,6 +87,13 @@ module.exports = {
       return embeds.success(message, `Created autoreact for **${word}** with ${emojiDisplay}`);
 
     } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
+      const subcommandInfo = {
+        description: 'Remove an autoreact for a word',
+        usage: '{guildprefix}autoreact remove [word]',
+        aliases: ['delete', 'rm', 'del'],
+        parameters: ['word'],
+        example: '{guildprefix}autoreact remove hello'
+      };
 
       const word = args[1];
 
@@ -99,6 +113,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'List all autoreacts',
+        usage: '{guildprefix}autoreact list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}autoreact list'
+      };
 
       const data = await guildService.getAutoReacts(message.guild.id);
 
@@ -152,6 +173,13 @@ module.exports = {
       }
 
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Remove all autoreacts',
+        usage: '{guildprefix}autoreact reset',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}autoreact reset'
+      };
 
       const data = await guildService.getAutoReacts(message.guild.id);
 

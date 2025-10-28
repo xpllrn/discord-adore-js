@@ -9,7 +9,8 @@ module.exports = {
   name: "img",
   aliases: ['image', 'search'],
   description: `Search for images using Google Custom Search`,
-  usage: `{guildprefix}img [search query]`,
+  syntax: 'img (query)',
+  example: 'img cats',
   cooldown: 3000,
   run: async (client, message, args) => {
     await ensureGuildData(message.guild.id);
@@ -28,16 +29,12 @@ module.exports = {
     }
 
     // Send loading message
-    const loadingEmbed = new EmbedBuilder()
-      .setColor(colors.info)
-      .setDescription(`${emojis.loading} Searching for images: **${query}**...`);
-    
-    const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
+    const loadingMessage = await embeds.loading(message, `Searching for images: **${query}**...`);
 
     try {
       // Make API request to Google Custom Search
       const response = await fetch(`https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_IMG}&cx=${process.env.GOOGLE_SEARCH_ENGINE_ID}&q=${encodeURIComponent(query)}&searchType=image&num=10&safe=active`);
-      
+
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`);
       }
@@ -69,7 +66,7 @@ module.exports = {
       // Create pagination function
       const formatPage = (pageImages, currentPage, totalPages) => {
         const image = pageImages[0]; // One image per page
-        
+
         const embed = new EmbedBuilder()
           .setColor(colors.info)
           .setDescription(`${emojis.google} **Google Image search**: ${query}`)

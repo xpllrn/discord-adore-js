@@ -8,7 +8,8 @@ module.exports = {
   name: "copyembed",
   aliases: ['copy'],
   description: 'copy an embed custom syntax code',
-  usage: `{guildprefix}copyembed (message link)`,
+  syntax: 'copyembed (message)',
+  example: 'copyembed 12345678...',
   permission: "Manage Messages",
   run: async(client, message, args) => {
 

@@ -4,7 +4,8 @@ module.exports = {
   name: "8ball",
   aliases: ['8b', 'ask'],
   description: `ask the magic 8-ball a question`,
-  usage: `{guildprefix}8ball [question]`,
+  syntax: '8ball (question)',
+  example: '8ball will I win?',
   run: async(client, message, args) => {
 
     const question = args.join(" ");

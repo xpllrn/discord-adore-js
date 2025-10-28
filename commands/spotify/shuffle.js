@@ -7,7 +7,8 @@ module.exports = {
   name: "shuffle",
   aliases: [],
   description: 'Toggle shuffle mode on Spotify',
-  usage: '{guildprefix}shuffle [on/off]',
+  syntax: 'shuffle <on/off>',
+  example: 'shuffle on',
   run: async(client, message, args) => {
     const spotifyService = getService('spotify');
 

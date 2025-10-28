@@ -6,7 +6,8 @@ module.exports = {
   name: "cleanup",
   aliases: ['bc'],
   description: `clean up bot messages and user commands in the channel`,
-  usage: `{guildprefix}cleanup [number]`,
+  syntax: 'cleanup (number)',
+  example: 'cleanup 50',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
 

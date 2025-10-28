@@ -6,7 +6,8 @@ module.exports = {
   name: "seticon",
   aliases: ['servericon'],
   description: 'set the server icon',
-  usage: '{guildprefix}seticon [attachment or URL]\n{guildprefix}seticon - remove server icon',
+  syntax: 'seticon (image)',
+  example: 'seticon [attach image]',
   permission: "Manage Guild",
   run: async(client, message, args) => {
 

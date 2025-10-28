@@ -12,19 +12,19 @@ const { getModels } = require('../../database');
 const error = (member, author, type) => {
     if (member.id === author.id) {
         switch (type) {
-            case ('notConnected') : {
+            case ('notConnected'): {
                 return `You have not set your **Last.fm** username - \`lastfm set (username)\``
             }
-            case ('noRecentTracks') : {
+            case ('noRecentTracks'): {
                 return `You don't have any **recent tracks**.`
             }
         }
     } else {
         switch (type) {
-            case ('notConnected') : {
+            case ('notConnected'): {
                 return `**${member.tag}** has not set their **Last.fm** username.`
             }
-            case ('noRecentTracks') : {
+            case ('noRecentTracks'): {
                 return `**${member.tag}** does not have any **recent tracks**.`
             }
         }
@@ -33,11 +33,11 @@ const error = (member, author, type) => {
 
 // Command groups
 const commands = {
-    general : [
+    general: [
         'howto', 'set',
         'update', 'refresh', 'index'
     ],
-    username : [
+    username: [
         // FMBot-style short commands (auto-detect current track)
         'wa', 'wt', 'wal', 'pa', 'pt', 'pal',
         'recent', 'r', 'chart', 'streak', 'pace',
@@ -59,340 +59,340 @@ const commands = {
         // Social commands
         'compare', 'taste', 'mutual', 'match'
     ]
-}, allCommands = [ ...commands.general, ...commands.username ]
+}, allCommands = [...commands.general, ...commands.username]
 
 module.exports = {
-  name: "lastfm",
-  aliases: ['lf'],
-  description: 'Manage your last.fm profile and settings',
-  usage: '{guildprefix}lastfm howto\n{guildprefix}lastfm set [lastfm username]\n{guildprefix}lastfm wk [artist]\n{guildprefix}lastfm ta [user] [period]',
-  run: async(client, message, args) => {
-    const userService = getService('user');
-    const guildService = getService('guild');
-    const guildprefix = await getGuildPrefix(message.guild.id);
-    const command = String(args[0] || '').toLowerCase();
+    name: "lastfm",
+    aliases: ['lf'],
+    description: 'Manage your last.fm profile and settings',
+    isGroupCommand: true,
+    run: async (client, message, args) => {
+        const userService = getService('user');
+        const guildService = getService('guild');
+        const guildprefix = await getGuildPrefix(message.guild.id);
+        const command = String(args[0] || '').toLowerCase();
 
-    if (!args[0] || !allCommands.includes(command)) {
-        return runHelpCommand(message, 'lastfm');
-    }
-
-    // Check if user has Last.fm linked for username-required commands
-    if (commands.username.includes(command)) {
-        const fmUsername = await userService.getLastFMUsername(message.author.id);
-        if (!fmUsername) {
-            return embeds.warn(message, error(message.author, message.author, 'notConnected'));
-        }
-    }
-
-    switch (command) {
-        case 'howto': {
-            const embed = new EmbedBuilder()
-                .setColor(config.colors.info)
-                .setTitle('**Last.fm Setup Guide**')
-                .addFields(
-                    { name: '**First**', value: `Register for a [**last.fm account**](https://www.last.fm/join)`, inline: false },
-                    { name: '**Second**', value: `> For **Spotify** users, [**connect here**](https://www.last.fm/settings/applications)\n> For **other music services** [**connect here**](https://www.last.fm/about/trackmymusic)`, inline: false },
-                    { name: '**Third**', value: `\`\`\`${guildprefix}lf set [lastfm username]\`\`\``, inline: false }
-                );
-
-            return message.channel.send({ embeds: [embed] });
-        }
-
-        case 'set': {
-            const fmuser = args[1];
-
-            if (!fmuser) {
-                return runHelpCommand(message, 'lastfm');
-            }
-
-            if (String(args[1]).toLowerCase() === 'none') {
-                // Unlink Last.fm profile using service layer
-                await userService.setLastFMUsername(message.author.id, null);
-                await userService.setLastFMLibrary(message.author.id, null);
-                return embeds.success(message, `Your **Last.fm** profile has been **unlinked**`);
-            }
-
-            // Verify the Last.fm username exists
-            try {
-                const results = await axios({
-                    method: 'GET',
-                    url: `http://ws.audioscrobbler.com/2.0/`,
-                    params: {
-                        method: 'user.getinfo',
-                        user: fmuser,
-                        api_key: config.apis.lastfm,
-                        format: 'json'
-                    }
-                }).then((results) => results.data).catch(() => {});
-
-                if (!results) {
-                    return embeds.warn(message, `User [**${fmuser}**](https://last.fm/user/${fmuser}) was not found.`);
-                }
-
-                // Check if user already has this username set
-                const currentUsername = await userService.getLastFMUsername(message.author.id);
-                if (currentUsername === results.user.name) {
-                    return embeds.warn(message, `Your **Last.fm** username is already set as [**${results.user.name}**](https://last.fm/user/${results.user.name}).`);
-                }
-
-                // Update user data using service layer
-                await userService.setLastFMUsername(message.author.id, results.user.name);
-
-                // Start library indexing
-                const msg = await embeds.loading(message, `Creating a new **Last.fm** library..`);
-
-                const library = new Library(message.author.id, results.user.name, message, msg);
-                await library.index();
-
-                const successEmbed = embeds.createSuccess(message, `Success, your **Last.fm** profile has been set as [**${results.user.name}**](https://last.fm/user/${results.user.name}).`);
-                return msg.edit({ embeds: [successEmbed] });
-            } catch (error) {
-                return embeds.warn(message, `Error verifying **Last.fm** username. Please try again.`);
-            }
-        }
-
-        case 'update':
-        case 'refresh':
-        case 'index': {
-            try {
-                const fmUsername = await userService.getLastFMUsername(message.author.id);
-                if (!fmUsername) {
-                    return embeds.warn(message, error(message.author, message.author, 'notConnected'));
-                }
-
-                const msg = await embeds.loading(message, `Updating your current **Last.fm** library..`);
-
-                const library = new Library(message.author.id, fmUsername, message, msg);
-                await library.index();
-
-                const successEmbed = embeds.createSuccess(message, `Your **Last.fm** library has been updated.`);
-                return msg.edit({ embeds: [successEmbed] });
-            } catch (error) {
-                return embeds.warn(message, `Error updating **Last.fm** library. Please try again.`);
-            }
-        }
-
-        // FMBot-style short commands (auto-detect current track)
-        case 'wa': {
-            message.channel.sendTyping();
-            const whoknowsArtist = new WhoKnows(message.author.id, 'artist');
-            await whoknowsArtist.execute(message, []); // Empty args to auto-detect
-            break;
-        }
-
-        case 'wt': {
-            message.channel.sendTyping();
-            const whoknowsTrack = new WhoKnows(message.author.id, 'track');
-            await whoknowsTrack.execute(message, []); // Empty args to auto-detect
-            break;
-        }
-
-        case 'wal': {
-            message.channel.sendTyping();
-            const whoknowsAlbum = new WhoKnows(message.author.id, 'album');
-            await whoknowsAlbum.execute(message, []); // Empty args to auto-detect
-            break;
-        }
-
-        case 'pa': {
-            message.channel.sendTyping();
-            const playsArtist = new Plays(message.author.id, 'artist');
-            await playsArtist.execute(message, []); // Empty args to auto-detect
-            break;
-        }
-
-        case 'pt': {
-            message.channel.sendTyping();
-            const playsTrack = new Plays(message.author.id, 'track');
-            await playsTrack.execute(message, []); // Empty args to auto-detect
-            break;
-        }
-
-        case 'pal': {
-            message.channel.sendTyping();
-            const playsAlbum = new Plays(message.author.id, 'album');
-            await playsAlbum.execute(message, []); // Empty args to auto-detect
-            break;
-        }
-
-        case 'recent':
-        case 'r': {
-            message.channel.sendTyping();
-            const recent = new Recent(message.author.id);
-            await recent.execute(message, args);
-            break;
-        }
-
-        case 'chart': {
-            message.channel.sendTyping();
-            const chart = new Chart(message.author.id);
-            await chart.execute(message, args);
-            break;
-        }
-
-        case 'streak': {
-            message.channel.sendTyping();
-            const streak = new Streak(message.author.id);
-            await streak.execute(message, args);
-            break;
-        }
-
-        case 'pace': {
-            message.channel.sendTyping();
-            const pace = new Pace(message.author.id);
-            await pace.execute(message, args);
-            break;
-        }
-
-        case 'whoknows':
-        case 'wk': {
-            message.channel.sendTyping();
-            const whoknowsArtist = new WhoKnows(message.author.id, 'artist');
-            await whoknowsArtist.execute(message, args);
-            break;
-        }
-
-        case 'wkalbum':
-        case 'whoknowsalbum':
-        case 'wka': {
-            message.channel.sendTyping();
-            const whoknowsAlbum = new WhoKnows(message.author.id, 'album');
-            await whoknowsAlbum.execute(message, args);
-            break;
-        }
-
-        case 'wktrack':
-        case 'whoknowstrack':
-        case 'wkt': {
-            message.channel.sendTyping();
-            const whoknowsTrack = new WhoKnows(message.author.id, 'track');
-            await whoknowsTrack.execute(message, args);
-            break;
-        }
-
-        case 'globalwhoknows':
-        case 'globalwk':
-        case 'gwk': {
-            message.channel.sendTyping();
-            const whoknowsArtist = new WhoKnows(message.author.id, 'artist', true);
-            await whoknowsArtist.execute(message, args);
-            break;
-        }
-
-        case 'globalwkalbum':
-        case 'globalwka':
-        case 'gwka': {
-            message.channel.sendTyping();
-            const whoknowsAlbum = new WhoKnows(message.author.id, 'album', true);
-            await whoknowsAlbum.execute(message, args);
-            break;
-        }
-
-        case 'globalwktrack':
-        case 'globalwkt':
-        case 'gwkt': {
-            message.channel.sendTyping();
-            const whoknowsTrack = new WhoKnows(message.author.id, 'track', true);
-            await whoknowsTrack.execute(message, args);
-            break;
-        }
-
-        case 'topartists':
-        case 'topartist':
-        case 'artists':
-        case 'artist':
-        case 'tar':
-        case 'ta': {
-            message.channel.sendTyping();
-            const topArtists = new Top('artist');
-            await topArtists.execute(message, args);
-            break;
-        }
-
-        case 'topalbums':
-        case 'topalbum':
-        case 'albums':
-        case 'album':
-        case 'tab':
-        case 'tl': {
-            message.channel.sendTyping();
-            const topAlbums = new Top('album');
-            await topAlbums.execute(message, args);
-            break;
-        }
-
-        case 'toptracks':
-        case 'toptrack':
-        case 'tracks':
-        case 'track':
-        case 'ttr':
-        case 'tt': {
-            message.channel.sendTyping();
-            const topTracks = new Top('track');
-            await topTracks.execute(message, args);
-            break;
-        }
-
-        case 'plays': {
-            message.channel.sendTyping();
-            const playsArtist = new Plays(message.author.id, 'artist');
-            await playsArtist.execute(message, args);
-            break;
-        }
-
-        case 'playsalbum':
-        case 'playsa':
-        case 'aplays': {
-            message.channel.sendTyping();
-            const playsAlbum = new Plays(message.author.id, 'album');
-            await playsAlbum.execute(message, args);
-            break;
-        }
-
-        case 'playstrack':
-        case 'playst':
-        case 'tplays': {
-            message.channel.sendTyping();
-            const playsTrack = new Plays(message.author.id, 'track');
-            await playsTrack.execute(message, args);
-            break;
-        }
-
-        case 'compare':
-        case 'taste':
-        case 'mutual':
-        case 'match': {
-            if (!args[1]) {
-                return embeds.warn(message, `Please specify a user to compare with. Usage: \`${guildprefix}lastfm compare [user]\``);
-            }
-
-            try {
-                const userResult = await findUser(message.guild, args[1], client);
-                if (!userResult.found) {
-                    return embeds.warn(message, userResult.error);
-                }
-
-                const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
-                const targetFmUsername = await userService.getLastFMUsername(targetUser.id);
-
-                if (!targetFmUsername) {
-                    return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
-                }
-
-                message.channel.sendTyping();
-                const compare = new Compare(message.author.id, targetUser.id);
-                await compare.execute(message);
-            } catch (error) {
-                return embeds.warn(message, `Error comparing **Last.fm** profiles. Please try again.`);
-            }
-            break;
-        }
-
-        default: {
+        if (!args[0] || !allCommands.includes(command)) {
             return runHelpCommand(message, 'lastfm');
         }
+
+        // Check if user has Last.fm linked for username-required commands
+        if (commands.username.includes(command)) {
+            const fmUsername = await userService.getLastFMUsername(message.author.id);
+            if (!fmUsername) {
+                return embeds.warn(message, error(message.author, message.author, 'notConnected'));
+            }
+        }
+
+        switch (command) {
+            case 'howto': {
+                const embed = new EmbedBuilder()
+                    .setColor(config.colors.info)
+                    .setTitle('**Last.fm Setup Guide**')
+                    .addFields(
+                        { name: '**First**', value: `Register for a [**last.fm account**](https://www.last.fm/join)`, inline: false },
+                        { name: '**Second**', value: `> For **Spotify** users, [**connect here**](https://www.last.fm/settings/applications)\n> For **other music services** [**connect here**](https://www.last.fm/about/trackmymusic)`, inline: false },
+                        { name: '**Third**', value: `\`\`\`${guildprefix}lf set [lastfm username]\`\`\``, inline: false }
+                    );
+
+                return message.channel.send({ embeds: [embed] });
+            }
+
+            case 'set': {
+                const fmuser = args[1];
+
+                if (!fmuser) {
+                    return runHelpCommand(message, 'lastfm');
+                }
+
+                if (String(args[1]).toLowerCase() === 'none') {
+                    // Unlink Last.fm profile using service layer
+                    await userService.setLastFMUsername(message.author.id, null);
+                    await userService.setLastFMLibrary(message.author.id, null);
+                    return embeds.success(message, `Your **Last.fm** profile has been **unlinked**`);
+                }
+
+                // Verify the Last.fm username exists
+                try {
+                    const results = await axios({
+                        method: 'GET',
+                        url: `http://ws.audioscrobbler.com/2.0/`,
+                        params: {
+                            method: 'user.getinfo',
+                            user: fmuser,
+                            api_key: config.apis.lastfm,
+                            format: 'json'
+                        }
+                    }).then((results) => results.data).catch(() => { });
+
+                    if (!results) {
+                        return embeds.warn(message, `User [**${fmuser}**](https://last.fm/user/${fmuser}) was not found.`);
+                    }
+
+                    // Check if user already has this username set
+                    const currentUsername = await userService.getLastFMUsername(message.author.id);
+                    if (currentUsername === results.user.name) {
+                        return embeds.warn(message, `Your **Last.fm** username is already set as [**${results.user.name}**](https://last.fm/user/${results.user.name}).`);
+                    }
+
+                    // Update user data using service layer
+                    await userService.setLastFMUsername(message.author.id, results.user.name);
+
+                    // Start library indexing
+                    const msg = await embeds.loading(message, `Creating a new **Last.fm** library..`);
+
+                    const library = new Library(message.author.id, results.user.name, message, msg);
+                    await library.index();
+
+                    const successEmbed = embeds.createSuccess(message, `Success, your **Last.fm** profile has been set as [**${results.user.name}**](https://last.fm/user/${results.user.name}).`);
+                    return msg.edit({ embeds: [successEmbed] });
+                } catch (error) {
+                    return embeds.warn(message, `Error verifying **Last.fm** username. Please try again.`);
+                }
+            }
+
+            case 'update':
+            case 'refresh':
+            case 'index': {
+                try {
+                    const fmUsername = await userService.getLastFMUsername(message.author.id);
+                    if (!fmUsername) {
+                        return embeds.warn(message, error(message.author, message.author, 'notConnected'));
+                    }
+
+                    const msg = await embeds.loading(message, `Updating your current **Last.fm** library..`);
+
+                    const library = new Library(message.author.id, fmUsername, message, msg);
+                    await library.index();
+
+                    const successEmbed = embeds.createSuccess(message, `Your **Last.fm** library has been updated.`);
+                    return msg.edit({ embeds: [successEmbed] });
+                } catch (error) {
+                    return embeds.warn(message, `Error updating **Last.fm** library. Please try again.`);
+                }
+            }
+
+            // FMBot-style short commands (auto-detect current track)
+            case 'wa': {
+                message.channel.sendTyping();
+                const whoknowsArtist = new WhoKnows(message.author.id, 'artist');
+                await whoknowsArtist.execute(message, []); // Empty args to auto-detect
+                break;
+            }
+
+            case 'wt': {
+                message.channel.sendTyping();
+                const whoknowsTrack = new WhoKnows(message.author.id, 'track');
+                await whoknowsTrack.execute(message, []); // Empty args to auto-detect
+                break;
+            }
+
+            case 'wal': {
+                message.channel.sendTyping();
+                const whoknowsAlbum = new WhoKnows(message.author.id, 'album');
+                await whoknowsAlbum.execute(message, []); // Empty args to auto-detect
+                break;
+            }
+
+            case 'pa': {
+                message.channel.sendTyping();
+                const playsArtist = new Plays(message.author.id, 'artist');
+                await playsArtist.execute(message, []); // Empty args to auto-detect
+                break;
+            }
+
+            case 'pt': {
+                message.channel.sendTyping();
+                const playsTrack = new Plays(message.author.id, 'track');
+                await playsTrack.execute(message, []); // Empty args to auto-detect
+                break;
+            }
+
+            case 'pal': {
+                message.channel.sendTyping();
+                const playsAlbum = new Plays(message.author.id, 'album');
+                await playsAlbum.execute(message, []); // Empty args to auto-detect
+                break;
+            }
+
+            case 'recent':
+            case 'r': {
+                message.channel.sendTyping();
+                const recent = new Recent(message.author.id);
+                await recent.execute(message, args);
+                break;
+            }
+
+            case 'chart': {
+                message.channel.sendTyping();
+                const chart = new Chart(message.author.id);
+                await chart.execute(message, args);
+                break;
+            }
+
+            case 'streak': {
+                message.channel.sendTyping();
+                const streak = new Streak(message.author.id);
+                await streak.execute(message, args);
+                break;
+            }
+
+            case 'pace': {
+                message.channel.sendTyping();
+                const pace = new Pace(message.author.id);
+                await pace.execute(message, args);
+                break;
+            }
+
+            case 'whoknows':
+            case 'wk': {
+                message.channel.sendTyping();
+                const whoknowsArtist = new WhoKnows(message.author.id, 'artist');
+                await whoknowsArtist.execute(message, args);
+                break;
+            }
+
+            case 'wkalbum':
+            case 'whoknowsalbum':
+            case 'wka': {
+                message.channel.sendTyping();
+                const whoknowsAlbum = new WhoKnows(message.author.id, 'album');
+                await whoknowsAlbum.execute(message, args);
+                break;
+            }
+
+            case 'wktrack':
+            case 'whoknowstrack':
+            case 'wkt': {
+                message.channel.sendTyping();
+                const whoknowsTrack = new WhoKnows(message.author.id, 'track');
+                await whoknowsTrack.execute(message, args);
+                break;
+            }
+
+            case 'globalwhoknows':
+            case 'globalwk':
+            case 'gwk': {
+                message.channel.sendTyping();
+                const whoknowsArtist = new WhoKnows(message.author.id, 'artist', true);
+                await whoknowsArtist.execute(message, args);
+                break;
+            }
+
+            case 'globalwkalbum':
+            case 'globalwka':
+            case 'gwka': {
+                message.channel.sendTyping();
+                const whoknowsAlbum = new WhoKnows(message.author.id, 'album', true);
+                await whoknowsAlbum.execute(message, args);
+                break;
+            }
+
+            case 'globalwktrack':
+            case 'globalwkt':
+            case 'gwkt': {
+                message.channel.sendTyping();
+                const whoknowsTrack = new WhoKnows(message.author.id, 'track', true);
+                await whoknowsTrack.execute(message, args);
+                break;
+            }
+
+            case 'topartists':
+            case 'topartist':
+            case 'artists':
+            case 'artist':
+            case 'tar':
+            case 'ta': {
+                message.channel.sendTyping();
+                const topArtists = new Top('artist');
+                await topArtists.execute(message, args);
+                break;
+            }
+
+            case 'topalbums':
+            case 'topalbum':
+            case 'albums':
+            case 'album':
+            case 'tab':
+            case 'tl': {
+                message.channel.sendTyping();
+                const topAlbums = new Top('album');
+                await topAlbums.execute(message, args);
+                break;
+            }
+
+            case 'toptracks':
+            case 'toptrack':
+            case 'tracks':
+            case 'track':
+            case 'ttr':
+            case 'tt': {
+                message.channel.sendTyping();
+                const topTracks = new Top('track');
+                await topTracks.execute(message, args);
+                break;
+            }
+
+            case 'plays': {
+                message.channel.sendTyping();
+                const playsArtist = new Plays(message.author.id, 'artist');
+                await playsArtist.execute(message, args);
+                break;
+            }
+
+            case 'playsalbum':
+            case 'playsa':
+            case 'aplays': {
+                message.channel.sendTyping();
+                const playsAlbum = new Plays(message.author.id, 'album');
+                await playsAlbum.execute(message, args);
+                break;
+            }
+
+            case 'playstrack':
+            case 'playst':
+            case 'tplays': {
+                message.channel.sendTyping();
+                const playsTrack = new Plays(message.author.id, 'track');
+                await playsTrack.execute(message, args);
+                break;
+            }
+
+            case 'compare':
+            case 'taste':
+            case 'mutual':
+            case 'match': {
+                if (!args[1]) {
+                    return embeds.warn(message, `Please specify a user to compare with. Usage: \`${guildprefix}lastfm compare [user]\``);
+                }
+
+                try {
+                    const userResult = await findUser(message.guild, args[1], client);
+                    if (!userResult.found) {
+                        return embeds.warn(message, userResult.error);
+                    }
+
+                    const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
+                    const targetFmUsername = await userService.getLastFMUsername(targetUser.id);
+
+                    if (!targetFmUsername) {
+                        return embeds.warn(message, error(targetUser, message.author, 'notConnected'));
+                    }
+
+                    message.channel.sendTyping();
+                    const compare = new Compare(message.author.id, targetUser.id);
+                    await compare.execute(message);
+                } catch (error) {
+                    return embeds.warn(message, `Error comparing **Last.fm** profiles. Please try again.`);
+                }
+                break;
+            }
+
+            default: {
+                return runHelpCommand(message, 'lastfm');
+            }
+        }
     }
-  }
 }
 
 // Helper Classes
@@ -543,7 +543,7 @@ class WhoKnows {
                 const fmUsername = await userService.getLastFMUsername(this.userId);
                 const recentTracks = await fetch(`http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${fmUsername}&api_key=${config.apis.lastfm}&format=json`, {
                     method: 'GET'
-                }).then((results) => results.json()).catch(() => {});
+                }).then((results) => results.json()).catch(() => { });
 
                 if (!recentTracks || !recentTracks.recenttracks || !recentTracks.recenttracks.track || recentTracks.recenttracks.track.length === 0) {
                     return embeds.warn(message, error(message.author, message.author, 'noRecentTracks'));
@@ -587,7 +587,7 @@ class WhoKnows {
 
             // Get item info to verify it exists
             const infoUrl = `http://ws.audioscrobbler.com/2.0/?method=${this.type}.getinfo&${this.type}=${name}&api_key=${config.apis.lastfm}&autocorrect=1&format=json${['album', 'track'].includes(this.type) ? `&artist=${artist}` : ''}`;
-            const information = await fetch(infoUrl, { method: 'GET' }).then((results) => results.json()).catch(() => {});
+            const information = await fetch(infoUrl, { method: 'GET' }).then((results) => results.json()).catch(() => { });
 
             if (!information || !information[this.type]) {
                 return embeds.warn(message, `No results were found for **${name}**`);
@@ -858,7 +858,7 @@ class Plays {
             if (!name) {
                 const recentTracks = await fetch(`http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${fmUsername}&api_key=${config.apis.lastfm}&format=json`, {
                     method: 'GET'
-                }).then((results) => results.json()).catch(() => {});
+                }).then((results) => results.json()).catch(() => { });
 
                 if (!recentTracks || !recentTracks.recenttracks || !recentTracks.recenttracks.track || recentTracks.recenttracks.track.length === 0) {
                     return embeds.warn(message, error(targetUser, message.author, 'noRecentTracks'));
@@ -904,7 +904,7 @@ class Plays {
 
             // Get item info with user play count
             const infoUrl = `http://ws.audioscrobbler.com/2.0/?method=${this.type}.getinfo&username=${fmUsername}&${this.type}=${name}&api_key=${config.apis.lastfm}&autocorrect=1&format=json${['album', 'track'].includes(this.type) ? `&artist=${artist}` : ''}`;
-            const information = await fetch(infoUrl, { method: 'GET' }).then((results) => results.json()).catch(() => {});
+            const information = await fetch(infoUrl, { method: 'GET' }).then((results) => results.json()).catch(() => { });
 
             if (!information || !information[this.type]) {
                 return embeds.warn(message, `No results were found for **${name}**`);
@@ -1416,9 +1416,9 @@ class Chart {
         const displayAlbum = albumName.length > maxLength ? albumName.substring(0, maxLength) + '...' : albumName;
         const displayArtist = artistName.length > maxLength ? artistName.substring(0, maxLength) + '...' : artistName;
 
-        ctx.fillText(displayAlbum, x + size/2, y + size/2 - 10);
+        ctx.fillText(displayAlbum, x + size / 2, y + size / 2 - 10);
         ctx.font = '12px Arial';
-        ctx.fillText(displayArtist, x + size/2, y + size/2 + 10);
+        ctx.fillText(displayArtist, x + size / 2, y + size / 2 + 10);
     }
 
     drawEmptyPlaceholder(ctx, x, y, size) {

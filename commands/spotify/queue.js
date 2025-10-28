@@ -9,7 +9,8 @@ module.exports = {
   name: "queue",
   aliases: ["q"],
   description: 'Add a song to your Spotify queue',
-  usage: '{guildprefix}queue [song name]\n{guildprefix}queue [spotify link]',
+  syntax: 'queue (song name/spotify link)',
+  example: 'queue never gonna give you up',
   run: async(client, message, args) => {
     const spotifyService = getService('spotify');
 

@@ -108,25 +108,49 @@ function createTraditionalEmbed(command, guildPrefix) {
 
   const fields = [];
 
-  // Subcommands field (if exists)
-  if (command.subcommands) {
-    let subcommands = command.subcommands.replaceAll('{guildprefix}', guildPrefix);
-    fields.push({ name: '**subcommands**', value: subcommands, inline: false });
-  }
-
-  // Aliases and permission as inline fields
+  // Aliases field
   const aliasValue = command.aliases && command.aliases.length > 0
     ? command.aliases.join(', ')
     : 'n/a';
-  const permissionValue = command.permission || 'n/a';
-
   fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
-  fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
-  // Syntax field with code block
+  // Parameters field - extract from usage if available
+  let parametersValue = 'n/a';
+  if (command.usage) {
+    // Try to extract parameters from usage string
+    // Look for patterns like [user], <member>, etc.
+    const paramMatches = command.usage.match(/[\[<]([^\]>]+)[\]>]/g);
+    if (paramMatches && paramMatches.length > 0) {
+      // Clean up the brackets and join
+      parametersValue = paramMatches.map(p => p.replace(/[\[<\]>]/g, '')).join(', ');
+    }
+  }
+  fields.push({ name: '**Parameters**', value: parametersValue, inline: true });
+
+  // Information field (Permission)
+  const permissionValue = command.permission || 'n/a';
+  fields.push({ name: '**Information**', value: permissionValue, inline: true });
+
+  // Usage field with syntax and example
   if (command.usage) {
     let usage = command.usage.replaceAll('{guildprefix}', guildPrefix);
-    fields.push({ name: '**Syntax**', value: `\`\`\`js\n${usage}\`\`\``, inline: false });
+    
+    // Split usage into lines if it has multiple formats
+    const usageLines = usage.split('\n').filter(line => line.trim());
+    
+    // Format as Syntax and Example
+    const usageValue = [];
+    if (usageLines.length > 0) {
+      usageValue.push(`Syntax: ${usageLines[0]}`);
+      if (usageLines.length > 1) {
+        usageValue.push(`Example: ${usageLines[1]}`);
+      } else {
+        // Generate example from syntax
+        usageValue.push(`Example: ${usageLines[0]}`);
+      }
+    }
+    
+    fields.push({ name: '**Usage**', value: `\`\`\`yaml\n${usageValue.join('\n')}\`\`\``, inline: false });
   }
 
   if (fields.length > 0) {

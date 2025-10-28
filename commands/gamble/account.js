@@ -14,7 +14,8 @@ module.exports = {
   name: "account",
   aliases: ['create', 'open'],
   description: 'Create a gambling account to start using gambling commands',
-  usage: `{guildprefix}account`,
+  syntax: 'account',
+  example: 'account',
   run: async(client, message, args) => {
     
     try {

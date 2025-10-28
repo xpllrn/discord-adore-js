@@ -8,7 +8,8 @@ module.exports = {
   name: "clearsnipe",
   aliases: ['cs', 'clearsnipes'],
   description: `clear snipe data for this channel`,
-  usage: `{guildprefix}clearsnipe`,
+  syntax: 'clearsnipe',
+  example: 'clearsnipe',
   run: async(_, message) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;

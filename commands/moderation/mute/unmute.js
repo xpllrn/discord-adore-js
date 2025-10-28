@@ -10,9 +10,10 @@ module.exports = {
   name: "unmute",
   aliases: ['untimeout'],
   description: `remove timeout from a user using Discord's built-in timeout feature`,
-  usage: '{guildprefix}unmute [user] [reason]\n{guildprefix}unmute @user appeal accepted',
+  syntax: 'unmute (user) (reason)',
+  example: 'unmute @vwsn appeal',
   permission: 'Moderate Members',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const moderationService = getService('moderation');
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ModerateMembers)) {

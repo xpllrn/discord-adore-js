@@ -15,7 +15,8 @@ module.exports = {
   name: "work",
   aliases: ['job'],
   description: 'Work to earn coins with a cooldown',
-  usage: `{guildprefix}work`,
+  syntax: 'work',
+  example: 'work',
   run: async (client, message, args) => {
 
     try {

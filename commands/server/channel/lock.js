@@ -8,7 +8,8 @@ module.exports = {
   name: "lock",
   aliases: ['lockdown'],
   description: 'locks the channel for default/selected role',
-  usage: '{guildprefix}lock\n{guildprefix}lock @role\n{guildprefix}lock #channel @role',
+  syntax: 'lock (channel) (role)',
+  example: 'lock #general @Members',
   permission: 'Manage Channels',
   run: async(client, message, args) => {
 

@@ -7,7 +7,8 @@ module.exports = {
   name: "pause",
   aliases: [],
   description: 'Pause your Spotify playback',
-  usage: '{guildprefix}pause',
+  syntax: 'pause',
+  example: 'pause',
   run: async(client, message, args) => {
     const spotifyService = getService('spotify');
 

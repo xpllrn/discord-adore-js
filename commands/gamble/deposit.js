@@ -32,10 +32,8 @@ module.exports = {
   name: "deposit",
   aliases: ['dep'],
   description: 'Deposit money from your wallet to your bank',
-  usage: `{guildprefix}deposit [amount]
-{guildprefix}deposit 1000
-{guildprefix}deposit all
-{guildprefix}deposit 50%`,
+  syntax: 'deposit (amount)',
+  example: 'deposit 999',
   run: async(client, message, args) => {
     
     if (!args[0]) {

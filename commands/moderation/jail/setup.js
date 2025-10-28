@@ -5,13 +5,14 @@ const { colors, emojis } = require('../../../config/setup');
 const { findRole, findChannel } = require('../../../handlers/finder');
 
 module.exports = {
-  name: "jailsetup",
-  aliases: ['setup'],
+  name: "setup",
+  aliases: ['setme'],
   description: `automatically setup jail role and channel with proper permissions`,
-  usage: '{guildprefix}jailsetup',
+  syntax: 'setup',
+  example: 'setup',
   permission: 'Administrator',
   cooldown: 900000, // 15 minutes in milliseconds
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     // Permission checks first - Admin only
     if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
@@ -97,9 +98,9 @@ module.exports = {
 
           // Add specific permissions based on channel type
           if (channel.type === ChannelType.GuildText ||
-              channel.type === ChannelType.GuildAnnouncement ||
-              channel.type === ChannelType.GuildForum ||
-              channel.type === ChannelType.GuildMedia) {
+            channel.type === ChannelType.GuildAnnouncement ||
+            channel.type === ChannelType.GuildForum ||
+            channel.type === ChannelType.GuildMedia) {
             // Text-based channels
             permissions.SendMessages = false;
             permissions.AddReactions = false;
@@ -109,7 +110,7 @@ module.exports = {
           }
 
           if (channel.type === ChannelType.GuildVoice ||
-              channel.type === ChannelType.GuildStageVoice) {
+            channel.type === ChannelType.GuildStageVoice) {
             // Voice channels
             permissions.Connect = false;
             permissions.Speak = false;
@@ -157,7 +158,7 @@ module.exports = {
     } catch (error) {
       // Update loading message with error
       console.error('Error in jailsetup command:', error);
-      
+
       // Log error to webhook if available
       if (message.client?.errorLogger) {
         message.client.errorLogger.log(error, 'Jail Setup Command', {
@@ -167,7 +168,7 @@ module.exports = {
           guild: message.guild
         });
       }
-      
+
       await loadingMessage.delete();
       embeds.deny(message, `An error occurred during jail setup: ${error.message}`);
     }

@@ -79,9 +79,8 @@ module.exports = {
   name: "mine",
   aliases: ['minesweeper', 'mines'],
   description: 'Play minesweeper! Reveal safe tiles to win, hit a mine and lose!',
-  usage: `{guildprefix}mine [amount]
-{guildprefix}mine 500
-{guildprefix}mine all`,
+  syntax: 'mine (amount)',
+  example: 'mine 999',
   run: async (client, message, args) => {
     // Check cooldown
     const cooldownTime = 5000; // 5 seconds

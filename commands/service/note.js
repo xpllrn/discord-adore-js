@@ -11,7 +11,7 @@ module.exports = {
   aliases: ['notes', 'todo'],
   description: `manage your personal notes`,
   isGroupCommand: true,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const userService = getService('user');
 
     // Ensure user data exists in the database
@@ -23,7 +23,7 @@ module.exports = {
         usage: '{guildprefix}note add [content]',
         aliases: ['create'],
         parameters: ['content'],
-        example: '{guildprefix}note add Remember to update the bot'
+        example: '{guildprefix}note add NoNutNovember'
       };
 
       if (!args[1]) {
@@ -67,7 +67,7 @@ module.exports = {
 
       try {
         const removedNote = await userService.removeNote(message.author.id, noteId);
-        
+
         if (removedNote) {
           return embeds.success(message, `Removed note **#${noteId}**`);
         } else {
@@ -101,8 +101,8 @@ module.exports = {
             const notesList = pageNotes.map((note, index) => {
               const number = note.id.toString().padStart(2, '0');
               const timestamp = `<t:${Math.floor(note.createdAt.getTime() / 1000)}:R>`;
-              const content = note.content.length > 100 ? 
-                note.content.substring(0, 100) + '...' : 
+              const content = note.content.length > 100 ?
+                note.content.substring(0, 100) + '...' :
                 note.content;
 
               return `\`${number}\` **${content}** ${timestamp}`;

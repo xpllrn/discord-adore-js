@@ -7,10 +7,10 @@ module.exports = {
   name: "createembed",
   aliases: ['ce'],
   description: "Create your own embed",
-  usage: `{guildprefix}createembed [embed code]
-{guildprefix}createembed {title: Hello {user}}`,
+  syntax: 'createembed (code)',
+  example: 'createembed {title: Hello}',
   permission: "Manage Messages",
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     await ensureGuildData(message.guild.id);
 

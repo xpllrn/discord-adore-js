@@ -5,6 +5,8 @@ module.exports = {
   name: "botinfo",
   description: `Gets basic information about the bot`,
   aliases: ["bi", "info", "about"],
+  syntax: 'botinfo',
+  example: 'botinfo',
 
   run: async (client, message, args) => {
 

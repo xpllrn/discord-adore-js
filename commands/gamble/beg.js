@@ -15,7 +15,8 @@ module.exports = {
   name: "beg",
   aliases: ['plead'],
   description: 'Beg for coins with a cooldown',
-  usage: `{guildprefix}beg`,
+  syntax: 'beg',
+  example: 'beg',
   run: async(client, message, args) => {
     
     try {

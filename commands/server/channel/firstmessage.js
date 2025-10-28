@@ -7,7 +7,8 @@ module.exports = {
   name: "firstmessage",
   aliases: ['first'],
   description: `Get a link for the first message in a channel`,
-  usage: '{guildprefix}firstmessage [channel]',
+  syntax: 'firstmessage (channel)',
+  example: 'firstmessage #general',
   run: async(client, message, args) => {
 
     let targetChannel = message.channel;

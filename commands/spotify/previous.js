@@ -7,7 +7,8 @@ module.exports = {
   name: "previous",
   aliases: ['back'],
   description: 'Go back to the previous track on Spotify',
-  usage: '{guildprefix}previous',
+  syntax: 'previous',
+  example: 'previous',
   run: async (client, message, args) => {
     const spotifyService = getService('spotify');
 

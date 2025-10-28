@@ -37,9 +37,8 @@ module.exports = {
   name: "crash",
   aliases: ['cr'],
   description: 'Play crash game - cash out before it crashes!',
-  usage: `{guildprefix}crash [amount]
-{guildprefix}crash 1000
-{guildprefix}crash all`,
+  syntax: 'crash (amount)',
+  example: 'crash 999',
   run: async (client, message, args) => {
     // Check cooldown
     const cooldownTime = 5000; // 5 seconds

@@ -5,8 +5,9 @@ module.exports = {
   name: "yomama",
   aliases: ['ym', 'yomomma'],
   description: `sends a random yo mama joke`,
-  usage: `{guildprefix}yomama`,
-  run: async(client, message, args) => {
+  syntax: 'yomama (user)',
+  example: 'yomama @vwsn',
+  run: async (client, message, args) => {
 
     try {
       const res = await fetch('https://www.yomama-jokes.com/api/v1/jokes/random/');

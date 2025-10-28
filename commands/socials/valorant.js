@@ -22,7 +22,8 @@ module.exports = {
   name: "valorant",
   aliases: ['valo', 'val'],
   description: 'Get information about a Valorant player',
-  usage: `{guildprefix}valorant [username#tag]`,
+  syntax: 'valorant (username#tag)',
+  example: 'valorant fuck#valo',
   run: async(client, message, args) => {
 
     if (!args[0]) {

@@ -29,7 +29,8 @@ module.exports = {
   name: "snipe",
   aliases: ['s'],
   description: `snipes deleted messages`,
-  usage: `{guildprefix}snipe [number]`,
+  syntax: 'snipe (number)',
+  example: 'snipe 2',
   run: async(_, message, args) => {
 
     const snipes = snipeCache.getDeletedMessages(message.channel.id);

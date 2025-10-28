@@ -83,7 +83,7 @@ module.exports = {
             description: 'Manage filter ignore list',
             usage: '{guildprefix}filter ignore [role/user/channel]',
             aliases: [],
-            parameters: ['role/user/channel'],
+            parameters: ['role', 'user', 'channel'],
             example: '{guildprefix}filter ignore @Moderator'
           };
           return await handleWordsIgnore(message, subcommand, args.slice(2));

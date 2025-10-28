@@ -7,7 +7,8 @@ module.exports = {
   name: "topic",
   aliases: ['settopic', 'channeltopic'],
   description: 'Set or clear the topic/description of a channel',
-  usage: '{guildprefix}topic [description]\n{guildprefix}topic #channel [description]\n{guildprefix}topic clear\n{guildprefix}topic #channel clear',
+  syntax: 'topic (channel) (description)',
+  example: 'topic #general Welcome to our server',
   permission: 'Manage Channels',
   run: async(client, message, args) => {
 

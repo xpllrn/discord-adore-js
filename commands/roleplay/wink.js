@@ -3,6 +3,7 @@ const { createRoleplayCommand } = require('../../utils/roleplay');
 module.exports = {
   name: "wink",
   description: "Wink at someone",
-  usage: `{guildprefix}wink [@user]`,
+  syntax: 'wink (user)',
+  example: 'wink @vwsn',
   run: createRoleplayCommand('wink', 'winked at')
 };

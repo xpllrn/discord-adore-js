@@ -8,7 +8,8 @@ module.exports = {
   name: "urban",
   aliases: ['ud'],
   description: "Get the Urban Dictionary definition of a word or phrase",
-  usage: `{guildprefix}ud <word/phrase>`,
+  syntax: 'urban (word)',
+  example: 'urban pineapple',
   run: async (client, message, args) => {
     try {
       if (!args[0]) {

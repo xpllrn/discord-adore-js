@@ -8,7 +8,8 @@ module.exports = {
   name: "repeat",
   aliases: ['loop'],
   description: 'Toggle repeat mode on Spotify',
-  usage: '{guildprefix}repeat [track/context/off]',
+  syntax: 'repeat <track/context/off>',
+  example: 'repeat track',
   run: async(client, message, args) => {
     const spotifyService = getService('spotify');
 

@@ -5,7 +5,8 @@ const { runHelpCommand } = require('../../utils/commandProcessor');
 module.exports = {
   name: "say",
   description: "Say a message",
-  usage: `{guildprefix}say [message]`,
+  syntax: 'say (message)',
+  example: 'say hello world',
   permission: "Administrator",
   run: async (client, message, args) => {
 

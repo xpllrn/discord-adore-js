@@ -5,7 +5,8 @@ module.exports = {
   name: "invite",
   aliases: ['inv'],
   description: `Send an invite link of the bot`,
-  usage: `{guildprefix}invite`,
+  syntax: 'invite',
+  example: 'invite',
   run: async(client, message, args) => {
 
     const embed = new EmbedBuilder()

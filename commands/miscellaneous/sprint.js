@@ -15,7 +15,7 @@ module.exports = {
   name: "sprint",
   aliases: [],
   description: 'Manage reading sprints',
-  usage: '{guildprefix}sprint start [duration] [name]\n{guildprefix}sprint end\n{guildprefix}sprint join [book name], [start tab]\n{guildprefix}sprint leave\n{guildprefix}sprint update [page number]\n{guildprefix}sprint leaderboard\n{guildprefix}sprint history',
+  usage: '{guildprefix}sprint (subcommand) <args>',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const subcommand = args[0]?.toLowerCase();

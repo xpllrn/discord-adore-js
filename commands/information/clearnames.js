@@ -9,25 +9,25 @@ const { getService } = require('@services');
 const config = require('../../config/setup');
 
 module.exports = {
-  name: "clearnamehistory",
+  name: "clearnames",
   aliases: ['cnh'],
   description: `clear a user's name change history`,
-  usage: `{guildprefix}clearnamehistory [user]
-{guildprefix}cnh [user]`,
+  syntax: 'clearnames (user)',
+  example: 'clearnames @vwsn',
   permission: 'dev',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const userService = getService('user');
 
     // Check dev permission (silent fail if not dev)
     if (!await hasPermissionLevel(message, 'dev')) return;
 
     if (!args[0]) {
-      return runHelpCommand(message, 'clearnamehistory');
+      return runHelpCommand(message, 'clearnames');
     }
 
     // Find the target user
     const userResult = await findUser(message.guild, args[0], client);
-    
+
     if (!userResult.found) {
       return embeds.warn(message, userResult.error || 'User not found');
     }
@@ -57,13 +57,13 @@ module.exports = {
       // Show confirmation dialog
       await createConfirmation(
         message,
-        `Are you sure you want to **clear all name history** for **${username}**?`,
+        `Are you sure you want to **clear** all name history for **${username}**?`,
         async (interaction) => {
           // On approve: clear all name history using service layer
           await userService.clearAllNameHistory(targetUser.id);
 
           // Edit the confirmation embed to show success message
-          const successEmbed = embeds.createSuccess(message, `Cleared all name history for **${username}**`);
+          const successEmbed = embeds.createSuccess(message, `**Cleared** all name history for **${username}**`);
 
           await interaction.editReply({ embeds: [successEmbed], components: [] });
         }

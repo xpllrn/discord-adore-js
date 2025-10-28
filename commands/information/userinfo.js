@@ -9,8 +9,8 @@ module.exports = {
   name: "userinfo",
   aliases: ['lookup', 'whois', 'ui'],
   description: "Get information about a Discord user",
-  usage: `{guildprefix}userinfo
-{guildprefix}userinfo [user]`,
+  syntax: 'userinfo (user)',
+  example: 'userinfo @vwsn',
   run: async (client, message, args) => {
 
     let targetUser = null;

@@ -9,7 +9,8 @@ module.exports = {
   name: "runmute",
   aliases: ['runreactionmute'],
   description: `restore someone's reaction/emote perms in this channel`,
-  usage: '{guildprefix}runmute [user]\n{guildprefix}runmute [user] [reason]',
+  syntax: 'runmute (user) (reason)',
+  example: 'runmute @vwsn appeal',
   permission: 'Moderate Members',
   run: async(client, message, args) => {
 

@@ -7,7 +7,8 @@ module.exports = {
   name: "skip",
   aliases: ['next'],
   description: 'Skip to the next track on Spotify',
-  usage: '{guildprefix}skip',
+  syntax: 'skip',
+  example: 'skip',
   run: async (client, message, args) => {
     const spotifyService = getService('spotify');
 

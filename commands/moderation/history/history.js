@@ -10,7 +10,6 @@ const { findUser } = require('../../../handlers/finder');
 module.exports = {
   name: "history",
   description: `view and manage moderation history`,
-  usage: '{guildprefix}history [user]\n{guildprefix}history [user] [action]\n{guildprefix}history view [caseid]\n{guildprefix}history remove [user] [caseid]\n{guildprefix}history removeall [user]',
   permission: 'Manage Messages',
   isGroupCommand: true,
   run: async(client, message, args) => {
@@ -26,7 +25,7 @@ module.exports = {
         usage: '{guildprefix}history view [caseid]',
         aliases: [],
         parameters: ['caseid'],
-        example: '{guildprefix}history view 123'
+        example: '{guildprefix}history view 12'
       };
 
       if (!args[1]) {
@@ -35,7 +34,7 @@ module.exports = {
 
       const caseId = parseInt(args[1]);
       if (isNaN(caseId)) {
-        return embeds.deny(message, 'Please provide a valid case ID number');
+        return embeds.deny(message, 'Please provide a **valid case ID** number');
       }
 
       try {

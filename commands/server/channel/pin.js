@@ -6,7 +6,8 @@ const { emojis } = require('../../../config/setup');
 module.exports = {
   name: "pin",
   description: 'pin a message in the current channel',
-  usage: '{guildprefix}pin - reply to a message to pin it',
+  syntax: 'pin',
+  example: 'pin (reply to message)',
   permission: "Manage Messages",
   run: async(client, message) => {
 

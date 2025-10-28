@@ -6,8 +6,9 @@ const { colors } = require('../../config/setup');
 module.exports = {
   name: "afk",
   description: `Set an AFK status for when you are mentioned`,
-  usage: `{guildprefix}afk [reason]`,
-  run: async(client, message, args) => {
+  syntax: 'afk (reason)',
+  example: 'afk sleeping',
+  run: async (client, message, args) => {
     const guildService = getService('guild');
     const content = args.join(" ") || "AFK";
 

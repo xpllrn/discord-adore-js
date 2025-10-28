@@ -7,7 +7,8 @@ module.exports = {
   name: "boosters",
   aliases: ['booster'],
   description: 'View boost tracking information',
-  usage: `{guildprefix}boosters lost\n{guildprefix}boosters new`,
+  syntax: 'boosters (lost/new)',
+  example: 'boosters lost',
   permission: "Manage Guild",
   run: async(client, message, args) => {
     const guildService = getService('guild');

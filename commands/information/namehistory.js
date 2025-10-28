@@ -14,7 +14,7 @@ module.exports = {
   usage: `{guildprefix}namehistory
 {guildprefix}namehistory [user]
 {guildprefix}nh [user]`,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const userService = getService('user');
 
     let targetUser = message.author;
@@ -23,7 +23,7 @@ module.exports = {
     // If user specified, find them
     if (args[0]) {
       const userResult = await findUser(message.guild, args[0], client);
-      
+
       if (!userResult.found) {
         return embeds.warn(message, userResult.error || 'User not found');
       }
@@ -42,7 +42,7 @@ module.exports = {
 
     try {
       const nameHistory = await userService.getNameHistory(targetUser.id);
-      
+
       if (nameHistory.length === 0) {
         const username = targetMember ? targetMember.displayName : targetUser.username;
         return embeds.info(message, `**${username}** has no recorded name changes`);

@@ -4,6 +4,7 @@ module.exports = {
   name: "highfive",
   aliases: ['hi5'],
   description: "Give someone a high five",
-  usage: `{guildprefix}highfive [@user]`,
+  syntax: 'highfive (user)',
+  example: 'highfive @vwsn',
   run: createRoleplayCommand('highfive', 'high-fived')
 };

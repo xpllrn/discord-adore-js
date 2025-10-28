@@ -32,10 +32,8 @@ module.exports = {
   name: "withdraw",
   aliases: ['with'],
   description: 'Withdraw money from your bank to your wallet',
-  usage: `{guildprefix}withdraw [amount]
-{guildprefix}withdraw 1000
-{guildprefix}withdraw all
-{guildprefix}withdraw 50%`,
+  syntax: 'withdraw (amount)',
+  example: 'withdraw 999',
   run: async(client, message, args) => {
     
     if (!args[0]) {

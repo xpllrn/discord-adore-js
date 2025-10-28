@@ -49,8 +49,8 @@ module.exports = {
   name: "rob",
   aliases: ['steal'],
   description: 'Attempt to rob money from another user (30% success rate, 1 hour cooldown)',
-  usage: `{guildprefix}rob [user]
-{guildprefix}rob @user`,
+  syntax: 'rob (user)',
+  example: 'rob @vwsn',
   run: async(client, message, args) => {
     
     if (!args[0]) {

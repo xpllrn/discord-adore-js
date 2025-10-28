@@ -22,7 +22,7 @@ module.exports = {
         usage: '{guildprefix}bday set [day] [month]',
         aliases: [],
         parameters: ['day', 'month'],
-        example: '{guildprefix}bday set 15 March'
+        example: '{guildprefix}bday set 2 March'
       };
 
       // Set birthday (universal)

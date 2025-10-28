@@ -9,7 +9,8 @@ module.exports = {
   name: "iunmute",
   aliases: ['imgunmute', 'imageunmute'],
   description: `restore someone's attachment/embed perms in this channel`,
-  usage: '{guildprefix}iunmute [user]\n{guildprefix}iunmute [user] [reason]',
+  syntax: 'iunmute (user) (reason)',
+  example: 'iunmute @vwsn appeal',
   permission: 'Moderate Members',
   run: async(client, message, args) => {
 

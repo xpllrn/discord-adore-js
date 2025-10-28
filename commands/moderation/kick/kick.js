@@ -10,7 +10,8 @@ module.exports = {
   name: "kick",
   aliases: ['boot'],
   description: 'Kicks the mentioned user from the server',
-  usage: '{guildprefix}kick [user]\n{guildprefix}kick [user] [reason]',
+  syntax: 'kick (user) (reason)',
+  example: 'kick @vwsn spam',
   permission: 'Kick Members',
   run: async(client, message, args) => {
     const moderationService = getService('moderation');

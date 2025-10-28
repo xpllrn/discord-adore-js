@@ -10,8 +10,8 @@ module.exports = {
   name: "help",
   aliases: ['h', 'command'],
   description: `View extended help for commands`,
-  usage: `{guildprefix}help
-{guildprefix}help [command]`,
+  syntax: 'help (command)',
+  example: 'help crash',
   run: async(client, message, args) => {
 
     // Get guild prefix with multiple fallback methods for reliability

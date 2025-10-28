@@ -11,8 +11,8 @@ module.exports = {
   name: "vanity",
   aliases: ['rep'],
   description: `add vanity role to someone for reppin your server in their custom status`,
-  usage: `{guildprefix}vanity set [vanity]\n{guildprefix}vanity set none\n\n{guildprefix}vanity role [@role]\n{guildprefix}vanity role none\n\n{guildprefix}vanity add [channel] [message]\n{guildprefix}vanity remove [channel]\n{guildprefix}vanity view [channel]\n\n{guildprefix}vanity check\n{guildprefix}vanity enable\n{guildprefix}vanity variables`,
   permission: "Manage Guild",
+  isGroupCommand: true,
   run: async(client, message, args) => {
 
     // Show help if no subcommand provided

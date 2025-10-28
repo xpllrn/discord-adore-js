@@ -9,9 +9,8 @@ module.exports = {
   name: "ttt",
   aliases: ['tictactoe', 'tic'],
   description: `Play tic tac toe with another user or against AI`,
-  usage: `{guildprefix}ttt [@user]
-{guildprefix}ttt
-{guildprefix}ttt stats`,
+  syntax: 'ttt (user)',
+  example: 'ttt @vwsn',
   cooldown: 3000,
   
   run: async (client, message, args) => {

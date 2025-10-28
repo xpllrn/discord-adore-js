@@ -7,7 +7,8 @@ module.exports = {
   name: "define",
   aliases: ['def'],
   description: "Get the definition of a word",
-  usage: `{guildprefix}define <word>`,
+  syntax: 'define (word)',
+  example: 'define serendipity',
   run: async (client, message, args) => {
     try {
       if (!args[0]) {

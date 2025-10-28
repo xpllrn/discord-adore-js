@@ -10,7 +10,8 @@ module.exports = {
   name: "play",
   aliases: [],
   description: 'Play a song on your Spotify',
-  usage: '{guildprefix}play [song name]\n{guildprefix}play [@user]\n{guildprefix}play [spotify link]\n{guildprefix}play [artist name]',
+  syntax: 'play (song name/spotify link/@user)',
+  example: 'play @vwsn',
   run: async(client, message, args) => {
     const spotifyService = getService('spotify');
     const guildprefix = await getGuildPrefix(message.guild.id);

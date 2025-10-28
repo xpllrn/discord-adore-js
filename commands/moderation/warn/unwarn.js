@@ -7,7 +7,8 @@ const { findUser } = require('../../../handlers/finder');
 module.exports = {
   name: "unwarn",
   description: `remove a warning from a user's moderation history`,
-  usage: '{guildprefix}unwarn [user] [case_id]\n{guildprefix}unwarn [user] [case_id] [reason]',
+  syntax: 'unwarn (user) (case_id) (reason)',
+  example: 'unwarn @vwsn 5 mistake',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
     const moderationService = getService('moderation');

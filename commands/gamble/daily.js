@@ -44,7 +44,8 @@ module.exports = {
   name: "daily",
   aliases: ['claim'],
   description: 'Claim your daily coins with streak bonuses',
-  usage: `{guildprefix}daily`,
+  syntax: 'daily',
+  example: 'daily',
   run: async(client, message, args) => {
     
     try {

@@ -9,7 +9,8 @@ module.exports = {
   name: "fm",
   aliases: ['np'],
   description: 'Show your current or last played track from Last.fm',
-  usage: '{guildprefix}fm\n{guildprefix}fm [user]',
+  syntax: 'fm (user)',
+  example: 'fm @vwsn',
   run: async(client, message, args) => {
     const userService = getService('user');
     const guildprefix = await getGuildPrefix(message.guild.id);

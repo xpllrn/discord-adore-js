@@ -34,7 +34,7 @@ module.exports = {
         usage: '{guildprefix}br baserole [@role]',
         aliases: [],
         parameters: ['role'],
-        example: '{guildprefix}br baserole @Booster'
+        example: '{guildprefix}br baserole Booster'
       };
 
       if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
@@ -124,7 +124,7 @@ module.exports = {
           usage: '{guildprefix}br share [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}br share @friend'
+          example: '{guildprefix}br share @vwsn'
         };
         return await handleShare(client, message, args.slice(1));
       case 'remove':

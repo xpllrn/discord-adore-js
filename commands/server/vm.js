@@ -188,7 +188,7 @@ module.exports = {
           usage: '{guildprefix}vm kick [@user]',
           aliases: ['disconnect'],
           parameters: ['user'],
-          example: '{guildprefix}vm kick @user'
+          example: '{guildprefix}vm kick @vwsn'
         };
         await handleDisconnectCommand(message, args, tempChannel);
         break;
@@ -199,7 +199,7 @@ module.exports = {
           usage: '{guildprefix}vm invite [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}vm invite @user'
+          example: '{guildprefix}vm invite @vwsn'
         };
         await handleInviteCommand(message, args, tempChannel);
         break;
@@ -210,7 +210,7 @@ module.exports = {
           usage: '{guildprefix}vm reject [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}vm reject @user'
+          example: '{guildprefix}vm reject @vwsn'
         };
         await handleRejectCommand(message, args, tempChannel);
         break;
@@ -221,7 +221,7 @@ module.exports = {
           usage: '{guildprefix}vm permit [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}vm permit @user'
+          example: '{guildprefix}vm permit @vwsn'
         };
         await handlePermitCommand(message, args, tempChannel);
         break;
@@ -243,7 +243,7 @@ module.exports = {
           usage: '{guildprefix}vm transfer [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}vm transfer @user'
+          example: '{guildprefix}vm transfer @vwsn'
         };
         await handleTransferCommand(message, args, tempChannel);
         break;

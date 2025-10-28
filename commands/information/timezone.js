@@ -9,9 +9,8 @@ module.exports = {
   name: "timezone",
   aliases: ['tz'],
   description: "View or set timezone information",
-  usage: `{guildprefix}tz
-{guildprefix}tz [user]
-{guildprefix}tz set [city]`,
+  syntax: 'timezone (user/set)',
+  example: 'timezone set London',
   run: async (client, message, args) => {
 
 

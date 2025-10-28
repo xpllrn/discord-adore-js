@@ -11,7 +11,6 @@ module.exports = {
   name: "ticket",
   aliases: ['tickets'],
   description: "Manage the ticket system for your server",
-  usage: '{guildprefix}ticket setup - Create ticket system\n{guildprefix}ticket reset - Reset ticket system\n{guildprefix}ticket category [category] - Set ticket category\n{guildprefix}ticket add [@user] - Add user to current ticket\n{guildprefix}ticket remove [@user] - Remove user from current ticket\n{guildprefix}ticket close - Close current ticket\n{guildprefix}ticket open - Reopen current ticket\n{guildprefix}ticket rename [name] - Rename current ticket\n{guildprefix}ticket support [@role/none] - Set support role',
   permission: "Manage Guild",
   isGroupCommand: true,
   run: async(client, message, args) => {
@@ -61,7 +60,7 @@ module.exports = {
           usage: '{guildprefix}ticket add [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}ticket add @user'
+          example: '{guildprefix}ticket add @vwsn'
         };
         return handleAddUser(client, message, args);
       }
@@ -71,7 +70,7 @@ module.exports = {
           usage: '{guildprefix}ticket remove [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}ticket remove @user'
+          example: '{guildprefix}ticket remove @vwsn'
         };
         return handleRemoveUser(client, message, args);
       }

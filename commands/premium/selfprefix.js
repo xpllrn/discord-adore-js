@@ -5,7 +5,8 @@ module.exports = {
   name: "selfprefix",
   aliases: ['sp'],
   description: `Manage your personal prefix`,
-  usage: `{guildprefix}selfprefix [set/remove] [prefix]`,
+  syntax: 'selfprefix (set/remove) (prefix)',
+  example: 'selfprefix set !',
 
 
   run: async (_, message, args) => {

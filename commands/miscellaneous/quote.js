@@ -8,8 +8,9 @@ const https = require('https');
 module.exports = {
   name: "quote",
   aliases: ['q'],
-  description: "Generate an aesthetic quote image with user's profile picture and message",
-  usage: `{guildprefix}quote [user mention or message ID]`,
+  description: "Quote a message",
+  syntax: 'quote (text)',
+  example: 'quote hello world',
   permission: "Send Messages",
   run: async (client, message, args) => {
     try {

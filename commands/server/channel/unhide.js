@@ -8,7 +8,8 @@ module.exports = {
   name: "unhide",
   aliases: ['unhidechannel'],
   description: 'Unhide the channel for default/selected role',
-  usage: '{guildprefix}unhide\n{guildprefix}unhide @role\n{guildprefix}unhide #channel @role',
+  syntax: 'unhide (channel) (role)',
+  example: 'unhide #general @Members',
   permission: 'Manage Channels',
   run: async(client, message, args) => {
 

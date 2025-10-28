@@ -39,7 +39,7 @@ module.exports = {
         usage: '{guildprefix}prefix set [prefix]',
         aliases: [],
         parameters: ['prefix'],
-        example: '{guildprefix}prefix set !'
+        example: '{guildprefix}prefix set $'
       };
 
       return handleSetGuildPrefix(message, newPrefix);

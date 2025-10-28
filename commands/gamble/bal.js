@@ -16,8 +16,8 @@ module.exports = {
   name: "bal",
   aliases: ['balance', 'money', 'cash'],
   description: 'Check your or someone else wallet and bank balance',
-  usage: `{guildprefix}bal
-{guildprefix}bal [user]`,
+  syntax: 'bal (user)',
+  example: 'bal @vwsn',
   run: async(client, message, args) => {
     
     let targetUser = message.author;

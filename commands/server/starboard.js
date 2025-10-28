@@ -10,7 +10,8 @@ module.exports = {
   name: "starboard",
   aliases: ['board'],
   description: `Set up a starboard system for highlighting popular messages`,
-  usage: '{guildprefix}starboard set #channel\n{guildprefix}starboard threshold [number]\n{guildprefix}starboard emoji [emoji]\n{guildprefix}starboard check\n{guildprefix}starboard unset',
+  syntax: 'starboard (set/threshold/emoji/check/unset) <value>',
+  example: 'starboard set #starboard',
   permission: "Manage Guild",
 
   run: async(client, message, args) => {

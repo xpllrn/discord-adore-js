@@ -13,7 +13,8 @@ module.exports = {
   name: "vote",
   aliases: ['topgg', 'upvote'],
   description: 'Vote for the bot on Top.gg and earn 5,000 coins!',
-  usage: `{guildprefix}vote`,
+  syntax: 'vote',
+  example: 'vote',
   run: async (client, message, args) => {
     
     try {

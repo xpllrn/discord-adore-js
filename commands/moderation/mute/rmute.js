@@ -9,7 +9,8 @@ module.exports = {
   name: "rmute",
   aliases: ['reactmute', 'reactionmute', 'emojimute', 'emotemute', 'emute'],
   description: `revoke someone's reaction/emote perms in this channel`,
-  usage: '{guildprefix}rmute [user]\n{guildprefix}rmute [user] [reason]',
+  syntax: 'rmute (user) (reason)',
+  example: 'rmute @vwsn spam',
   permission: 'Moderate Members',
   run: async(client, message, args) => {
 

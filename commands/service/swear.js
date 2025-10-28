@@ -56,7 +56,7 @@ module.exports = {
   aliases: ['swears'],
   description: `track swear usage in the server`,
   isGroupCommand: true,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const guildService = getService('guild');
     await ensureGuildData(message.guild.id);
 
@@ -66,12 +66,12 @@ module.exports = {
         usage: '{guildprefix}swear list [user]',
         aliases: [],
         parameters: ['user (optional)'],
-        example: '{guildprefix}swear list @user'
+        example: '{guildprefix}swear list @vwsn'
       };
 
       let targetUser = message.author;
       let targetMember = message.member;
-      
+
       if (args[1]) {
         const userResult = await findUser(message.guild, args[1], client);
 
@@ -82,10 +82,10 @@ module.exports = {
         targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
         targetMember = userResult.isGlobal ? null : userResult.user;
       }
-      
+
       try {
         const userData = await guildService.getUserSwearData(message.guild.id, targetUser.id);
-        
+
         if (!userData || userData.swears.length === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
           return embeds.warn(message, `**${username}** has no recorded swears in this server`);
@@ -109,7 +109,7 @@ module.exports = {
 
           const username = targetMember ? targetMember.displayName : targetUser.username;
           const isAuthor = targetUser.id === message.author.id;
-          const footerText = isAuthor 
+          const footerText = isAuthor
             ? `You have sweared ${userData.todaySwears} times today • Total: ${calculatedTotal} • Page ${currentPage}/${totalPages}`
             : `${username} has sweared ${userData.todaySwears} times today • Total: ${calculatedTotal} • Page ${currentPage}/${totalPages}`;
 

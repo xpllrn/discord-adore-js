@@ -8,7 +8,8 @@ module.exports = {
   name: "tiktok",
   aliases: ['tt'],
   description: 'Get information about a TikTok profile',
-  usage: `{guildprefix}tiktok [username]`,
+  syntax: 'tiktok (username)',
+  example: 'tiktok @vwsn',
   run: async(client, message, args) => {
 
     if (!args[0]) {

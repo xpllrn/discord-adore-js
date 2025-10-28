@@ -8,7 +8,8 @@ const webhookLogger = require('../../../utils/webhookLogger');
 module.exports = {
   name: "warn",
   description: `warn a user and add it to their moderation history`,
-  usage: '{guildprefix}warn [user]\n{guildprefix}warn [user] [reason]\n{guildprefix}warn list [user]',
+  syntax: 'warn (user) (reason)',
+  example: 'warn @vwsn spam',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
     const moderationService = getService('moderation');

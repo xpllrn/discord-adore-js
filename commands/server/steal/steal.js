@@ -43,7 +43,8 @@ module.exports = {
   name: "steal",
   aliases: ['stealemoji', 'stealsticker'],
   description: `Steal stickers and emotes from messages by replying to them`,
-  usage: '{guildprefix}steal (reply to a message with stickers/emotes)',
+  syntax: 'steal (reply to message)',
+  example: 'steal (reply to a message with stickers/emotes)',
   permission: "Manage Expressions",
 
   run: async(client, message, args) => {

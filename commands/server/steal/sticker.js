@@ -35,7 +35,7 @@ function removeInviteLinks(text) {
 function parseMessageLink(link) {
   const messageLinkRegex = /https:\/\/discord\.com\/channels\/(\d+)\/(\d+)\/(\d+)/;
   const match = link.match(messageLinkRegex);
-  
+
   if (match) {
     return {
       guildId: match[1],
@@ -56,15 +56,15 @@ async function processImage(imageUrl, maxSize = 512) {
     }
 
     const buffer = await response.buffer();
-    
+
     // Check file size (Discord limit is 512KB for stickers)
     if (buffer.length > 512 * 1024) {
       // Process with Jimp to resize and compress
       const image = await Jimp.read(buffer);
-      
+
       // Get current dimensions
       const { width, height } = image.bitmap;
-      
+
       // Calculate new dimensions maintaining aspect ratio
       let newWidth, newHeight;
       if (width > height) {
@@ -74,13 +74,13 @@ async function processImage(imageUrl, maxSize = 512) {
         newHeight = Math.min(height, maxSize);
         newWidth = Math.round((width * newHeight) / height);
       }
-      
+
       // Resize and compress
       image.resize(newWidth, newHeight);
-      
+
       // Convert to PNG and compress
       const processedBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
-      
+
       // If still too large, reduce quality further
       if (processedBuffer.length > 512 * 1024) {
         // Further reduce size
@@ -92,14 +92,14 @@ async function processImage(imageUrl, maxSize = 512) {
           newHeight = smallerSize;
           newWidth = Math.round((width * newHeight) / height);
         }
-        
+
         image.resize(newWidth, newHeight);
         return await image.getBufferAsync(Jimp.MIME_PNG);
       }
-      
+
       return processedBuffer;
     }
-    
+
     return buffer;
   } catch (error) {
     throw new Error(`Image processing failed: ${error.message}`);
@@ -112,7 +112,7 @@ module.exports = {
   permission: "Manage Expressions",
   isGroupCommand: true,
 
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     await ensureGuildData(message.guild.id);
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions')) return;
@@ -175,7 +175,7 @@ async function handleAdd(client, message, args) {
     // Check if there's an attachment
     if (message.attachments.size > 0) {
       const attachment = message.attachments.first();
-      
+
       // Validate file type
       const validTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/webp'];
       if (!validTypes.includes(attachment.contentType)) {
@@ -204,7 +204,7 @@ async function handleAdd(client, message, args) {
 
     // Clean the sticker name
     const cleanName = removeInviteLinks(stickerName.trim());
-    
+
     if (cleanName.length < 2 || cleanName.length > 30) {
       return embeds.warn(message, 'Sticker name must be between 2 and 30 characters long.');
     }
@@ -220,7 +220,7 @@ async function handleAdd(client, message, args) {
     try {
       // Process the image
       const processedBuffer = await processImage(imageUrl);
-      
+
       // Create the sticker
       const sticker = await message.guild.stickers.create({
         file: processedBuffer,
@@ -235,7 +235,7 @@ async function handleAdd(client, message, args) {
 
     } catch (error) {
       let errorMessage = 'Failed to add sticker. ';
-      
+
       if (error.code === 50035) {
         errorMessage += 'Invalid image format or file too large.';
       } else if (error.code === 50013) {

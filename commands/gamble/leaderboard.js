@@ -13,7 +13,8 @@ module.exports = {
   name: "leaderboard",
   aliases: ['lb', 'top', 'rich'],
   description: 'View the top 10 richest users globally',
-  usage: `{guildprefix}leaderboard`,
+  syntax: 'leaderboard',
+  example: 'leaderboard',
   run: async (client, message, args) => {
 
     try {

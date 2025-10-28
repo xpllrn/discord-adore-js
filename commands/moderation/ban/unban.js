@@ -8,7 +8,8 @@ const webhookLogger = require('../../../utils/webhookLogger');
 module.exports = {
   name: "unban",
   description: `unban the mentioned user from the server`,
-  usage: '{guildprefix}unban [user]\n{guildprefix}unban [user] [reason]',
+  syntax: 'unban (user) (reason)',
+  example: 'unban @vwsn appeal',
   permission: 'Ban Members',
   run: async(client, message, args) => {
     const moderationService = getService('moderation');

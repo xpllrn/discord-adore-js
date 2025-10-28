@@ -181,9 +181,8 @@ module.exports = {
   name: "translate",
   aliases: ['tr'],
   description: "Translate text to different languages",
-  usage: `{guildprefix}tr [text]
-{guildprefix}tr [language] [text]
-Reply to a message to translate it`,
+  syntax: 'translate (language) (text)',
+  example: 'translate spanish hello',
   run: async (client, message, args) => {
     let textToTranslate = '';
     let targetLanguage = 'en';

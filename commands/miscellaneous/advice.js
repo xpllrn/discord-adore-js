@@ -4,7 +4,8 @@ const { embeds } = require('../../core/embeds');
 module.exports = {
   name: "advice",
   description: `sends a random piece of advice`,
-  usage: `{guildprefix}advice`,
+  syntax: 'advice',
+  example: 'advice',
   run: async(client, message, args) => {
 
     try {

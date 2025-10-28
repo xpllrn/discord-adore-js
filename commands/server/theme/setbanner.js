@@ -6,7 +6,8 @@ module.exports = {
   name: "setbanner",
   aliases: ['serverbanner'],
   description: 'set the server banner (requires boost level 2+)',
-  usage: '{guildprefix}setbanner [attachment or URL]\n{guildprefix}setbanner - remove server banner',
+  syntax: 'setbanner (image)',
+  example: 'setbanner [attach image]',
   permission: "Manage Guild",
   run: async(client, message, args) => {
 

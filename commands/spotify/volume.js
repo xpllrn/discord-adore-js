@@ -9,7 +9,8 @@ module.exports = {
   name: "volume",
   aliases: ['vol'],
   description: 'Set Spotify playback volume',
-  usage: '{guildprefix}volume [0-100]',
+  syntax: 'volume (0-100)',
+  example: 'volume 50',
   run: async(client, message, args) => {
     const spotifyService = getService('spotify');
 

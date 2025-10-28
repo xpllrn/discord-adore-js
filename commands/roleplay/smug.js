@@ -3,6 +3,7 @@ const { createRoleplayCommand } = require('../../utils/roleplay');
 module.exports = {
   name: "smug",
   description: "Be smug at someone",
-  usage: `{guildprefix}smug [@user]`,
+  syntax: 'smug (user)',
+  example: 'smug @vwsn',
   run: createRoleplayCommand('smug', 'smugged at')
 };

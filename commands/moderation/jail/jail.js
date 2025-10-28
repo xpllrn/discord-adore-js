@@ -12,7 +12,8 @@ module.exports = {
   name: "jail",
   aliases: ['basement'],
   description: `jails the specified member or lists jailed users`,
-  usage: '{guildprefix}jail [user]\n{guildprefix}jail [user] [reason]\n{guildprefix}jail list',
+  syntax: 'jail (user) (reason)',
+  example: 'jail @vwsn spam',
   permission: 'Manage Roles',
   run: async(client, message, args) => {
 

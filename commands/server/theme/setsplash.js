@@ -6,7 +6,8 @@ module.exports = {
   name: "setsplash",
   aliases: ['serversplash'],
   description: 'set the server invite splash screen (requires boost level 1+)',
-  usage: '{guildprefix}setsplash [attachment or URL]\n{guildprefix}setsplash - remove server splash',
+  syntax: 'setsplash (image)',
+  example: 'setsplash [attach image]',
   permission: "Manage Guild",
   run: async(client, message, args) => {
 

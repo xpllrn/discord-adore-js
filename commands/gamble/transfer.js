@@ -33,9 +33,8 @@ module.exports = {
   name: "transfer",
   aliases: ['give', 'pay'],
   description: 'Transfer money from your wallet to another user',
-  usage: `{guildprefix}transfer [user] [amount]
-{guildprefix}transfer @user 1000
-{guildprefix}transfer @user all`,
+  syntax: 'transfer (user) (amount)',
+  example: 'transfer @vwsn 999',
   run: async(client, message, args) => {
     
     if (!args[0]) {

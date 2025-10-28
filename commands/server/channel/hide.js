@@ -8,7 +8,8 @@ module.exports = {
   name: "hide",
   aliases: ['hidechannel'],
   description: 'hides the channel for default/selected role',
-  usage: '{guildprefix}hide\n{guildprefix}hide @role\n{guildprefix}hide #channel @role',
+  syntax: 'hide (channel) (role)',
+  example: 'hide #general @Members',
   permission: 'Manage Channels',
   run: async(client, message, args) => {
 

@@ -25,8 +25,8 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
     const subcommands = [];
     
     // Regex to find subcommand blocks with subcommandInfo
-    // Matches: if (args[0] === 'add') { ... const subcommandInfo = { ... }
-    const subcommandBlockRegex = /if\s*\(\s*args\[0\]\s*===\s*['"](\w+)['"]\s*(?:\|\|\s*args\[0\]\s*===\s*['"](\w+)['"])*\s*\)\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+    // Matches: if (args[0] === 'add') OR if (subcommand === 'add') { ... const subcommandInfo = { ... }
+    const subcommandBlockRegex = /if\s*\(\s*(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"]\s*(?:\|\|\s*(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"])*\s*\)\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
     
     let match;
     while ((match = subcommandBlockRegex.exec(fileContent)) !== null) {
@@ -42,6 +42,28 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
       // Merge aliases from conditional with aliases from subcommandInfo
       if (aliasesFromConditional.length > 0) {
         subcommandData.aliases = [...new Set([...subcommandData.aliases, ...aliasesFromConditional])];
+      }
+      
+      subcommands.push(subcommandData);
+    }
+    
+    // Also try to find switch case statements with subcommandInfo
+    // Matches: case 'add': { ... const subcommandInfo = { ... }
+    const switchCaseRegex = /case\s+['"](\w+)['"]\s*:\s*(?:case\s+['"](\w+)['"]\s*:\s*)*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+    
+    while ((match = switchCaseRegex.exec(fileContent)) !== null) {
+      const subcommandName = match[1];
+      const subcommandInfoContent = match[3];
+      
+      // Parse the subcommandInfo object
+      const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
+      
+      // Extract aliases from multiple case statements (e.g., case 'remove': case 'rm':)
+      const aliasesFromCases = extractAliasesFromSwitchCases(match[0]);
+      
+      // Merge aliases from cases with aliases from subcommandInfo
+      if (aliasesFromCases.length > 0) {
+        subcommandData.aliases = [...new Set([...subcommandData.aliases, ...aliasesFromCases])];
       }
       
       subcommands.push(subcommandData);
@@ -70,16 +92,34 @@ function extractSubcommandName(codeBlock) {
 }
 
 /**
- * Extracts aliases from conditional block (e.g., args[0] === 'remove' || args[0] === 'rm')
+ * Extracts aliases from conditional block (e.g., args[0] === 'remove' || args[0] === 'rm' OR subcommand === 'remove' || subcommand === 'rm')
  * @param {String} conditional - Conditional statement
  * @returns {Array} - Array of alias strings
  */
 function extractAliasesFromConditional(conditional) {
   const aliases = [];
-  const aliasRegex = /args\[0\]\s*===\s*['"](\w+)['"]/g;
+  const aliasRegex = /(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"]/g;
   let match;
   
   while ((match = aliasRegex.exec(conditional)) !== null) {
+    aliases.push(match[1]);
+  }
+  
+  // Remove the first one as it's the main subcommand name
+  return aliases.slice(1);
+}
+
+/**
+ * Extracts aliases from switch case statements (e.g., case 'remove': case 'rm':)
+ * @param {String} caseBlock - Switch case block
+ * @returns {Array} - Array of alias strings
+ */
+function extractAliasesFromSwitchCases(caseBlock) {
+  const aliases = [];
+  const caseRegex = /case\s+['"](\w+)['"]\s*:/g;
+  let match;
+  
+  while ((match = caseRegex.exec(caseBlock)) !== null) {
     aliases.push(match[1]);
   }
   

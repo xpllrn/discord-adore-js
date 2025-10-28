@@ -8,7 +8,6 @@ module.exports = {
   name: "spotify",
   aliases: ['sp'],
   description: 'Manage your Spotify account connection',
-  usage: '{guildprefix}spotify login\n{guildprefix}spotify logout',
   isGroupCommand: true,
   run: async (_client, message, args) => {
     const spotifyService = getService('spotify');

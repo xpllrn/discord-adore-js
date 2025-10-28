@@ -7,7 +7,8 @@ module.exports = {
   name: "reactionsnipe",
   aliases: ['rs', 'reactsnipe'],
   description: `snipes removed reactions`,
-  usage: `{guildprefix}reactionsnipe [number]`,
+  syntax: 'reactionsnipe (number)',
+  example: 'reactionsnipe 2',
   run: async(_, message, args) => {
 
     const reactionsnipes = snipeCache.getRemovedReactions(message.channel.id);

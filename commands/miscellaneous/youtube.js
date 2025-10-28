@@ -7,7 +7,8 @@ module.exports = {
   name: "youtube",
   aliases: ['yt'],
   description: `search for a song/video on youtube`,
-  usage: `{guildprefix}youtube [song/video]`,
+  syntax: 'youtube (query)',
+  example: 'youtube never gonna give you up',
   run: async(client, message, args) => {
 
     await ensureGuildData(message.guild.id);

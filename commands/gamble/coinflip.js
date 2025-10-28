@@ -34,10 +34,8 @@ module.exports = {
   name: "coinflip",
   aliases: ['cf', 'flip', 'gamble'],
   description: 'Flip a coin and bet on the outcome (bot chooses heads or tails randomly)',
-  usage: `{guildprefix}coinflip [amount]
-{guildprefix}cf 1000
-{guildprefix}cf all
-{guildprefix}cf half`,
+  syntax: 'coinflip (amount)',
+  example: 'coinflip 999',
   run: async(client, message, args) => {
     // Check cooldown
     const cooldownTime = 5000; // 5 seconds

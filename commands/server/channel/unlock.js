@@ -8,7 +8,8 @@ module.exports = {
   name: "unlock",
   aliases: ['unlockdown'],
   description: 'unlock the channel for default/selected role',
-  usage: '{guildprefix}unlock\n{guildprefix}unlock @role\n{guildprefix}unlock #channel @role',
+  syntax: 'unlock (channel) (role)',
+  example: 'unlock #general @Members',
   permission: 'Manage Channels',
   run: async(client, message, args) => {
 

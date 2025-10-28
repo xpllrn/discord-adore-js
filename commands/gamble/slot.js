@@ -36,10 +36,8 @@ module.exports = {
   name: "slot",
   aliases: ['slots', 'spin'],
   description: 'Play the slot machine! Match symbols to win big!',
-  usage: `{guildprefix}slot [amount]
-{guildprefix}slot 1000
-{guildprefix}slot all
-{guildprefix}slot half`,
+  syntax: 'slot (amount)',
+  example: 'slot 999',
   run: async (client, message, args) => {
     // Check cooldown
     const cooldownTime = 5000; // 5 seconds

@@ -12,7 +12,8 @@ module.exports = {
   name: "emoji",
   aliases: ['emote'],
   description: "Archive and download all server emojis",
-  usage: '{guildprefix}emoji archive - Download them all as ZIP\n{guildprefix}emoji list',
+  syntax: 'emoji (subcommand)',
+  example: 'emoji archive',
   permission: 'Manage Emojis',
   run: async (client, message, args) => {
 

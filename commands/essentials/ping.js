@@ -2,7 +2,7 @@ module.exports = {
   name: "latency",
   aliases: ['ms', 'ping'],
   description: `Shows adore's latency response times`,
-  usage: `{guildprefix}latency`,
+  syntax: 'latency',
   run: async (client, message, args) => {
 
     const targets = ['no one', 'everyone', 'ur mom', 'horny asian women', 'horny asian man', 'iPhone'];

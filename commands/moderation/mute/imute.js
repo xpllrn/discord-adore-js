@@ -9,7 +9,8 @@ module.exports = {
   name: "imute",
   aliases: ['imgmute', 'imagemute'],
   description: `revoke someone's attachment/embed perms in this channel`,
-  usage: '{guildprefix}imute [user]\n{guildprefix}imute [user] [reason]',
+  syntax: 'imute (user) (reason)',
+  example: 'imute @vwsn spam',
   permission: 'Moderate Members',
   run: async(client, message, args) => {
 
