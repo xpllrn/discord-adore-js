@@ -1,16 +1,21 @@
-const { PermissionFlagsBits } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
-const { runHelpCommand } = require('../../../utils/commandProcessor');
+const { hasDiscordPermission, PermissionFlagsBits } = require('../../../utils/permissions');
 
 module.exports = {
   name: "seticon",
-  aliases: ['servericon'],
+  aliases: ['setavatar'],
   description: 'set the server icon',
   syntax: 'seticon (image)',
   example: 'seticon [attach image]',
   permission: "Manage Guild",
   run: async(client, message, args) => {
 
+    // Check user permissions
+    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) {
+      return;
+    }
+
+    // Check bot permissions
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageGuild)) {
       return embeds.deny(message, 'I need **Manage Guild** permission to use this command');
     }
@@ -57,10 +62,9 @@ module.exports = {
       // Edit the status message to show success
       setTimeout(async () => {
         try {
-          await statusMessage.edit({ embeds: [{ 
-            color: parseInt(require('../../../config/setup').colors.success.replace('#', ''), 16),
-            description: `✅ <@${message.author.id}>: Successfully **updated** the server icon`
-          }] });
+          await statusMessage.edit({ 
+            embeds: [embeds.createSuccess(message, 'Successfully **updated** the server icon')] 
+          });
         } catch (editError) {
           // Message might have been deleted
         }

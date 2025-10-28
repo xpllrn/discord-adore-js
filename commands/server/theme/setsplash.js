@@ -1,16 +1,21 @@
-const { PermissionFlagsBits } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
-const { runHelpCommand } = require('../../../utils/commandProcessor');
+const { hasDiscordPermission, PermissionFlagsBits } = require('../../../utils/permissions');
 
 module.exports = {
   name: "setsplash",
-  aliases: ['serversplash'],
+  aliases: ['setsplashbackground'],
   description: 'set the server invite splash screen (requires boost level 1+)',
   syntax: 'setsplash (image)',
   example: 'setsplash [attach image]',
   permission: "Manage Guild",
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
+    // Check user permissions
+    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) {
+      return;
+    }
+
+    // Check bot permissions
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageGuild)) {
       return embeds.deny(message, 'I need **Manage Guild** permission to use this command');
     }
@@ -26,7 +31,7 @@ module.exports = {
       // Check for attachment
       if (message.attachments.size > 0) {
         const attachment = message.attachments.first();
-        
+
         // Validate file type
         const validTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/webp'];
         if (!validTypes.includes(attachment.contentType)) {
@@ -62,10 +67,9 @@ module.exports = {
       // Edit the status message to show success
       setTimeout(async () => {
         try {
-          await statusMessage.edit({ embeds: [{ 
-            color: parseInt(require('../../../config/setup').colors.success.replace('#', ''), 16),
-            description: `✅ <@${message.author.id}>: Successfully **updated** the server invite splash screen`
-          }] });
+          await statusMessage.edit({
+            embeds: [embeds.createSuccess(message, 'Successfully **updated** the server invite splash screen')]
+          });
         } catch (editError) {
           // Message might have been deleted
         }
