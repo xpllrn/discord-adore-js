@@ -40,8 +40,13 @@ module.exports = {
         // Check if user already joined
         const alreadyJoined = sprint.participants.some(p => p.userId === interaction.user.id);
         if (alreadyJoined) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createDeny(fakeMessage, 'You have already joined this sprint!');
           return interaction.reply({
-            content: '❌ You have already joined this sprint!',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }
@@ -182,8 +187,13 @@ module.exports = {
 
         // Check if already joined
         if (sprint.participants.some(p => p.userId === interaction.user.id)) {
+          const fakeMessage = {
+            author: interaction.user,
+            channel: interaction.channel
+          };
+          const errorEmbed = embeds.createDeny(fakeMessage, 'You have already joined this sprint!');
           return interaction.reply({
-            content: '❌ You have already joined this sprint!',
+            embeds: [errorEmbed],
             flags: MessageFlags.Ephemeral
           });
         }

@@ -64,9 +64,8 @@ module.exports = {
 
           for (let i = 0; i < messageArray.length; i += 100) {
             const batch = messageArray.slice(i, i + 100);
-            const batchMap = new Map(batch.map(msg => [msg.id, msg]));
             
-            await message.channel.bulkDelete(batchMap, true);
+            await message.channel.bulkDelete(batch, true);
             deletedCount += batch.length;
           }
 

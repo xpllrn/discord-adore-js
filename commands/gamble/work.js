@@ -91,7 +91,7 @@ module.exports = {
       // Create success message
       const embed = new EmbedBuilder()
         .setColor('#a4ec7c')
-        .setDescription(`${job.emoji} <@${message.author.id}>: You worked as a **${job.name}** and earned **${formatCurrency(finalEarnings)}** coins!\nYou now have **${formatCurrency(newWallet)}** coins in your **wallet**`);
+        .setDescription(`${job.emoji} <@${message.author.id}>: You worked as a **${job.name}** and earned **${formatCurrency(finalEarnings)}** coins!`);
 
       return message.channel.send({ embeds: [embed] });
 
