@@ -12,6 +12,7 @@ module.exports = {
   description: `view and manage moderation history`,
   usage: '{guildprefix}history [user]\n{guildprefix}history [user] [action]\n{guildprefix}history view [caseid]\n{guildprefix}history remove [user] [caseid]\n{guildprefix}history removeall [user]',
   permission: 'Manage Messages',
+  isGroupCommand: true,
   run: async(client, message, args) => {
     const moderationService = getService('moderation');
 
@@ -20,6 +21,14 @@ module.exports = {
     }
 
     if (args[0] === 'view') {
+      const subcommandInfo = {
+        description: 'View a specific case',
+        usage: '{guildprefix}history view [caseid]',
+        aliases: [],
+        parameters: ['caseid'],
+        example: '{guildprefix}history view 123'
+      };
+
       if (!args[1]) {
         return runHelpCommand(message, 'history');
       }
@@ -63,6 +72,14 @@ module.exports = {
     }
 
     if (args[0] === 'remove') {
+      const subcommandInfo = {
+        description: 'Remove a specific case from user history',
+        usage: '{guildprefix}history remove [user] [caseid]',
+        aliases: [],
+        parameters: ['user', 'caseid'],
+        example: '{guildprefix}history remove @user 123'
+      };
+
       if (!args[1] || !args[2]) {
         return runHelpCommand(message, 'history');
       }
@@ -102,6 +119,14 @@ module.exports = {
     }
 
     if (args[0] === 'removeall') {
+      const subcommandInfo = {
+        description: 'Remove all cases from user history',
+        usage: '{guildprefix}history removeall [user]',
+        aliases: [],
+        parameters: ['user'],
+        example: '{guildprefix}history removeall @user'
+      };
+
       if (!args[1]) {
         return runHelpCommand(message, 'history');
       }

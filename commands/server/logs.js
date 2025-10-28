@@ -12,6 +12,7 @@ module.exports = {
   description: `Set up logging channels with webhooks for different log types`,
   usage: '{guildprefix}logs add <channel> <type>\n{guildprefix}logs remove <channel> [type]\n{guildprefix}logs list',
   permission: "Manage Guild",
+  isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');
     try {
@@ -26,17 +27,41 @@ module.exports = {
       const subcommand = args[0]?.toLowerCase();
 
       switch (subcommand) {
-        case 'add':
+        case 'add': {
+          const subcommandInfo = {
+            description: 'Add a logging channel',
+            usage: '{guildprefix}logs add [channel] [type]',
+            aliases: [],
+            parameters: ['channel', 'type'],
+            example: '{guildprefix}logs add #logs all'
+          };
           await handleAdd(client, message, args.slice(1));
           break;
+        }
         case 'remove':
-        case 'delete':
+        case 'delete': {
+          const subcommandInfo = {
+            description: 'Remove a logging channel',
+            usage: '{guildprefix}logs remove [channel] [type]',
+            aliases: ['delete'],
+            parameters: ['channel', 'type (optional)'],
+            example: '{guildprefix}logs remove #logs'
+          };
           await handleRemove(client, message, args.slice(1));
           break;
+        }
         case 'list':
-        case 'show':
+        case 'show': {
+          const subcommandInfo = {
+            description: 'List all logging channels',
+            usage: '{guildprefix}logs list',
+            aliases: ['show'],
+            parameters: [],
+            example: '{guildprefix}logs list'
+          };
           await handleList(client, message);
           break;
+        }
         default:
           const { runHelpCommand } = require('../../utils/commandProcessor');
           return runHelpCommand(message, 'logs');

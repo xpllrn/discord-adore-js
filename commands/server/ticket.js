@@ -13,6 +13,7 @@ module.exports = {
   description: "Manage the ticket system for your server",
   usage: '{guildprefix}ticket setup - Create ticket system\n{guildprefix}ticket reset - Reset ticket system\n{guildprefix}ticket category [category] - Set ticket category\n{guildprefix}ticket add [@user] - Add user to current ticket\n{guildprefix}ticket remove [@user] - Remove user from current ticket\n{guildprefix}ticket close - Close current ticket\n{guildprefix}ticket open - Reopen current ticket\n{guildprefix}ticket rename [name] - Rename current ticket\n{guildprefix}ticket support [@role/none] - Set support role',
   permission: "Manage Guild",
+  isGroupCommand: true,
   run: async(client, message, args) => {
 
     await ensureGuildData(message.guild.id);
@@ -24,24 +25,96 @@ module.exports = {
     const subcommand = args[0].toLowerCase();
 
     switch (subcommand) {
-      case 'setup':
+      case 'setup': {
+        const subcommandInfo = {
+          description: 'Create ticket system',
+          usage: '{guildprefix}ticket setup',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}ticket setup'
+        };
         return handleSetup(client, message, args);
-      case 'reset':
+      }
+      case 'reset': {
+        const subcommandInfo = {
+          description: 'Reset ticket system',
+          usage: '{guildprefix}ticket reset',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}ticket reset'
+        };
         return handleReset(client, message, args);
-      case 'category':
+      }
+      case 'category': {
+        const subcommandInfo = {
+          description: 'Set ticket category',
+          usage: '{guildprefix}ticket category [category]',
+          aliases: [],
+          parameters: ['category'],
+          example: '{guildprefix}ticket category Support'
+        };
         return handleCategory(client, message, args);
-      case 'add':
+      }
+      case 'add': {
+        const subcommandInfo = {
+          description: 'Add user to current ticket',
+          usage: '{guildprefix}ticket add [@user]',
+          aliases: [],
+          parameters: ['user'],
+          example: '{guildprefix}ticket add @user'
+        };
         return handleAddUser(client, message, args);
-      case 'remove':
+      }
+      case 'remove': {
+        const subcommandInfo = {
+          description: 'Remove user from current ticket',
+          usage: '{guildprefix}ticket remove [@user]',
+          aliases: [],
+          parameters: ['user'],
+          example: '{guildprefix}ticket remove @user'
+        };
         return handleRemoveUser(client, message, args);
-      case 'close':
+      }
+      case 'close': {
+        const subcommandInfo = {
+          description: 'Close current ticket',
+          usage: '{guildprefix}ticket close',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}ticket close'
+        };
         return handleClose(client, message, args);
-      case 'open':
+      }
+      case 'open': {
+        const subcommandInfo = {
+          description: 'Reopen current ticket',
+          usage: '{guildprefix}ticket open',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}ticket open'
+        };
         return handleOpen(client, message, args);
-      case 'rename':
+      }
+      case 'rename': {
+        const subcommandInfo = {
+          description: 'Rename current ticket',
+          usage: '{guildprefix}ticket rename [name]',
+          aliases: [],
+          parameters: ['name'],
+          example: '{guildprefix}ticket rename Bug Report'
+        };
         return handleRename(client, message, args);
-      case 'support':
+      }
+      case 'support': {
+        const subcommandInfo = {
+          description: 'Set support role',
+          usage: '{guildprefix}ticket support [@role/none]',
+          aliases: [],
+          parameters: ['role'],
+          example: '{guildprefix}ticket support @Support'
+        };
         return handleSupport(client, message, args);
+      }
       default:
         return runHelpCommand(message, 'ticket');
     }

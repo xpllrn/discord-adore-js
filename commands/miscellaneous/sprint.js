@@ -16,6 +16,7 @@ module.exports = {
   aliases: [],
   description: 'Manage reading sprints',
   usage: '{guildprefix}sprint start [duration] [name]\n{guildprefix}sprint end\n{guildprefix}sprint join [book name], [start tab]\n{guildprefix}sprint leave\n{guildprefix}sprint update [page number]\n{guildprefix}sprint leaderboard\n{guildprefix}sprint history',
+  isGroupCommand: true,
   run: async (client, message, args) => {
     const subcommand = args[0]?.toLowerCase();
 
@@ -24,20 +25,76 @@ module.exports = {
     }
 
     switch (subcommand) {
-      case 'start':
+      case 'start': {
+        const subcommandInfo = {
+          description: 'Start a new reading sprint',
+          usage: '{guildprefix}sprint start [duration] [name]',
+          aliases: [],
+          parameters: ['duration', 'name (optional)'],
+          example: '{guildprefix}sprint start 30m Reading Session'
+        };
         return await startSprint(client, message, args.slice(1));
-      case 'end':
+      }
+      case 'end': {
+        const subcommandInfo = {
+          description: 'End the current sprint',
+          usage: '{guildprefix}sprint end',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}sprint end'
+        };
         return await endSprint(client, message);
-      case 'join':
+      }
+      case 'join': {
+        const subcommandInfo = {
+          description: 'Join the current sprint',
+          usage: '{guildprefix}sprint join [book name], [start page]',
+          aliases: [],
+          parameters: ['book name', 'start page'],
+          example: '{guildprefix}sprint join Harry Potter, 150'
+        };
         return await joinSprint(client, message, args.slice(1));
-      case 'leave':
+      }
+      case 'leave': {
+        const subcommandInfo = {
+          description: 'Leave the current sprint',
+          usage: '{guildprefix}sprint leave',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}sprint leave'
+        };
         return await leaveSprint(client, message);
-      case 'update':
+      }
+      case 'update': {
+        const subcommandInfo = {
+          description: 'Update your current page',
+          usage: '{guildprefix}sprint update [page number]',
+          aliases: [],
+          parameters: ['page number'],
+          example: '{guildprefix}sprint update 175'
+        };
         return await updateSprint(client, message, args.slice(1));
-      case 'leaderboard':
+      }
+      case 'leaderboard': {
+        const subcommandInfo = {
+          description: 'Show sprint leaderboard',
+          usage: '{guildprefix}sprint leaderboard',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}sprint leaderboard'
+        };
         return await showLeaderboard(client, message);
-      case 'history':
+      }
+      case 'history': {
+        const subcommandInfo = {
+          description: 'Show your sprint history',
+          usage: '{guildprefix}sprint history',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}sprint history'
+        };
         return await showHistory(client, message);
+      }
       default:
         return runHelpCommand(message, 'sprint');
     }

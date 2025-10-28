@@ -9,6 +9,7 @@ module.exports = {
   aliases: ['sp'],
   description: 'Manage your Spotify account connection',
   usage: '{guildprefix}spotify login\n{guildprefix}spotify logout',
+  isGroupCommand: true,
   run: async (_client, message, args) => {
     const spotifyService = getService('spotify');
     const guildprefix = await getGuildPrefix(message.guild.id);
@@ -21,6 +22,14 @@ module.exports = {
     switch (subcommand) {
       case 'link':
       case 'login': {
+        const subcommandInfo = {
+          description: 'Link your Spotify account',
+          usage: '{guildprefix}spotify login',
+          aliases: ['link'],
+          parameters: [],
+          example: '{guildprefix}spotify login'
+        };
+
         try {
           // Check if user already has linked account
           const isLinked = await spotifyService.isLinked(message.author.id);
@@ -93,6 +102,14 @@ module.exports = {
 
       case 'unlink':
       case 'logout': {
+        const subcommandInfo = {
+          description: 'Unlink your Spotify account',
+          usage: '{guildprefix}spotify logout',
+          aliases: ['unlink'],
+          parameters: [],
+          example: '{guildprefix}spotify logout'
+        };
+
         try {
           // Check if user has linked account
           const isLinked = await spotifyService.isLinked(message.author.id);

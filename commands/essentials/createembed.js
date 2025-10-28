@@ -8,7 +8,7 @@ module.exports = {
   aliases: ['ce'],
   description: "Create your own embed",
   usage: `{guildprefix}createembed [embed code]
-{guildprefix}createembed {title: Hello {user}}$v{description: Welcome to {guild.name}}`,
+{guildprefix}createembed {title: Hello {user}}`,
   permission: "Manage Messages",
   run: async(client, message, args) => {
 

@@ -8,16 +8,14 @@ const { createHelpPagination } = require('../../utils/helpPagination')
 
 module.exports = {
   name: "help",
-  aliases: ['h'],
-  description: `Shows more information about a command`,
+  aliases: ['h', 'command'],
+  description: `View extended help for commands`,
   usage: `{guildprefix}help
 {guildprefix}help [command]`,
   run: async(client, message, args) => {
 
     // Get guild prefix with multiple fallback methods for reliability
     let guildprefix = config.bot.defaultPrefix; // Default fallback
-    console.log(`🔍 [HELP] Initial guildprefix: "${guildprefix}"`);
-    console.log(`🔍 [HELP] Guild ID: "${message.guild.id}"`);
 
     try {
       // Check if database is ready first
@@ -29,21 +27,13 @@ module.exports = {
         const { getService } = require('@services');
         const guildService = getService('guild');
         const cachedPrefix = await guildService.getPrefix(message.guild.id);
-        console.log(`🔍 [HELP] Cached prefix from guildService: "${cachedPrefix}"`);
         if (cachedPrefix) {
           guildprefix = cachedPrefix;
-          console.log(`🔍 [HELP] Updated guildprefix to: "${guildprefix}"`);
         }
-      } else {
-        console.log('Database not ready, using default prefix');
       }
     } catch (cacheError) {
-      console.error('Error getting guild prefix, using default:', cacheError.message);
       // guildprefix is already set to default
     }
-
-    console.log(`🔍 [HELP] Final guildprefix before usage: "${guildprefix}"`);
-    console.log(`🔍 [HELP] Type of guildprefix: ${typeof guildprefix}`);
 
     const command = client.commands.get(args[0]) || client.commands.get(client.aliases.get(args[0]))
   
@@ -56,7 +46,6 @@ module.exports = {
           const commandFilePath = getCommandFilePath(command.name, commandsDir);
           
           if (!commandFilePath) {
-            console.error(`Could not find command file for ${command.name}`);
             // Fall back to traditional embed
             const embed = createTraditionalEmbed(command, guildprefix);
             return message.channel.send({ embeds: [embed] });
@@ -66,7 +55,6 @@ module.exports = {
           const subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
           
           if (subcommands.length === 0) {
-            console.error(`No subcommands found for ${command.name}`);
             // Fall back to traditional embed
             const embed = createTraditionalEmbed(command, guildprefix);
             return message.channel.send({ embeds: [embed] });
@@ -90,7 +78,6 @@ module.exports = {
               return message.channel.send({ embeds: [singleSubcommandEmbed] });
             } else {
               // Subcommand not found, fall back to showing full group command help
-              console.log(`Subcommand "${requestedSubcommand}" not found for ${command.name}, showing full help`);
               // Continue to show paginated help below
             }
           }
@@ -112,7 +99,6 @@ module.exports = {
           return createHelpPagination(message, pages, command.name);
 
         } catch (error) {
-          console.error('Error creating paginated help:', error);
           // Fall back to traditional embed on error
           const embed = createTraditionalEmbed(command, guildprefix);
           return message.channel.send({ embeds: [embed] });
