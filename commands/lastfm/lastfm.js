@@ -86,6 +86,14 @@ module.exports = {
 
         switch (command) {
             case 'howto': {
+                const subcommandInfo = {
+                    description: 'Show Last.fm setup guide',
+                    usage: '{guildprefix}lastfm howto',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm howto'
+                };
+                
                 const embed = new EmbedBuilder()
                     .setColor(config.colors.info)
                     .setTitle('**Last.fm Setup Guide**')
@@ -99,6 +107,14 @@ module.exports = {
             }
 
             case 'set': {
+                const subcommandInfo = {
+                    description: 'Link your Last.fm account',
+                    usage: '{guildprefix}lastfm set [username]',
+                    aliases: [],
+                    parameters: ['username'],
+                    example: '{guildprefix}lastfm set vwsn'
+                };
+                
                 const fmuser = args[1];
 
                 if (!fmuser) {
@@ -154,6 +170,14 @@ module.exports = {
             case 'update':
             case 'refresh':
             case 'index': {
+                const subcommandInfo = {
+                    description: 'Update your Last.fm library',
+                    usage: '{guildprefix}lastfm update',
+                    aliases: ['refresh', 'index'],
+                    parameters: [],
+                    example: '{guildprefix}lastfm update'
+                };
+                
                 try {
                     const fmUsername = await userService.getLastFMUsername(message.author.id);
                     if (!fmUsername) {
