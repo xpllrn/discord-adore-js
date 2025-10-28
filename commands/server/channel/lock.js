@@ -74,9 +74,12 @@ module.exports = {
       return runHelpCommand(message, 'lock');
     }
 
-    const currentPerms = targetChannel.permissionsFor(targetRole);
-    if (currentPerms && !currentPerms.has(PermissionFlagsBits.SendMessages)) {
-      const roleText = targetRole.id === message.guild.id ? "@everyone" : `**${targetRole.name}**`;
+    // Check if there's an explicit permission override for this role
+    const existingOverwrite = targetChannel.permissionOverwrites.cache.get(targetRole.id);
+    const roleText = targetRole.id === message.guild.id ? "@everyone" : `**${targetRole.name}**`;
+
+    // Only consider it "already locked" if there's an explicit DENY override for SendMessages
+    if (existingOverwrite && existingOverwrite.deny.has(PermissionFlagsBits.SendMessages)) {
       return embeds.warn(message, `**#${targetChannel.name}** is already **locked** for ${roleText}`);
     }
 

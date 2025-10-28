@@ -11,7 +11,7 @@ module.exports = {
   syntax: 'hide (channel) (role)',
   example: 'hide #general @Members',
   permission: 'Manage Channels',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
@@ -56,9 +56,12 @@ module.exports = {
       return runHelpCommand(message, 'hide');
     }
 
-    const currentPerms = targetChannel.permissionsFor(targetRole);
-    if (currentPerms && !currentPerms.has(PermissionFlagsBits.ViewChannel)) {
-      const roleText = targetRole.id === message.guild.id ? "@everyone" : `**${targetRole.name}**`;
+    // Check if there's an explicit permission override for this role
+    const existingOverwrite = targetChannel.permissionOverwrites.cache.get(targetRole.id);
+    const roleText = targetRole.id === message.guild.id ? "@everyone" : `**${targetRole.name}**`;
+
+    // Only consider it "already hidden" if there's an explicit DENY override
+    if (existingOverwrite && existingOverwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
       return embeds.warn(message, `**#${targetChannel.name}** is already **hidden** for ${roleText}`);
     }
 
