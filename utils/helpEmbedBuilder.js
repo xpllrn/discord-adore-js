@@ -114,15 +114,15 @@ function createTraditionalEmbed(command, guildPrefix) {
     : 'n/a';
   fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
-  // Parameters field - extract from usage if available
+  // Parameters field - extract from syntax if available
   let parametersValue = 'n/a';
-  if (command.usage) {
-    // Try to extract parameters from usage string
-    // Look for patterns like [user], <member>, etc.
-    const paramMatches = command.usage.match(/[\[<]([^\]>]+)[\]>]/g);
+  if (command.syntax) {
+    // Try to extract parameters from syntax string
+    // Look for patterns like (user), (member), etc.
+    const paramMatches = command.syntax.match(/\(([^)]+)\)/g);
     if (paramMatches && paramMatches.length > 0) {
-      // Clean up the brackets and join
-      parametersValue = paramMatches.map(p => p.replace(/[\[<\]>]/g, '')).join(', ');
+      // Clean up the parentheses and join
+      parametersValue = paramMatches.map(p => p.replace(/[()]/g, '')).join(', ');
     }
   }
   fields.push({ name: '**Parameters**', value: parametersValue, inline: true });
@@ -132,25 +132,22 @@ function createTraditionalEmbed(command, guildPrefix) {
   fields.push({ name: '**Information**', value: permissionValue, inline: true });
 
   // Usage field with syntax and example
-  if (command.usage) {
-    let usage = command.usage.replaceAll('{guildprefix}', guildPrefix);
-    
-    // Split usage into lines if it has multiple formats
-    const usageLines = usage.split('\n').filter(line => line.trim());
-    
-    // Format as Syntax and Example
+  if (command.syntax || command.example) {
     const usageValue = [];
-    if (usageLines.length > 0) {
-      usageValue.push(`Syntax: ${usageLines[0]}`);
-      if (usageLines.length > 1) {
-        usageValue.push(`Example: ${usageLines[1]}`);
-      } else {
-        // Generate example from syntax
-        usageValue.push(`Example: ${usageLines[0]}`);
-      }
+    
+    if (command.syntax) {
+      const syntaxWithPrefix = `${guildPrefix}${command.syntax}`;
+      usageValue.push(`Syntax: ${syntaxWithPrefix}`);
     }
     
-    fields.push({ name: '**Usage**', value: `\`\`\`yaml\n${usageValue.join('\n')}\`\`\``, inline: false });
+    if (command.example) {
+      const exampleWithPrefix = `${guildPrefix}${command.example}`;
+      usageValue.push(`Example: ${exampleWithPrefix}`);
+    }
+    
+    if (usageValue.length > 0) {
+      fields.push({ name: '**Usage**', value: `\`\`\`yaml\n${usageValue.join('\n')}\`\`\``, inline: false });
+    }
   }
 
   if (fields.length > 0) {

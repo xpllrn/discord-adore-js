@@ -10,7 +10,7 @@ module.exports = {
   syntax: 'boosters (lost/new)',
   example: 'boosters lost',
   permission: "Manage Guild",
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const guildService = getService('guild');
 
     const subcommand = args[0]?.toLowerCase();
@@ -37,164 +37,164 @@ async function handleBoostLost(client, message) {
       return embeds.warn(message, 'No **recently lost boosters** have been recorded yet');
     }
 
-      // Format the list
-      const userList = recentBoostRemoves.map((event, index) => {
-        const position = index + 1;
+    // Format the list
+    const userList = recentBoostRemoves.map((event, index) => {
+      const position = index + 1;
 
-        // Format timestamp as unix timestamp for Discord
-        const timestamp = new Date(event.timestamp);
-        const timeString = `<t:${Math.floor(timestamp.getTime() / 1000)}:R>`;
+      // Format timestamp as unix timestamp for Discord
+      const timestamp = new Date(event.timestamp);
+      const timeString = `<t:${Math.floor(timestamp.getTime() / 1000)}:R>`;
 
-        // Calculate boost duration if we have the start time
-        let durationString = '';
-        if (event.boostStartTime) {
-          const startTime = new Date(event.boostStartTime);
-          const endTime = new Date(event.timestamp);
-          const durationMs = endTime.getTime() - startTime.getTime();
+      // Calculate boost duration if we have the start time
+      let durationString = '';
+      if (event.boostStartTime) {
+        const startTime = new Date(event.boostStartTime);
+        const endTime = new Date(event.timestamp);
+        const durationMs = endTime.getTime() - startTime.getTime();
 
-          // Convert to weeks/days
-          const weeks = Math.floor(durationMs / (7 * 24 * 60 * 60 * 1000));
-          const days = Math.floor((durationMs % (7 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
+        // Convert to weeks/days
+        const weeks = Math.floor(durationMs / (7 * 24 * 60 * 60 * 1000));
+        const days = Math.floor((durationMs % (7 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
 
-          if (weeks > 0) {
-            durationString = ` (lasted ${weeks}w${days > 0 ? ` ${days}d` : ''})`;
-          } else if (days > 0) {
-            durationString = ` (lasted ${days}d)`;
-          } else {
-            durationString = ' (lasted <1d)';
-          }
+        if (weeks > 0) {
+          durationString = ` (lasted ${weeks}w${days > 0 ? ` ${days}d` : ''})`;
+        } else if (days > 0) {
+          durationString = ` (lasted ${days}d)`;
+        } else {
+          durationString = ' (lasted <1d)';
         }
+      }
 
-        // Format: "1 <@userId> stopped timeString durationString"
-        return `${position} <@${event.userId}> stopped ${timeString}${durationString}`;
-      });
+      // Format: "1 <@userId> stopped timeString durationString"
+      return `${position} <@${event.userId}> stopped ${timeString}${durationString}`;
+    });
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle('Lost Boosters')
-        .setDescription(userList.join('\n'))
-        .setFooter({ text: `${recentBoostRemoves.length} boost removal${recentBoostRemoves.length !== 1 ? 's' : ''} tracked` });
+    const embed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setTitle('Lost Boosters')
+      .setDescription(userList.join('\n'))
+      .setFooter({ text: `${recentBoostRemoves.length} boost removal${recentBoostRemoves.length !== 1 ? 's' : ''} tracked` });
 
-      // Create refresh button
-      const row = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('boosters_lost_refresh')
-            .setLabel('Refresh')
-            .setEmoji('🔄')
-            .setStyle(ButtonStyle.Secondary)
-        );
+    // Create refresh button
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('boosters_lost_refresh')
+          .setLabel('Refresh')
+          .setEmoji('🔄')
+          .setStyle(ButtonStyle.Secondary)
+      );
 
-      const sentMessage = await message.channel.send({ 
-        embeds: [embed], 
-        components: [row] 
-      });
+    const sentMessage = await message.channel.send({
+      embeds: [embed],
+      components: [row]
+    });
 
-      // Create collector for refresh button
-      const collector = sentMessage.createMessageComponentCollector({
-        time: 60000 // 1 minute timeout
-      });
+    // Create collector for refresh button
+    const collector = sentMessage.createMessageComponentCollector({
+      time: 60000 // 1 minute timeout
+    });
 
-      collector.on('collect', async (interaction) => {
-        try {
-          if (interaction.customId === 'boosters_lost_refresh') {
-            // Check if user has permission to refresh
-            if (!interaction.member.permissions.has('ManageGuild')) {
-              return interaction.reply({
-                content: 'You need **Manage Guild** permission to refresh this list.',
-                ephemeral: true
-              });
-            }
-
-            // Get updated data
-            const updatedBoostRemoves = await guildService.getRecentBoostRemoves(message.guild.id, 20);
-
-            if (updatedBoostRemoves.length === 0) {
-              const noDataEmbed = new EmbedBuilder()
-                .setColor(colors.embed)
-                .setTitle('Lost Boosters')
-                .setDescription('No boost removals have been tracked yet')
-                .setFooter({ text: '0 boost removals tracked' });
-
-              return interaction.update({ embeds: [noDataEmbed] });
-            }
-
-            // Format updated list
-            const updatedUserList = updatedBoostRemoves.map((event, index) => {
-              const position = index + 1;
-
-              // Format timestamp as unix timestamp for Discord
-              const timestamp = new Date(event.timestamp);
-              const timeString = `<t:${Math.floor(timestamp.getTime() / 1000)}:R>`;
-
-              // Calculate boost duration if we have the start time
-              let durationString = '';
-              if (event.boostStartTime) {
-                const startTime = new Date(event.boostStartTime);
-                const endTime = new Date(event.timestamp);
-                const durationMs = endTime.getTime() - startTime.getTime();
-
-                // Convert to weeks/days
-                const weeks = Math.floor(durationMs / (7 * 24 * 60 * 60 * 1000));
-                const days = Math.floor((durationMs % (7 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
-
-                if (weeks > 0) {
-                  durationString = ` (lasted ${weeks}w${days > 0 ? ` ${days}d` : ''})`;
-                } else if (days > 0) {
-                  durationString = ` (lasted ${days}d)`;
-                } else {
-                  durationString = ' (lasted <1d)';
-                }
-              }
-
-              // Format: "1 <@userId> stopped timeString durationString"
-              return `${position} <@${event.userId}> stopped ${timeString}${durationString}`;
-            });
-
-            const updatedEmbed = new EmbedBuilder()
-              .setColor(colors.embed)
-              .setTitle('Lost Boosters')
-              .setDescription(updatedUserList.join('\n'))
-              .setFooter({ text: `${updatedBoostRemoves.length} boost removal${updatedBoostRemoves.length !== 1 ? 's' : ''} tracked` });
-
-            await interaction.update({ embeds: [updatedEmbed] });
-          }
-        } catch (error) {
-          console.error('Error handling boostlost refresh:', error);
-          try {
-            await interaction.reply({
-              content: 'An error occurred while refreshing the list.',
+    collector.on('collect', async (interaction) => {
+      try {
+        if (interaction.customId === 'boosters_lost_refresh') {
+          // Check if user has permission to refresh
+          if (!interaction.member.permissions.has('ManageGuild')) {
+            return interaction.reply({
+              content: 'You need **Manage Guild** permission to refresh this list.',
               ephemeral: true
             });
-          } catch (replyError) {
-            // Ignore if we can't reply
           }
-        }
-      });
 
-      collector.on('end', async () => {
+          // Get updated data
+          const updatedBoostRemoves = await guildService.getRecentBoostRemoves(message.guild.id, 20);
+
+          if (updatedBoostRemoves.length === 0) {
+            const noDataEmbed = new EmbedBuilder()
+              .setColor(colors.embed)
+              .setTitle('Lost Boosters')
+              .setDescription('No boost removals have been tracked yet')
+              .setFooter({ text: '0 boost removals tracked' });
+
+            return interaction.update({ embeds: [noDataEmbed] });
+          }
+
+          // Format updated list
+          const updatedUserList = updatedBoostRemoves.map((event, index) => {
+            const position = index + 1;
+
+            // Format timestamp as unix timestamp for Discord
+            const timestamp = new Date(event.timestamp);
+            const timeString = `<t:${Math.floor(timestamp.getTime() / 1000)}:R>`;
+
+            // Calculate boost duration if we have the start time
+            let durationString = '';
+            if (event.boostStartTime) {
+              const startTime = new Date(event.boostStartTime);
+              const endTime = new Date(event.timestamp);
+              const durationMs = endTime.getTime() - startTime.getTime();
+
+              // Convert to weeks/days
+              const weeks = Math.floor(durationMs / (7 * 24 * 60 * 60 * 1000));
+              const days = Math.floor((durationMs % (7 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
+
+              if (weeks > 0) {
+                durationString = ` (lasted ${weeks}w${days > 0 ? ` ${days}d` : ''})`;
+              } else if (days > 0) {
+                durationString = ` (lasted ${days}d)`;
+              } else {
+                durationString = ' (lasted <1d)';
+              }
+            }
+
+            // Format: "1 <@userId> stopped timeString durationString"
+            return `${position} <@${event.userId}> stopped ${timeString}${durationString}`;
+          });
+
+          const updatedEmbed = new EmbedBuilder()
+            .setColor(colors.embed)
+            .setTitle('Lost Boosters')
+            .setDescription(updatedUserList.join('\n'))
+            .setFooter({ text: `${updatedBoostRemoves.length} boost removal${updatedBoostRemoves.length !== 1 ? 's' : ''} tracked` });
+
+          await interaction.update({ embeds: [updatedEmbed] });
+        }
+      } catch (error) {
+        console.error('Error handling boostlost refresh:', error);
         try {
-          // Disable the button after timeout
-          const disabledRow = new ActionRowBuilder()
-            .addComponents(
-              new ButtonBuilder()
-                .setCustomId('boosters_lost_refresh')
-                .setLabel('Refresh')
-                .setEmoji('🔄')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(true)
-            );
-
-          await sentMessage.edit({ components: [disabledRow] });
-        } catch (error) {
-          // Message might have been deleted
+          await interaction.reply({
+            content: 'An error occurred while refreshing the list.',
+            ephemeral: true
+          });
+        } catch (replyError) {
+          // Ignore if we can't reply
         }
-      });
+      }
+    });
 
-    } catch (error) {
-      console.error('Error in boosters lost command:', error);
-      return embeds.deny(message, 'An error occurred while fetching boost removal data');
-    }
+    collector.on('end', async () => {
+      try {
+        // Disable the button after timeout
+        const disabledRow = new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('boosters_lost_refresh')
+              .setLabel('Refresh')
+              .setEmoji('🔄')
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(true)
+          );
+
+        await sentMessage.edit({ components: [disabledRow] });
+      } catch (error) {
+        // Message might have been deleted
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in boosters lost command:', error);
+    return embeds.deny(message, 'An error occurred while fetching boost removal data');
+  }
 }
 
 // Handle boost new subcommand
