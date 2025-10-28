@@ -2,8 +2,8 @@ const { createNSFWRoleplayCommand } = require('../../../utils/nsfwRoleplay');
 
 module.exports = {
   name: "blowjob",
-  description: "NSFW roleplay command (18+ channels only)",
+  description: "`NSFW` blowjob roleplay command.",
   syntax: 'blowjob (user)',
-  example: 'blowjob @user',
+  example: 'blowjob @vee',
   run: createNSFWRoleplayCommand('blowjob', 'gave a blowjob to')
 };

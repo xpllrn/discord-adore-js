@@ -2,8 +2,8 @@ const { createNSFWRoleplayCommand } = require('../../../utils/nsfwRoleplay');
 
 module.exports = {
   name: "yaoi",
-  description: "NSFW roleplay command (18+ channels only)",
+  description: "`NSFW` yaoi roleplay command.",
   syntax: 'yaoi (user)',
-  example: 'yaoi @user',
+  example: 'yaoi @vee',
   run: createNSFWRoleplayCommand('yaoi', 'did yaoi with')
 };
