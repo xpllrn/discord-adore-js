@@ -1,4 +1,4 @@
-const { createRoleplayCommand } = require('../../utils/roleplay');
+const { createRoleplayCommand } = require('../../../utils/roleplay');
 
 module.exports = {
   name: "blush",

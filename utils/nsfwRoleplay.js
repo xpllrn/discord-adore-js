@@ -23,7 +23,7 @@ function getOrdinal(num) {
  */
 async function fetchNSFWGif(action) {
   try {
-    const response = await fetch(`https://api.purrbot.site/img/nsfw/${action}/gif`);
+    const response = await fetch(`https://api.purrbot.site/v2/img/nsfw/${action}/gif`);
     if (!response.ok) {
       throw new Error(`API returned ${response.status}`);
     }
