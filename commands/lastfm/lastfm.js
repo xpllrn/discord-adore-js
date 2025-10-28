@@ -938,6 +938,9 @@ class WhoKnows {
 
     async handleCrown(message, crownUserId, artistName, crownPlays) {
         try {
+            const { getService } = require('@services');
+            const guildService = getService('guild');
+            
             const existingCrown = await guildService.getLastFMCrown(message.guild.id, artistName);
             const crownMember = await message.guild.members.fetch(crownUserId);
 

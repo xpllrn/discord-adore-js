@@ -61,7 +61,6 @@ async function fetchWaifuGif(action) {
   // Multiple API endpoints for fallback
   const apiEndpoints = [
     `https://api.waifu.pics/sfw/${endpoint}`,
-    `https://nekos.life/api/v2/img/${endpoint}`,
     `https://waifu.it/api/v4/${endpoint}`
   ];
 
