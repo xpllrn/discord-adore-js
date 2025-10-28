@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const { EmbedBuilder } = require('discord.js');
 const { colors } = require('../config/setup');
+const { embeds } = require('../core/embeds');
 const { getService } = require('@services');
 const { findUser } = require('../handlers/finder');
 
@@ -28,7 +29,7 @@ async function fetchNSFWGif(action) {
     }
 
     const data = await response.json();
-    
+
     if (data.error) {
       throw new Error(data.message || 'API returned an error');
     }
@@ -60,11 +61,7 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
     try {
       // Check if channel is NSFW
       if (!isNSFWChannel(message.channel)) {
-        return message.channel.send({
-          embeds: [new EmbedBuilder()
-            .setColor(colors.error)
-            .setDescription(`🔞 <@${message.author.id}>: This command can only be used in NSFW channels!`)]
-        });
+        return embeds.deny(message, 'This command can only be used in NSFW channels! 🔞');
       }
 
       // Check if user mentioned someone
@@ -72,11 +69,7 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
       if (args[0]) {
         const userResult = await findUser(message.guild, args[0], client);
         if (!userResult.found || !userResult.user) {
-          return message.channel.send({
-            embeds: [new EmbedBuilder()
-              .setColor(colors.error)
-              .setDescription(`❌ <@${message.author.id}>: User not found!`)]
-          });
+          return embeds.deny(message, userResult.error || 'User not found!');
         }
         targetUser = userResult.user;
       } else {
@@ -141,11 +134,7 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
 
     } catch (error) {
       console.log(`${action} command failed:`, error.message);
-      return message.channel.send({
-        embeds: [new EmbedBuilder()
-          .setColor(colors.error)
-          .setDescription(`❌ <@${message.author.id}>: Failed to ${action}! Please try again.`)]
-      });
+      return embeds.warn(message, `Failed to ${action}! Please try again.`);
     }
   };
 }
