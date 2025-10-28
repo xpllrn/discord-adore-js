@@ -14,7 +14,6 @@ module.exports = {
   name: "role",
   description: `Comprehensive role management system`,
   aliases: ['r'],
-  usage: '{guildprefix}role [member] [role]\n{guildprefix}role create [name]\n{guildprefix}role delete [role]\n{guildprefix}role rename [role] [new name]\n{guildprefix}role color [role] [color]\n{guildprefix}role gradient [role] [color1] [color2]\n{guildprefix}role holographic [role]\n{guildprefix}role icon [role] [emoji]\n{guildprefix}role humans [role]\n{guildprefix}role bots [role]\n{guildprefix}role all [role]',
   permission: 'Manage Roles',
   isGroupCommand: true,
   run: async (client, message, args) => {

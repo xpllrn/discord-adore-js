@@ -7,7 +7,8 @@ const { findUser } = require('../../../handlers/finder');
 module.exports = {
   name: "pic",
   description: "toggle user pic permissions (ability to send images/embeds) in current channel",
-  usage: '{guildprefix}pic [user]',
+  syntax: 'pic (user)',
+  example: 'pic @vwsn',
   permission: "Manage Channels",
   run: async(client, message, args) => {
 

@@ -7,7 +7,8 @@ module.exports = {
   name: "avatar",
   aliases: ['av', 'pfp'],
   description: "show a user's global avatar",
-  usage: '{guildprefix}avatar [user]',
+  syntax: 'avatar <user>',
+  example: 'avatar @vwsn',
   run: async(client, message, args) => {
 
     try {

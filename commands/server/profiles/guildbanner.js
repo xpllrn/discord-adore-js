@@ -7,7 +7,8 @@ module.exports = {
   name: "guildbanner",
   aliases: ['serverbanner2', 'gbanner'],
   description: "show a server's banner",
-  usage: '{guildprefix}guildbanner [server id or name]',
+  syntax: 'guildbanner <server>',
+  example: 'guildbanner',
   run: async(client, message, args) => {
 
     try {

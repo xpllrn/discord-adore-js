@@ -7,7 +7,8 @@ module.exports = {
   name: "banner",
   aliases: ['userbanner'],
   description: "show a user's global banner",
-  usage: '{guildprefix}banner [user]',
+  syntax: 'banner <user>',
+  example: 'banner @vwsn',
   run: async(client, message, args) => {
 
     try {

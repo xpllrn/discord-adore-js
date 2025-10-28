@@ -7,7 +7,8 @@ module.exports = {
   name: "sbanner",
   aliases: ['serverbanner'],
   description: "show a user's server-specific banner",
-  usage: '{guildprefix}sbanner [user]',
+  syntax: 'sbanner <user>',
+  example: 'sbanner @vwsn',
   run: async(client, message, args) => {
 
     try {

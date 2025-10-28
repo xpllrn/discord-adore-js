@@ -7,7 +7,8 @@ module.exports = {
   name: "guildsplash",
   aliases: ['serversplash', 'splash'],
   description: "show a server's invite splash screen",
-  usage: '{guildprefix}guildsplash [server id or name]',
+  syntax: 'guildsplash <server>',
+  example: 'guildsplash',
   run: async(client, message, args) => {
 
     try {

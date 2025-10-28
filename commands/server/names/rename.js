@@ -8,7 +8,8 @@ module.exports = {
   name: "rename",
   aliases: ['nick'],
   description: `change a member's nickname`,
-  usage: '{guildprefix}rename [user]\n{guildprefix}rename [user] [nickname]',
+  syntax: 'rename (user) <nickname>',
+  example: 'rename @vwsn NewName',
   permission: "Manage Nicknames",
   run: async(client, message, args) => {
 

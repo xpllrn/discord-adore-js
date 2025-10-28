@@ -74,7 +74,7 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(colors.success || '#a4ec7c')
-          .setTitle('🎉 Thank You for Voting!')
+          .setTitle('Thank You for Voting!')
           .setDescription(`${emojis.success} <@${userId}>: You received **${formatCurrency(VOTE_REWARD)}** coins for voting!\n\nYou can vote again in **12 hours** for another **${formatCurrency(VOTE_REWARD)}** coins!`)
           .setFooter({ text: 'Your support helps us grow! ❤️' });
 
@@ -85,17 +85,17 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(colors.info || '#729bb0')
-          .setTitle('🗳️ Vote for Us!')
-          .setDescription(`Vote for **${client.user.username}** on **Top.gg** and earn **${formatCurrency(VOTE_REWARD)}** coins!\n\n**Rewards:**\n💰 **${formatCurrency(VOTE_REWARD)}** coins per vote\n⏰ Vote every **12 hours**\n🎁 Support the bot and get rewarded!`)
+          .setTitle('Vote for Us!')
+          .setDescription(`Vote for **${client.user.username}** on **Top.gg** and earn **${formatCurrency(VOTE_REWARD)}** coins!\n\n**Rewards:**\n **${formatCurrency(VOTE_REWARD)}** coins per vote\n Vote every **12 hours**!`)
           .setFooter({ text: 'After voting, run this command again to claim your reward!' });
 
         const row = new ActionRowBuilder()
           .addComponents(
             new ButtonBuilder()
-              .setLabel('Vote on Top.gg')
+              .setLabel('Vote here')
               .setStyle(ButtonStyle.Link)
               .setURL(voteUrl)
-              .setEmoji('🗳️')
+
           );
 
         return message.channel.send({ embeds: [embed], components: [row] });

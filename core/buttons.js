@@ -133,18 +133,19 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                 }
 
             } else if (interaction.customId === 'pagination_cancel') {
-                const disabledButtons = createButtons(currentPage, true);
                 try {
-                    await interaction.update({
-                        components: [disabledButtons]
-                    });
+                    await interaction.deferUpdate();
+                    await sentMessage.delete();
                 } catch (error) {
                     if (error.code === 10062) {
-
-                        await sentMessage.edit({ components: [disabledButtons] });
-                    } else {
-                        throw error;
+                        // Message already deleted or interaction expired
+                        try {
+                            await sentMessage.delete();
+                        } catch (deleteError) {
+                            // Ignore deletion errors
+                        }
                     }
+                    // Ignore other deletion errors
                 }
                 collector.stop();
 

@@ -299,8 +299,6 @@ module.exports = {
         const updatedEmbed = createSprintEmbed(sprint);
         await interaction.message.edit({ embeds: [updatedEmbed] });
 
-        const progress = currentTab - participant.startTab;
-        
         // Create a fake message object for embeds helper
         const fakeMessage = {
           author: interaction.user,
@@ -308,7 +306,7 @@ module.exports = {
         };
 
         // Send success using premade embed
-        const successEmbed = embeds.createSuccess(fakeMessage, `Progress updated! **${oldTab}** → **${currentTab}** (Total progress: **${progress}** tabs)`);
+        const successEmbed = embeds.createSuccess(fakeMessage, `Progress updated! **${oldTab}** → **${currentTab}** tabs now`);
 
         await interaction.reply({
           embeds: [successEmbed],

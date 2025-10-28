@@ -5,7 +5,8 @@ module.exports = {
   name: 'count',
   aliases: ['counting'],
   description: 'Configure the counting game system.',
-  usage: '{guildprefix}count [channel #channel | none | strict on/off]',
+  syntax: 'count (channel/strict) <value>',
+  example: 'count channel #counting',
   run: async (client, message, args) => {
     const guildService = getService('guild');
     if (!message.member.permissions.has('ManageGuild')) {

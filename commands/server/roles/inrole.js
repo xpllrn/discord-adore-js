@@ -9,7 +9,8 @@ module.exports = {
   name: "inrole",
   aliases: ['members', 'rolemembers'],
   description: `get a list of users in a specific role`,
-  usage: '{guildprefix}inrole [role]',
+  syntax: 'inrole (role)',
+  example: 'inrole @Members',
   run: async(client, message, args) => {
 
     if (!args[0]) {

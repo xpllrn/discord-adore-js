@@ -15,7 +15,6 @@ module.exports = {
   name: "sprint",
   aliases: [],
   description: 'Manage reading sprints',
-  usage: '{guildprefix}sprint (subcommand) <args>',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const subcommand = args[0]?.toLowerCase();
@@ -443,7 +442,7 @@ async function joinSprint(client, message, args) {
     const parts = fullArgs.split(',').map(p => p.trim());
 
     if (parts.length < 2) {
-      return embeds.warn(message, 'Usage: `,sprint join [book name], [start tab]`\nExample: `,sprint join Harry Potter, 22`');
+      return embeds.warn(message, 'Usage: `,sprint join [book name], [start page]`\nExample: `,sprint join Harry Potter, 22`');
     }
 
     const bookName = parts[0];

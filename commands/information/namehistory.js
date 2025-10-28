@@ -11,9 +11,8 @@ module.exports = {
   name: "namehistory",
   aliases: ['nh'],
   description: `view a user's name change history`,
-  usage: `{guildprefix}namehistory
-{guildprefix}namehistory [user]
-{guildprefix}nh [user]`,
+  syntax: 'namehistory <user>',
+  example: 'namehistory @vwsn',
   run: async (client, message, args) => {
     const userService = getService('user');
 

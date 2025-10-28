@@ -7,7 +7,8 @@ module.exports = {
   name: "guildicon",
   aliases: ['servericon', 'icon'],
   description: "show a server's icon",
-  usage: '{guildprefix}guildicon [server id or name]',
+  syntax: 'guildicon <server>',
+  example: 'guildicon',
   run: async(client, message, args) => {
 
     try {

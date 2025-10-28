@@ -694,7 +694,8 @@ module.exports = {
     name: "responder",
     aliases: [],
     description: 'Download content when "adore" is mentioned with links',
-    usage: `adore [link]`,
+    syntax: 'adore (link)',
+    example: 'adore https://instagram.com/p/example',
     run: async (client, message, args) => {
         // This function is called from message listener, not as a command
         // The actual logic is in the message event handler

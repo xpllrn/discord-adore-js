@@ -7,7 +7,8 @@ module.exports = {
   name: "message",
   aliases: ['msg'],
   description: "View message statistics for a user",
-  usage: '{guildprefix}message [@user]',
+  syntax: 'message <user>',
+  example: 'message @vwsn',
   run: async (client, message, args) => {
     try {
       let targetUser = message.author;

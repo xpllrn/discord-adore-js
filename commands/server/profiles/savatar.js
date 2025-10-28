@@ -7,8 +7,9 @@ module.exports = {
   name: "savatar",
   aliases: ['serveravatar', 'sav'],
   description: "show a user's server-specific avatar",
-  usage: '{guildprefix}savatar [user]',
-  run: async(client, message, args) => {
+  syntax: 'savatar <user>',
+  example: 'savatar @vwsn',
+  run: async (client, message, args) => {
 
     try {
       let targetMember = message.member;
@@ -30,22 +31,22 @@ module.exports = {
       }
 
       // Get the member's server avatar (falls back to global avatar if no server avatar)
-      const avatarURL = targetMember.displayAvatarURL({ 
-        dynamic: true, 
-        size: 4096 
+      const avatarURL = targetMember.displayAvatarURL({
+        dynamic: true,
+        size: 4096
       });
 
       // Check if they have a server-specific avatar
       const hasServerAvatar = targetMember.avatar !== null;
-      const avatarType = hasServerAvatar ? 'Server Avatar' : 'Global Avatar (No Server Avatar Set)';
+      const avatarType = hasServerAvatar ? 'Server Avatar' : 'Server Avatar';
 
       const embed = new EmbedBuilder()
         .setColor(colors.embed)
         .setTitle(`${targetMember.user.username}'s ${avatarType}`)
         .setImage(avatarURL)
-        .setFooter({ 
-          text: `Requested by ${message.author.username}`, 
-          iconURL: message.author.displayAvatarURL({ dynamic: true }) 
+        .setFooter({
+          text: `Requested by ${message.author.username}`,
+          iconURL: message.author.displayAvatarURL({ dynamic: true })
         });
 
       return message.channel.send({ embeds: [embed] });
