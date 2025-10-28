@@ -27,8 +27,8 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
     fields.push({ name: '**Permission**', value: command.permission, inline: true });
   }
 
-  // Usage field
-  const usageValue = `\`\`\`yaml\nSyntax: ${guildPrefix}${command.name} (subcommand) <args>\nExample: ${guildPrefix}${command.name} add (role)\`\`\``;
+  // Usage field - only show syntax for group commands
+  const usageValue = `\`\`\`yaml\nSyntax: ${guildPrefix}${command.name} (subcommand) <args>\`\`\``;
   fields.push({ name: '**Usage**', value: usageValue, inline: false });
 
   embed.addFields(...fields);

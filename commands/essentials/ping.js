@@ -3,6 +3,7 @@ module.exports = {
   aliases: ['ms', 'ping'],
   description: `Shows adore's latency response times`,
   syntax: 'latency',
+  example: 'latency',
   run: async (client, message, args) => {
 
     const targets = ['no one', 'everyone', 'ur mom', 'horny asian women', 'horny asian man', 'iPhone'];
