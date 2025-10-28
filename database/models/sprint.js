@@ -6,7 +6,10 @@ const sprintParticipantSchema = new mongoose.Schema({
   bookName: { type: String, required: true },
   startTab: { type: Number, required: true },
   currentTab: { type: Number, required: true },
-  joinedAt: { type: Date, default: Date.now }
+  joinedAt: { type: Date, default: Date.now },
+  isPaused: { type: Boolean, default: false },
+  totalPausedTime: { type: Number, default: 0 },
+  lastPauseTime: { type: Date, default: null }
 }, { _id: false });
 
 const sprintSchema = new mongoose.Schema({

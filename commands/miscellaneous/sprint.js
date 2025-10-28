@@ -630,6 +630,11 @@ async function toggleFlow(client, message) {
 
     const now = new Date();
 
+    // Initialize fields if they don't exist (for backward compatibility)
+    if (participant.isPaused === undefined) participant.isPaused = false;
+    if (participant.totalPausedTime === undefined) participant.totalPausedTime = 0;
+    if (participant.lastPauseTime === undefined) participant.lastPauseTime = null;
+
     if (participant.isPaused) {
       // Resume - calculate paused time and add to total
       const pauseDuration = now.getTime() - participant.lastPauseTime.getTime();
