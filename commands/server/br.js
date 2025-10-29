@@ -827,7 +827,8 @@ async function handleShare(client, message, args) {
     return embeds.warn(message, 'Your booster role data is corrupted. Please contact an admin.');
   }
 
-  console.log(`Sharing booster role: roleId=${boosterRole.roleId}, ownerId=${boosterRole.ownerId || boosterRole.userId}`);
+  console.log(`Sharing booster role: roleId=${boosterRole.roleId}, ownerId=${boosterRole.ownerId || boosterRole.userId}, name="${boosterRole.name}"`);
+  console.log('Full booster role object:', JSON.stringify(boosterRole, null, 2));
 
   if (!args[0]) {
     return embeds.warn(message, 'Please mention a **user** to share your booster role with');
@@ -872,8 +873,28 @@ async function handleShare(client, message, args) {
 
   try {
     // Check if the Discord role still exists
-    const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
-    const roleDisplay = discordRole ? `<@&${boosterRole.roleId}>` : `**${boosterRole.name}** (role deleted)`;
+    let discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+
+    // If not in cache, try to fetch it
+    if (!discordRole) {
+      try {
+        discordRole = await message.guild.roles.fetch(boosterRole.roleId);
+      } catch (error) {
+        // Role doesn't exist
+        discordRole = null;
+      }
+    }
+
+    let roleDisplay;
+    if (discordRole) {
+      roleDisplay = `<@&${boosterRole.roleId}>`;
+    } else {
+      // Role was deleted, use stored name or fallback
+      const roleName = boosterRole.name || 'Unknown Role';
+      roleDisplay = `**${roleName}** (role deleted)`;
+    }
+
+    console.log(`Role display debug: roleId=${boosterRole.roleId}, discordRole=${!!discordRole}, boosterRole.name="${boosterRole.name}", roleDisplay="${roleDisplay}"`);
 
     // Generate pending share ID first
     const pendingShareId = Date.now();
