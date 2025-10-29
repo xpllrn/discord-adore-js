@@ -118,7 +118,14 @@ module.exports = {
         const totalVotes = gambling.totalVotes || 0;
         const voteUrl = `https://top.gg/bot/${BOT_ID}/vote`;
 
-        const embed = embeds.createInfo(message, `**Vote for Adore and Claim Your Daily Vote Rewards**\n\n**Reward:** 💸 ${formatCurrency(VOTE_REWARD)}\n**Your Votes:** ${totalVotes} (shows total votes you did till now)\n\nUse \`${await getGuildPrefix(message)}vote claim\` to claim your reward`);
+        const embed = new EmbedBuilder()
+          .setColor(colors.info)
+          .setDescription(`<@${message.author.id}>: **Vote for Adore and Claim Your Daily Vote Rewards**`)
+          .addFields(
+            { name: '💸 Reward', value: formatCurrency(VOTE_REWARD), inline: true },
+            { name: '🗳️ Your Votes', value: totalVotes.toString(), inline: true }
+          )
+          .setFooter({ text: `Use ${await getGuildPrefix(message)}vote claim to claim your reward` });
 
         const row = new ActionRowBuilder()
           .addComponents(

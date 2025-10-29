@@ -3,7 +3,6 @@ const { embeds } = require('../../core/embeds');
 const { ensureGuildData } = require('../../database');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 const config = require('../../config/setup');
-const { findChannel } = require('../../handlers/finder');
 const { getService } = require('@services');
 
 module.exports = {
@@ -23,123 +22,81 @@ module.exports = {
 
     if (args[0] === 'message') {
       const subcommandInfo = {
-        description: 'Add or update a custom level up message for a channel',
-        usage: '{guildprefix}level message [channel] [message]',
+        description: 'Set custom level up message',
+        usage: '{guildprefix}level message [message/remove/none]',
         aliases: [],
-        parameters: ['channel', 'message'],
-        example: '{guildprefix}level message #level-ups {user.mention} leveled up to {level.new_rank}!'
+        parameters: ['message'],
+        example: '{guildprefix}level message {user.mention} leveled up to {level.new_rank}!'
       };
 
-      try {
-        const channelInput = args[1];
-        const levelMessage = args.slice(2).join(' ');
+      if (!args[1]) {
+        const currentMessage = await guildService.getLevelCustomMessage(message.guild.id);
+        if (currentMessage) {
+          return embeds.info(message, `**Current custom level message:**\n\`\`\`\n${currentMessage}\`\`\`\n\nUse \`,level message [new message]\` to change it, or \`,level message remove\` to use the default message.`);
+        } else {
+          return embeds.info(message, "No custom level message is set. The default message will be used.\n\nUse \`,level message [custom message]\` to set one.");
+        }
+      }
 
-        if (!channelInput || !levelMessage) return false;
+      try {
+        const levelMessage = args.slice(1).join(' ');
+
+        // Handle remove/none command
+        if (levelMessage.toLowerCase() === 'remove' || levelMessage.toLowerCase() === 'none') {
+          await guildService.removeLevelCustomMessage(message.guild.id);
+          return embeds.success(message, "Custom level message has been removed. The default message will now be used.");
+        }
 
         // Check if the message contains the required {level.new_rank} variable
         if (!levelMessage.includes('{level.new_rank}')) {
           return embeds.deny(message, 'Level up messages **must** include the `{level.new_rank}` variable to show the user\'s new level.');
         }
 
-        // Use universal finder for channel detection
-        const channelResult = message.mentions.channels.first() ?
-          { found: true, channel: message.mentions.channels.first() } :
-          findChannel(message.guild, channelInput);
+        // Set the custom message
+        await guildService.setLevelCustomMessage(message.guild.id, levelMessage);
 
-        if (!channelResult.found) {
-          return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
-        }
-
-        const levelChannel = channelResult.channel;
-
-        // Check level message limit (5 max)
-        const currentLevelMessages = await guildService.getLevelMessages(message.guild.id) || [];
-        const existingLevelMessage = currentLevelMessages.find(lm => lm.channelId === levelChannel.id);
-
-        if (!existingLevelMessage && currentLevelMessages.length >= 5) {
-          return embeds.deny(message, 'You have reached the **maximum level messages (5)**. Please remove some first.');
-        }
-
-        // Add level message using new cache system
-        await guildService.addLevelMessage(message.guild.id, levelChannel.id, levelMessage);
-
-        const action = existingLevelMessage ? 'Updated the' : 'Created a';
-        return embeds.success(message, `${action} **level up message** for ${levelChannel}`);
+        return embeds.success(message, "Custom level message has been set successfully!");
       } catch (error) {
-        console.error('Level message add error:', error);
+        console.error('Level message error:', error);
         return embeds.deny(message, `Failed to set level message: ${error.message}`);
       }
 
-    } else if (args[0] === 'remove') {
-      const subcommandInfo = {
-        description: 'Remove a custom level up message from a channel',
-        usage: '{guildprefix}level remove [channel]',
-        aliases: [],
-        parameters: ['channel'],
-        example: '{guildprefix}level remove #level-ups'
-      };
-
-      const channelInput = args[1];
-      if (!channelInput) return false;
-
-      // Use universal finder for channel detection
-      const channelResult = message.mentions.channels.first() ?
-        { found: true, channel: message.mentions.channels.first() } :
-        findChannel(message.guild, channelInput);
-
-      if (!channelResult.found) {
-        return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
-      }
-
-      const levelChannel = channelResult.channel;
-
-      // Check if level message exists for this channel
-      const existingLevelMessage = await guildService.getLevelMessageForChannel(message.guild.id, levelChannel.id);
-      if (!existingLevelMessage) {
-        return embeds.warn(message, `No **level up message** exists for ${levelChannel}`);
-      }
-
-      // Remove level message using new cache system
-      await guildService.removeLevelMessage(message.guild.id, levelChannel.id);
-
-      return embeds.success(message, `Removed the **level up message** for ${levelChannel}`);
-
     } else if (args[0] === 'view') {
       const subcommandInfo = {
-        description: 'Preview the level up message for a channel',
-        usage: '{guildprefix}level view [channel]',
+        description: 'Preview the current level up message',
+        usage: '{guildprefix}level view',
         aliases: [],
-        parameters: ['channel'],
-        example: '{guildprefix}level view #level-ups'
+        parameters: [],
+        example: '{guildprefix}level view'
       };
 
-      const channelInput = args[1];
-      if (!channelInput) return false;
+      const customMessage = await guildService.getLevelCustomMessage(message.guild.id);
 
-      // Use universal finder for channel detection
-      const channelResult = message.mentions.channels.first() ?
-        { found: true, channel: message.mentions.channels.first() } :
-        findChannel(message.guild, channelInput);
+      if (customMessage) {
+        // Use EmbedVariableProcessor to handle the custom message with variables
+        EmbedVariableProcessor.process(message.channel, customMessage, {
+          user: message.author,
+          guild: message.guild,
+          channel: message.channel,
+          level: { new_rank: 25 } // Example level for preview
+        });
+      } else {
+        // Show default message preview
+        const { colors, emojis } = require('../../config/setup');
+        const embed = new EmbedBuilder()
+          .setColor(colors.embed)
+          .setAuthor({
+            name: message.author.username,
+            iconURL: message.author.displayAvatarURL({ dynamic: true })
+          })
+          .setDescription(`${message.author} **${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level 25**, yayyyyy`)
+          .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
 
-      if (!channelResult.found) {
-        return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
+        return message.channel.send({ 
+          content: "**Preview of default level message:**",
+          embeds: [embed] 
+        });
       }
-
-      const levelChannel = channelResult.channel;
-
-      // Check if level message exists for this channel
-      const existingLevelMessage = await guildService.getLevelMessageForChannel(message.guild.id, levelChannel.id);
-      if (!existingLevelMessage) {
-        return embeds.warn(message, `No **level up message** to preview for ${levelChannel}`);
-      }
-
-      // Use EmbedVariableProcessor to handle the level message with variables
-      EmbedVariableProcessor.process(message.channel, existingLevelMessage.message, {
-        user: message.author,
-        guild: message.guild,
-        channel: levelChannel,
-        level: { new_rank: 25 } // Example level for preview
-      });
 
     } else if (args[0] === 'variables') {
       const subcommandInfo = {
@@ -156,36 +113,6 @@ module.exports = {
         .setColor(config.colors.info)
         .setTitle('Level Up Message Variables')
         .setDescription(`\`{user.id}\` — ${member.id}\n\`{user.name}\` — ${member.username}\n\`{user.mention}\` — ${member}\n\`{user.tag}\` — ${member.tag}\n\`{server.name}\` — ${message.guild.name}\n\`{server.membercount}\` — ${message.guild.memberCount}\n\`{level.new_rank}\` — Member's new level at time of level up`);
-
-      return message.channel.send({ embeds: [embed] });
-
-    } else if (args[0] === 'list') {
-      const subcommandInfo = {
-        description: 'Lists all configured level up messages',
-        usage: '{guildprefix}level list',
-        aliases: [],
-        parameters: [],
-        example: '{guildprefix}level list'
-      };
-
-      const levelMessages = await guildService.getLevelMessages(message.guild.id) || [];
-
-      if (levelMessages.length === 0) {
-        return embeds.warn(message, 'No **level up messages** have been setup yet');
-      }
-
-      const messageList = levelMessages.map((lm, index) => {
-        const channel = message.guild.channels.cache.get(lm.channelId);
-        const channelName = channel ? `<#${channel.id}>` : `Unknown Channel (${lm.channelId})`;
-        const messageNumber = (index + 1).toString().padStart(2, '0');
-        return `\`${messageNumber}\` ${channelName}`;
-      }).join('\n');
-
-      const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setTitle('Level Up Messages')
-        .setDescription(messageList)
-        .setFooter({ text: `${levelMessages.length} level message${levelMessages.length === 1 ? '' : 's'}` });
 
       return message.channel.send({ embeds: [embed] });
 

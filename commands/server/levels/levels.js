@@ -139,16 +139,7 @@ module.exports = {
           };
           return await handleMessageMode(client, message, args);
         }
-        case 'message': {
-          const subcommandInfo = {
-            description: 'Add or update a custom level up message for a channel',
-            usage: '{guildprefix}levels message [channel] [message]',
-            aliases: [],
-            parameters: ['channel', 'message'],
-            example: '{guildprefix}levels message #level-ups {user.mention} leveled up to {level.new_rank}!'
-          };
-          return await handleLevelMessage(client, message, args);
-        }
+
         default:
           // Try to find user for level viewing
           return await handleViewLevel(client, message, args);
@@ -593,45 +584,4 @@ async function handleMessageMode(client, message, args) {
   return embeds.success(message, description);
 }
 
-// Level message subcommand
-async function handleLevelMessage(client, message, args) {
-  const guildService = getService('guild');
-  
-  if (!args[1] || !args[2]) {
-    return runHelpCommand(message, 'levels');
-  }
 
-  const channelInput = args[1];
-  const levelMessage = args.slice(2).join(' ');
-
-  // Check if the message contains the required {level.new_rank} variable
-  if (!levelMessage.includes('{level.new_rank}')) {
-    return embeds.deny(message, 'Level up messages **must** include the `{level.new_rank}` variable to show the user\'s new level.');
-  }
-
-  // Use universal finder for channel detection
-  const { findChannel } = require('../../../handlers/finder');
-  const channelResult = message.mentions.channels.first() ?
-    { found: true, channel: message.mentions.channels.first() } :
-    findChannel(message.guild, channelInput);
-
-  if (!channelResult.found) {
-    return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
-  }
-
-  const levelChannel = channelResult.channel;
-
-  // Check level message limit (5 max)
-  const currentLevelMessages = await guildService.getLevelMessages(message.guild.id) || [];
-  const existingLevelMessage = currentLevelMessages.find(lm => lm.channelId === levelChannel.id);
-
-  if (!existingLevelMessage && currentLevelMessages.length >= 5) {
-    return embeds.deny(message, 'You have reached the **maximum level messages (5)**. Please remove some first.');
-  }
-
-  // Add level message
-  await guildService.addLevelMessage(message.guild.id, levelChannel.id, levelMessage);
-
-  const action = existingLevelMessage ? 'Updated the' : 'Created a';
-  return embeds.success(message, `${action} **level up message** for ${levelChannel}`);
-}

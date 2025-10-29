@@ -14,7 +14,7 @@ class GuildService extends BaseService {
       ttl: 60 * 60 * 1000, // 1 hour TTL for guild data
       maxSize: 5000 // Max 5000 guilds in cache
     });
-    
+
     this.initialized = true;
   }
 
@@ -180,7 +180,6 @@ class GuildService extends BaseService {
           WelcomeMessages: [],
           LeaveMessages: [],
           BoostMessages: [],
-          LevelMessages: [],
           Giveaways: [],
           BoosterRoleSystem: {
             baseRoleId: null,
@@ -251,7 +250,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       guildData.Prefix = prefix;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -306,7 +305,7 @@ class GuildService extends BaseService {
    */
   formatPrefix(prefix) {
     if (!prefix) return ',';
-    
+
     // Escape markdown characters for display
     return prefix.replace(/[\\`*_{}[\]()#+\-.!]/g, '\\$&');
   }
@@ -337,7 +336,7 @@ class GuildService extends BaseService {
       return prefixMap;
     } catch (error) {
       console.error('Error batch getting prefixes:', error.message);
-      
+
       // Return default prefixes for all guilds on error
       const defaultMap = new Map();
       for (const guildId of guildIds) {
@@ -393,10 +392,10 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       // Apply updates
       Object.assign(guildData, updates);
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -424,7 +423,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       // Handle nested paths (e.g., "Welcome.channelId")
       const fieldParts = field.split('.');
       if (fieldParts.length > 1) {
@@ -437,7 +436,7 @@ class GuildService extends BaseService {
         }
         return current;
       }
-      
+
       return guildData[field];
     } catch (error) {
       console.error(`Error getting field ${field} for guild ${guildId}:`, error.message);
@@ -463,7 +462,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       // Handle nested paths (e.g., "Welcome.channelId")
       const fieldParts = field.split('.');
       if (fieldParts.length > 1) {
@@ -478,7 +477,7 @@ class GuildService extends BaseService {
       } else {
         guildData[field] = value;
       }
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -538,7 +537,7 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       guildData.WelcomeChannel = channelId;
       guildData.WelcomeMessage = message.trim();
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -563,7 +562,7 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       guildData.WelcomeChannel = null;
       guildData.WelcomeMessage = null;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -756,137 +755,95 @@ class GuildService extends BaseService {
   // ===== LEVEL MESSAGE SYSTEM =====
 
   /**
-   * Get all level messages for a guild
+   * Set custom level message
    * @param {string} guildId - Guild ID
-   * @returns {Promise<Object[]>} Array of level messages
-   */
-  async getLevelMessages(guildId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      return guildData.LevelMessages || [];
-    } catch (error) {
-      console.error(`Error getting level messages for guild ${guildId}:`, error.message);
-      return [];
-    }
-  }
-
-  /**
-   * Get level message for a specific channel
-   * @param {string} guildId - Guild ID
-   * @param {string} channelId - Channel ID
-   * @returns {Promise<Object|null>} Level message or null
-   */
-  async getLevelMessageForChannel(guildId, channelId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    if (!channelId) {
-      throw new ValidationError('Channel ID is required', 'channelId', channelId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      const levelMessages = guildData.LevelMessages || [];
-      return levelMessages.find(lm => lm.channelId === channelId) || null;
-    } catch (error) {
-      console.error(`Error getting level message for channel in guild ${guildId}:`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Add or update a level message for a channel
-   * @param {string} guildId - Guild ID
-   * @param {string} channelId - Channel ID
-   * @param {string} message - Level message
+   * @param {string} message - Custom level message
    * @returns {Promise<boolean>} Success status
    */
-  async addLevelMessage(guildId, channelId, message) {
+  async setLevelCustomMessage(guildId, message) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    if (!channelId) {
-      throw new ValidationError('Channel ID is required', 'channelId', channelId);
     }
 
     if (!message || message.trim().length === 0) {
-      throw new ValidationError('Level message is required', 'message', message);
+      throw new ValidationError('Custom message is required', 'message', message);
     }
 
     if (message.trim().length > 2000) {
-      throw new ValidationError('Level message cannot exceed 2000 characters', 'message', message);
+      throw new ValidationError('Custom message cannot exceed 2000 characters', 'message', message);
     }
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      const levelMessages = guildData.LevelMessages || [];
 
-      // Check if message for this channel already exists
-      const existingIndex = levelMessages.findIndex(lm => lm.channelId === channelId);
-
-      if (existingIndex !== -1) {
-        // Update existing message
-        levelMessages[existingIndex].message = message.trim();
-        levelMessages[existingIndex].createdAt = new Date();
-      } else {
-        // Add new message
-        levelMessages.push({
-          channelId,
-          message: message.trim(),
-          createdAt: new Date()
-        });
+      if (!guildData.LevelSystem) {
+        guildData.LevelSystem = {
+          enabled: false,
+          messageMode: 'context',
+          levelUpChannel: null,
+          customMessage: null,
+          levelRoles: [],
+          lastSyncTime: null
+        };
       }
 
-      guildData.LevelMessages = levelMessages;
+      guildData.LevelSystem.customMessage = message.trim();
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error;
       }
-      throw new DatabaseWriteError(`Failed to add level message for guild ${guildId}`, error);
+      throw new DatabaseWriteError(`Failed to set custom level message for guild ${guildId}`, error);
     }
   }
 
   /**
-   * Remove a level message from a channel
+   * Get custom level message
    * @param {string} guildId - Guild ID
-   * @param {string} channelId - Channel ID
-   * @returns {Promise<boolean>} Success status
+   * @returns {Promise<string|null>} Custom message or null
    */
-  async removeLevelMessage(guildId, channelId) {
+  async getLevelCustomMessage(guildId) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
 
-    if (!channelId) {
-      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.LevelSystem?.customMessage || null;
+    } catch (error) {
+      console.error(`Error getting custom level message for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Remove custom level message
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeLevelCustomMessage(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      const levelMessages = guildData.LevelMessages || [];
-      const initialLength = levelMessages.length;
 
-      guildData.LevelMessages = levelMessages.filter(lm => lm.channelId !== channelId);
-
-      if (guildData.LevelMessages.length < initialLength) {
-        await this.set(guildId, guildData);
-        return true;
+      if (!guildData.LevelSystem) {
+        return false; // No level system exists
       }
 
-      return false;
+      guildData.LevelSystem.customMessage = null;
+
+      await this.set(guildId, guildData);
+      return true;
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error;
       }
-      throw new DatabaseWriteError(`Failed to remove level message for guild ${guildId}`, error);
+      throw new DatabaseWriteError(`Failed to remove custom level message for guild ${guildId}`, error);
     }
   }
 
@@ -939,7 +896,7 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       guildData.LeaveChannel = channelId;
       guildData.LeaveMessage = message.trim();
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -964,7 +921,7 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       guildData.LeaveChannel = null;
       guildData.LeaveMessage = null;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -1206,7 +1163,7 @@ class GuildService extends BaseService {
       guildData.BoostChannel = channelId;
       guildData.BoostMessage = message.trim();
       guildData.BoostRole = roleId;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -1232,7 +1189,7 @@ class GuildService extends BaseService {
       guildData.BoostChannel = null;
       guildData.BoostMessage = null;
       guildData.BoostRole = null;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -1482,7 +1439,7 @@ class GuildService extends BaseService {
       guildData.VanityLogChannel = logChannelId;
       guildData.VanityMessage = message;
       guildData.VanityDisabled = false;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -1509,7 +1466,7 @@ class GuildService extends BaseService {
       guildData.VanityDisabled = true;
       guildData.VanityDisabledReason = reason;
       guildData.VanityDisabledAt = new Date();
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -1566,7 +1523,7 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       guildData.JailRoleID = roleId;
       guildData.JailChannelID = channelId;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -1627,13 +1584,13 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const autoRoles = guildData.AutoRoles || [];
-      
+
       if (!autoRoles.includes(roleId)) {
         autoRoles.push(roleId);
         guildData.AutoRoles = autoRoles;
         await this.set(guildId, guildData);
       }
-      
+
       return true;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -1661,10 +1618,10 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const autoRoles = guildData.AutoRoles || [];
-      
+
       guildData.AutoRoles = autoRoles.filter(id => id !== roleId);
       await this.set(guildId, guildData);
-      
+
       return true;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -1741,7 +1698,7 @@ class GuildService extends BaseService {
         currentNumber: 0,
         lastUserId: null
       };
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -1777,10 +1734,10 @@ class GuildService extends BaseService {
       if (!guildData.Counting) {
         guildData.Counting = { channelId: null, currentNumber: 0, lastUserId: null };
       }
-      
+
       guildData.Counting.currentNumber = number;
       guildData.Counting.lastUserId = userId;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -1868,8 +1825,8 @@ class GuildService extends BaseService {
       const moderation = guildData.Moderation || [];
 
       // Get next case ID
-      const nextCaseId = moderation.length > 0 
-        ? Math.max(...moderation.map(c => c.caseId)) + 1 
+      const nextCaseId = moderation.length > 0
+        ? Math.max(...moderation.map(c => c.caseId)) + 1
         : 1;
 
       const moderationCase = {
@@ -1884,7 +1841,7 @@ class GuildService extends BaseService {
 
       moderation.push(moderationCase);
       guildData.Moderation = moderation;
-      
+
       await this.set(guildId, guildData);
       return moderationCase;
     } catch (error) {
@@ -1913,7 +1870,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const moderation = guildData.Moderation || [];
-      
+
       return moderation.find(mod => mod.caseId === caseId) || null;
     } catch (error) {
       console.error(`Error getting moderation case ${caseId} for guild ${guildId}:`, error.message);
@@ -1940,14 +1897,14 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const moderation = guildData.Moderation || [];
       const initialLength = moderation.length;
-      
+
       guildData.Moderation = moderation.filter(mod => mod.caseId !== caseId);
-      
+
       if (guildData.Moderation.length < initialLength) {
         await this.set(guildId, guildData);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -1999,9 +1956,9 @@ class GuildService extends BaseService {
       if (!guildData.LevelSystem) {
         guildData.LevelSystem = {};
       }
-      
+
       guildData.LevelSystem.enabled = enabled;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -2048,7 +2005,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const userLevels = guildData.UserLevels || [];
-      
+
       return userLevels.find(ul => ul.userId === userId) || {
         userId,
         level: 1,
@@ -2089,10 +2046,10 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       let userLevels = guildData.UserLevels || [];
-      
+
       let userIndex = userLevels.findIndex(ul => ul.userId === userId);
       let userData;
-      
+
       if (userIndex !== -1) {
         userData = userLevels[userIndex];
       } else {
@@ -2154,7 +2111,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const userLevels = guildData.UserLevels || [];
-      
+
       return userLevels
         .sort((a, b) => {
           // Sort by level first (descending), then by experience (descending)
@@ -2188,19 +2145,19 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const userLevels = guildData.UserLevels || [];
-      
+
       // If no users have levels yet, user is rank 1
       if (userLevels.length === 0) {
         return 1;
       }
-      
+
       const sorted = userLevels.sort((a, b) => {
         if (a.level !== b.level) return b.level - a.level;
         return b.experience - a.experience;
       });
 
       const rank = sorted.findIndex(ul => ul.userId === userId) + 1;
-      
+
       // If user not found in levels, they're last place (after all ranked users)
       return rank > 0 ? rank : sorted.length + 1;
     } catch (error) {
@@ -2237,9 +2194,9 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       let userLevels = guildData.UserLevels || [];
-      
+
       const userIndex = userLevels.findIndex(ul => ul.userId === userId);
-      
+
       if (userIndex !== -1) {
         userLevels[userIndex].level = level;
         userLevels[userIndex].experience = experience;
@@ -2922,8 +2879,8 @@ class GuildService extends BaseService {
       const lastSwearDate = new Date(userEntry.lastSwearDate);
       lastSwearDate.setHours(0, 0, 0, 0);
 
-      const todaySwears = lastSwearDate.getTime() === today.getTime() 
-        ? (userEntry.todaySwears || 0) 
+      const todaySwears = lastSwearDate.getTime() === today.getTime()
+        ? (userEntry.todaySwears || 0)
         : 0;
 
       return {
@@ -2975,8 +2932,8 @@ class GuildService extends BaseService {
           // Check if todaySwears needs to be reset
           const lastSwearDate = new Date(userEntry.lastSwearDate);
           lastSwearDate.setHours(0, 0, 0, 0);
-          const todaySwears = lastSwearDate.getTime() === today.getTime() 
-            ? (userEntry.todaySwears || 0) 
+          const todaySwears = lastSwearDate.getTime() === today.getTime()
+            ? (userEntry.todaySwears || 0)
             : 0;
 
           return {
@@ -4306,7 +4263,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem) {
         guildData.TicketSystem = {
           enabled: false,
@@ -4358,7 +4315,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem) {
         guildData.TicketSystem = {
           enabled: false,
@@ -4420,7 +4377,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem || !guildData.TicketSystem.activeTickets) {
         return false;
       }
@@ -4550,7 +4507,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.VoiceManager) {
         guildData.VoiceManager = {
           enabled: false,
@@ -4599,7 +4556,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.VoiceManager) {
         guildData.VoiceManager = {
           enabled: false,
@@ -4656,7 +4613,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.VoiceManager || !guildData.VoiceManager.tempChannels) {
         return false;
       }
@@ -4749,7 +4706,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.VoiceManager || !guildData.VoiceManager.tempChannels) {
         return false;
       }
@@ -4876,7 +4833,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.VoiceManager || !guildData.VoiceManager.tempChannels) {
         return false;
       }
@@ -5192,9 +5149,9 @@ class GuildService extends BaseService {
       // Filter configs that:
       // 1. Are enabled
       // 2. Include the requested log type
-      return loggingConfig.filter(config => 
-        config.enabled && 
-        config.logTypes && 
+      return loggingConfig.filter(config =>
+        config.enabled &&
+        config.logTypes &&
         config.logTypes.includes(logType)
       );
     } catch (error) {
@@ -5226,10 +5183,10 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const loggingConfig = guildData.LoggingConfig || [];
-      
+
       // Find existing config by channel ID
       const configIndex = loggingConfig.findIndex(config => config.channelId === channelId);
-      
+
       if (configIndex !== -1) {
         // Apply updates while preserving existing data
         loggingConfig[configIndex] = {
@@ -5238,12 +5195,12 @@ class GuildService extends BaseService {
           channelId, // Preserve channel ID
           updatedAt: new Date()
         };
-        
+
         guildData.LoggingConfig = loggingConfig;
         await this.set(guildId, guildData);
         return true;
       }
-      
+
       return false; // Config not found
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -5298,7 +5255,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.BoosterRoleSystem) {
         guildData.BoosterRoleSystem = {
           baseRoleId: null,
@@ -5485,7 +5442,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const boosterRoles = guildData.BoosterRoles || [];
-      
+
       // Handle both userId and ownerId for backward compatibility
       const roleIndex = boosterRoles.findIndex(br => br.userId === userId || br.ownerId === userId);
 
@@ -5839,10 +5796,10 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       let loggingConfig = guildData.LoggingConfig || [];
-      
+
       // Check if config already exists for this event type
       const existingIndex = loggingConfig.findIndex(config => config.eventType === eventType);
-      
+
       if (existingIndex !== -1) {
         // Update existing config
         loggingConfig[existingIndex] = {
@@ -5864,7 +5821,7 @@ class GuildService extends BaseService {
           updatedAt: new Date()
         });
       }
-      
+
       guildData.LoggingConfig = loggingConfig;
       await this.set(guildId, guildData);
       return true;
@@ -5899,10 +5856,10 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       let loggingConfig = guildData.LoggingConfig || [];
-      
+
       // Find existing config by event type
       const configIndex = loggingConfig.findIndex(config => config.eventType === eventType);
-      
+
       if (configIndex !== -1) {
         // Apply updates
         loggingConfig[configIndex] = {
@@ -5911,12 +5868,12 @@ class GuildService extends BaseService {
           eventType, // Preserve event type
           updatedAt: new Date()
         };
-        
+
         guildData.LoggingConfig = loggingConfig;
         await this.set(guildId, guildData);
         return true;
       }
-      
+
       return false; // Config not found
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -5945,14 +5902,14 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const loggingConfig = guildData.LoggingConfig || [];
       const initialLength = loggingConfig.length;
-      
+
       guildData.LoggingConfig = loggingConfig.filter(config => config.eventType !== eventType);
-      
+
       if (guildData.LoggingConfig.length < initialLength) {
         await this.set(guildId, guildData);
         return true;
       }
-      
+
       return false; // Config not found
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -5978,7 +5935,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem) {
         guildData.TicketSystem = {
           enabled: false,
@@ -5990,7 +5947,7 @@ class GuildService extends BaseService {
           ticketCounter: 0
         };
       }
-      
+
       guildData.TicketSystem.enabled = true;
       if (categoryId !== undefined) {
         guildData.TicketSystem.categoryId = categoryId;
@@ -5998,12 +5955,12 @@ class GuildService extends BaseService {
       if (supportRoleId !== undefined) {
         guildData.TicketSystem.supportRoleId = supportRoleId;
       }
-      
+
       // Initialize activeTickets if needed
       if (!guildData.TicketSystem.activeTickets) {
         guildData.TicketSystem.activeTickets = [];
       }
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6031,7 +5988,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem) {
         guildData.TicketSystem = {
           enabled: false,
@@ -6043,9 +6000,9 @@ class GuildService extends BaseService {
           ticketCounter: 0
         };
       }
-      
+
       guildData.TicketSystem.categoryId = categoryId;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6070,7 +6027,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem) {
         guildData.TicketSystem = {
           enabled: false,
@@ -6082,10 +6039,10 @@ class GuildService extends BaseService {
           ticketCounter: 0
         };
       }
-      
+
       guildData.TicketSystem.setupChannelId = channelId;
       guildData.TicketSystem.setupMessageId = messageId;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6113,7 +6070,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem) {
         guildData.TicketSystem = {
           enabled: false,
@@ -6125,9 +6082,9 @@ class GuildService extends BaseService {
           ticketCounter: 0
         };
       }
-      
+
       guildData.TicketSystem.supportRoleId = roleId;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6159,7 +6116,7 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem) {
         guildData.TicketSystem = {
           enabled: false,
@@ -6172,9 +6129,9 @@ class GuildService extends BaseService {
           ticketCounter: 0
         };
       }
-      
+
       guildData.TicketSystem.customMessage = message.trim();
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6216,13 +6173,13 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.TicketSystem) {
         return false; // No ticket system exists
       }
-      
+
       guildData.TicketSystem.customMessage = null;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6252,7 +6209,7 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const ticketSystem = guildData.TicketSystem || {};
       const activeTickets = ticketSystem.activeTickets || [];
-      
+
       return activeTickets.find(ticket => ticket.channelId === channelId) || null;
     } catch (error) {
       console.error(`Error getting ticket for channel ${channelId} in guild ${guildId}:`, error.message);
@@ -6279,7 +6236,7 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const ticketSystem = guildData.TicketSystem || {};
       const activeTickets = ticketSystem.activeTickets || [];
-      
+
       // Return all tickets for this user that are not closed
       return activeTickets.filter(ticket => ticket.userId === userId && ticket.status !== 'closed');
     } catch (error) {
@@ -6307,10 +6264,10 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const ticketSystem = guildData.TicketSystem || {};
       let activeTickets = ticketSystem.activeTickets || [];
-      
+
       // Remove ticket by channel ID
       activeTickets = activeTickets.filter(ticket => ticket.channelId !== channelId);
-      
+
       guildData.TicketSystem.activeTickets = activeTickets;
       await this.set(guildId, guildData);
       return true;
@@ -6346,21 +6303,21 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const ticketSystem = guildData.TicketSystem || {};
       let activeTickets = ticketSystem.activeTickets || [];
-      
+
       // Find ticket by channel ID
       const ticketIndex = activeTickets.findIndex(ticket => ticket.channelId === channelId);
-      
+
       if (ticketIndex !== -1) {
         // Reopen the ticket
         activeTickets[ticketIndex].closed = false;
         activeTickets[ticketIndex].reopenedAt = new Date();
         activeTickets[ticketIndex].reopenedBy = reopenedBy;
-        
+
         guildData.TicketSystem.activeTickets = activeTickets;
         await this.set(guildId, guildData);
         return true;
       }
-      
+
       return false; // Ticket not found
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -6409,17 +6366,17 @@ class GuildService extends BaseService {
 
     try {
       const guildData = await this.ensureGuildData(guildId);
-      
+
       if (!guildData.BoosterRoleSystem) {
         guildData.BoosterRoleSystem = {
           baseRoleId: null,
           enabled: false
         };
       }
-      
+
       guildData.BoosterRoleSystem.baseRoleId = roleId;
       guildData.BoosterRoleSystem.enabled = true; // Enable system when base role is set
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6478,12 +6435,12 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       let boosterRoles = guildData.BoosterRoles || [];
-      
+
       // Generate unique ID
-      const id = boosterRoles.length > 0 
-        ? Math.max(...boosterRoles.filter(br => br.id).map(br => br.id)) + 1 
+      const id = boosterRoles.length > 0
+        ? Math.max(...boosterRoles.filter(br => br.id).map(br => br.id)) + 1
         : 1;
-      
+
       // Create pending share with 24-hour expiration
       const pendingShare = {
         id,
@@ -6494,10 +6451,10 @@ class GuildService extends BaseService {
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
       };
-      
+
       boosterRoles.push(pendingShare);
       guildData.BoosterRoles = boosterRoles;
-      
+
       await this.set(guildId, guildData);
       return pendingShare;
     } catch (error) {
@@ -6527,14 +6484,14 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const boosterRoles = guildData.BoosterRoles || [];
       const initialLength = boosterRoles.length;
-      
+
       guildData.BoosterRoles = boosterRoles.filter(br => !(br.pending && br.id === shareId));
-      
+
       if (guildData.BoosterRoles.length < initialLength) {
         await this.set(guildId, guildData);
         return true;
       }
-      
+
       return false; // Pending share not found
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -6562,20 +6519,20 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       let boosterRoles = guildData.BoosterRoles || [];
-      
+
       // Find booster role by userId
       const roleIndex = boosterRoles.findIndex(br => br.userId === userId && !br.deleted);
-      
+
       if (roleIndex !== -1) {
         // Mark as deleted with timestamp (keep for audit trail)
         boosterRoles[roleIndex].deleted = true;
         boosterRoles[roleIndex].deletedAt = new Date();
-        
+
         guildData.BoosterRoles = boosterRoles;
         await this.set(guildId, guildData);
         return true;
       }
-      
+
       return false; // Booster role not found
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -6598,7 +6555,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const boosterRoles = guildData.BoosterRoles || [];
-      
+
       // Filter for deleted roles or roles without userId
       return boosterRoles.filter(br => br.deleted === true || !br.userId);
     } catch (error) {
@@ -6625,7 +6582,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const boosterRoles = guildData.BoosterRoles || [];
-      
+
       // Find active (not deleted) booster role for user
       return boosterRoles.find(br => br.userId === userId && !br.deleted) || null;
     } catch (error) {
@@ -6654,7 +6611,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const afkArray = guildData.AFK || [];
-      
+
       return afkArray.find(afk => afk.userId === userId) || null;
     } catch (error) {
       console.error(`Error getting AFK status for user ${userId} in guild ${guildId}:`, error.message);
@@ -6689,10 +6646,10 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       let afkArray = guildData.AFK || [];
-      
+
       // Check if user already has AFK status
       const existingIndex = afkArray.findIndex(afk => afk.userId === userId);
-      
+
       if (existingIndex !== -1) {
         // Update existing AFK status
         afkArray[existingIndex] = {
@@ -6708,7 +6665,7 @@ class GuildService extends BaseService {
           since: new Date()
         });
       }
-      
+
       guildData.AFK = afkArray;
       await this.set(guildId, guildData);
       return true;
@@ -6739,14 +6696,14 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const afkArray = guildData.AFK || [];
       const initialLength = afkArray.length;
-      
+
       guildData.AFK = afkArray.filter(afk => afk.userId !== userId);
-      
+
       if (guildData.AFK.length < initialLength) {
         await this.set(guildId, guildData);
         return true;
       }
-      
+
       return false; // User was not AFK
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -6776,7 +6733,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       guildData.BoostRole = roleId;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6800,7 +6757,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       guildData.BoostRole = null;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6825,7 +6782,7 @@ class GuildService extends BaseService {
       guildData.VanityDisabled = false;
       guildData.VanityDisabledReason = null;
       guildData.VanityDisabledAt = null;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6855,7 +6812,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       guildData.VanityMessage = message.trim();
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6879,7 +6836,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       guildData.VanityMessage = null;
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -6942,27 +6899,27 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const history = guildData.GuildNameHistory || [];
-      
+
       const historyEntry = {
         oldName: oldName.trim(),
         newName: newName.trim(),
         changedBy: changedBy || null,
         changedAt: new Date()
       };
-      
+
       // Check if this exact change already exists as the most recent entry
       if (history.length > 0) {
         const mostRecent = history[history.length - 1];
-        if (mostRecent.oldName === historyEntry.oldName && 
-            mostRecent.newName === historyEntry.newName) {
+        if (mostRecent.oldName === historyEntry.oldName &&
+          mostRecent.newName === historyEntry.newName) {
           // Don't add duplicate consecutive changes
           return mostRecent;
         }
       }
-      
+
       history.push(historyEntry);
       guildData.GuildNameHistory = history;
-      
+
       await this.set(guildId, guildData);
       return historyEntry;
     } catch (error) {
@@ -6986,7 +6943,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const history = guildData.GuildNameHistory || [];
-      
+
       // Sort by changedAt descending (newest first)
       return history.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
     } catch (error) {
@@ -7008,7 +6965,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       guildData.GuildNameHistory = [];
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -7046,10 +7003,10 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       let forceNicks = guildData.ForceNick || [];
-      
+
       // Check if user already has forced nick
       const existingIndex = forceNicks.findIndex(fn => fn.userId === userId);
-      
+
       if (existingIndex !== -1) {
         // Update existing forced nick
         forceNicks[existingIndex] = {
@@ -7069,7 +7026,7 @@ class GuildService extends BaseService {
           setBy: null
         });
       }
-      
+
       guildData.ForceNick = forceNicks;
       await this.set(guildId, guildData);
       return true;
@@ -7094,7 +7051,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       guildData.ForceNick = [];
-      
+
       await this.set(guildId, guildData);
       return true;
     } catch (error) {
@@ -7122,7 +7079,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const autoResponders = guildData.AutoResponder || [];
-      
+
       // Perform case-insensitive search
       const triggerLower = trigger.toLowerCase();
       return autoResponders.find(ar => ar.trigger && ar.trigger.toLowerCase() === triggerLower) || null;

@@ -544,12 +544,12 @@ async function handleLevelUp(message, newLevel, userData) {
       }
     }
 
-    // Check for custom level message for the target channel
-    const customLevelMessage = await guildService.getLevelMessageForChannel(message.guild.id, targetChannel.id);
+    // Check for custom level message
+    const customLevelMessage = await guildService.getLevelCustomMessage(message.guild.id);
 
     if (customLevelMessage) {
       // Use custom level message with variable processing
-      EmbedVariableProcessor.process(targetChannel, customLevelMessage.message, {
+      EmbedVariableProcessor.process(targetChannel, customLevelMessage, {
         user: message.author,
         guild: message.guild,
         channel: targetChannel,
