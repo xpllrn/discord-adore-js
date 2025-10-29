@@ -765,12 +765,11 @@ async function handleBoosterRoleShare(interaction) {
 
     // Get the booster role data using service layer
     const guildService = getService('guild');
-    const boosterRole = await guildService.getBoosterRole(interaction.guild.id, boosterRoleId);
+    const allBoosterRoles = await guildService.getBoosterRoles(interaction.guild.id);
+    const boosterRole = allBoosterRoles.find(br => br.id === boosterRoleId);
+    
     if (!boosterRole) {
       console.error(`Booster role not found: guildId=${interaction.guild.id}, boosterRoleId=${boosterRoleId}`);
-
-      // Try to get all booster roles for debugging
-      const allBoosterRoles = await guildService.getBoosterRoles(interaction.guild.id);
       console.error(`Available booster roles:`, allBoosterRoles.map(br => ({ id: br.id, roleId: br.roleId, ownerId: br.ownerId })));
 
       const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Booster role not found. The role may have been deleted or there was a database error.');

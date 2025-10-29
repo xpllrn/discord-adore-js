@@ -1,5 +1,6 @@
 const { ensureGuildData } = require('../../../database');
 const { embeds } = require('../../../core/embeds');
+const { createConfirmation } = require('../../../core/buttons');
 const { hasDiscordPermission, checkUserRoleHierarchy, checkBotRoleHierarchy, checkUserMemberHierarchy, checkSelfAction, checkBotAction, checkDiscordActionable } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findRole, findUser } = require('../../../handlers/finder');
@@ -82,13 +83,31 @@ module.exports = {
       if (!checkUserRoleHierarchy(message, role)) return;
       if (!checkBotRoleHierarchy(message, role)) return;
 
-      try {
-        const roleName = role.name;
-        await role.delete(`Role deleted by ${message.author.tag}`);
-        return embeds.success(message, `Deleted role **${roleName}**`);
-      } catch (error) {
-        return embeds.deny(message, 'Failed to **delete role**. Please check my permissions.');
-      }
+      // Add confirmation before deleting the role
+      await createConfirmation(
+        message,
+        `Are you **sure** you want to delete <@&${role.id}> role?`,
+        async (interaction) => {
+          try {
+            const roleName = role.name;
+            await role.delete(`Role deleted by ${message.author.tag}`);
+            
+            // Edit the confirmation message to show success
+            await interaction.update({
+              embeds: [embeds.success(message, `Deleted role **${roleName}**`).embeds[0]],
+              components: []
+            });
+          } catch (error) {
+            // Edit the confirmation message to show error
+            await interaction.update({
+              embeds: [embeds.deny(message, 'Failed to **delete role**. Please check my permissions.').embeds[0]],
+              components: []
+            });
+          }
+        }
+      );
+      
+      return; // Exit early since confirmation handles the response
     }
 
     // RENAME ROLE SUBCOMMAND

@@ -20,14 +20,15 @@ module.exports = {
     // Get service instances
     const guildService = getService('guild');
 
-    if (!args[0]) {
-      return runHelpCommand(message, 'br');
-    }
-
     // Ensure guild data exists in the database
     await ensureGuildData(message.guild.id);
 
-    const subcommand = args[0].toLowerCase();
+    const subcommand = args[0]?.toLowerCase();
+
+    // If no subcommand provided, show help
+    if (!subcommand) {
+      return runHelpCommand(message, 'br');
+    }
 
     // Base role management requires Manage Guild permission
     if (subcommand === 'baserole') {
@@ -57,7 +58,7 @@ module.exports = {
       return await handleCleanup(client, message, args.slice(1));
     }
 
-    // Check if booster role system is enabled
+    // Check if booster role system is enabled for user commands
     const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
     if (!isEnabled) {
       return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
@@ -280,16 +281,16 @@ async function handleCreate(client, message, args) {
 
     // Validate that the role was created successfully
     if (!newRole || !newRole.id) {
-      console.error('Role creation failed - newRole:', newRole);
+
       return embeds.deny(message, 'Failed to create Discord role. Please check my permissions.');
     }
 
-    console.log(`Created role: ${newRole.name} (${newRole.id}) for user ${message.author.id}`);
+
 
     try {
       // Cache writes are guaranteed to be enabled after full preloading
       // No need to check or force enable - system won't start without complete cache
-      console.log(`Saving to database: guildId=${message.guild.id}, userId=${message.author.id}, roleId=${newRole.id}, name=${roleName}`);
+
       await guildService.addBoosterRole(
         message.guild.id,
         message.author.id,
@@ -333,6 +334,12 @@ async function handleRename(client, message, args) {
     return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
   }
 
+  // Debug logging
+  if (!message.author || !message.author.id) {
+    console.error('Message author is null or missing ID in handleRename:', { author: message.author, guild: message.guild?.id });
+    return embeds.deny(message, 'Unable to identify user. Please try again.');
+  }
+
   // Get user's booster role
   const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
   if (!boosterRole) {
@@ -361,7 +368,7 @@ async function handleRename(client, message, args) {
     await discordRole.edit({ name: newName });
 
     // Update in database
-    await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+    await guildService.updateBoosterRole(message.guild.id, message.author.id, {
       name: newName,
       lastUsed: new Date()
     });
@@ -463,7 +470,7 @@ async function handleIcon(client, message, args) {
     await discordRole.edit({ icon: iconUrl });
 
     // Update in database - store the original input for display purposes
-    await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+    await guildService.updateBoosterRole(message.guild.id, message.author.id, {
       icon: args[0], // Store original input format
       lastUsed: new Date()
     });
@@ -531,7 +538,7 @@ async function handleColor(client, message, args) {
 
       await discordRole.edit({ color: 0x000000 });
 
-      await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+      await guildService.updateBoosterRole(message.guild.id, message.author.id, {
         color: null,
         lastUsed: new Date()
       });
@@ -576,7 +583,7 @@ async function handleColor(client, message, args) {
     const colorInt = parseInt(primaryColor.replace('#', ''), 16);
     await discordRole.edit({ color: colorInt });
 
-    await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+    await guildService.updateBoosterRole(message.guild.id, message.author.id, {
       color: primaryColor,
       lastUsed: new Date()
     });
@@ -662,7 +669,7 @@ async function handleGradient(client, message, args) {
       );
 
       // Update in database - store both colors
-      await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+      await guildService.updateBoosterRole(message.guild.id, message.author.id, {
         color: `${color1},${color2}`,
         lastUsed: new Date()
       });
@@ -729,7 +736,7 @@ async function handleHolographic(client, message, args) {
     );
 
     // Update in database
-    await guildService.updateBoosterRole(message.guild.id, boosterRole.id, {
+    await guildService.updateBoosterRole(message.guild.id, message.author.id, {
       color: 'holographic',
       lastUsed: new Date()
     });
@@ -840,19 +847,18 @@ async function handleShare(client, message, args) {
     });
 
     // Add to pending shares
-    await guildService.addBoosterRolePendingShare(
+    const pendingShare = await guildService.addBoosterRolePendingShare(
       message.guild.id,
-      boosterRole.id,
+      message.author.id,
       targetUser.id,
-      shareMessage.id,
-      message.channel.id
+      boosterRole.roleId
     );
 
     // Set up timeout to clean up pending share after 60 seconds
     setTimeout(async () => {
       try {
         // Remove pending share from database
-        await guildService.removeBoosterRolePendingShare(message.guild.id, boosterRole.id, targetUser.id);
+        await guildService.removeBoosterRolePendingShare(message.guild.id, pendingShare.id);
 
         // Disable buttons on timeout
         const disabledButtons = createButtons(true);
