@@ -4,8 +4,8 @@ const { findChannel } = require('../../../handlers/finder');
 
 module.exports = {
   name: "naughty",
-  aliases: ['nsfw', 'togglensfw'],
-  description: 'toggles NSFW (18+) status on a channel',
+  aliases: ['nsfw'],
+  description: 'toggles `NSFW` status on a channel',
   syntax: 'naughty (channel)',
   example: 'naughty #channel',
   permission: 'Manage Channels',

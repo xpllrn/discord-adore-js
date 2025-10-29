@@ -134,17 +134,17 @@ function createTraditionalEmbed(command, guildPrefix) {
   // Usage field with syntax and example
   if (command.syntax || command.example) {
     const usageValue = [];
-    
+
     if (command.syntax) {
       const syntaxWithPrefix = `${guildPrefix}${command.syntax}`;
       usageValue.push(`Syntax: ${syntaxWithPrefix}`);
     }
-    
+
     if (command.example) {
       const exampleWithPrefix = `${guildPrefix}${command.example}`;
       usageValue.push(`Example: ${exampleWithPrefix}`);
     }
-    
+
     if (usageValue.length > 0) {
       fields.push({ name: '**Usage**', value: `\`\`\`yaml\n${usageValue.join('\n')}\`\`\``, inline: false });
     }

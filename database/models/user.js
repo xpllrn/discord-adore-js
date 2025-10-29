@@ -133,6 +133,14 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     },
+    lastVote: {
+      type: Date,
+      default: null
+    },
+    totalVotes: {
+      type: Number,
+      default: 0
+    },
     totalGambled: {
       type: Number,
       default: 0

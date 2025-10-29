@@ -13,7 +13,7 @@ module.exports = {
   description: `view the server's name change history`,
   syntax: 'guildhistory',
   example: 'guildhistory',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const guildService = getService('guild');
 
     // Ensure guild data exists in the database
@@ -21,7 +21,7 @@ module.exports = {
 
     try {
       const nameHistory = await guildService.getGuildNameHistory(message.guild.id);
-      
+
       if (nameHistory.length === 0) {
         return embeds.info(message, 'No guild name changes recorded for this server');
       }

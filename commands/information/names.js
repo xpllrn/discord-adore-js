@@ -9,7 +9,7 @@ const config = require('../../config/setup');
 
 module.exports = {
   name: "names",
-  aliases: ['nh'],
+  aliases: ['nh', 'namehistory'],
   description: `view a user's name change history`,
   syntax: 'names (user)',
   example: 'names @vwsn',

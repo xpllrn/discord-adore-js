@@ -133,6 +133,7 @@ class UserService extends BaseService {
             begCooldown: null,
             lastInterestClaim: null,
             lastVote: null,
+            totalVotes: 0,
             totalGambled: 0,
             totalWon: 0,
             totalLost: 0
@@ -194,6 +195,7 @@ class UserService extends BaseService {
       begCooldown: null,
       lastInterestClaim: null,
       lastVote: null,
+      totalVotes: 0,
       totalGambled: 0,
       totalWon: 0,
       totalLost: 0
@@ -358,6 +360,31 @@ class UserService extends BaseService {
       return true;
     } catch (error) {
       throw new DatabaseWriteError(`Failed to update work timestamp for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Update vote timestamp and count with UTC
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateVoteTimestamp(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const gambling = userData.Gambling || {};
+      
+      gambling.lastVote = new Date(); // UTC timestamp
+      gambling.totalVotes = (gambling.totalVotes || 0) + 1;
+      userData.Gambling = gambling;
+      
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to update vote timestamp for user ${userId}`, error);
     }
   }
 

@@ -9,7 +9,7 @@ const config = require('../../config/setup');
 
 module.exports = {
   name: "servernames",
-  aliases: ['gnames'],
+  aliases: ['gnames', 'guildhistory'],
   description: `view the server's name change history`,
   syntax: 'servernames [server id]',
   example: 'servernames 1431034951909904435',

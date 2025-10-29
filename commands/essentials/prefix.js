@@ -43,6 +43,16 @@ module.exports = {
       };
 
       return handleSetGuildPrefix(message, newPrefix);
+    } else if (subcommand === 'remove') {
+      const subcommandInfo = {
+        description: 'Removes the custom prefix and resets to default',
+        usage: '{guildprefix}prefix remove',
+        aliases: ['reset', 'default'],
+        parameters: [],
+        example: '{guildprefix}prefix remove'
+      };
+
+      return handleRemoveGuildPrefix(message);
     } else {
       const { processCommand } = require('../../utils/commandProcessor');
       return processCommand({
@@ -86,5 +96,28 @@ async function handleSetGuildPrefix(message, newPrefix) {
     }
   } catch (error) {
     return embeds.warn(message, "An error occurred while updating the prefix. Please try again.");
+  }
+}
+
+async function handleRemoveGuildPrefix(message) {
+  // Check if user has Administrator permission
+  if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) {
+    return;
+  }
+
+  try {
+    const config = require('../../config/setup');
+    const prefixService = getService('prefix');
+    const defaultPrefix = config.bot.defaultPrefix;
+    
+    const success = await prefixService.setGuildPrefix(message.guild.id, defaultPrefix);
+
+    if (success) {
+      return embeds.success(message, `Server prefix has been **reset** to default \`${defaultPrefix}\``);
+    } else {
+      return embeds.warn(message, "Failed to reset server prefix. Please try again.");
+    }
+  } catch (error) {
+    return embeds.warn(message, "An error occurred while resetting the prefix. Please try again.");
   }
 }
