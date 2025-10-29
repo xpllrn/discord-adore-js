@@ -11,15 +11,14 @@ const { findRole, findUser } = require('../../handlers/finder');
 const { getService } = require('@services');
 const config = require('../../config/setup');
 
-// Get service instances
-const guildService = getService('guild');
-
 module.exports = {
   name: "br",
   aliases: ['boosterrole', 'boostrole'],
   description: `Manage booster roles`,
   isGroupCommand: true,
   run: async (client, message, args) => {
+    // Get service instances
+    const guildService = getService('guild');
 
     if (!args[0]) {
       return runHelpCommand(message, 'br');
@@ -148,6 +147,8 @@ module.exports = {
 
 // Helper function to check if user has a booster role or is boosting
 async function canUseBoosterRoles(member) {
+  const guildService = getService('guild');
+
   // Check if user is boosting the server
   if (member.premiumSince) {
     return true;
@@ -186,6 +187,8 @@ function supportsRoleIcons(guild) {
 
 // Base role management
 async function handleBaseRole(client, message, args) {
+  const guildService = getService('guild');
+
   if (!args[0]) {
     // Show current base role
     const baseRoleId = await guildService.getBoosterRoleBaseRole(message.guild.id);
@@ -226,6 +229,8 @@ async function handleBaseRole(client, message, args) {
 
 // Create booster role
 async function handleCreate(client, message, args) {
+  const guildService = getService('guild');
+
   // Check if user can use booster roles
   if (!await canUseBoosterRoles(message.member)) {
     return embeds.warn(message, 'You need to be **boosting this server** to create a booster role');
@@ -298,6 +303,8 @@ async function handleCreate(client, message, args) {
 
 // Rename booster role
 async function handleRename(client, message, args) {
+  const guildService = getService('guild');
+
   // Check if user can use booster roles
   if (!await canUseBoosterRoles(message.member)) {
     return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
@@ -346,6 +353,8 @@ async function handleRename(client, message, args) {
 
 // Set booster role icon
 async function handleIcon(client, message, args) {
+  const guildService = getService('guild');
+
   // Check if user can use booster roles
   if (!await canUseBoosterRoles(message.member)) {
     return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
@@ -471,6 +480,8 @@ async function handleIcon(client, message, args) {
 
 // Set booster role color
 async function handleColor(client, message, args) {
+  const guildService = getService('guild');
+
   // Check if user can use booster roles
   if (!await canUseBoosterRoles(message.member)) {
     return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
@@ -556,6 +567,8 @@ async function handleColor(client, message, args) {
 
 // Set booster role gradient
 async function handleGradient(client, message, args) {
+  const guildService = getService('guild');
+
   // Check if user can use booster roles
   if (!await canUseBoosterRoles(message.member)) {
     return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
@@ -647,6 +660,8 @@ async function handleGradient(client, message, args) {
 
 // Set booster role to holographic
 async function handleHolographic(client, message, args) {
+  const guildService = getService('guild');
+
   // Check if user can use booster roles
   if (!await canUseBoosterRoles(message.member)) {
     return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
@@ -707,6 +722,7 @@ async function handleHolographic(client, message, args) {
 
 // Share booster role with another user
 async function handleShare(client, message, args) {
+  const guildService = getService('guild');
 
   // Get user's booster role (no need to check if they're boosting for sharing)
   const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
@@ -835,6 +851,7 @@ async function handleShare(client, message, args) {
 
 // Cleanup unused booster roles
 async function handleCleanup(client, message, args) {
+  const guildService = getService('guild');
   const daysSinceLastUsed = args[0] ? parseInt(args[0]) : 30;
 
   if (isNaN(daysSinceLastUsed) || daysSinceLastUsed < 1 || daysSinceLastUsed > 365) {
@@ -883,6 +900,8 @@ async function handleCleanup(client, message, args) {
 
 // Remove/delete booster role
 async function handleRemove(client, message, args) {
+  const guildService = getService('guild');
+
   // Get user's booster role
   const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
   if (!boosterRole) {
