@@ -12,21 +12,38 @@ function formatCurrency(amount) {
 module.exports = {
   name: "leaderboard",
   aliases: ['lb', 'top', 'rich'],
-  description: 'View the top 10 richest users globally',
-  syntax: 'leaderboard',
-  example: 'leaderboard',
+  description: 'View the top 10 richest users in server or globally',
+  syntax: 'leaderboard [global]',
+  example: 'leaderboard\nlb global',
   run: async (client, message, args) => {
 
     try {
       const userService = getService('user');
+      const isGlobal = args[0] && args[0].toLowerCase() === 'global';
 
-      // Get all users from database (this will need to query the database directly)
-      // For now, we'll use a simple approach - get users from guild members
-      const guildMembers = await message.guild.members.fetch();
-      const userIds = Array.from(guildMembers.keys());
+      let userIds = [];
+      let scopeTitle = '';
+
+      if (isGlobal) {
+        // Get all users from database globally
+        try {
+          const allUsers = await userService.getAllUsersWithGamblingData();
+          userIds = allUsers.map(user => user.UserID);
+          scopeTitle = 'Global Wealth Leaderboard';
+        } catch (error) {
+          console.error('Error fetching global users:', error);
+          return embeds.deny(message, 'An error occurred while fetching global leaderboard data');
+        }
+      } else {
+        // Get users from current guild only
+        const guildMembers = await message.guild.members.fetch();
+        userIds = Array.from(guildMembers.keys());
+        scopeTitle = `${message.guild.name} Wealth Leaderboard`;
+      }
 
       if (userIds.length === 0) {
-        return embeds.warn(message, 'No users found in this server');
+        const scope = isGlobal ? 'globally' : 'in this server';
+        return embeds.warn(message, `No users found ${scope}`);
       }
 
       // Get gambling data for all users using batch operation
@@ -104,7 +121,7 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor(colors.embed)
-        .setTitle('Wealth Leaderboard')
+        .setTitle(scopeTitle)
         .setDescription(userList.join('\n'))
         .setFooter({ text: footerText });
 

@@ -3,6 +3,16 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { emojis, colors } = require('../../config/setup');
 const axios = require('axios');
+const path = require('path');
+
+// Ensure environment variables are loaded
+if (!process.env.TOPGG_API_TOKEN) {
+  try {
+    require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
+  } catch (error) {
+    console.error('[VOTE ERROR] Failed to load .env file:', error.message);
+  }
+}
 
 // Utility functions
 function formatCurrency(amount) {
@@ -34,14 +44,36 @@ module.exports = {
 
       // Top.gg configuration
       const TOPGG_API_TOKEN = process.env.TOPGG_API_TOKEN;
-      const BOT_ID = client.user.id;
+      const BOT_ID = client.user?.id || process.env.CLIENT_ID;
       const VOTE_REWARD = 10000;
       const VOTE_COOLDOWN = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+
+      // Debug token loading
+      console.log(`[VOTE DEBUG] Token loaded: ${TOPGG_API_TOKEN ? 'Yes' : 'No'}, Bot ID: ${BOT_ID}`);
+      
+      if (!TOPGG_API_TOKEN) {
+        console.error('[VOTE ERROR] TOPGG_API_TOKEN not found in environment variables');
+        console.error('[VOTE ERROR] Working directory:', process.cwd());
+        console.error('[VOTE ERROR] Command directory:', __dirname);
+        return embeds.deny(message, 'Vote system is not properly configured. Please contact an administrator.');
+      }
+      
+      if (!BOT_ID || BOT_ID.length < 17) {
+        console.error('[VOTE ERROR] Invalid Bot ID format');
+        return embeds.deny(message, 'Bot ID is not properly configured. Please contact an administrator.');
+      }
 
       // Check if this is a claim command
       if (args[0] && args[0].toLowerCase() === 'claim') {
         // Handle vote claim
-        const gambling = await userService.getGamblingData(userId);
+        let gambling;
+        try {
+          gambling = await userService.getGamblingData(userId);
+        } catch (error) {
+          console.error('[VOTE ERROR] Failed to get gambling data:', error);
+          return embeds.deny(message, 'Unable to access your account data. Please try again later.');
+        }
+        
         const lastVote = gambling.lastVote ? new Date(gambling.lastVote) : null;
         const now = new Date();
 
@@ -61,33 +93,51 @@ module.exports = {
         let hasVoted = false;
 
         try {
-          const response = await axios.get(
-            `https://top.gg/api/bots/${BOT_ID}/check?userId=${userId}`,
-            {
-              headers: {
-                'Authorization': TOPGG_API_TOKEN
-              }
-            }
-          );
+          console.log(`[VOTE DEBUG] Checking vote status for user ${userId}`);
+          
+          const apiUrl = `https://top.gg/api/bots/${BOT_ID}/check?userId=${userId}`;
+          const response = await axios.get(apiUrl, {
+            headers: {
+              'Authorization': TOPGG_API_TOKEN
+            },
+            timeout: 10000 // 10 second timeout
+          });
 
+          console.log(`[VOTE DEBUG] Vote check successful - voted: ${response.data.voted}`);
           hasVoted = response.data.voted === 1;
         } catch (error) {
-          console.error('Error checking Top.gg vote status:', error.message);
+          console.error('[VOTE ERROR] Full error object:', error);
+          console.error('[VOTE ERROR] Error message:', error.message);
+          console.error('[VOTE ERROR] Response status:', error.response?.status);
+          console.error('[VOTE ERROR] Response data:', error.response?.data);
+          console.error('[VOTE ERROR] Response headers:', error.response?.headers);
+          
+          if (error.response?.status === 401) {
+            console.error('[VOTE ERROR] 401 Unauthorized - Check API token validity');
+          }
+          
           return embeds.deny(message, 'Unable to verify your vote status. Please try again later.');
         }
 
         if (hasVoted) {
           // User has voted! Give them the reward
-          await userService.updateWallet(userId, VOTE_REWARD);
-          await userService.updateVoteTimestamp(userId);
+          try {
+            console.log(`[VOTE DEBUG] User ${userId} has voted, giving reward of ${VOTE_REWARD} coins`);
+            await userService.updateWallet(userId, VOTE_REWARD);
+            await userService.updateVoteTimestamp(userId);
+            console.log(`[VOTE DEBUG] Successfully updated wallet and vote timestamp for user ${userId}`);
 
-          const embed = new EmbedBuilder()
-            .setColor(colors.success || '#a4ec7c')
-            .setTitle('Vote Reward Claimed!')
-            .setDescription(`${emojis.success} <@${userId}>: You received **${formatCurrency(VOTE_REWARD)}** coins for voting!\n\nYou can vote again in **12 hours** for another **${formatCurrency(VOTE_REWARD)}** coins!`)
-            .setFooter({ text: 'Thank you for supporting us! ❤️' });
+            const embed = new EmbedBuilder()
+              .setColor(colors.success || '#a4ec7c')
+              .setTitle('Vote Reward Claimed!')
+              .setDescription(`${emojis.success} <@${userId}>: You received **${formatCurrency(VOTE_REWARD)}** coins for voting!\n\nYou can vote again in **12 hours** for another **${formatCurrency(VOTE_REWARD)}** coins!`)
+              .setFooter({ text: 'Thank you for supporting us! ❤️' });
 
-          return message.channel.send({ embeds: [embed] });
+            return message.channel.send({ embeds: [embed] });
+          } catch (rewardError) {
+            console.error('[VOTE ERROR] Failed to give reward:', rewardError);
+            return embeds.deny(message, 'You voted successfully, but there was an error giving your reward. Please contact an administrator.');
+          }
         } else {
           // User hasn't voted yet
           const voteUrl = `https://top.gg/bot/${BOT_ID}/vote`;
@@ -110,9 +160,18 @@ module.exports = {
         }
       } else {
         // Handle regular vote command (show vote info)
-        const gambling = await userService.getGamblingData(userId);
+        let gambling;
+        try {
+          gambling = await userService.getGamblingData(userId);
+        } catch (error) {
+          console.error('[VOTE ERROR] Failed to get gambling data for vote info:', error);
+          return embeds.deny(message, 'Unable to access your account data. Please try again later.');
+        }
+        
         const totalVotes = gambling.totalVotes || 0;
         const voteUrl = `https://top.gg/bot/${BOT_ID}/vote`;
+        
+        console.log(`[VOTE DEBUG] Showing vote info for user ${userId}, total votes: ${totalVotes}`);
 
         const embed = new EmbedBuilder()
           .setColor(colors.info || '#729bb0')

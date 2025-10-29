@@ -46,17 +46,17 @@ module.exports = {
   description: 'Claim your daily coins with streak bonuses',
   syntax: 'daily',
   example: 'daily',
-  run: async(client, message, args) => {
-    
+  run: async (client, message, args) => {
+
     try {
       const userService = getService('user');
 
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);
-      
+
       // Check if user can claim daily
       const claimCheck = checkDailyClaim(gambling);
-      
+
       if (!claimCheck.canClaim) {
         // Calculate Unix timestamp for when they can claim next
         const lastClaimed = new Date(gambling.dailyClaim.lastClaimed);
@@ -69,11 +69,11 @@ module.exports = {
 
         return message.channel.send({ embeds: [embed] });
       }
-      
+
       // Calculate reward and new streak
       const newStreak = claimCheck.streak + 1;
       const reward = calculateDailyReward(newStreak);
-      
+
       // Update user's wallet and daily claim using service layer
       await userService.updateWallet(message.author.id, reward);
       await userService.updateDailyClaim(message.author.id, newStreak);
@@ -88,15 +88,15 @@ module.exports = {
         const nextReward = calculateDailyReward(newStreak + 1);
         description += `\nNext daily: **${formatCurrency(nextReward)}** coins (+10% bonus)`;
       } else {
-        description += `\nKeep your streak going for bigger rewards! (+10% each day)`;
+        description += `\nKeep your streak for better rewards!`;
       }
-      
+
       const embed = new EmbedBuilder()
         .setColor('#a4ec7c')
         .setDescription(description);
-      
+
       return message.channel.send({ embeds: [embed] });
-      
+
     } catch (error) {
       // Send error to webhook instead of console
       if (client?.errorLogger) {

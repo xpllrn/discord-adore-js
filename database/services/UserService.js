@@ -958,6 +958,27 @@ class UserService extends BaseService {
     };
   }
 
+  /**
+   * Get all users with gambling data globally
+   * @returns {Promise<Array>} Array of users with gambling data
+   */
+  async getAllUsersWithGamblingData() {
+    try {
+      const Model = this.getModel();
+      const users = await Model.find({
+        $or: [
+          { 'Gambling.wallet': { $gt: 0 } },
+          { 'Gambling.bank': { $gt: 0 } }
+        ]
+      }).lean();
+
+      return users;
+    } catch (error) {
+      console.error('Error getting all users with gambling data:', error.message);
+      return [];
+    }
+  }
+
   // ===== BATCH OPERATIONS =====
 
   /**
