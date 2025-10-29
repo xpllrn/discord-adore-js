@@ -120,17 +120,17 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(colors.info)
-          .setDescription(`<@${message.author.id}>: **Vote for Adore and Claim Your Daily Vote Rewards**`)
+          .setDescription(`**Vote for Adore and Claim Your Daily Vote Rewards**`)
           .addFields(
-            { name: '💸 Reward', value: formatCurrency(VOTE_REWARD), inline: true },
-            { name: '🗳️ Your Votes', value: totalVotes.toString(), inline: true }
+            { name: 'Reward', value: `\`${formatCurrency(VOTE_REWARD)}\``, inline: true },
+            { name: 'Your Votes', value: `\`${totalVotes}\``, inline: true }
           )
           .setFooter({ text: `Use ${await getGuildPrefix(message)}vote claim to claim your reward` });
 
         const row = new ActionRowBuilder()
           .addComponents(
             new ButtonBuilder()
-              .setLabel('Vote on Top.gg')
+              .setLabel('Vote here')
               .setStyle(ButtonStyle.Link)
               .setURL(voteUrl)
           );

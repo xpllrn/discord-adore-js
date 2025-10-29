@@ -556,18 +556,21 @@ async function handleLevelUp(message, newLevel, userData) {
         level: { new_rank: newLevel }
       });
     } else {
-      // Use default level up embed with user mention
+      // Use default level up embed with user mention outside
       const embed = new EmbedBuilder()
         .setColor(colors.embed)
         .setAuthor({
           name: message.author.username,
           iconURL: message.author.displayAvatarURL({ dynamic: true })
         })
-        .setDescription(`${message.author} **${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level ${newLevel}**, yayyyyy`)
+        .setDescription(`**${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level ${newLevel}**, yayyyyy`)
         .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
 
-      // Send level up message
-      await targetChannel.send({ embeds: [embed] });
+      // Send level up message with ping outside embed
+      await targetChannel.send({ 
+        content: message.author.toString(),
+        embeds: [embed] 
+      });
     }
 
     // Check and assign level roles

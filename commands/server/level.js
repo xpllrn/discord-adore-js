@@ -12,7 +12,7 @@ module.exports = {
   permission: "Manage Guild",
   isGroupCommand: true,
 
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const guildService = getService('guild');
 
     if (!args[0]) return false;
@@ -29,14 +29,7 @@ module.exports = {
         example: '{guildprefix}level message {user.mention} leveled up to {level.new_rank}!'
       };
 
-      if (!args[1]) {
-        const currentMessage = await guildService.getLevelCustomMessage(message.guild.id);
-        if (currentMessage) {
-          return embeds.info(message, `**Current custom level message:**\n\`\`\`\n${currentMessage}\`\`\`\n\nUse \`,level message [new message]\` to change it, or \`,level message remove\` to use the default message.`);
-        } else {
-          return embeds.info(message, "No custom level message is set. The default message will be used.\n\nUse \`,level message [custom message]\` to set one.");
-        }
-      }
+      if (!args[1]) return false;
 
       try {
         const levelMessage = args.slice(1).join(' ');
@@ -92,9 +85,9 @@ module.exports = {
           .setDescription(`${message.author} **${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level 25**, yayyyyy`)
           .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
 
-        return message.channel.send({ 
+        return message.channel.send({
           content: "**Preview of default level message:**",
-          embeds: [embed] 
+          embeds: [embed]
         });
       }
 
