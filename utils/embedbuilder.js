@@ -7,6 +7,114 @@ class CustomEmbedBuilder {
     constructor(channel, string) {
         const Embed = new EmbedBuilder(); let Content = ''; const Buttons = [];
 
+        // Parse parameters by finding complete blocks between { and }$v or end
+        const parseParameters = (input) => {
+            const parameters = [];
+            let i = 0;
+            
+            while (i < input.length) {
+                if (input[i] === '{') {
+                    let braceCount = 1;
+                    let start = i + 1;
+                    let j = i + 1;
+                    
+                    // Find the matching closing brace, accounting for nested braces
+                    while (j < input.length && braceCount > 0) {
+                        if (input[j] === '{') braceCount++;
+                        else if (input[j] === '}') braceCount--;
+                        j++;
+                    }
+                    
+                    if (braceCount === 0) {
+                        const content = input.substring(start, j - 1);
+                        parameters.push(content);
+                        
+                        // Skip $v if present
+                        if (input.substring(j, j + 2) === '$v') {
+                            j += 2;
+                        }
+                        i = j;
+                    } else {
+                        i++;
+                    }
+                } else {
+                    i++;
+                }
+            }
+            
+            return parameters;
+        };
+        
+        const parameters = parseParameters(string);
+        
+        for (const param of parameters) {
+            const colonIndex = param.indexOf(':');
+            if (colonIndex === -1) {
+                // Handle special cases like timestamp
+                if (param.trim() === 'timestamp') {
+                    Embed.setTimestamp();
+                }
+                continue;
+            }
+            
+            const paramName = param.substring(0, colonIndex).trim();
+            const paramValue = param.substring(colonIndex + 1).trim();
+            
+            // Handle the parameter based on its name
+            if (paramName === 'title') {
+                Embed.setTitle(paramValue);
+            } else if (paramName === 'description') {
+                Embed.setDescription(paramValue);
+            } else if (paramName === 'color') {
+                Embed.setColor(paramValue);
+            } else if (paramName === 'thumbnail') {
+                Embed.setThumbnail(paramValue);
+            } else if (paramName === 'image') {
+                Embed.setImage(paramValue);
+            } else if (paramName === 'url') {
+                Embed.setURL(paramValue);
+            } else if (paramName === 'message' || paramName === 'content') {
+                Content = paramValue;
+            } else if (paramName === 'author') {
+                // Handle author parameter
+                if (paramValue.includes('&&')) {
+                    const authorParts = paramValue.split('&&');
+                    const name = authorParts[0]?.trim();
+                    const iconURL = authorParts[1]?.trim();
+                    const url = authorParts[2]?.trim();
+                    if (name) {
+                        Embed.setAuthor({ name, iconURL: iconURL || null, url: url || null });
+                    }
+                } else {
+                    Embed.setAuthor({ name: paramValue });
+                }
+            } else if (paramName === 'footer') {
+                // Handle footer parameter
+                if (paramValue.includes('&&')) {
+                    const footerParts = paramValue.split('&&');
+                    const text = footerParts[0]?.trim();
+                    const iconURL = footerParts[1]?.trim();
+                    if (text) {
+                        Embed.setFooter({ text, iconURL: iconURL || null });
+                    }
+                } else {
+                    Embed.setFooter({ text: paramValue });
+                }
+            } else if (paramName === 'field') {
+                // Handle field parameter
+                if (paramValue.includes('&&')) {
+                    const fieldParts = paramValue.split('&&');
+                    const name = fieldParts[0]?.trim();
+                    const value = fieldParts[1]?.trim();
+                    const inline = fieldParts[2]?.trim() === 'true';
+                    if (name && value) {
+                        Embed.addFields({ name, value, inline });
+                    }
+                }
+            }
+        }
+        
+        // Keep the old parsing as fallback for any edge cases
         for (let str of string.split('{').values()) {
             if (str.startsWith('title:')) {
                 // Find the last } before $v or end of string
