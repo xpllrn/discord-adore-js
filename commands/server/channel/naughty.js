@@ -9,7 +9,7 @@ module.exports = {
   syntax: 'naughty (channel)',
   example: 'naughty #channel',
   permission: 'Manage Channels',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     // Check user permissions
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) {
@@ -67,7 +67,7 @@ module.exports = {
 
     } catch (error) {
       console.error('Error toggling NSFW status:', error);
-      
+
       if (error.code === 50013) {
         return embeds.deny(message, 'Missing permissions to change NSFW status');
       } else if (error.code === 50035) {

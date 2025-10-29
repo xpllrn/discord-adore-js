@@ -37,8 +37,8 @@ module.exports = {
         async (interaction) => {
           try {
             // Get the User model directly for bulk operations
-            const { getModel } = require('../../database');
-            const UserModel = getModel('User');
+            const { User } = require('../../database');
+            const UserModel = User;
 
             // Reset all users' gambling data
             const defaultGamblingData = {
