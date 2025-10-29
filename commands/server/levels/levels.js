@@ -597,7 +597,7 @@ async function handleMessageMode(client, message, args) {
 // Level message subcommand
 async function handleLevelMessage(client, message, args) {
   const guildService = getService('guild');
-  
+
   if (!args[1]) return false;
 
   // Handle view subcommand
@@ -605,14 +605,30 @@ async function handleLevelMessage(client, message, args) {
     const customMessage = await guildService.getLevelCustomMessage(message.guild.id);
 
     if (customMessage) {
-      // Use EmbedVariableProcessor to handle the custom message with variables
-      const { EmbedVariableProcessor } = require('../../../utils/embedbuilder');
-      EmbedVariableProcessor.process(message.channel, customMessage, {
-        user: message.author,
-        guild: message.guild,
-        channel: message.channel,
-        level: { new_rank: 25 } // Example level for preview
-      });
+      try {
+        // Use EmbedVariableProcessor to handle the custom message with variables
+        const { EmbedVariableProcessor } = require('../../../utils/embedbuilder');
+
+        // Add preview context
+        await message.channel.send({ content: "**Preview of custom level message:**" });
+
+        // Process the custom message with variables
+        EmbedVariableProcessor.process(message.channel, customMessage, {
+          user: message.author,
+          guild: message.guild,
+          channel: message.channel,
+          level: { new_rank: 25 } // Example level for preview
+        });
+
+        // Add a small delay to ensure the message is processed
+        setTimeout(() => {
+          // If no message was sent by the processor, show the raw message
+        }, 1000);
+
+      } catch (error) {
+        console.error('Error processing custom level message:', error);
+        return embeds.deny(message, `Error processing custom message: ${error.message}\n\nRaw message: \`\`\`${customMessage}\`\`\``);
+      }
     } else {
       // Show default message preview
       const embed = new EmbedBuilder()
@@ -624,9 +640,9 @@ async function handleLevelMessage(client, message, args) {
         .setDescription(`**${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level 25**, yayyyyy`)
         .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
 
-      return message.channel.send({ 
+      return message.channel.send({
         content: `**Preview of default level message:**\n${message.author}`,
-        embeds: [embed] 
+        embeds: [embed]
       });
     }
     return;
@@ -638,7 +654,7 @@ async function handleLevelMessage(client, message, args) {
     const embed = new EmbedBuilder()
       .setColor(colors.info)
       .setTitle('Level Up Message Variables')
-      .setDescription(`\`{user.id}\` — ${member.id}\n\`{user.name}\` — ${member.username}\n\`{user.mention}\` — ${member}\n\`{user.tag}\` — ${member.tag}\n\`{server.name}\` — ${message.guild.name}\n\`{server.membercount}\` — ${message.guild.memberCount}\n\`{level.new_rank}\` — Member's new level at time of level up`);
+      .setDescription(`\`{user.id}\` — ${member.id}\n\`{user.name}\` — ${member.username}\n\`{user.display_name}\` — ${member.displayName}\n\`{user.mention}\` — ${member}\n\`{user.tag}\` — ${member.tag}\n\`{server.name}\` — ${message.guild.name}\n\`{server.membercount}\` — ${message.guild.memberCount}\n\`{level.new_rank}\` — Member's new level at time of level up`);
 
     return message.channel.send({ embeds: [embed] });
   }
