@@ -4,6 +4,7 @@ const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 
+
 // Utility functions embedded within the command
 function formatCurrency(amount) {
   return Math.floor(amount).toLocaleString();

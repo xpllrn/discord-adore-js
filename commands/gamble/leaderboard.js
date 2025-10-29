@@ -49,29 +49,39 @@ module.exports = {
       // Get gambling data for all users using batch operation
       const gamblingDataMap = await userService.batchGetGamblingData(userIds);
 
-      // Process users and calculate wealth
-      const usersWithWealth = [];
+      // Process users and calculate wealth (include all users for ranking)
+      const allUsersWithWealth = [];
+      const usersWithPositiveWealth = [];
 
       for (const [userId, gamblingData] of gamblingDataMap) {
         const wallet = gamblingData.wallet || 0;
         const bank = gamblingData.bank || 0;
         const totalWealth = wallet + bank;
 
+        const userEntry = {
+          UserID: userId,
+          totalWealth: totalWealth
+        };
+
+        // Add to all users list for ranking calculation
+        allUsersWithWealth.push(userEntry);
+
+        // Add to positive wealth list for display (if they have money)
         if (totalWealth > 0) {
-          usersWithWealth.push({
-            UserID: userId,
-            totalWealth: totalWealth
-          });
+          usersWithPositiveWealth.push(userEntry);
         }
       }
 
-      if (usersWithWealth.length === 0) {
+      if (usersWithPositiveWealth.length === 0) {
         return embeds.warn(message, 'No users found with gambling data');
       }
 
-      // Sort by wealth and get user position
-      const sortedUsers = usersWithWealth.sort((a, b) => b.totalWealth - a.totalWealth);
-      const userPosition = sortedUsers.findIndex(user => user.UserID === message.author.id) + 1;
+      // Sort ALL users by wealth to get accurate positions
+      const sortedAllUsers = allUsersWithWealth.sort((a, b) => b.totalWealth - a.totalWealth);
+      const userPosition = sortedAllUsers.findIndex(user => user.UserID === message.author.id) + 1;
+
+      // Sort users with positive wealth for display
+      const sortedUsers = usersWithPositiveWealth.sort((a, b) => b.totalWealth - a.totalWealth);
 
       // Take top 10 for display
       const topUsers = sortedUsers.slice(0, 10);

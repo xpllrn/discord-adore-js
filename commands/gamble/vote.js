@@ -3,16 +3,8 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { emojis, colors } = require('../../config/setup');
 const axios = require('axios');
-const path = require('path');
 
-// Ensure environment variables are loaded
-if (!process.env.TOPGG_API_TOKEN) {
-  try {
-    require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
-  } catch (error) {
-    console.error('[VOTE ERROR] Failed to load .env file:', error.message);
-  }
-}
+
 
 // Utility functions
 function formatCurrency(amount) {
@@ -42,26 +34,14 @@ module.exports = {
       const userService = getService('user');
       const userId = message.author.id;
 
-      // Top.gg configuration
-      const TOPGG_API_TOKEN = process.env.TOPGG_API_TOKEN;
-      const BOT_ID = client.user?.id || process.env.CLIENT_ID;
+      // Top.gg configuration - hardcoded to avoid env loading issues
+      const TOPGG_API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfdCI6Ijc3MTI1NTgzMTAyMTk0NDgzMiIsImlkIjoiNzcwNTY0MDIwMjk0NjMxNDI0IiwiaWF0IjoxNzYxNzE4NTE5fQ.Qd5Adqx-NhtIEldO5PsYrQat8iQvNVuqyTYXC96f1Qk';
+      const BOT_ID = client.user?.id || '1431062059260575825';
       const VOTE_REWARD = 10000;
       const VOTE_COOLDOWN = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
-      // Debug token loading
-      console.log(`[VOTE DEBUG] Token loaded: ${TOPGG_API_TOKEN ? 'Yes' : 'No'}, Bot ID: ${BOT_ID}`);
-      
-      if (!TOPGG_API_TOKEN) {
-        console.error('[VOTE ERROR] TOPGG_API_TOKEN not found in environment variables');
-        console.error('[VOTE ERROR] Working directory:', process.cwd());
-        console.error('[VOTE ERROR] Command directory:', __dirname);
-        return embeds.deny(message, 'Vote system is not properly configured. Please contact an administrator.');
-      }
-      
-      if (!BOT_ID || BOT_ID.length < 17) {
-        console.error('[VOTE ERROR] Invalid Bot ID format');
-        return embeds.deny(message, 'Bot ID is not properly configured. Please contact an administrator.');
-      }
+      // Debug info
+      console.log(`[VOTE DEBUG] Processing vote command for user ${userId}, Bot ID: ${BOT_ID}`);
 
       // Check if this is a claim command
       if (args[0] && args[0].toLowerCase() === 'claim') {
