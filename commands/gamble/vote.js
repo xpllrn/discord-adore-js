@@ -112,7 +112,7 @@ module.exports = {
         try {
           gambling = await userService.getGamblingData(userId);
         } catch (error) {
-          return embeds.deny(message, 'Unable to access your account data. Please try again later.');
+          return embeds.deny(message, 'Are you **suree you voted**?? ion think so!!!');
         }
 
         const totalVotes = gambling.totalVotes || 0;
