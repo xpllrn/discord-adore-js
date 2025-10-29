@@ -609,8 +609,10 @@ async function handleLevelMessage(client, message, args) {
         // Use EmbedVariableProcessor to handle the custom message with variables
         const { EmbedVariableProcessor } = require('../../../utils/embedbuilder');
 
-        // Add preview context
-        await message.channel.send({ content: "**Preview of custom level message:**" });
+        // Show the raw message first for debugging
+        await message.channel.send({
+          content: "**Preview of custom level message:**\n**Raw message:**\n```" + customMessage + "```"
+        });
 
         // Process the custom message with variables
         EmbedVariableProcessor.process(message.channel, customMessage, {
@@ -619,11 +621,6 @@ async function handleLevelMessage(client, message, args) {
           channel: message.channel,
           level: { new_rank: 25 } // Example level for preview
         });
-
-        // Add a small delay to ensure the message is processed
-        setTimeout(() => {
-          // If no message was sent by the processor, show the raw message
-        }, 1000);
 
       } catch (error) {
         console.error('Error processing custom level message:', error);
