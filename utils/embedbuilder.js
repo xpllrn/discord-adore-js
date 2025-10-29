@@ -9,13 +9,30 @@ class CustomEmbedBuilder {
 
         for (let str of string.split('{').values()) {
             if (str.startsWith('title:')) {
-                str = str.toString().replace('}', '').replace('$v', '').replace('title:', '').trim()
-                Embed.setTitle(`${str}`)
+                // Find the last } before $v or end of string
+                let content = str.replace('title:', '').trim();
+                if (content.includes('}$v')) {
+                    content = content.substring(0, content.indexOf('}$v'));
+                } else if (content.endsWith('}')) {
+                    content = content.substring(0, content.lastIndexOf('}'));
+                }
+                Embed.setTitle(content)
             } else if (str.startsWith('description:')) {
-                str = str.toString().replace('}', '').replace('$v', '').replace('description:', '').trim()
-                Embed.setDescription(`${str}`)
+                // Find the last } before $v or end of string
+                let content = str.replace('description:', '').trim();
+                if (content.includes('}$v')) {
+                    content = content.substring(0, content.indexOf('}$v'));
+                } else if (content.endsWith('}')) {
+                    content = content.substring(0, content.lastIndexOf('}'));
+                }
+                Embed.setDescription(content)
             } else if (str.startsWith('field:')) {
-                let fieldContent = str.replace('}', '').replace('$v', '').replace('field:', '').trim()
+                let fieldContent = str.replace('field:', '').trim();
+                if (fieldContent.includes('}$v')) {
+                    fieldContent = fieldContent.substring(0, fieldContent.indexOf('}$v'));
+                } else if (fieldContent.endsWith('}')) {
+                    fieldContent = fieldContent.substring(0, fieldContent.lastIndexOf('}'));
+                }
 
                 // Check if using new keyword syntax (name: value: inline)
                 if (fieldContent.includes('name:') && fieldContent.includes('value:')) {
@@ -42,7 +59,12 @@ class CustomEmbedBuilder {
                     Embed.addFields({ name: `${field[0].toString().trim()}`, value: `${field[1].toString().trim()}`, inline: field[2] ? field[2].toString().trim() === 'true' ? true : false : false })
                 }
             } else if (str.startsWith('author:')) {
-                let authorContent = str.replace('}', '').replace('$v', '').replace('author:', '').trim()
+                let authorContent = str.replace('author:', '').trim();
+                if (authorContent.includes('}$v')) {
+                    authorContent = authorContent.substring(0, authorContent.indexOf('}$v'));
+                } else if (authorContent.endsWith('}')) {
+                    authorContent = authorContent.substring(0, authorContent.lastIndexOf('}'));
+                }
 
                 // Check if using new keyword syntax (name: icon: url:)
                 if (authorContent.includes('name:')) {
@@ -70,7 +92,12 @@ class CustomEmbedBuilder {
                     Embed.setAuthor({ name : `${author[0]}`, iconURL : author[1] ? author[1] : null, url : author[2] ? author[2] : null })
                 }
             } else if (str.startsWith('footer:')) {
-                let footerContent = str.replace('}', '').replace('$v', '').replace('footer:', '').trim()
+                let footerContent = str.replace('footer:', '').trim();
+                if (footerContent.includes('}$v')) {
+                    footerContent = footerContent.substring(0, footerContent.indexOf('}$v'));
+                } else if (footerContent.endsWith('}')) {
+                    footerContent = footerContent.substring(0, footerContent.lastIndexOf('}'));
+                }
 
                 // Check if using new keyword syntax (text: icon:)
                 if (footerContent.includes('text:')) {
@@ -94,27 +121,63 @@ class CustomEmbedBuilder {
                     Embed.setFooter({ text : `${footer[0]}`, iconURL : footer[1] ? footer[1] : null })
                 }
             } else if (str.startsWith('thumbnail:')) {
-                str = str.toString().replace('}', '').replace('$v', '').replace('thumbnail:', '').trim()
-                Embed.setThumbnail(`${str}`)
+                let content = str.replace('thumbnail:', '').trim();
+                if (content.includes('}$v')) {
+                    content = content.substring(0, content.indexOf('}$v'));
+                } else if (content.endsWith('}')) {
+                    content = content.substring(0, content.lastIndexOf('}'));
+                }
+                Embed.setThumbnail(content)
             } else if (str.startsWith('image:')) {
-                str = str.toString().replace('}', '').replace('$v', '').replace('image:', '').trim()
-                Embed.setImage(`${str}`)
+                let content = str.replace('image:', '').trim();
+                if (content.includes('}$v')) {
+                    content = content.substring(0, content.indexOf('}$v'));
+                } else if (content.endsWith('}')) {
+                    content = content.substring(0, content.lastIndexOf('}'));
+                }
+                Embed.setImage(content)
             } else if (str.startsWith('color:')) {
-                str = str.toString().replace('}', '').replace('$v', '').replace('color:', '').trim()
-                Embed.setColor(`${str}`)
+                let content = str.replace('color:', '').trim();
+                if (content.includes('}$v')) {
+                    content = content.substring(0, content.indexOf('}$v'));
+                } else if (content.endsWith('}')) {
+                    content = content.substring(0, content.lastIndexOf('}'));
+                }
+                Embed.setColor(content)
             } else if (str.startsWith('timestamp')) {
                 Embed.setTimestamp()
             } else if (str.startsWith('url:')) {
-                str = str.toString().replace('}', '').replace('$v', '').replace('url:', '').trim()
-                Embed.setURL(`${str}`)
+                let content = str.replace('url:', '').trim();
+                if (content.includes('}$v')) {
+                    content = content.substring(0, content.indexOf('}$v'));
+                } else if (content.endsWith('}')) {
+                    content = content.substring(0, content.lastIndexOf('}'));
+                }
+                Embed.setURL(content)
             } else if (str.startsWith('message:')) {
-                str = str.toString().replace('}', '').replace('$v', '').replace('message:', '').trim()
-                Content = str
+                let content = str.replace('message:', '').trim();
+                if (content.includes('}$v')) {
+                    content = content.substring(0, content.indexOf('}$v'));
+                } else if (content.endsWith('}')) {
+                    content = content.substring(0, content.lastIndexOf('}'));
+                }
+                Content = content
             } else if (str.startsWith('content:')) {
-                str = str.toString().replace('}', '').replace('$v', '').replace('content:', '').trim()
-                Content = str
+                let content = str.replace('content:', '').trim();
+                if (content.includes('}$v')) {
+                    content = content.substring(0, content.indexOf('}$v'));
+                } else if (content.endsWith('}')) {
+                    content = content.substring(0, content.lastIndexOf('}'));
+                }
+                Content = content
             } else if (str.startsWith('button:')) {
-                let buttonData = str.replace('}', '').replace('$v', '').replace('button:', '').split('&&')
+                let buttonContent = str.replace('button:', '').trim();
+                if (buttonContent.includes('}$v')) {
+                    buttonContent = buttonContent.substring(0, buttonContent.indexOf('}$v'));
+                } else if (buttonContent.endsWith('}')) {
+                    buttonContent = buttonContent.substring(0, buttonContent.lastIndexOf('}'));
+                }
+                let buttonData = buttonContent.split('&&')
 
                 if (buttonData.length >= 1) {
                     const firstParam = buttonData[0].toString().trim()

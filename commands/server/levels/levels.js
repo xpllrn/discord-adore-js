@@ -609,12 +609,7 @@ async function handleLevelMessage(client, message, args) {
         // Use EmbedVariableProcessor to handle the custom message with variables
         const { EmbedVariableProcessor } = require('../../../utils/embedbuilder');
 
-        // Show the raw message first for debugging
-        await message.channel.send({
-          content: "**Preview of custom level message:**\n**Raw message:**\n```" + customMessage + "```"
-        });
-
-        // Process the custom message with variables
+        // Use EmbedVariableProcessor to handle the custom message with variables
         EmbedVariableProcessor.process(message.channel, customMessage, {
           user: message.author,
           guild: message.guild,
