@@ -36,6 +36,9 @@ module.exports = {
         `⚠️ **GLOBAL ECONOMY RESET** ⚠️\n\nAre you sure you want to **reset ALL users' economy data globally**?\n\n**This will:**\n• Reset all wallets to 1,000 coins\n• Reset all banks to 0 coins\n• Clear all gambling statistics\n• Clear all vote data\n• Clear all cooldowns\n\n**THIS ACTION CANNOT BE UNDONE AND AFFECTS EVERYONE!**`,
         async (interaction) => {
           try {
+            // Defer the interaction to give us time for the database operation
+            await interaction.deferUpdate();
+
             // Get the User model directly for bulk operations
             const { User } = require('../../database');
             const UserModel = User;
@@ -75,6 +78,12 @@ module.exports = {
             await interaction.editReply({ embeds: [successEmbed], components: [] });
           } catch (error) {
             console.error('Error performing global economy reset:', error);
+            
+            // Try to defer if not already deferred
+            if (!interaction.deferred && !interaction.replied) {
+              await interaction.deferUpdate();
+            }
+            
             const errorEmbed = embeds.createDeny(message, 'Failed to perform global economy reset');
             await interaction.editReply({ embeds: [errorEmbed], components: [] });
           }
@@ -118,32 +127,47 @@ module.exports = {
         message,
         `Are you sure you want to **reset** all economy data for **${username}**?\n\n**Current Stats:**\n${currentStats}\n\n**This action cannot be undone!**`,
         async (interaction) => {
-          // Reset all gambling data to defaults
-          await userService.setUserField(targetUser.id, 'Gambling', {
-            wallet: 1000, // Starting wallet balance
-            bank: 0,
-            dailyClaim: {
-              lastClaimed: null,
-              streak: 0
-            },
-            robCooldown: null,
-            lastWorked: null,
-            begCooldown: null,
-            lastInterestClaim: null,
-            lastVote: null,
-            totalVotes: 0,
-            totalGambled: 0,
-            totalWon: 0,
-            totalLost: 0
-          });
+          try {
+            // Defer the interaction to give us time for the database operation
+            await interaction.deferUpdate();
 
-          // Edit the confirmation embed to show success message
-          const successEmbed = embeds.createSuccess(
-            message, 
-            `**Successfully reset** economy data for **${username}**\n\n**New Stats:**\n**Wallet:** 1,000 coins\n**Bank:** 0 coins\n**All other stats:** Reset to 0`
-          );
+            // Reset all gambling data to defaults
+            await userService.setUserField(targetUser.id, 'Gambling', {
+              wallet: 1000, // Starting wallet balance
+              bank: 0,
+              dailyClaim: {
+                lastClaimed: null,
+                streak: 0
+              },
+              robCooldown: null,
+              lastWorked: null,
+              begCooldown: null,
+              lastInterestClaim: null,
+              lastVote: null,
+              totalVotes: 0,
+              totalGambled: 0,
+              totalWon: 0,
+              totalLost: 0
+            });
 
-          await interaction.editReply({ embeds: [successEmbed], components: [] });
+            // Edit the confirmation embed to show success message
+            const successEmbed = embeds.createSuccess(
+              message, 
+              `**Successfully reset** economy data for **${username}**\n\n**New Stats:**\n**Wallet:** 1,000 coins\n**Bank:** 0 coins\n**All other stats:** Reset to 0`
+            );
+
+            await interaction.editReply({ embeds: [successEmbed], components: [] });
+          } catch (error) {
+            console.error('Error resetting individual economy data:', error);
+            
+            // Try to defer if not already deferred
+            if (!interaction.deferred && !interaction.replied) {
+              await interaction.deferUpdate();
+            }
+            
+            const errorEmbed = embeds.createDeny(message, 'Failed to reset economy data');
+            await interaction.editReply({ embeds: [errorEmbed], components: [] });
+          }
         }
       );
     } catch (error) {
