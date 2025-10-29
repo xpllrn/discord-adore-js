@@ -203,11 +203,22 @@ class EmbedVariableProcessor {
 
         // Replace user variables if provided
         if (variables.user) {
-            processed = processed.replace(/{user}/g, variables.user.displayName);
+            // Get display name with proper fallback
+            let displayName = variables.user.displayName || variables.user.username;
+            
+            // If user doesn't have displayName, try to get it from guild member
+            if (!variables.user.displayName && variables.guild && variables.guild.members) {
+                const member = variables.guild.members.cache.get(variables.user.id);
+                if (member) {
+                    displayName = member.displayName || member.user.username;
+                }
+            }
+            
+            processed = processed.replace(/{user}/g, displayName);
             processed = processed.replace(/{user\.mention}/g, `<@${variables.user.id}>`);
             processed = processed.replace(/{user\.name}/g, variables.user.username);
             processed = processed.replace(/{user\.id}/g, variables.user.id);
-            processed = processed.replace(/{user\.display_name}/g, variables.user.displayName);
+            processed = processed.replace(/{user\.display_name}/g, displayName);
             processed = processed.replace(/{user\.tag}/g, variables.user.discriminator || variables.user.tag || 'N/A');
             processed = processed.replace(/{user\.avatar}/g, variables.user.displayAvatarURL ? variables.user.displayAvatarURL({ dynamic: true }) : 'N/A');
             processed = processed.replace(/{user\.guild_avatar}/g, variables.user.avatarURL ? (variables.user.avatarURL({ dynamic: true }) || 'N/A') : 'N/A');
