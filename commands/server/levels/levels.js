@@ -10,7 +10,7 @@ const { colors, emojis } = require('../../../config/setup');
 
 module.exports = {
   name: "levels",
-  aliases: ['lvl', 'level', 'rank'],
+  aliases: ['level', 'lvl', 'rank'],
   description: "Manage the leveling system for your server",
   isGroupCommand: true,
   run: async (client, message, args) => {
@@ -138,6 +138,16 @@ module.exports = {
             example: '{guildprefix}levels messagemode channel #level-ups'
           };
           return await handleMessageMode(client, message, args);
+        }
+        case 'message': {
+          const subcommandInfo = {
+            description: 'Manage custom level up messages',
+            usage: '{guildprefix}levels message [message/remove/none/view/variables]',
+            aliases: [],
+            parameters: ['action'],
+            example: '{guildprefix}levels message {user.mention} leveled up to {level.new_rank}!'
+          };
+          return await handleLevelMessage(client, message, args);
         }
 
         default:
@@ -582,6 +592,82 @@ async function handleMessageMode(client, message, args) {
   }
 
   return embeds.success(message, description);
+}
+
+// Level message subcommand
+async function handleLevelMessage(client, message, args) {
+  const guildService = getService('guild');
+  
+  if (!args[1]) return false;
+
+  // Handle view subcommand
+  if (args[1] === 'view') {
+    const customMessage = await guildService.getLevelCustomMessage(message.guild.id);
+
+    if (customMessage) {
+      // Use EmbedVariableProcessor to handle the custom message with variables
+      const { EmbedVariableProcessor } = require('../../../utils/embedbuilder');
+      EmbedVariableProcessor.process(message.channel, customMessage, {
+        user: message.author,
+        guild: message.guild,
+        channel: message.channel,
+        level: { new_rank: 25 } // Example level for preview
+      });
+    } else {
+      // Show default message preview
+      const embed = new EmbedBuilder()
+        .setColor(colors.embed)
+        .setAuthor({
+          name: message.author.username,
+          iconURL: message.author.displayAvatarURL({ dynamic: true })
+        })
+        .setDescription(`**${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level 25**, yayyyyy`)
+        .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
+
+      return message.channel.send({ 
+        content: `**Preview of default level message:**\n${message.author}`,
+        embeds: [embed] 
+      });
+    }
+    return;
+  }
+
+  // Handle variables subcommand
+  if (args[1] === 'variables') {
+    const member = message.author;
+    const embed = new EmbedBuilder()
+      .setColor(colors.info)
+      .setTitle('Level Up Message Variables')
+      .setDescription(`\`{user.id}\` — ${member.id}\n\`{user.name}\` — ${member.username}\n\`{user.mention}\` — ${member}\n\`{user.tag}\` — ${member.tag}\n\`{server.name}\` — ${message.guild.name}\n\`{server.membercount}\` — ${message.guild.memberCount}\n\`{level.new_rank}\` — Member's new level at time of level up`);
+
+    return message.channel.send({ embeds: [embed] });
+  }
+
+  // Require Manage Guild permission for setting/removing messages
+  if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+
+  try {
+    const levelMessage = args.slice(1).join(' ');
+
+    // Handle remove/none command
+    if (levelMessage.toLowerCase() === 'remove' || levelMessage.toLowerCase() === 'none') {
+      await guildService.removeLevelCustomMessage(message.guild.id);
+      return embeds.success(message, "Custom level message has been removed. The default message will now be used.");
+    }
+
+    // Check if the message contains the required {level.new_rank} variable
+    if (!levelMessage.includes('{level.new_rank}')) {
+      return embeds.deny(message, 'Level up messages **must** include the `{level.new_rank}` variable to show the user\'s new level.');
+    }
+
+    // Set the custom message
+    await guildService.setLevelCustomMessage(message.guild.id, levelMessage);
+
+    return embeds.success(message, "Custom level message has been set successfully!");
+  } catch (error) {
+    console.error('Level message error:', error);
+    return embeds.deny(message, `Failed to set level message: ${error.message}`);
+  }
 }
 
 
