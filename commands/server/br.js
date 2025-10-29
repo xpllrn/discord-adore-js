@@ -278,20 +278,43 @@ async function handleCreate(client, message, args) {
       position: Math.max(1, baseRole.position - 1)
     });
 
-    // Add to database
-    const boosterRoleData = {
-      roleId: newRole.id,
-      ownerId: message.author.id,
-      name: roleName
-    };
+    // Validate that the role was created successfully
+    if (!newRole || !newRole.id) {
+      console.error('Role creation failed - newRole:', newRole);
+      return embeds.deny(message, 'Failed to create Discord role. Please check my permissions.');
+    }
 
-    // Cache writes are guaranteed to be enabled after full preloading
-    // No need to check or force enable - system won't start without complete cache
+    console.log(`Created role: ${newRole.name} (${newRole.id}) for user ${message.author.id}`);
 
-    await guildService.addBoosterRole(message.guild.id, boosterRoleData);
+    try {
+      // Cache writes are guaranteed to be enabled after full preloading
+      // No need to check or force enable - system won't start without complete cache
+      console.log(`Saving to database: guildId=${message.guild.id}, userId=${message.author.id}, roleId=${newRole.id}, name=${roleName}`);
+      await guildService.addBoosterRole(
+        message.guild.id,
+        message.author.id,
+        newRole.id,
+        roleName
+      );
+    } catch (dbError) {
+      console.error('Error saving booster role to database:', dbError);
+      // Role was created but couldn't be saved to database
+      // Try to clean up by deleting the role
+      try {
+        await newRole.delete('Failed to save to database');
+      } catch (cleanupError) {
+        console.error('Failed to cleanup role after database error:', cleanupError);
+      }
+      return embeds.deny(message, 'Failed to save booster role to database. Please try again.');
+    }
 
-    // Give the role to the user
-    await message.member.roles.add(newRole);
+    try {
+      // Give the role to the user
+      await message.member.roles.add(newRole);
+    } catch (roleError) {
+      console.error('Error adding role to user:', roleError);
+      return embeds.deny(message, 'Created booster role but failed to assign it to you. Please contact an admin.');
+    }
 
     return embeds.success(message, `Created your booster role: ${newRole}!`);
 
