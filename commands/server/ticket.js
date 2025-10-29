@@ -7,6 +7,9 @@ const { hasDiscordPermission } = require('../../utils/permissions');
 const { findChannel, findRole } = require('../../handlers/finder');
 const { getService } = require('@services');
 
+// Cooldown map for ticket message command (1 minute)
+const ticketMessageCooldowns = new Map();
+
 module.exports = {
   name: "ticket",
   aliases: ['tickets'],
@@ -114,6 +117,27 @@ module.exports = {
         };
         return handleSupport(client, message, args);
       }
+      case 'message': {
+        const subcommandInfo = {
+          description: 'Set custom ticket setup message',
+          usage: '{guildprefix}ticket message [custom message/remove/none]',
+          aliases: [],
+          parameters: ['message'],
+          example: '{guildprefix}ticket message {embed}$v{title: Support Tickets}$v{description: Need help? Create a ticket below!}'
+        };
+        return handleMessage(client, message, args);
+      }
+
+      case 'variables': {
+        const subcommandInfo = {
+          description: 'Show available variables for ticket messages',
+          usage: '{guildprefix}ticket variables',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}ticket variables'
+        };
+        return handleVariables(client, message, args);
+      }
       default:
         return runHelpCommand(message, 'ticket');
     }
@@ -142,14 +166,31 @@ async function handleSetup(client, message, args) {
       }
     }
 
-    // Create the setup embed
-    const setupEmbed = new EmbedBuilder()
-      .setTitle('Create a ticket')
-      .setDescription('Please select your inquiry below.\nDo **not** create a ticket and suddenly go offline.\n> Refer to [nohello.net](https://nohello.net/)')
-      .setColor(colors.info)
-      .setThumbnail(client.user.displayAvatarURL());
+    // Check for custom message
+    const customMessage = await guildService.getTicketCustomMessage(message.guild.id);
+    
+    let embed;
+    let content = null;
 
-    // Create the ticket button
+    if (customMessage) {
+      // Use custom message
+      const processedMessage = await processCustomTicketMessage(customMessage, message.guild, client);
+      if (processedMessage.embeds && processedMessage.embeds.length > 0) {
+        embed = processedMessage.embeds[0];
+      }
+      if (processedMessage.content) {
+        content = processedMessage.content;
+      }
+    } else {
+      // Use default embed
+      embed = new EmbedBuilder()
+        .setTitle('Create a ticket')
+        .setDescription('Please select your inquiry below.\nDo **not** create a ticket and suddenly go offline.\n> Refer to [nohello.net](https://nohello.net/)')
+        .setColor(colors.info)
+        .setThumbnail(client.user.displayAvatarURL());
+    }
+
+    // Always create the ticket button
     const row = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
@@ -159,11 +200,20 @@ async function handleSetup(client, message, args) {
           .setStyle(ButtonStyle.Secondary)
       );
 
-    // Send the setup message
-    const setupMessage = await message.channel.send({
-      embeds: [setupEmbed],
+    // Prepare message options
+    const messageOptions = {
       components: [row]
-    });
+    };
+
+    if (embed) {
+      messageOptions.embeds = [embed];
+    }
+    if (content) {
+      messageOptions.content = content;
+    }
+
+    // Send the setup message
+    const setupMessage = await message.channel.send(messageOptions);
 
     // Enable ticket system and save setup info
     await guildService.enableTicketSystem(message.guild.id);
@@ -500,5 +550,230 @@ async function handleSupport(client, message, args) {
   } catch (error) {
     console.error('Error managing support role:', error);
     return embeds.deny(message, "An error occurred while managing the support role. Please try again.");
+  }
+}
+
+async function handleMessage(client, message, args) {
+  try {
+    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+
+    // Check cooldown (1 minute)
+    const cooldownKey = `${message.guild.id}-${message.author.id}`;
+    const now = Date.now();
+    const cooldownAmount = 60 * 1000; // 1 minute in milliseconds
+
+    if (ticketMessageCooldowns.has(cooldownKey)) {
+      const expirationTime = ticketMessageCooldowns.get(cooldownKey) + cooldownAmount;
+      
+      if (now < expirationTime) {
+        const timeLeft = Math.ceil((expirationTime - now) / 1000);
+        return embeds.deny(message, `Please wait **${timeLeft}** seconds before using this command again.`);
+      }
+    }
+
+    const guildService = getService('guild');
+    const ticketSystem = await guildService.getTicketSystem(message.guild.id);
+
+    if (!args[1]) {
+      const currentMessage = await guildService.getTicketCustomMessage(message.guild.id);
+      if (currentMessage) {
+        return embeds.info(message, `**Current custom ticket message:**\n\`\`\`\n${currentMessage}\`\`\`\n\nUse \`,ticket message [new message]\` to change it, or \`,ticket message remove\` to use the default message.`);
+      } else {
+        return embeds.info(message, "No custom ticket message is set. The default message will be used.\n\nUse \`,ticket message [custom message]\` to set one.");
+      }
+    }
+
+    const customMessage = args.slice(1).join(' ');
+
+    // Handle remove/none command
+    if (customMessage.toLowerCase() === 'remove' || customMessage.toLowerCase() === 'none') {
+      await guildService.removeTicketCustomMessage(message.guild.id);
+      
+      // Update the setup message if it exists
+      if (ticketSystem.setupMessageId && ticketSystem.setupChannelId) {
+        await updateTicketSetupMessage(client, message.guild, ticketSystem, null);
+      }
+      
+      // Set cooldown
+      ticketMessageCooldowns.set(cooldownKey, now);
+
+      // Clean up old cooldowns (optional optimization)
+      setTimeout(() => {
+        ticketMessageCooldowns.delete(cooldownKey);
+      }, cooldownAmount);
+      
+      return embeds.success(message, "Custom ticket message has been removed. The default message will now be used.");
+    }
+
+    // Set the custom message
+    await guildService.setTicketCustomMessage(message.guild.id, customMessage);
+
+    // Update the setup message if it exists
+    if (ticketSystem.setupMessageId && ticketSystem.setupChannelId) {
+      await updateTicketSetupMessage(client, message.guild, ticketSystem, customMessage);
+    }
+
+    // Set cooldown
+    ticketMessageCooldowns.set(cooldownKey, now);
+
+    // Clean up old cooldowns (optional optimization)
+    setTimeout(() => {
+      ticketMessageCooldowns.delete(cooldownKey);
+    }, cooldownAmount);
+
+    return embeds.success(message, "Custom ticket message has been set successfully! The setup message has been updated.");
+
+  } catch (error) {
+    console.error('Error setting custom ticket message:', error);
+    return embeds.deny(message, "An error occurred while setting the custom ticket message. Please try again.");
+  }
+}
+
+async function updateTicketSetupMessage(client, guild, ticketSystem, customMessage) {
+  try {
+    const setupChannel = guild.channels.cache.get(ticketSystem.setupChannelId);
+    if (!setupChannel) return;
+
+    const setupMessage = await setupChannel.messages.fetch(ticketSystem.setupMessageId);
+    if (!setupMessage) return;
+
+    let embed;
+    let content = null;
+
+    if (customMessage) {
+      // Use EmbedVariableProcessor to handle custom message
+      const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+      
+      // Check if it's an embed or text message
+      if (customMessage.trim().startsWith('{embed}')) {
+        // Process as embed - create a temporary channel to process the embed
+        // We'll extract the embed data instead of sending it
+        const processedMessage = await processCustomTicketMessage(customMessage, guild, client);
+        if (processedMessage.embeds && processedMessage.embeds.length > 0) {
+          embed = processedMessage.embeds[0];
+        }
+        if (processedMessage.content) {
+          content = processedMessage.content;
+        }
+      } else {
+        // Process as text message
+        const processedText = EmbedVariableProcessor.replaceVariables(customMessage, {
+          guild: guild,
+          server: guild // Alias for backward compatibility
+        });
+        content = processedText;
+      }
+    } else {
+      // Use default embed
+      embed = new EmbedBuilder()
+        .setTitle('Create a ticket')
+        .setDescription('Please select your inquiry below.\nDo **not** create a ticket and suddenly go offline.\n> Refer to [nohello.net](https://nohello.net/)')
+        .setColor(colors.info)
+        .setThumbnail(client.user.displayAvatarURL());
+    }
+
+    // Always keep the ticket button
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('create_ticket')
+          .setLabel('Create Ticket')
+          .setEmoji(emojis.ticket)
+          .setStyle(ButtonStyle.Secondary)
+      );
+
+    const messageOptions = {
+      components: [row]
+    };
+
+    if (embed) {
+      messageOptions.embeds = [embed];
+    }
+    if (content) {
+      messageOptions.content = content;
+    }
+
+    await setupMessage.edit(messageOptions);
+
+  } catch (error) {
+    console.error('Error updating ticket setup message:', error);
+  }
+}
+
+async function processCustomTicketMessage(customMessage, guild, client) {
+  // This is a helper function to process custom embed messages
+  // We'll simulate the EmbedVariableProcessor without actually sending a message
+  const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+  
+  // Replace variables first
+  const processedContent = EmbedVariableProcessor.replaceVariables(customMessage, {
+    guild: guild,
+    server: guild
+  });
+
+  // Parse the embed content manually since we can't use the actual processor
+  if (processedContent.trim().startsWith('{embed}')) {
+    const embedContent = processedContent.replace(/^\s*{embed}\s*\$v\s*/, '');
+    
+    // Create a basic embed and try to parse the content
+    const embed = new EmbedBuilder().setColor(colors.info);
+    let content = null;
+
+    // Split by $v to get individual parameters
+    const parts = embedContent.split('$v');
+    
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (!trimmed || !trimmed.startsWith('{') || !trimmed.endsWith('}')) continue;
+      
+      const paramContent = trimmed.slice(1, -1);
+      const colonIndex = paramContent.indexOf(':');
+      if (colonIndex === -1) continue;
+      
+      const paramName = paramContent.substring(0, colonIndex).trim();
+      const paramValue = paramContent.substring(colonIndex + 1).trim();
+      
+      switch (paramName) {
+        case 'title':
+          embed.setTitle(paramValue);
+          break;
+        case 'description':
+          embed.setDescription(paramValue);
+          break;
+        case 'color':
+          embed.setColor(paramValue);
+          break;
+        case 'thumbnail':
+          embed.setThumbnail(paramValue);
+          break;
+        case 'image':
+          embed.setImage(paramValue);
+          break;
+        case 'content':
+        case 'message':
+          content = paramValue;
+          break;
+      }
+    }
+
+    return { embeds: [embed], content };
+  }
+
+  return { content: processedContent };
+}
+
+
+async function handleVariables(client, message, args) {
+  try {
+    const embed = new EmbedBuilder()
+      .setColor(colors.info)
+      .setTitle('Ticket Message Variables')
+      .setDescription(`\`{guild.name}\` — ${message.guild.name}\n\`{guild.membercount}\` — ${message.guild.memberCount}\n\`{guild.id}\` — ${message.guild.id}\n\`{server.name}\` — ${message.guild.name}\n\`{server.membercount}\` — ${message.guild.memberCount}\n\n**Note:** The Create Ticket button will always be added automatically, regardless of your custom message.`);
+
+    return message.channel.send({ embeds: [embed] });
+
+  } catch (error) {
+    console.error('Error showing ticket variables:', error);
+    return embeds.deny(message, "An error occurred while showing ticket variables. Please try again.");
   }
 }

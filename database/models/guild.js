@@ -622,6 +622,10 @@ const guildSchema = new mongoose.Schema({
       type: String,
       default: null
     },
+    customMessage: {
+      type: String,
+      default: null
+    },
     activeTickets: [{
       channelId: {
         type: String,
@@ -689,6 +693,22 @@ const guildSchema = new mongoose.Schema({
       default: null
     }
   },
+
+  // Level messages (custom level up messages)
+  LevelMessages: [{
+    channelId: {
+      type: String,
+      required: true
+    },
+    message: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
 
   // User level data (guild-specific)
   UserLevels: [{
@@ -1126,6 +1146,7 @@ guildSchema.index({ BoostChannel: 1 });
 guildSchema.index({ 'WelcomeMessages.channelId': 1 });
 guildSchema.index({ 'LeaveMessages.channelId': 1 });
 guildSchema.index({ 'BoostMessages.channelId': 1 });
+guildSchema.index({ 'LevelMessages.channelId': 1 });
 guildSchema.index({ 'PojMessages.channelId': 1 });
 
 // Level system indexes

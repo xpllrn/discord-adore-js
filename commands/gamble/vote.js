@@ -29,7 +29,7 @@ module.exports = {
   syntax: 'vote [claim]',
   example: 'vote\nvote claim',
   run: async (client, message, args) => {
-    
+
     try {
       const userService = getService('user');
       const userId = message.author.id;
@@ -40,8 +40,7 @@ module.exports = {
       const VOTE_REWARD = 10000;
       const VOTE_COOLDOWN = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
-      // Debug info
-      console.log(`[VOTE DEBUG] Processing vote command for user ${userId}, Bot ID: ${BOT_ID}`);
+
 
       // Check if this is a claim command
       if (args[0] && args[0].toLowerCase() === 'claim') {
@@ -50,10 +49,9 @@ module.exports = {
         try {
           gambling = await userService.getGamblingData(userId);
         } catch (error) {
-          console.error('[VOTE ERROR] Failed to get gambling data:', error);
           return embeds.deny(message, 'Unable to access your account data. Please try again later.');
         }
-        
+
         const lastVote = gambling.lastVote ? new Date(gambling.lastVote) : null;
         const now = new Date();
 
@@ -62,19 +60,13 @@ module.exports = {
           const nextVote = new Date(lastVote.getTime() + VOTE_COOLDOWN);
           const unixTimestamp = Math.floor(nextVote.getTime() / 1000);
 
-          const embed = new EmbedBuilder()
-            .setColor(colors.warn || '#fbd03b')
-            .setDescription(`${emojis.warn} <@${userId}>: You can vote again <t:${unixTimestamp}:R>\n\nYou'll receive **${formatCurrency(VOTE_REWARD)}** coins when you vote!`);
-
-          return message.channel.send({ embeds: [embed] });
+          return embeds.warn(message, `You can vote again <t:${unixTimestamp}:R>\n\nYou'll receive **${formatCurrency(VOTE_REWARD)}** coins when you vote!`);
         }
 
         // Check if user has actually voted on Top.gg
         let hasVoted = false;
 
         try {
-          console.log(`[VOTE DEBUG] Checking vote status for user ${userId}`);
-          
           const apiUrl = `https://top.gg/api/bots/${BOT_ID}/check?userId=${userId}`;
           const response = await axios.get(apiUrl, {
             headers: {
@@ -83,50 +75,26 @@ module.exports = {
             timeout: 10000 // 10 second timeout
           });
 
-          console.log(`[VOTE DEBUG] Vote check successful - voted: ${response.data.voted}`);
           hasVoted = response.data.voted === 1;
         } catch (error) {
-          console.error('[VOTE ERROR] Full error object:', error);
-          console.error('[VOTE ERROR] Error message:', error.message);
-          console.error('[VOTE ERROR] Response status:', error.response?.status);
-          console.error('[VOTE ERROR] Response data:', error.response?.data);
-          console.error('[VOTE ERROR] Response headers:', error.response?.headers);
-          
-          if (error.response?.status === 401) {
-            console.error('[VOTE ERROR] 401 Unauthorized - Check API token validity');
-          }
-          
           return embeds.deny(message, 'Unable to verify your vote status. Please try again later.');
         }
 
         if (hasVoted) {
           // User has voted! Give them the reward
           try {
-            console.log(`[VOTE DEBUG] User ${userId} has voted, giving reward of ${VOTE_REWARD} coins`);
             await userService.updateWallet(userId, VOTE_REWARD);
             await userService.updateVoteTimestamp(userId);
-            console.log(`[VOTE DEBUG] Successfully updated wallet and vote timestamp for user ${userId}`);
 
-            const embed = new EmbedBuilder()
-              .setColor(colors.success || '#a4ec7c')
-              .setTitle('Vote Reward Claimed!')
-              .setDescription(`${emojis.success} <@${userId}>: You received **${formatCurrency(VOTE_REWARD)}** coins for voting!\n\nYou can vote again in **12 hours** for another **${formatCurrency(VOTE_REWARD)}** coins!`)
-              .setFooter({ text: 'Thank you for supporting us! ❤️' });
-
-            return message.channel.send({ embeds: [embed] });
+            return embeds.success(message, `You received **${formatCurrency(VOTE_REWARD)}** coins for voting!\n\nYou can vote again in **12 hours** for another **${formatCurrency(VOTE_REWARD)}** coins!\n\nThank you for supporting us! ❤️`);
           } catch (rewardError) {
-            console.error('[VOTE ERROR] Failed to give reward:', rewardError);
             return embeds.deny(message, 'You voted successfully, but there was an error giving your reward. Please contact an administrator.');
           }
         } else {
           // User hasn't voted yet
           const voteUrl = `https://top.gg/bot/${BOT_ID}/vote`;
 
-          const embed = new EmbedBuilder()
-            .setColor(colors.deny || '#e74c3c')
-            .setTitle('Vote Required')
-            .setDescription(`${emojis.deny} <@${userId}>: You need to vote first before claiming your reward!\n\nClick the button below to vote on Top.gg`)
-            .setFooter({ text: 'After voting, use the claim command to get your reward!' });
+          const embed = embeds.createDeny(message, `You need to vote first before claiming your reward!\n\nClick the button below to vote on Top.gg\n\nAfter voting, use the claim command to get your reward!`);
 
           const row = new ActionRowBuilder()
             .addComponents(
@@ -144,31 +112,13 @@ module.exports = {
         try {
           gambling = await userService.getGamblingData(userId);
         } catch (error) {
-          console.error('[VOTE ERROR] Failed to get gambling data for vote info:', error);
           return embeds.deny(message, 'Unable to access your account data. Please try again later.');
         }
-        
+
         const totalVotes = gambling.totalVotes || 0;
         const voteUrl = `https://top.gg/bot/${BOT_ID}/vote`;
-        
-        console.log(`[VOTE DEBUG] Showing vote info for user ${userId}, total votes: ${totalVotes}`);
 
-        const embed = new EmbedBuilder()
-          .setColor(colors.info || '#729bb0')
-          .setTitle('Vote for Adore and Claim Your Daily Vote Rewards')
-          .addFields(
-            {
-              name: 'Reward',
-              value: `> 💸 ${formatCurrency(VOTE_REWARD)}`,
-              inline: true
-            },
-            {
-              name: 'Votes',
-              value: `> ${totalVotes} (shows total votes you did till now)`,
-              inline: true
-            }
-          )
-          .setFooter({ text: `Use ${await getGuildPrefix(message)}vote claim to claim your reward` });
+        const embed = embeds.createInfo(message, `**Vote for Adore and Claim Your Daily Vote Rewards**\n\n**Reward:** 💸 ${formatCurrency(VOTE_REWARD)}\n**Your Votes:** ${totalVotes} (shows total votes you did till now)\n\nUse \`${await getGuildPrefix(message)}vote claim\` to claim your reward`);
 
         const row = new ActionRowBuilder()
           .addComponents(

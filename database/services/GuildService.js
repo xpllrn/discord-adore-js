@@ -180,6 +180,7 @@ class GuildService extends BaseService {
           WelcomeMessages: [],
           LeaveMessages: [],
           BoostMessages: [],
+          LevelMessages: [],
           Giveaways: [],
           BoosterRoleSystem: {
             baseRoleId: null,
@@ -749,6 +750,143 @@ class GuildService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to remove welcome message for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== LEVEL MESSAGE SYSTEM =====
+
+  /**
+   * Get all level messages for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of level messages
+   */
+  async getLevelMessages(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.LevelMessages || [];
+    } catch (error) {
+      console.error(`Error getting level messages for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get level message for a specific channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<Object|null>} Level message or null
+   */
+  async getLevelMessageForChannel(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelMessages = guildData.LevelMessages || [];
+      return levelMessages.find(lm => lm.channelId === channelId) || null;
+    } catch (error) {
+      console.error(`Error getting level message for channel in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Add or update a level message for a channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {string} message - Level message
+   * @returns {Promise<boolean>} Success status
+   */
+  async addLevelMessage(guildId, channelId, message) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!message || message.trim().length === 0) {
+      throw new ValidationError('Level message is required', 'message', message);
+    }
+
+    if (message.trim().length > 2000) {
+      throw new ValidationError('Level message cannot exceed 2000 characters', 'message', message);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelMessages = guildData.LevelMessages || [];
+
+      // Check if message for this channel already exists
+      const existingIndex = levelMessages.findIndex(lm => lm.channelId === channelId);
+
+      if (existingIndex !== -1) {
+        // Update existing message
+        levelMessages[existingIndex].message = message.trim();
+        levelMessages[existingIndex].createdAt = new Date();
+      } else {
+        // Add new message
+        levelMessages.push({
+          channelId,
+          message: message.trim(),
+          createdAt: new Date()
+        });
+      }
+
+      guildData.LevelMessages = levelMessages;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add level message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove a level message from a channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeLevelMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelMessages = guildData.LevelMessages || [];
+      const initialLength = levelMessages.length;
+
+      guildData.LevelMessages = levelMessages.filter(lm => lm.channelId !== channelId);
+
+      if (guildData.LevelMessages.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove level message for guild ${guildId}`, error);
     }
   }
 
@@ -5997,6 +6135,101 @@ class GuildService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to set ticket support role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Set custom ticket message
+   * @param {string} guildId - Guild ID
+   * @param {string} message - Custom ticket message
+   * @returns {Promise<boolean>} Success status
+   */
+  async setTicketCustomMessage(guildId, message) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!message || message.trim().length === 0) {
+      throw new ValidationError('Custom message is required', 'message', message);
+    }
+
+    if (message.trim().length > 2000) {
+      throw new ValidationError('Custom message cannot exceed 2000 characters', 'message', message);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.TicketSystem) {
+        guildData.TicketSystem = {
+          enabled: false,
+          categoryId: null,
+          supportRoleId: null,
+          setupChannelId: null,
+          setupMessageId: null,
+          customMessage: null,
+          activeTickets: [],
+          ticketCounter: 0
+        };
+      }
+      
+      guildData.TicketSystem.customMessage = message.trim();
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set custom ticket message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get custom ticket message
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Custom message or null
+   */
+  async getTicketCustomMessage(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.TicketSystem?.customMessage || null;
+    } catch (error) {
+      console.error(`Error getting custom ticket message for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Remove custom ticket message
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeTicketCustomMessage(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.TicketSystem) {
+        return false; // No ticket system exists
+      }
+      
+      guildData.TicketSystem.customMessage = null;
+      
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove custom ticket message for guild ${guildId}`, error);
     }
   }
 

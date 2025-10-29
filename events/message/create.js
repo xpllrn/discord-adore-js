@@ -524,21 +524,12 @@ async function handleLevelUp(message, newLevel, userData) {
     const guildService = getService('guild');
     const { EmbedBuilder } = require('discord.js');
     const { colors, emojis } = require('../../config/setup');
+    const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 
     // Get message mode using service layer
     const messageMode = await guildService.getLevelMessageMode(message.guild.id);
 
     if (messageMode === 'none') return; // Level up messages disabled
-
-    // Create level up embed
-    const embed = new EmbedBuilder()
-      .setColor(colors.embed)
-      .setAuthor({
-        name: message.author.username,
-        iconURL: message.author.displayAvatarURL({ dynamic: true })
-      })
-      .setDescription(`**${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level ${newLevel}**, yayyyyy`)
-      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
 
     // Determine where to send the message
     let targetChannel = message.channel; // Default to context
@@ -553,8 +544,31 @@ async function handleLevelUp(message, newLevel, userData) {
       }
     }
 
-    // Send level up message
-    await targetChannel.send({ embeds: [embed] });
+    // Check for custom level message for the target channel
+    const customLevelMessage = await guildService.getLevelMessageForChannel(message.guild.id, targetChannel.id);
+
+    if (customLevelMessage) {
+      // Use custom level message with variable processing
+      EmbedVariableProcessor.process(targetChannel, customLevelMessage.message, {
+        user: message.author,
+        guild: message.guild,
+        channel: targetChannel,
+        level: { new_rank: newLevel }
+      });
+    } else {
+      // Use default level up embed with user mention
+      const embed = new EmbedBuilder()
+        .setColor(colors.embed)
+        .setAuthor({
+          name: message.author.username,
+          iconURL: message.author.displayAvatarURL({ dynamic: true })
+        })
+        .setDescription(`${message.author} **${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level ${newLevel}**, yayyyyy`)
+        .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
+
+      // Send level up message
+      await targetChannel.send({ embeds: [embed] });
+    }
 
     // Check and assign level roles
     await assignLevelRoles(message, newLevel);

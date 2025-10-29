@@ -431,6 +431,14 @@ class EmbedVariableProcessor {
             processed = processed.replace(/{vanity\.source}/g, variables.source);
         }
 
+        // Replace level variables if provided
+        if (variables.level) {
+            processed = processed.replace(/{level\.new_rank}/g, variables.level.new_rank?.toString() || 'N/A');
+            processed = processed.replace(/{level\.rank}/g, variables.level.new_rank?.toString() || 'N/A'); // Alias
+        }
+
+
+
         // Replace time variables
         const now = new Date();
         processed = processed.replace(/{time\.now}/g, now.toLocaleTimeString('en-US', { timeZone: 'UTC', hour12: true }));
