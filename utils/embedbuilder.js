@@ -111,6 +111,53 @@ class CustomEmbedBuilder {
                         Embed.addFields({ name, value, inline });
                     }
                 }
+            } else if (paramName === 'button') {
+                // Handle button parameter
+                if (paramValue.includes('&&')) {
+                    const buttonParts = paramValue.split('&&');
+                    const styleOrUrl = buttonParts[0]?.trim();
+                    const label = buttonParts[1]?.trim();
+                    const enabledState = buttonParts[2]?.trim();
+                    
+                    if (styleOrUrl && label) {
+                        const button = new ButtonBuilder();
+                        
+                        // Check if it's a URL button
+                        if (styleOrUrl.startsWith('http')) {
+                            button.setStyle(ButtonStyle.Link)
+                                  .setURL(styleOrUrl)
+                                  .setLabel(label);
+                        } else {
+                            // Style button
+                            let style = ButtonStyle.Secondary; // Default
+                            switch (styleOrUrl.toLowerCase()) {
+                                case 'primary':
+                                    style = ButtonStyle.Primary;
+                                    break;
+                                case 'secondary':
+                                    style = ButtonStyle.Secondary;
+                                    break;
+                                case 'success':
+                                    style = ButtonStyle.Success;
+                                    break;
+                                case 'danger':
+                                    style = ButtonStyle.Danger;
+                                    break;
+                            }
+                            
+                            button.setStyle(style)
+                                  .setLabel(label)
+                                  .setCustomId(`custom_button_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+                        }
+                        
+                        // Handle disabled state
+                        if (enabledState === 'disabled' || enabledState === 'disable') {
+                            button.setDisabled(true);
+                        }
+                        
+                        Buttons.push(button);
+                    }
+                }
             }
         }
         
