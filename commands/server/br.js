@@ -11,6 +11,9 @@ const { findRole, findUser } = require('../../handlers/finder');
 const { getService } = require('@services');
 const config = require('../../config/setup');
 
+// Get service instances
+const guildService = getService('guild');
+
 module.exports = {
   name: "br",
   aliases: ['boosterrole', 'boostrole'],
