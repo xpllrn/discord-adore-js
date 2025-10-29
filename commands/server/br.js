@@ -305,7 +305,7 @@ async function handleCreate(client, message, args) {
     const discordRole = message.guild.roles.cache.get(existingRole.roleId);
     if (!discordRole) {
       // Role was deleted, remove from database and allow creation of new one
-      await guildService.deleteBoosterRole(message.guild.id, existingRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, message.author.id);
       // Continue with role creation below
     } else {
       return embeds.warn(message, 'You already have a booster role! Use other commands to customize it.');
@@ -421,7 +421,7 @@ async function handleRename(client, message, args) {
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     if (!discordRole) {
       // Role was deleted, remove from database
-      await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, message.author.id);
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
@@ -518,7 +518,7 @@ async function handleIcon(client, message, args) {
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     if (!discordRole) {
       // Role was deleted, remove from database
-      await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, message.author.id);
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
@@ -593,7 +593,7 @@ async function handleColor(client, message, args) {
     try {
       const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
       if (!discordRole) {
-        await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+        await guildService.deleteBoosterRole(message.guild.id, message.author.id);
         return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
       }
 
@@ -636,7 +636,7 @@ async function handleColor(client, message, args) {
     // Get the Discord role
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     if (!discordRole) {
-      await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, message.author.id);
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
@@ -702,7 +702,7 @@ async function handleGradient(client, message, args) {
     // Get the Discord role
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     if (!discordRole) {
-      await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+      await guildService.deleteBoosterRole(message.guild.id, message.author.id);
       return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
     }
 
@@ -767,7 +767,7 @@ async function handleHolographic(client, message, args) {
   // Get the Discord role
   const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
   if (!discordRole) {
-    await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+    await guildService.deleteBoosterRole(message.guild.id, message.author.id);
     return embeds.warn(message, 'Your booster role was deleted. Use `br create` to make a new one.');
   }
 
@@ -875,6 +875,9 @@ async function handleShare(client, message, args) {
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
     const roleDisplay = discordRole ? `<@&${boosterRole.roleId}>` : `**${boosterRole.name}** (role deleted)`;
 
+    // Generate pending share ID first
+    const pendingShareId = Date.now();
+
     // Create share request embed
     const shareEmbed = new EmbedBuilder()
       .setColor(config.colors.embed)
@@ -913,8 +916,7 @@ async function handleShare(client, message, args) {
       components: [buttons]
     });
 
-    // Add to pending shares - use a simple timestamp-based ID to avoid Math.max issues
-    const pendingShareId = Date.now();
+    // Add to pending shares - use the timestamp-based ID
     const pendingShare = {
       id: pendingShareId,
       userId: message.author.id,
@@ -993,7 +995,7 @@ async function handleCleanup(client, message, args) {
         }
 
         // Remove from database
-        await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+        await guildService.deleteBoosterRole(message.guild.id, boosterRole.userId || boosterRole.ownerId);
         deletedCount++;
       } catch (error) {
         console.error(`Error deleting booster role ${boosterRole.id}:`, error);
@@ -1031,8 +1033,8 @@ async function handleRemove(client, message, args) {
       await discordRole.delete('Booster role removed by owner');
     }
 
-    // Remove from database
-    await guildService.deleteBoosterRole(message.guild.id, boosterRole.id);
+    // Remove from database - use userId, not boosterRole.id
+    await guildService.deleteBoosterRole(message.guild.id, message.author.id);
     return embeds.success(message, `Successfully removed your booster role **${boosterRole.name}**!`);
 
   } catch (error) {
