@@ -609,13 +609,24 @@ async function handleLevelMessage(client, message, args) {
         // Use EmbedVariableProcessor to handle the custom message with variables
         const { EmbedVariableProcessor } = require('../../../utils/embedbuilder');
 
-        // Use EmbedVariableProcessor to handle the custom message with variables
-        EmbedVariableProcessor.process(message.channel, customMessage, {
-          user: message.author,
-          guild: message.guild,
-          channel: message.channel,
-          level: { new_rank: 25 } // Example level for preview
-        });
+        // Debug the parsing step by step
+        await message.channel.send(`**Raw message:**\n\`\`\`${customMessage}\`\`\``);
+
+        // Let's manually parse this to see what's happening
+        const parts = customMessage.split('{');
+        await message.channel.send(`**Split parts:**\n\`\`\`${JSON.stringify(parts, null, 2)}\`\`\``);
+
+        // Try to process it
+        try {
+          EmbedVariableProcessor.process(message.channel, customMessage, {
+            user: message.author,
+            guild: message.guild,
+            channel: message.channel,
+            level: { new_rank: 25 } // Example level for preview
+          });
+        } catch (error) {
+          await message.channel.send(`**Error:**\n\`\`\`${error.message}\`\`\``);
+        }
 
       } catch (error) {
         console.error('Error processing custom level message:', error);
