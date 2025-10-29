@@ -54,13 +54,13 @@ module.exports = {
         return embeds.deny(message, `Failed to set level message: ${error.message}`);
       }
 
-    } else if (args[0] === 'view') {
+    } else if (args[0] === 'message' && args[1] === 'view') {
       const subcommandInfo = {
         description: 'Preview the current level up message',
-        usage: '{guildprefix}level view',
+        usage: '{guildprefix}level message view',
         aliases: [],
         parameters: [],
-        example: '{guildprefix}level view'
+        example: '{guildprefix}level message view'
       };
 
       const customMessage = await guildService.getLevelCustomMessage(message.guild.id);
@@ -75,19 +75,19 @@ module.exports = {
         });
       } else {
         // Show default message preview
-        const { colors, emojis } = require('../../config/setup');
+        const { colors } = require('../../config/setup');
         const embed = new EmbedBuilder()
           .setColor(colors.embed)
           .setAuthor({
             name: message.author.username,
             iconURL: message.author.displayAvatarURL({ dynamic: true })
           })
-          .setDescription(`${message.author} **${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level 25**, yayyyyy`)
+          .setDescription(`**${message.member?.displayName || message.author.username}** had **leveled up**!\n> They are now **level 25**, yayyyyy`)
           .setThumbnail(message.author.displayAvatarURL({ dynamic: true }));
 
-        return message.channel.send({
-          content: "**Preview of default level message:**",
-          embeds: [embed]
+        return message.channel.send({ 
+          content: `**Preview of default level message:**\n${message.author}`,
+          embeds: [embed] 
         });
       }
 
