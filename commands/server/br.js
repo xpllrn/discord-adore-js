@@ -58,91 +58,152 @@ module.exports = {
       return await handleCleanup(client, message, args.slice(1));
     }
 
-    // Check if booster role system is enabled for user commands
-    const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
-    if (!isEnabled) {
-      return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+    // Create booster role
+    if (subcommand === 'create') {
+      const subcommandInfo = {
+        description: 'Create your personal booster role',
+        usage: '{guildprefix}br create [name]',
+        aliases: [],
+        parameters: ['name'],
+        example: '{guildprefix}br create My Cool Role'
+      };
+
+      // Check if booster role system is enabled
+      const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+      if (!isEnabled) {
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+      }
+      return await handleCreate(client, message, args.slice(1));
     }
 
-    // Handle other subcommands
-    switch (subcommand) {
-      case 'create':
-        const createInfo = {
-          description: 'Create your personal booster role',
-          usage: '{guildprefix}br create [name]',
-          aliases: [],
-          parameters: ['name'],
-          example: '{guildprefix}br create My Cool Role'
-        };
-        return await handleCreate(client, message, args.slice(1));
-      case 'rename':
-        const renameInfo = {
-          description: 'Rename your booster role',
-          usage: '{guildprefix}br rename [name]',
-          aliases: [],
-          parameters: ['name'],
-          example: '{guildprefix}br rename New Name'
-        };
-        return await handleRename(client, message, args.slice(1));
-      case 'icon':
-        const iconInfo = {
-          description: 'Set an icon for your booster role',
-          usage: '{guildprefix}br icon [emoji/url]',
-          aliases: [],
-          parameters: ['emoji or url'],
-          example: '{guildprefix}br icon :star:'
-        };
-        return await handleIcon(client, message, args.slice(1));
-      case 'color':
-        const colorInfo = {
-          description: 'Set a color for your booster role',
-          usage: '{guildprefix}br color [color]',
-          aliases: [],
-          parameters: ['color'],
-          example: '{guildprefix}br color #FF0000'
-        };
-        return await handleColor(client, message, args.slice(1));
-      case 'gradient':
-        const gradientInfo = {
-          description: 'Set a gradient color for your booster role',
-          usage: '{guildprefix}br gradient [color1] [color2]',
-          aliases: [],
-          parameters: ['color1', 'color2'],
-          example: '{guildprefix}br gradient red blue'
-        };
-        return await handleGradient(client, message, args.slice(1));
-      case 'holographic':
-      case 'holo':
-        const holoInfo = {
-          description: 'Set your booster role to holographic colors',
-          usage: '{guildprefix}br holographic',
-          aliases: ['holo'],
-          parameters: [],
-          example: '{guildprefix}br holographic'
-        };
-        return await handleHolographic(client, message, args.slice(1));
-      case 'share':
-        const shareInfo = {
-          description: 'Share your booster role with another user',
-          usage: '{guildprefix}br share [@user]',
-          aliases: [],
-          parameters: ['user'],
-          example: '{guildprefix}br share @vwsn'
-        };
-        return await handleShare(client, message, args.slice(1));
-      case 'remove':
-      case 'delete':
-        const removeInfo = {
-          description: 'Remove your booster role',
-          usage: '{guildprefix}br remove',
-          aliases: ['delete'],
-          parameters: [],
-          example: '{guildprefix}br remove'
-        };
-        return await handleRemove(client, message, args.slice(1));
-      default:
-        return runHelpCommand(message, 'br');
+    // Rename booster role
+    if (subcommand === 'rename') {
+      const subcommandInfo = {
+        description: 'Rename your booster role',
+        usage: '{guildprefix}br rename [name]',
+        aliases: [],
+        parameters: ['name'],
+        example: '{guildprefix}br rename New Name'
+      };
+
+      // Check if booster role system is enabled
+      const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+      if (!isEnabled) {
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+      }
+      return await handleRename(client, message, args.slice(1));
     }
+
+    // Set booster role icon
+    if (subcommand === 'icon') {
+      const subcommandInfo = {
+        description: 'Set an icon for your booster role',
+        usage: '{guildprefix}br icon [emoji/url]',
+        aliases: [],
+        parameters: ['emoji or url'],
+        example: '{guildprefix}br icon :star:'
+      };
+
+      // Check if booster role system is enabled
+      const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+      if (!isEnabled) {
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+      }
+      return await handleIcon(client, message, args.slice(1));
+    }
+
+    // Set booster role color
+    if (subcommand === 'color') {
+      const subcommandInfo = {
+        description: 'Set a color for your booster role',
+        usage: '{guildprefix}br color [color]',
+        aliases: [],
+        parameters: ['color'],
+        example: '{guildprefix}br color #FF0000'
+      };
+
+      // Check if booster role system is enabled
+      const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+      if (!isEnabled) {
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+      }
+      return await handleColor(client, message, args.slice(1));
+    }
+
+    // Set booster role gradient
+    if (subcommand === 'gradient') {
+      const subcommandInfo = {
+        description: 'Set a gradient color for your booster role',
+        usage: '{guildprefix}br gradient [color1] [color2]',
+        aliases: [],
+        parameters: ['color1', 'color2'],
+        example: '{guildprefix}br gradient red blue'
+      };
+
+      // Check if booster role system is enabled
+      const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+      if (!isEnabled) {
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+      }
+      return await handleGradient(client, message, args.slice(1));
+    }
+
+    // Set booster role to holographic
+    if (subcommand === 'holographic' || subcommand === 'holo') {
+      const subcommandInfo = {
+        description: 'Set your booster role to holographic colors',
+        usage: '{guildprefix}br holographic',
+        aliases: ['holo'],
+        parameters: [],
+        example: '{guildprefix}br holographic'
+      };
+
+      // Check if booster role system is enabled
+      const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+      if (!isEnabled) {
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+      }
+      return await handleHolographic(client, message, args.slice(1));
+    }
+
+    // Share booster role
+    if (subcommand === 'share') {
+      const subcommandInfo = {
+        description: 'Share your booster role with another user',
+        usage: '{guildprefix}br share [@user]',
+        aliases: [],
+        parameters: ['user'],
+        example: '{guildprefix}br share @vwsn'
+      };
+
+      // Check if booster role system is enabled
+      const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+      if (!isEnabled) {
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+      }
+      return await handleShare(client, message, args.slice(1));
+    }
+
+    // Remove booster role
+    if (subcommand === 'remove' || subcommand === 'delete') {
+      const subcommandInfo = {
+        description: 'Remove your booster role',
+        usage: '{guildprefix}br remove',
+        aliases: ['delete'],
+        parameters: [],
+        example: '{guildprefix}br remove'
+      };
+
+      // Check if booster role system is enabled
+      const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+      if (!isEnabled) {
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+      }
+      return await handleRemove(client, message, args.slice(1));
+    }
+
+    // Default case - show help
+    return runHelpCommand(message, 'br');
   }
 };
 
