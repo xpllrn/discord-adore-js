@@ -821,7 +821,13 @@ async function handleShare(client, message, args) {
     return embeds.warn(message, 'You don\'t have a booster role! Use `br create` to make one.');
   }
 
-  console.log(`Sharing booster role: id=${boosterRole.id}, roleId=${boosterRole.roleId}, ownerId=${boosterRole.ownerId}`);
+  // Validate booster role data
+  if (!boosterRole.roleId) {
+    console.error('Booster role missing roleId:', boosterRole);
+    return embeds.warn(message, 'Your booster role data is corrupted. Please contact an admin.');
+  }
+
+  console.log(`Sharing booster role: roleId=${boosterRole.roleId}, ownerId=${boosterRole.ownerId || boosterRole.userId}`);
 
   if (!args[0]) {
     return embeds.warn(message, 'Please mention a **user** to share your booster role with');
@@ -885,12 +891,12 @@ async function handleShare(client, message, args) {
       const row = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
-            .setCustomId(`br_accept_${boosterRole.id}_${targetUser.id}`)
+            .setCustomId(`br_accept_${pendingShareId}_${targetUser.id}`)
             .setLabel('Accept')
             .setStyle(ButtonStyle.Success)
             .setDisabled(disabled),
           new ButtonBuilder()
-            .setCustomId(`br_decline_${boosterRole.id}_${targetUser.id}`)
+            .setCustomId(`br_decline_${pendingShareId}_${targetUser.id}`)
             .setLabel('Decline')
             .setStyle(ButtonStyle.Danger)
             .setDisabled(disabled)
@@ -907,19 +913,38 @@ async function handleShare(client, message, args) {
       components: [buttons]
     });
 
-    // Add to pending shares
-    const pendingShare = await guildService.addBoosterRolePendingShare(
-      message.guild.id,
-      message.author.id,
-      targetUser.id,
-      boosterRole.roleId
-    );
+    // Add to pending shares - use a simple timestamp-based ID to avoid Math.max issues
+    const pendingShareId = Date.now();
+    const pendingShare = {
+      id: pendingShareId,
+      userId: message.author.id,
+      targetUserId: targetUser.id,
+      roleId: boosterRole.roleId,
+      pending: true,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 60 * 1000) // 60 seconds
+    };
+
+    // Store pending share directly in the booster role data
+    if (!boosterRole.pendingShares) boosterRole.pendingShares = [];
+    boosterRole.pendingShares.push(pendingShare);
+
+    // Update the booster role in database
+    await guildService.updateBoosterRole(message.guild.id, message.author.id, {
+      pendingShares: boosterRole.pendingShares
+    });
 
     // Set up timeout to clean up pending share after 60 seconds
     setTimeout(async () => {
       try {
-        // Remove pending share from database
-        await guildService.removeBoosterRolePendingShare(message.guild.id, pendingShare.id);
+        // Remove pending share from booster role
+        const updatedBoosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
+        if (updatedBoosterRole && updatedBoosterRole.pendingShares) {
+          updatedBoosterRole.pendingShares = updatedBoosterRole.pendingShares.filter(ps => ps.id !== pendingShareId);
+          await guildService.updateBoosterRole(message.guild.id, message.author.id, {
+            pendingShares: updatedBoosterRole.pendingShares
+          });
+        }
 
         // Disable buttons on timeout
         const disabledButtons = createButtons(true);
@@ -928,6 +953,7 @@ async function handleShare(client, message, args) {
         });
       } catch (error) {
         // Message might have been deleted or already handled
+        console.error('Error cleaning up pending share:', error);
       }
     }, 60000);
 

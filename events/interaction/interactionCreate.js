@@ -747,7 +747,7 @@ async function handleBoosterRoleShare(interaction) {
   try {
     const isAccept = interaction.customId.startsWith('br_accept_');
     const parts = interaction.customId.split('_');
-    const boosterRoleId = parseInt(parts[2]);
+    const pendingShareId = parseInt(parts[2]);
     const targetUserId = parts[3];
 
     // Check if the user clicking is the target user
@@ -763,16 +763,28 @@ async function handleBoosterRoleShare(interaction) {
       });
     }
 
-    // Get the booster role data using service layer
+    // Get all booster roles and find the one with the matching pending share
     const guildService = getService('guild');
     const allBoosterRoles = await guildService.getBoosterRoles(interaction.guild.id);
-    const boosterRole = allBoosterRoles.find(br => br.id === boosterRoleId);
     
-    if (!boosterRole) {
-      console.error(`Booster role not found: guildId=${interaction.guild.id}, boosterRoleId=${boosterRoleId}`);
-      console.error(`Available booster roles:`, allBoosterRoles.map(br => ({ id: br.id, roleId: br.roleId, ownerId: br.ownerId })));
+    let boosterRole = null;
+    let pendingShare = null;
+    
+    for (const br of allBoosterRoles) {
+      if (br.pendingShares) {
+        const ps = br.pendingShares.find(ps => ps.id === pendingShareId && ps.targetUserId === targetUserId);
+        if (ps) {
+          boosterRole = br;
+          pendingShare = ps;
+          break;
+        }
+      }
+    }
+    
+    if (!boosterRole || !pendingShare) {
+      console.error(`Pending share not found: guildId=${interaction.guild.id}, pendingShareId=${pendingShareId}, targetUserId=${targetUserId}`);
 
-      const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Booster role not found. The role may have been deleted or there was a database error.');
+      const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Share request not found. It may have expired or been cancelled.');
       return await safeInteractionResponse(interaction, {
         embeds: [embed],
         flags: MessageFlags.Ephemeral
@@ -780,18 +792,7 @@ async function handleBoosterRoleShare(interaction) {
     }
 
     // Initialize missing properties for older booster roles
-    if (!boosterRole.pendingShares) boosterRole.pendingShares = [];
     if (!boosterRole.sharedWith) boosterRole.sharedWith = [];
-
-    // Check if there's a pending share for this user
-    const pendingShare = boosterRole.pendingShares.find(ps => ps.userId === targetUserId);
-    if (!pendingShare) {
-      const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'No pending share request found.');
-      return await safeInteractionResponse(interaction, {
-        embeds: [embed],
-        flags: MessageFlags.Ephemeral
-      });
-    }
 
     const config = require('../../config/setup');
 
@@ -827,12 +828,20 @@ async function handleBoosterRoleShare(interaction) {
       try {
         await interaction.member.roles.add(discordRole);
 
-        // Add to shared list in database using service layer
-        const guildService = getService('guild');
-        await guildService.addBoosterRoleShare(interaction.guild.id, boosterRoleId, targetUserId);
-
-        // Remove from pending shares using service layer
-        await guildService.removeBoosterRolePendingShare(interaction.guild.id, boosterRoleId, targetUserId);
+        // Add to shared list and remove from pending shares
+        boosterRole.sharedWith.push({
+          userId: targetUserId,
+          sharedAt: new Date()
+        });
+        
+        // Remove the pending share
+        boosterRole.pendingShares = boosterRole.pendingShares.filter(ps => ps.id !== pendingShareId);
+        
+        // Update the booster role in database
+        await guildService.updateBoosterRole(interaction.guild.id, boosterRole.userId || boosterRole.ownerId, {
+          sharedWith: boosterRole.sharedWith,
+          pendingShares: boosterRole.pendingShares
+        });
 
         // Update the message using prebuilt embed
         const acceptedEmbed = embeds.createSuccess(
@@ -854,10 +863,13 @@ async function handleBoosterRoleShare(interaction) {
       }
 
     } else {
-      // Ensure cache writes are enabled before saving
-      // Decline the share using service layer
-      const guildService = getService('guild');
-      await guildService.removeBoosterRolePendingShare(interaction.guild.id, boosterRoleId, targetUserId);
+      // Decline the share - remove from pending shares
+      boosterRole.pendingShares = boosterRole.pendingShares.filter(ps => ps.id !== pendingShareId);
+      
+      // Update the booster role in database
+      await guildService.updateBoosterRole(interaction.guild.id, boosterRole.userId || boosterRole.ownerId, {
+        pendingShares: boosterRole.pendingShares
+      });
 
       // Update the message using prebuilt embed
       const declinedEmbed = embeds.createWarn(
