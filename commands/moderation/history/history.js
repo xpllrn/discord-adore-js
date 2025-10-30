@@ -155,8 +155,58 @@ module.exports = {
     }
 
     const actionTypes = ['warn', 'mute', 'kick', 'ban', 'jail', 'unmute', 'unban', 'unjail', 'warns', 'kicks', 'bans', 'mutes', 'jails'];
+    
+    // Check if first argument is an action type - if so, we need a user as second argument
     if (actionTypes.includes(args[0].toLowerCase())) {
-      return runHelpCommand(message, 'history');
+      if (!args[1]) {
+        return runHelpCommand(message, 'history');
+      }
+      
+      const userResult = await findUser(message.guild, args[1], client);
+      if (!userResult.found) {
+        return embeds.deny(message, userResult.error);
+      }
+      if (userResult.isGlobal) {
+        return embeds.deny(message, 'User is not in this server');
+      }
+
+      const user = userResult.user;
+      const actionFilter = args[0].toLowerCase();
+
+      try {
+        const moderationHistory = await moderationService.getModerationHistory(message.guild.id, user.user.id, actionFilter);
+
+        if (moderationHistory.length === 0) {
+          return embeds.warn(message, `**${user.user.username}** has no ${actionFilter} moderation history`);
+        }
+
+        const formatPage = (pageItems, currentPage, totalPages) => {
+          const historyList = pageItems.map((case_) => {
+            const timestamp = Math.floor(case_.timestamp.getTime() / 1000);
+            const moderator = message.guild.members.cache.get(case_.moderatorId);
+            const moderatorName = moderator ? `${moderator.user.username}(${moderator.user.id})` : `Unknown User(${case_.moderatorId})`;
+
+            return [
+              `**case log #${case_.caseId} | ${case_.action}**`,
+              `**Punished**: <t:${timestamp}:f>`,
+              `**Moderator**: ${moderatorName}`,
+              `**Reason**: ${case_.reason}`,
+              ''
+            ].join('\n');
+          }).join('\n');
+
+          return new EmbedBuilder()
+            .setColor(colors.embed)
+            .setTitle(`${actionFilter.charAt(0).toUpperCase() + actionFilter.slice(1)} history for ${user.user.username}`)
+            .setDescription(historyList)
+            .setFooter({ text: `Page ${currentPage}/${totalPages} • ${moderationHistory.length} case${moderationHistory.length === 1 ? '' : 's'} total` });
+        };
+
+        return await createPagination(message, moderationHistory, formatPage, 3, `${actionFilter} History for ${user.user.username}`);
+
+      } catch (error) {
+        return embeds.deny(message, 'An error occurred while retrieving moderation history.');
+      }
     }
 
     const userResult = await findUser(message.guild, args[0], client);

@@ -44,7 +44,7 @@ module.exports = {
 
     const user = userResult.user;
 
-    if (!checkSelfAction(message, user.user)) return;
+    if (!checkSelfAction(message, user.user, 'mute')) return;
     if (!checkBotAction(message, user.user)) return;
     if (!checkDiscordActionable(message, user, 'timeout')) return;
 

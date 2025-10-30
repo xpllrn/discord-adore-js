@@ -39,7 +39,7 @@ module.exports = {
     const user = userResult.user;
 
     // Check self action
-    if (!checkSelfAction(message, user.user)) return;
+    if (!checkSelfAction(message, user.user, 'unmute')) return;
 
     // Check bot action
     if (!checkBotAction(message, user.user)) return;
