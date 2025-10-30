@@ -38,7 +38,6 @@ async function connect(connectionStrings) {
             readPreference: 'primaryPreferred', // Read from primary, fallback to secondary
             writeConcern: { w: 'majority', j: true }, // Ensure writes are acknowledged by majority
             bufferCommands: true, // Enable mongoose buffering to handle connection delays
-            bufferMaxEntries: 0, // Disable buffering after connection is established
           });
 
           // Wait for connection to be established
@@ -116,7 +115,6 @@ async function connect(connectionStrings) {
             readPreference: 'primaryPreferred', // Read from primary, fallback to secondary
             writeConcern: { w: 'majority', j: true }, // Ensure writes are acknowledged by majority
             bufferCommands: true, // Enable mongoose buffering to handle connection delays
-            bufferMaxEntries: 0, // Disable buffering after connection is established
           });
 
           // Wait for connection to be established
