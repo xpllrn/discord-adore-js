@@ -129,7 +129,7 @@ module.exports = {
     spotifyRepeat: '<:repeat:1432294357465042944>',
     spotifyShuffle: '<:shuffle:1432294336917143663>',
     spotifyShare: '<:share:1432294350250971136>',
-    musicNote: '<:9008musicnote:1432298234692370482>'
+    musicNote: '<:play:1432294396828848170>'
 
   },
 
