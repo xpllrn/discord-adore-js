@@ -80,6 +80,7 @@ module.exports = {
       embeds.success(message, `**Warning case #${caseId}** has been removed from **${user.user.username}** for ${reason}`);
 
     } catch (error) {
+      console.error('Error in unwarn command:', error);
       embeds.deny(message, `An error occurred while removing the warning`);
     }
   }

@@ -248,7 +248,7 @@ const guildSchema = new mongoose.Schema({
     action: {
       type: String,
       required: true,
-      enum: ['warn', 'unwarn', 'mute', 'unmute', 'kick', 'ban', 'unban', 'jail', 'unjail', 'role_save']
+      enum: ['warn', 'unwarn', 'mute', 'unmute', 'kick', 'ban', 'unban', 'jail', 'unjail', 'role_save', 'imute', 'iunmute', 'rmute', 'runmute']
     },
     reason: {
       type: String,
@@ -1120,12 +1120,12 @@ guildSchema.index({ 'Reminders.time': 1 }); // For finding due reminders
 guildSchema.index({ 'Reminders.userId': 1, 'Reminders.time': 1 }); // Compound for user reminders
 
 // Moderation case indexes
-guildSchema.index({ 'ModerationCases.caseId': 1 });
-guildSchema.index({ 'ModerationCases.userId': 1 });
-guildSchema.index({ 'ModerationCases.moderatorId': 1 });
-guildSchema.index({ 'ModerationCases.action': 1 });
-guildSchema.index({ 'ModerationCases.timestamp': -1 }); // Recent cases first
-guildSchema.index({ 'ModerationCases.userId': 1, 'ModerationCases.action': 1 }); // User action history
+guildSchema.index({ 'Moderation.caseId': 1 });
+guildSchema.index({ 'Moderation.userId': 1 });
+guildSchema.index({ 'Moderation.moderatorId': 1 });
+guildSchema.index({ 'Moderation.action': 1 });
+guildSchema.index({ 'Moderation.timestamp': -1 }); // Recent cases first
+guildSchema.index({ 'Moderation.userId': 1, 'Moderation.action': 1 }); // User action history
 
 // Welcome/Leave system indexes (for message management)
 guildSchema.index({ WelcomeChannel: 1 });

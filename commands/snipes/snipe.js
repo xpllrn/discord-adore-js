@@ -42,7 +42,7 @@ module.exports = {
     if (args[0]) {
       const parsed = parseInt(args[0]);
       if (isNaN(parsed) || parsed < 1 || parsed > snipes.length) {
-        return embeds.warn(message, `Please provide a valid number between 1 and ${snipes.length}`);
+        return embeds.warn(message, `Please provide a **valid number** between 1 and ${snipes.length}`);
       }
 
       const msg = snipes[parsed - 1];

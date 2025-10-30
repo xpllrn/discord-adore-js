@@ -76,6 +76,7 @@ module.exports = {
       await createPagination(message, moderationHistory, formatPage, 3, `Mod actions by ${moderator.user.username}`);
 
     } catch (error) {
+      console.error('Error retrieving moderator history:', error);
       embeds.deny(message, 'An error occurred while retrieving moderator history.');
     }
   }

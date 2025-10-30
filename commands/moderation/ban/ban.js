@@ -65,6 +65,7 @@ module.exports = {
         // Log the ban action
         await logModerationAction('ban', message.author, user, reason, message.guild, caseNumber);
       } catch (error) {
+        console.error('Error in hardban:', error);
         embeds.deny(message, 'An error occurred while trying to hardban this user.');
       }
     } else {
@@ -97,6 +98,7 @@ module.exports = {
         // Log the ban action
         await logModerationAction('ban', message.author, user.user, reason, message.guild, caseNumber);
       } catch (error) {
+        console.error('Error in ban:', error);
         embeds.deny(message, 'An error occurred while trying to ban this user.');
       }
     }

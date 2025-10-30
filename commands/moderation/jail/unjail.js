@@ -15,6 +15,7 @@ module.exports = {
   run: async(client, message, args) => {
 
     const guildService = getService('guild');
+    const moderationService = getService('moderation');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
@@ -150,13 +151,13 @@ module.exports = {
 
       // Add to moderation history
       try {
-        await guildService.addModerationCase(message.guild.id, {
-          userId: user.user.id,
-          moderatorId: message.author.id,
-          action: 'unjail',
-          reason: reason,
-          duration: null
-        });
+        await moderationService.addModerationCase(
+          message.guild.id,
+          user.user.id,
+          message.author.id,
+          'unjail',
+          reason
+        );
       } catch (historyError) {
         // Don't fail the command if history logging fails
       }

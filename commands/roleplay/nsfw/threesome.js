@@ -10,7 +10,7 @@ module.exports = {
   name: "threesome",
   description: "`NSFW` threesome roleplay command.",
   syntax: 'threesome @user1 @user2',
-  example: 'threesome @vee @user2',
+  example: 'threesome @vee @josh',
   run: async (client, message, args) => {
     try {
       // Check if channel is NSFW

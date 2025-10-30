@@ -76,6 +76,7 @@ module.exports = {
       // Log the kick action
       await logModerationAction('kick', message.author, user.user, reason, message.guild, caseNumber);
     } catch (error) {
+      console.error('Error in kick command:', error);
       embeds.deny(message, 'An error occurred while trying to kick this user.');
     }
   }

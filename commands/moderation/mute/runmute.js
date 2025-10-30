@@ -4,6 +4,7 @@ const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHi
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
+const { getService } = require('../../../database/services');
 
 module.exports = {
   name: "runmute",
@@ -13,6 +14,7 @@ module.exports = {
   example: 'runmute @vwsn appeal',
   permission: 'Moderate Members',
   run: async(client, message, args) => {
+    const moderationService = getService('moderation');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members')) return;
@@ -63,6 +65,19 @@ module.exports = {
         UseExternalEmojis: null,
         AddReactions: null
       }, { reason: `Reaction unmuted by ${message.author.tag}: ${reason}` });
+
+      // Add to moderation history
+      try {
+        await moderationService.addModerationCase(
+          message.guild.id,
+          user.user.id,
+          message.author.id,
+          'runmute',
+          reason
+        );
+      } catch (historyError) {
+        // Don't fail the command if history logging fails
+      }
 
       embeds.success(message, `**${user.user.tag}** has been **reaction unmuted** in this channel for ${reason}`);
 

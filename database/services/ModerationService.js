@@ -1,4 +1,5 @@
 const BaseService = require('./core/BaseService');
+const RetryManager = require('./core/RetryManager');
 const { model: Guild } = require('../models/guild');
 
 /**
@@ -21,7 +22,7 @@ class ModerationService extends BaseService {
    * @returns {Promise<Object>} Created case
    */
   async addModerationCase(guildId, userId, moderatorId, action, reason, duration = null) {
-    return this.executeWithRetry(async () => {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild) {
@@ -64,7 +65,7 @@ class ModerationService extends BaseService {
    * @returns {Promise<Array>} Array of cases
    */
   async getUserCases(guildId, userId, action = null) {
-    return this.executeWithRetry(async () => {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
@@ -88,7 +89,7 @@ class ModerationService extends BaseService {
    * @returns {Promise<Object|null>} Case or null
    */
   async getCase(guildId, caseId) {
-    return this.executeWithRetry(async () => {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
@@ -106,7 +107,7 @@ class ModerationService extends BaseService {
    * @returns {Promise<Array>} Array of cases
    */
   async getAllCases(guildId, limit = null) {
-    return this.executeWithRetry(async () => {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
@@ -129,17 +130,21 @@ class ModerationService extends BaseService {
    * @param {string} moderatorId - Moderator ID
    * @returns {Promise<Array>} Array of cases
    */
-  async getModeratorCases(guildId, moderatorId) {
-    return this.executeWithRetry(async () => {
+  async getModeratorCases(guildId, moderatorId, action = null) {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
         return [];
       }
 
-      return guild.Moderation
-        .filter(c => c.moderatorId === moderatorId)
-        .sort((a, b) => b.timestamp - a.timestamp);
+      let cases = guild.Moderation.filter(c => c.moderatorId === moderatorId);
+      
+      if (action) {
+        cases = cases.filter(c => c.action === action);
+      }
+
+      return cases.sort((a, b) => b.timestamp - a.timestamp);
     });
   }
 
@@ -150,7 +155,7 @@ class ModerationService extends BaseService {
    * @returns {Promise<boolean>} Success status
    */
   async deleteCase(guildId, caseId) {
-    return this.executeWithRetry(async () => {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
@@ -176,7 +181,7 @@ class ModerationService extends BaseService {
    * @returns {Promise<number>} Warning count
    */
   async getWarningCount(guildId, userId) {
-    return this.executeWithRetry(async () => {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
@@ -196,7 +201,7 @@ class ModerationService extends BaseService {
    * @returns {Promise<number>} Number of warnings cleared
    */
   async clearWarnings(guildId, userId) {
-    return this.executeWithRetry(async () => {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
@@ -222,7 +227,7 @@ class ModerationService extends BaseService {
    * @returns {Promise<Object>} Statistics
    */
   async getStats(guildId) {
-    return this.executeWithRetry(async () => {
+    return RetryManager.executeWithRetry(async () => {
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
@@ -252,6 +257,39 @@ class ModerationService extends BaseService {
         uniqueModerators: uniqueModerators.size
       };
     });
+  }
+
+  // Alias methods for backward compatibility with history command
+  async getModerationCase(guildId, caseId) {
+    return this.getCase(guildId, caseId);
+  }
+
+  async getModerationHistory(guildId, userId, action = null) {
+    return this.getUserCases(guildId, userId, action);
+  }
+
+  async removeModerationCase(guildId, caseId) {
+    return this.deleteCase(guildId, caseId);
+  }
+
+  async removeAllModerationCases(guildId, userId) {
+    return RetryManager.executeWithRetry(async () => {
+      const guild = await Guild.findOne({ GuildID: guildId });
+      
+      if (!guild || !guild.Moderation) {
+        return { deletedCount: 0 };
+      }
+
+      const initialLength = guild.Moderation.filter(c => c.userId === userId).length;
+      guild.Moderation = guild.Moderation.filter(c => c.userId !== userId);
+      
+      await guild.save();
+      return { deletedCount: initialLength };
+    });
+  }
+
+  async getModerationHistoryByModerator(guildId, moderatorId, action = null) {
+    return this.getModeratorCases(guildId, moderatorId, action);
   }
 }
 

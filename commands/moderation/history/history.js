@@ -66,6 +66,7 @@ module.exports = {
         return message.channel.send({ embeds: [embed] });
 
       } catch (error) {
+        console.error('Error retrieving moderation case:', error);
         return embeds.deny(message, 'An error occurred while retrieving the case');
       }
     }
@@ -113,6 +114,7 @@ module.exports = {
         return embeds.success(message, `Removed case #${caseId} for **${userResult.user.user.username}**`);
 
       } catch (error) {
+        console.error('Error removing moderation case:', error);
         return embeds.deny(message, 'An error occurred while removing the case');
       }
     }
@@ -150,6 +152,7 @@ module.exports = {
         return embeds.success(message, `Removed **${result.deletedCount}** case${result.deletedCount === 1 ? '' : 's'} for **${userResult.user.user.username}**`);
 
       } catch (error) {
+        console.error('Error removing all moderation cases:', error);
         return embeds.deny(message, 'An error occurred while removing cases');
       }
     }
@@ -205,6 +208,7 @@ module.exports = {
         return await createPagination(message, moderationHistory, formatPage, 3, `${actionFilter} History for ${user.user.username}`);
 
       } catch (error) {
+        console.error('Error retrieving moderation history (action filter):', error);
         return embeds.deny(message, 'An error occurred while retrieving moderation history.');
       }
     }
@@ -260,6 +264,7 @@ module.exports = {
       await createPagination(message, moderationHistory, formatPage, 3, `History for ${user.user.username}`);
 
     } catch (error) {
+      console.error('Error retrieving moderation history (general):', error);
       embeds.deny(message, 'An error occurred while retrieving moderation history.');
     }
   }

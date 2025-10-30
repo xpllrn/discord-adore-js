@@ -84,6 +84,7 @@ module.exports = {
       await logModerationAction('unban', message.author, targetBan.user, reason, message.guild);
 
     } catch (error) {
+      console.error('Error in unban command:', error);
       embeds.deny(message, 'An error occurred while trying to unban this user.');
     }
   }

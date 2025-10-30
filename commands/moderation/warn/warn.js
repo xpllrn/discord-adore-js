@@ -75,6 +75,7 @@ module.exports = {
       await logModerationAction('warn', message.author, warnedMember.user, reason, message.guild, moderationCase.caseId);
 
     } catch (error) {
+      console.error('Error in warn command:', error);
       embeds.deny(message, `An error occurred while warning **${warnedMember.user.username}**`);
     }
   }

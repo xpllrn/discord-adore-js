@@ -18,6 +18,7 @@ module.exports = {
   run: async(client, message, args) => {
 
     const guildService = getService('guild');
+    const moderationService = getService('moderation');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
@@ -163,13 +164,13 @@ module.exports = {
       console.log(`[JAIL DEBUG] User: ${user.user.tag}, Roles to save:`, rolesToSave);
 
       // Save roles using service layer
-      await guildService.addModerationCase(message.guild.id, {
-        userId: user.user.id,
-        moderatorId: 'system',
-        action: 'role_save',
-        reason: JSON.stringify(rolesToSave),
-        duration: null
-      });
+      await moderationService.addModerationCase(
+        message.guild.id,
+        user.user.id,
+        'system',
+        'role_save',
+        JSON.stringify(rolesToSave)
+      );
       
       console.log(`[JAIL DEBUG] Roles saved successfully`);
 
@@ -192,13 +193,13 @@ module.exports = {
 
       // Add to moderation history
       try {
-        await guildService.addModerationCase(message.guild.id, {
-          userId: user.user.id,
-          moderatorId: message.author.id,
-          action: 'jail',
-          reason: reason,
-          duration: null
-        });
+        await moderationService.addModerationCase(
+          message.guild.id,
+          user.user.id,
+          message.author.id,
+          'jail',
+          reason
+        );
       } catch (historyError) {
         // Don't fail the command if history logging fails
       }
