@@ -214,8 +214,7 @@ async function playFromUser(client, message, args, spotifyService, accessToken) 
     const embed = new EmbedBuilder()
       .setColor(config.colors.spotify)
       .setDescription(
-        `${config.emojis.spotify} ${message.author}: Now playing [\`${trackName}\`](${trackUrl}) by \`${artistName}\` (from **${targetUser.username}**'s Spotify)`
-      );
+        `${config.emojis.spotify} ${message.author}: Now playing [\`${trackName}\`](${trackUrl}) by \`${artistName}\` ` );
 
     return message.channel.send({ embeds: [embed] });
 

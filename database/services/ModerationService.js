@@ -55,10 +55,9 @@ class ModerationService extends BaseService {
    */
   async addModerationCase(guildId, userId, moderatorId, action, reason, duration = null) {
     return RetryManager.executeWithRetry(async () => {
-      // Wait for database to be ready
-      const isReady = await waitForDatabase(5000);
-      if (!isReady) {
-        throw new Error('Database connection timeout - please try again in a moment');
+      // Quick database ready check - don't wait
+      if (!isDatabaseReady()) {
+        throw new Error('Database not ready');
       }
       
       const guild = await Guild.findOne({ GuildID: guildId });
@@ -104,10 +103,9 @@ class ModerationService extends BaseService {
    */
   async getUserCases(guildId, userId, action = null) {
     return RetryManager.executeWithRetry(async () => {
-      // Wait for database to be ready
-      const isReady = await waitForDatabase(5000);
-      if (!isReady) {
-        throw new Error('Database connection timeout - please try again in a moment');
+      // Quick database ready check - don't wait
+      if (!isDatabaseReady()) {
+        throw new Error('Database not ready');
       }
       
       const guild = await Guild.findOne({ GuildID: guildId });
@@ -134,10 +132,9 @@ class ModerationService extends BaseService {
    */
   async getCase(guildId, caseId) {
     return RetryManager.executeWithRetry(async () => {
-      // Wait for database to be ready
-      const isReady = await waitForDatabase(5000);
-      if (!isReady) {
-        throw new Error('Database connection timeout - please try again in a moment');
+      // Quick database ready check - don't wait
+      if (!isDatabaseReady()) {
+        throw new Error('Database not ready');
       }
       
       const guild = await Guild.findOne({ GuildID: guildId });

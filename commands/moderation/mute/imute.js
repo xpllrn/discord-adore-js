@@ -56,7 +56,7 @@ module.exports = {
     try {
       // Check if user already has image mute permissions removed in this channel
       const currentOverrides = message.channel.permissionOverwrites.cache.get(user.id);
-      if (currentOverrides && currentOverrides.deny.has(PermissionFlagsBits.EmbedLinks) && currentOverrides.deny.has(PermissionFlagsBits.AttachFiles)) {
+      if (currentOverrides?.deny?.has(PermissionFlagsBits.EmbedLinks) && currentOverrides?.deny?.has(PermissionFlagsBits.AttachFiles)) {
         return embeds.warn(message, `**${user.user.username}** is already image muted in this channel`);
       }
 
@@ -66,23 +66,19 @@ module.exports = {
         AttachFiles: false
       }, { reason: `Image muted by ${message.author.tag}: ${reason}` });
 
-      // Add to moderation history
-      try {
-        await moderationService.addModerationCase(
+      embeds.success(message, `**${user.user.tag}** has been **image muted** in this channel for ${reason}`);
+
+      // Add to moderation history and log action asynchronously (don't wait)
+      Promise.allSettled([
+        moderationService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,
           'imute',
           reason
-        );
-      } catch (historyError) {
-        // Don't fail the command if history logging fails
-      }
-
-      embeds.success(message, `**${user.user.tag}** has been **image muted** in this channel for ${reason}`);
-
-      // Log the image mute action
-      await logModerationAction('imute', message.author, user.user, reason, message.guild);
+        ),
+        logModerationAction('imute', message.author, user.user, reason, message.guild)
+      ]).catch(() => {}); // Silent fail for background tasks
 
     } catch (error) {
       embeds.deny(message, 'An error occurred while trying to image mute this user');

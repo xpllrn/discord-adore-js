@@ -10,7 +10,7 @@ module.exports = {
   syntax: 'pic (user)',
   example: 'pic @vwsn',
   permission: "Manage Channels",
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 

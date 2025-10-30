@@ -83,11 +83,11 @@ module.exports = {
       let description = `${emojis.success} <@${message.author.id}>: Claimed **${formatCurrency(reward)}** coins`;
 
       if (newStreak > 1) {
-        description += ` 🔥 **${newStreak} day streak!**`;
+        description += ` **${newStreak} day streak!**`;
 
         // Show next day's potential reward
         const nextReward = calculateDailyReward(newStreak + 1);
-        description += `\nNext daily: **${formatCurrency(nextReward)}** coins (+10% bonus)`;
+        description += `\nNext daily: **${formatCurrency(nextReward)}** coins`;
       } else {
         description += `\nKeep your streak for better rewards!`;
       }

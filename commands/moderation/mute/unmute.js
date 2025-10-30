@@ -57,23 +57,19 @@ module.exports = {
     try {
       await user.timeout(null, reason); // null removes the timeout
 
-      // Add to moderation history
-      try {
-        await moderationService.addModerationCase(
+      embeds.success(message, `**${user.user.username}** has been **unmuted** for ${reason}`);
+
+      // Add to moderation history and log action asynchronously (don't wait)
+      Promise.allSettled([
+        moderationService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,
           'unmute',
           reason
-        );
-      } catch (historyError) {
-        // Don't fail the command if history logging fails
-      }
-
-      // Log the unmute action
-      await logModerationAction('untimeout', message.author, user.user, reason, message.guild);
-
-      return embeds.success(message, `**${user.user.username}** has been **unmuted** for ${reason}`);
+        ),
+        logModerationAction('untimeout', message.author, user.user, reason, message.guild)
+      ]).catch(() => {}); // Silent fail for background tasks
 
     } catch (error) {
       return embeds.deny(message, 'Failed to remove timeout. Please check my permissions and role hierarchy.');

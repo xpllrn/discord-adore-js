@@ -35,7 +35,8 @@ const error = (member, author, type) => {
 const commands = {
     general: [
         'howto', 'set',
-        'update', 'refresh', 'index'
+        'update', 'refresh', 'index',
+        'crownsall', 'crowns'
     ],
     username: [
         // FMBot-style short commands (auto-detect current track)
@@ -168,12 +169,11 @@ module.exports = {
             }
 
             case 'update':
-            case 'refresh':
-            case 'index': {
+            case 'refresh': {
                 const subcommandInfo = {
                     description: 'Update your Last.fm library',
                     usage: '{guildprefix}lastfm update',
-                    aliases: ['refresh', 'index'],
+                    aliases: ['refresh'],
                     parameters: [],
                     example: '{guildprefix}lastfm update'
                 };
@@ -194,6 +194,25 @@ module.exports = {
                 } catch (error) {
                     return embeds.warn(message, `Error updating **Last.fm** library. Please try again.`);
                 }
+            }
+
+            case 'index': {
+                const subcommandInfo = {
+                    description: 'Index all Last.fm data for the entire server (libraries and crowns)',
+                    usage: '{guildprefix}lastfm index',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm index'
+                };
+
+                try {
+                    message.channel.sendTyping();
+                    const serverIndex = new ServerIndex();
+                    await serverIndex.execute(message);
+                } catch (error) {
+                    return embeds.warn(message, `Error indexing server Last.fm data. Please try again.`);
+                }
+                break;
             }
 
             // FMBot-style short commands (auto-detect current track)
@@ -592,6 +611,44 @@ module.exports = {
                     await compare.execute(message);
                 } catch (error) {
                     return embeds.warn(message, `Error comparing **Last.fm** profiles. Please try again.`);
+                }
+                break;
+            }
+
+            case 'crownsall': {
+                const subcommandInfo = {
+                    description: 'Show all crowns in the server ranked by number of crowns',
+                    usage: '{guildprefix}lastfm crownsall',
+                    aliases: [],
+                    parameters: [],
+                    example: '{guildprefix}lastfm crownsall'
+                };
+
+                try {
+                    message.channel.sendTyping();
+                    const crownsAll = new CrownsAll();
+                    await crownsAll.execute(message);
+                } catch (error) {
+                    return embeds.warn(message, `Error fetching crown leaderboard. Please try again.`);
+                }
+                break;
+            }
+
+            case 'crowns': {
+                const subcommandInfo = {
+                    description: 'Show your crowns or another user\'s crowns',
+                    usage: '{guildprefix}lastfm crowns [user]',
+                    aliases: [],
+                    parameters: ['user (optional)'],
+                    example: '{guildprefix}lastfm crowns @vwsn'
+                };
+
+                try {
+                    message.channel.sendTyping();
+                    const crowns = new Crowns();
+                    await crowns.execute(message, args);
+                } catch (error) {
+                    return embeds.warn(message, `Error fetching crowns. Please try again.`);
                 }
                 break;
             }
@@ -1873,6 +1930,378 @@ class Pace {
             return message.channel.send({ embeds: [embed] });
         } catch (error) {
             return embeds.warn(message, `Error fetching pace information. Please try again.`);
+        }
+    }
+}
+
+class CrownsAll {
+    constructor() {}
+
+    async execute(message) {
+        try {
+            const { getService } = require('@services');
+            const guildService = getService('guild');
+            const userService = getService('user');
+
+            // Get all crowns for this guild
+            const allCrowns = await guildService.getAllLastFMCrowns(message.guild.id);
+
+            if (!allCrowns || allCrowns.length === 0) {
+                return embeds.warn(message, `No crowns have been claimed in this server yet. Use \`whoknows\` commands to start claiming crowns!`);
+            }
+
+            // Group crowns by user and count them
+            const userCrownCounts = {};
+            const userCrownDetails = {};
+
+            for (const crown of allCrowns) {
+                if (!userCrownCounts[crown.userId]) {
+                    userCrownCounts[crown.userId] = 0;
+                    userCrownDetails[crown.userId] = [];
+                }
+                userCrownCounts[crown.userId]++;
+                userCrownDetails[crown.userId].push({
+                    artist: crown.artistName,
+                    plays: crown.plays,
+                    claimedAt: crown.claimedAt
+                });
+            }
+
+            // Sort users by crown count (descending)
+            const sortedUsers = Object.entries(userCrownCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 15); // Limit to top 15
+
+            if (sortedUsers.length === 0) {
+                return embeds.warn(message, `No crowns have been claimed in this server yet.`);
+            }
+
+            // Build the leaderboard
+            let leaderboard = '';
+            let index = 0;
+
+            for (const [userId, crownCount] of sortedUsers) {
+                index++;
+                try {
+                    const member = await message.guild.members.fetch(userId).catch(() => null);
+                    const fmUsername = await userService.getLastFMUsername(userId);
+                    
+                    if (member && fmUsername) {
+                        const displayName = member.user.tag;
+                        const userUrl = `https://www.last.fm/user/${fmUsername}`;
+                        
+                        let display = `\`${index}\``;
+                        if (index === 1) {
+                            display = ':crown:';
+                        }
+
+                        leaderboard += `${display} [**${displayName}**](${userUrl}) - **${crownCount}** ${crownCount === 1 ? 'crown' : 'crowns'}\n`;
+                    }
+                } catch (error) {
+                    // Skip users that can't be fetched
+                    continue;
+                }
+            }
+
+            if (!leaderboard) {
+                return embeds.warn(message, `No valid crown holders found in this server.`);
+            }
+
+            const embed = new EmbedBuilder()
+                .setColor(config.colors.info)
+                .setAuthor({
+                    name: message.member.displayName,
+                    iconURL: message.member.displayAvatarURL({ dynamic: true })
+                })
+                .setTitle(`Crown Leaderboard - ${message.guild.name}`)
+                .setDescription(leaderboard)
+                .setFooter({ text: `Total crowns: ${allCrowns.length} | Total crown holders: ${sortedUsers.length}` });
+
+            return message.channel.send({ embeds: [embed] });
+
+        } catch (error) {
+            console.error('CrownsAll error:', error);
+            return embeds.warn(message, `Error fetching crown leaderboard. Please try again.`);
+        }
+    }
+}
+
+class Crowns {
+    constructor() {}
+
+    async execute(message, args) {
+        try {
+            const { getService } = require('@services');
+            const guildService = getService('guild');
+            const userService = getService('user');
+
+            let targetUser = message.author;
+            let targetUserId = message.author.id;
+
+            // Check if user specified another user
+            if (args[1]) {
+                const userResult = await findUser(message.guild, args[1], message.client);
+
+                if (!userResult.found) {
+                    return embeds.warn(message, userResult.error);
+                }
+
+                targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
+                targetUserId = targetUser.id;
+            }
+
+            // Get user's crowns
+            const userCrowns = await guildService.getUserLastFMCrowns(message.guild.id, targetUserId);
+
+            if (!userCrowns || userCrowns.length === 0) {
+                const isOwnProfile = targetUserId === message.author.id;
+                const pronoun = isOwnProfile ? 'You' : `**${targetUser.displayName || targetUser.username || 'User'}**`;
+                const verb = isOwnProfile ? "don't" : "doesn't";
+                return embeds.warn(message, `${pronoun} ${verb} have any crowns in this server yet. Use \`whoknows\` commands to claim crowns!`);
+            }
+
+            // Sort crowns by plays (descending)
+            const sortedCrowns = userCrowns.sort((a, b) => b.plays - a.plays);
+
+            // Create paginated embeds if there are many crowns
+            const embeds_list = [];
+            const crownsPerPage = 10;
+
+            for (let i = 0; i < sortedCrowns.length; i += crownsPerPage) {
+                const pageCrowns = sortedCrowns.slice(i, i + crownsPerPage);
+
+                const mapped = pageCrowns.map((crown, index) => {
+                    const globalIndex = i + index + 1;
+                    const artistUrl = `https://www.last.fm/music/${encodeURIComponent(crown.artistName)}`;
+                    const claimedDate = new Date(crown.claimedAt).toLocaleDateString();
+                    
+                    return `\`${globalIndex}\` [**${crown.artistName}**](${artistUrl}) - **${crown.plays.toLocaleString()}** ${crown.plays === 1 ? 'play' : 'plays'} (${claimedDate})`;
+                }).join('\n');
+
+                const fmUsername = await userService.getLastFMUsername(targetUserId);
+                const userUrl = fmUsername ? `https://www.last.fm/user/${fmUsername}` : null;
+
+                const embed = new EmbedBuilder()
+                    .setColor(config.colors.info)
+                    .setAuthor({
+                        name: `${targetUser.displayName || targetUser.username || 'User'}'s Crowns`,
+                        iconURL: targetUser.displayAvatarURL({ dynamic: true }),
+                        url: userUrl
+                    })
+                    .setDescription(mapped)
+                    .setFooter({ 
+                        text: `Total crowns: ${sortedCrowns.length}${embeds_list.length > 0 ? ` | Page ${embeds_list.length + 1}` : ''}` 
+                    });
+
+                embeds_list.push(embed);
+            }
+
+            // Send the first embed (or only embed if there's just one page)
+            return message.channel.send({ embeds: [embeds_list[0]] });
+
+        } catch (error) {
+            console.error('Crowns error:', error);
+            return embeds.warn(message, `Error fetching crowns. Please try again.`);
+        }
+    }
+}
+
+class ServerIndex {
+    constructor() {}
+
+    async execute(message) {
+        try {
+            const { getService } = require('@services');
+            const guildService = getService('guild');
+            const userService = getService('user');
+
+            // Send initial loading message
+            const loadingEmbed = embeds.createLoading(message, `Starting server-wide Last.fm indexing for **${message.guild.name}**...`);
+            const loadingMsg = await message.channel.send({ embeds: [loadingEmbed] });
+
+            // Get all guild members with Last.fm usernames
+            const guildMembers = await message.guild.members.fetch();
+            const usersWithLastFM = [];
+            const usersToIndex = [];
+
+            // Phase 1: Find users and check who needs library updates
+            let phase1Embed = embeds.createLoading(message, `Scanning server members for Last.fm accounts...`);
+            await loadingMsg.edit({ embeds: [phase1Embed] });
+
+            for (const [memberId, member] of guildMembers) {
+                const fmUsername = await userService.getLastFMUsername(memberId);
+                
+                if (fmUsername) {
+                    const library = await userService.getLastFMLibrary(memberId);
+                    
+                    if (library && library.artists && library.artists.length > 0) {
+                        // User has existing library
+                        usersWithLastFM.push({
+                            userId: memberId,
+                            username: fmUsername,
+                            library: library,
+                            member: member
+                        });
+                    } else {
+                        // User needs library indexing
+                        usersToIndex.push({
+                            userId: memberId,
+                            username: fmUsername,
+                            member: member
+                        });
+                    }
+                }
+            }
+
+            const totalLastFMUsers = usersWithLastFM.length + usersToIndex.length;
+
+            if (totalLastFMUsers === 0) {
+                const noUsersEmbed = embeds.createWarn(message, `No users with **Last.fm** accounts found in this server. Users need to run \`lastfm set [username]\` first.`);
+                return loadingMsg.edit({ embeds: [noUsersEmbed] });
+            }
+
+            // Phase 2: Index libraries for users who need it
+            if (usersToIndex.length > 0) {
+                let indexedCount = 0;
+                
+                for (const user of usersToIndex) {
+                    indexedCount++;
+                    const indexEmbed = embeds.createLoading(message, `Indexing libraries... **${indexedCount}/${usersToIndex.length}** - ${user.username}`);
+                    await loadingMsg.edit({ embeds: [indexEmbed] });
+
+                    try {
+                        // Create and run library indexing for this user
+                        const library = new Library(user.userId, user.username, message, loadingMsg);
+                        await library.index();
+
+                        // Get the newly indexed library
+                        const newLibrary = await userService.getLastFMLibrary(user.userId);
+                        if (newLibrary && newLibrary.artists && newLibrary.artists.length > 0) {
+                            usersWithLastFM.push({
+                                userId: user.userId,
+                                username: user.username,
+                                library: newLibrary,
+                                member: user.member
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Error indexing library for ${user.username}:`, error);
+                        // Continue with other users
+                    }
+                }
+            }
+
+            if (usersWithLastFM.length === 0) {
+                const noLibrariesEmbed = embeds.createWarn(message, `No users with valid **Last.fm** libraries found. Library indexing may have failed.`);
+                return loadingMsg.edit({ embeds: [noLibrariesEmbed] });
+            }
+
+            // Phase 3: Process crowns
+            const processingEmbed = embeds.createLoading(message, `Processing crowns from **${usersWithLastFM.length}** users with libraries...`);
+            await loadingMsg.edit({ embeds: [processingEmbed] });
+
+            // Collect all unique artists and find who has the most plays for each
+            const artistCrowns = new Map();
+            let totalArtistsProcessed = 0;
+
+            for (const user of usersWithLastFM) {
+                for (const artist of user.library.artists) {
+                    const artistNameLower = artist.name.toLowerCase();
+                    
+                    if (!artistCrowns.has(artistNameLower)) {
+                        artistCrowns.set(artistNameLower, {
+                            artistName: artist.name, // Keep original casing
+                            topUser: user.userId,
+                            topPlays: artist.plays,
+                            topUsername: user.username
+                        });
+                    } else {
+                        const current = artistCrowns.get(artistNameLower);
+                        if (artist.plays > current.topPlays) {
+                            artistCrowns.set(artistNameLower, {
+                                artistName: artist.name, // Keep original casing
+                                topUser: user.userId,
+                                topPlays: artist.plays,
+                                topUsername: user.username
+                            });
+                        }
+                    }
+                    totalArtistsProcessed++;
+                }
+            }
+
+            // Phase 4: Update crown database
+            const savingEmbed = embeds.createLoading(message, `Updating crown database with **${artistCrowns.size.toLocaleString()}** crowns...`);
+            await loadingMsg.edit({ embeds: [savingEmbed] });
+
+            // Clear existing crowns for this guild
+            const existingCrowns = await guildService.getAllLastFMCrowns(message.guild.id);
+            for (const crown of existingCrowns) {
+                await guildService.removeLastFMCrown(message.guild.id, crown.artistName);
+            }
+
+            // Set new crowns
+            let newCrownsCount = 0;
+            for (const [artistNameLower, crownData] of artistCrowns) {
+                await guildService.setLastFMCrown(
+                    message.guild.id, 
+                    crownData.artistName, 
+                    crownData.topUser, 
+                    crownData.topPlays
+                );
+                newCrownsCount++;
+            }
+
+            // Count crowns per user for summary
+            const userCrownCounts = new Map();
+            for (const [artistNameLower, crownData] of artistCrowns) {
+                const userId = crownData.topUser;
+                userCrownCounts.set(userId, (userCrownCounts.get(userId) || 0) + 1);
+            }
+
+            // Get top crown holders for summary
+            const topCrownHolders = Array.from(userCrownCounts.entries())
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5);
+
+            let topHoldersText = '';
+            for (const [userId, count] of topCrownHolders) {
+                try {
+                    const member = await message.guild.members.fetch(userId);
+                    topHoldersText += `**${member.user.tag}**: ${count} crowns\n`;
+                } catch (error) {
+                    // Skip if member can't be fetched
+                }
+            }
+
+            // Send success message
+            const successEmbed = new EmbedBuilder()
+                .setColor(config.colors.success)
+                .setAuthor({
+                    name: message.member.displayName,
+                    iconURL: message.member.displayAvatarURL({ dynamic: true })
+                })
+                .setTitle(`Server Last.fm Indexing Complete - ${message.guild.name}`)
+                .setDescription(`Successfully indexed **${totalLastFMUsers}** Last.fm users and **${newCrownsCount.toLocaleString()}** crowns.`)
+                .addFields(
+                    { name: 'Total Last.fm Users', value: totalLastFMUsers.toString(), inline: true },
+                    { name: 'Libraries Indexed', value: usersToIndex.length.toString(), inline: true },
+                    { name: 'Crowns Created', value: newCrownsCount.toLocaleString(), inline: true },
+                    { name: 'Artists Processed', value: totalArtistsProcessed.toLocaleString(), inline: true },
+                    { name: 'Users with Libraries', value: usersWithLastFM.length.toString(), inline: true },
+                    { name: 'Crown Holders', value: userCrownCounts.size.toString(), inline: true }
+                )
+                .setFooter({ text: `Use 'lf crownsall' to see the crown leaderboard` });
+
+            if (topHoldersText) {
+                successEmbed.addFields({ name: 'Top Crown Holders', value: topHoldersText, inline: false });
+            }
+
+            return loadingMsg.edit({ embeds: [successEmbed] });
+
+        } catch (error) {
+            console.error('ServerIndex error:', error);
+            return embeds.warn(message, `Error indexing server Last.fm data. Please try again.`);
         }
     }
 }

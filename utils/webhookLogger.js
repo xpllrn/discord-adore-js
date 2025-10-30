@@ -55,33 +55,36 @@ class WebhookLogger {
    * @returns {Promise<void>}
    */
   async sendLog(guildId, logType, embed, files = []) {
-    try {
-      const configs = await this.getLoggingConfigs(guildId, logType);
-      if (configs.length === 0) return;
+    // Make webhook logging completely non-blocking
+    setImmediate(async () => {
+      try {
+        const configs = await this.getLoggingConfigs(guildId, logType);
+        if (configs.length === 0) return;
 
-      const promises = configs.map(async (config) => {
-        const webhook = this.getWebhookClient(config.webhookUrl);
-        if (!webhook) return;
+        const promises = configs.map(async (config) => {
+          const webhook = this.getWebhookClient(config.webhookUrl);
+          if (!webhook) return;
 
-        try {
-          const messageOptions = { embeds: [embed] };
-          if (files && files.length > 0) {
-            messageOptions.files = files;
+          try {
+            const messageOptions = { embeds: [embed] };
+            if (files && files.length > 0) {
+              messageOptions.files = files;
+            }
+            await webhook.send(messageOptions);
+          } catch (error) {
+            // If webhook was deleted (404 error), try to recreate it
+            if (error.code === 10015 || error.status === 404) {
+              await this.handleDeletedWebhook(guildId, config, embed, files);
+            }
+            // Silent fail for other webhook errors - avoid infinite loops
           }
-          await webhook.send(messageOptions);
-        } catch (error) {
-          // If webhook was deleted (404 error), try to recreate it
-          if (error.code === 10015 || error.status === 404) {
-            await this.handleDeletedWebhook(guildId, config, embed, files);
-          }
-          // Silent fail for other webhook errors - avoid infinite loops
-        }
-      });
+        });
 
-      await Promise.allSettled(promises);
-    } catch (error) {
-      // Silent fail for logging system - avoid infinite loops
-    }
+        await Promise.allSettled(promises);
+      } catch (error) {
+        // Silent fail for logging system - avoid infinite loops
+      }
+    });
   }
 
   /**

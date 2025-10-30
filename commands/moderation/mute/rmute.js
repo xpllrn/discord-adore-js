@@ -56,7 +56,7 @@ module.exports = {
     try {
       // Check if user already has reaction mute permissions removed in this channel
       const currentOverrides = message.channel.permissionOverwrites.cache.get(user.id);
-      if (currentOverrides && currentOverrides.deny.has(PermissionFlagsBits.UseExternalEmojis) && currentOverrides.deny.has(PermissionFlagsBits.AddReactions)) {
+      if (currentOverrides?.deny?.has(PermissionFlagsBits.UseExternalEmojis) && currentOverrides?.deny?.has(PermissionFlagsBits.AddReactions)) {
         return embeds.warn(message, `**${user.user.username}** is already reaction muted in this channel`);
       }
 
@@ -66,23 +66,19 @@ module.exports = {
         AddReactions: false
       }, { reason: `Reaction muted by ${message.author.tag}: ${reason}` });
 
-      // Add to moderation history
-      try {
-        await moderationService.addModerationCase(
+      embeds.success(message, `**${user.user.tag}** has been **reaction muted** in this channel for ${reason}`);
+
+      // Add to moderation history and log action asynchronously (don't wait)
+      Promise.allSettled([
+        moderationService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,
           'rmute',
           reason
-        );
-      } catch (historyError) {
-        // Don't fail the command if history logging fails
-      }
-
-      embeds.success(message, `**${user.user.tag}** has been **reaction muted** in this channel for ${reason}`);
-
-      // Log the reaction mute action
-      await logModerationAction('rmute', message.author, user.user, reason, message.guild);
+        ),
+        logModerationAction('rmute', message.author, user.user, reason, message.guild)
+      ]).catch(() => {}); // Silent fail for background tasks
 
     } catch (error) {
       embeds.deny(message, 'An error occurred while trying to reaction mute this user');

@@ -69,23 +69,20 @@ module.exports = {
     try {
       await user.timeout(duration, reason);
 
-      try {
-        await moderationService.addModerationCase(
+      embeds.success(message, `**${user.user.username}** has been **muted** for ${ms(duration, { long: true })} for ${reason}`);
+
+      // Add to moderation history and log action asynchronously (don't wait)
+      Promise.allSettled([
+        moderationService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,
           'mute',
           reason,
           ms(duration, { long: true })
-        );
-      } catch (historyError) {
-
-      }
-
-      // Log the mute action
-      await logModerationAction('timeout', message.author, user.user, reason, message.guild, ms(duration, { long: true }));
-
-      return embeds.success(message, `**${user.user.username}** has been **muted** for ${ms(duration, { long: true })} for ${reason}`);
+        ),
+        logModerationAction('timeout', message.author, user.user, reason, message.guild, ms(duration, { long: true }))
+      ]).catch(() => {}); // Silent fail for background tasks
 
     } catch (error) {
       return embeds.deny(message, 'Failed to timeout user. Please check my permissions and role hierarchy.');

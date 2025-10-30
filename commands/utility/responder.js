@@ -716,6 +716,9 @@ async function handleAdoreMention(client, message) {
         return message.react('❤️');
     }
 
+    // Start typing indicator
+    await message.channel.sendTyping();
+
     try {
         if (url.match(/instagram\.com\/(p|reel|tv)/)) {
             return await handleInstagram(message, url, client);

@@ -83,40 +83,30 @@ async function findUser(guild, userInput, client = null) {
   let user = guild.members.cache.get(userInput);
   if (user) return { found: true, user, isGlobal: false };
 
-  // Try to find by exact username (case-insensitive)
-  user = guild.members.cache.find(m => m.user.username.toLowerCase() === userInput.toLowerCase());
-  if (user) return { found: true, user, isGlobal: false };
-
-  // Try to find by exact display name (case-insensitive)
-  user = guild.members.cache.find(m => m.displayName.toLowerCase() === userInput.toLowerCase());
-  if (user) return { found: true, user, isGlobal: false };
-
-  // Find closest match automatically
+  // Find closest match automatically with single iteration
   const input = userInput.toLowerCase();
-
-  // Try partial matches in username
+  
+  // Single iteration through members cache for all checks
   user = guild.members.cache.find(m => {
     const username = m.user.username.toLowerCase();
-    return username.includes(input) || input.includes(username);
-  });
-  if (user) return { found: true, user, isGlobal: false };
-
-  // Try partial matches in display name
-  user = guild.members.cache.find(m => {
     const displayName = m.displayName.toLowerCase();
-    return displayName.includes(input) || input.includes(displayName);
+    
+    // Exact matches first (highest priority)
+    if (username === input || displayName === input) return true;
+    
+    // Partial matches
+    if (username.includes(input) || input.includes(username)) return true;
+    if (displayName.includes(input) || input.includes(displayName)) return true;
+    
+    // Starting character matches (for inputs 3+ characters)
+    if (input.length >= 3) {
+      const prefix = input.substring(0, 3);
+      if (username.startsWith(prefix) || displayName.startsWith(prefix)) return true;
+    }
+    
+    return false;
   });
   if (user) return { found: true, user, isGlobal: false };
-
-  // Try starting character matches (for inputs 3+ characters)
-  if (input.length >= 3) {
-    const prefix = input.substring(0, 3);
-    user = guild.members.cache.find(m =>
-      m.user.username.toLowerCase().startsWith(prefix) ||
-      m.displayName.toLowerCase().startsWith(prefix)
-    );
-    if (user) return { found: true, user, isGlobal: false };
-  }
 
   // If not found in guild and input looks like user ID, try global fetch
   if (client && /^\d{17,19}$/.test(userInput)) {
