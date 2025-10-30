@@ -941,7 +941,8 @@ async function handleVMRenameModal(interaction) {
 
 async function handleWelcomeButton(interaction) {
   try {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    // Use deferUpdate to acknowledge the interaction silently (no "thinking" message)
+    await interaction.deferUpdate();
 
     const guild = interaction.guild;
     const user = interaction.user;
@@ -956,10 +957,10 @@ async function handleWelcomeButton(interaction) {
         welcomeMessage = Buffer.from(customIdParts[1], 'base64').toString('utf-8');
       } catch (error) {
         console.error('Error decoding welcome message:', error);
-        welcomeMessage = 'Welcome to the server! 🎉';
+        welcomeMessage = 'Welcome to our server!';
       }
     } else {
-      welcomeMessage = 'Welcome to the server! 🎉';
+      welcomeMessage = 'Welcome to our server!';
     }
 
     // Check if user has already used this welcome button
@@ -977,18 +978,28 @@ async function handleWelcomeButton(interaction) {
         { author: { id: user.id } },
         'You already **welcomed them once**, don\'t be over excited.'
       );
-      return await interaction.editReply({ embeds: [embed] });
+      return await interaction.followUp({ embeds: [embed], ephemeral: true });
     }
 
     // Track this interaction to prevent spam
     await welcomeButtonService.trackInteraction(guild.id, interaction.message.id, user.id);
 
-    // Create or get webhook for this user
+    // Create or get webhook for this user in this channel
     const webhookService = getService('webhook');
-    let webhook = await webhookService.getWebhookByName(guild.id, user.username);
+    let webhook = null;
 
+    // First, try to find an existing webhook for this user in this channel
+    const existingWebhooks = await webhookService.getGuildWebhooks(guild.id);
+    webhook = existingWebhooks.find(wh =>
+      wh.createdBy === user.id &&
+      wh.channelId === interaction.channel.id &&
+      wh.name.toLowerCase() === user.username.toLowerCase()
+    );
+
+
+
+    // If no webhook found, create a new one
     if (!webhook) {
-      // Create a new webhook for this user
       try {
         const discordWebhook = await interaction.channel.createWebhook({
           name: user.username,
@@ -1010,10 +1021,9 @@ async function handleWelcomeButton(interaction) {
           { author: { id: user.id } },
           'Failed to create webhook. Please check bot permissions.'
         );
-        return await interaction.editReply({ embeds: [embed] });
+        return await interaction.followUp({ embeds: [embed], ephemeral: true });
       }
     }
-
     // Send welcome message using webhook
     try {
       const { WebhookClient } = require('discord.js');
@@ -1039,16 +1049,74 @@ async function handleWelcomeButton(interaction) {
       // Update webhook last used time
       await webhookService.updateLastUsed(webhook.webhookId);
 
-      // Silent success - just dismiss the interaction without showing a message
-      return await interaction.deleteReply();
+      // Silent success - interaction is already acknowledged with deferUpdate
+      return;
 
     } catch (error) {
-      console.error('Error sending welcome message:', error);
-      const embed = embeds.createDeny(
-        { author: { id: user.id } },
-        'Failed to send welcome message. The webhook may have been deleted.'
-      );
-      return await interaction.editReply({ embeds: [embed] });
+      // If webhook failed (likely deleted from Discord), try to create a new one and retry
+      if (error.code === 10015 || error.message.includes('Unknown Webhook')) {
+        try {
+          // Remove the invalid webhook from database
+          await webhookService.deleteWebhook(webhook.webhookId);
+
+          // Create a new webhook
+          const discordWebhook = await interaction.channel.createWebhook({
+            name: user.username,
+            avatar: user.displayAvatarURL({ dynamic: true }),
+            reason: `Welcome button webhook recreated by ${user.tag}`
+          });
+
+          const newWebhook = await webhookService.createWebhook(
+            guild.id,
+            user.username,
+            discordWebhook.id,
+            discordWebhook.token,
+            interaction.channel.id,
+            user.id
+          );
+
+          // Retry sending with new webhook
+          const { WebhookClient } = require('discord.js');
+          const newWebhookClient = new WebhookClient({
+            id: newWebhook.webhookId,
+            token: newWebhook.webhookToken
+          });
+
+          const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+          const processedMessage = EmbedVariableProcessor.replaceVariables(welcomeMessage, {
+            user: user,
+            guild: guild,
+            channel: interaction.channel
+          });
+
+          await newWebhookClient.send({
+            content: processedMessage,
+            username: member.displayName || user.username,
+            avatarURL: user.displayAvatarURL({ dynamic: true })
+          });
+
+          // Update webhook last used time
+          await webhookService.updateLastUsed(newWebhook.webhookId);
+
+          // Silent success
+          return;
+
+        } catch (retryError) {
+          console.error('Error recreating webhook:', retryError);
+          const embed = embeds.createDeny(
+            { author: { id: user.id } },
+            'Failed to send welcome message. Please check bot permissions.'
+          );
+          return await interaction.followUp({ embeds: [embed], ephemeral: true });
+        }
+      } else {
+        console.error('Error sending welcome message:', error);
+        const embed = embeds.createDeny(
+          { author: { id: user.id } },
+          'Failed to send welcome message. Please try again.'
+        );
+        return await interaction.followUp({ embeds: [embed], ephemeral: true });
+      }
     }
 
   } catch (error) {
@@ -1068,7 +1136,7 @@ async function handleWelcomeButton(interaction) {
         { author: { id: interaction.user.id } },
         'An error occurred while processing the welcome button. Please try again.'
       );
-      return await interaction.editReply({ embeds: [embed] });
+      return await interaction.followUp({ embeds: [embed], ephemeral: true });
     } catch (replyError) {
       // Silent fail for reply error
     }

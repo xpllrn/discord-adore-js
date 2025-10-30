@@ -74,7 +74,8 @@ module.exports = {
     error: '#fc6464',
     warn: '#fbd03b',
     info: '#e1d4da',
-    embed: '#e1d4da'
+    embed: '#e1d4da',
+    spotify: '#1cdc64'
   },
 
   // Emojis Configuration
@@ -116,7 +117,7 @@ module.exports = {
 
     // Custom Emojis
     google: '<:google:1431572332832489533>',
-    spotify: '<:spotify:1432275371881140344>',
+    spotify: '<:spotify:1433468387824238712>',
 
     // Spotify Control Emojis
     spotifyPlay: '<:play:1432294396828848170>',

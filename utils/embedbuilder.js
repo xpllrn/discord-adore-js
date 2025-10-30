@@ -289,7 +289,7 @@ class CustomEmbedBuilder {
                     } catch (error) {
                         // Silent fail - message might have been deleted or bot lacks permissions
                     }
-                }, 60000); // 60 seconds
+                }, 120000); // 120 seconds
             }
         }).catch((error) => {
             // Log error to webhook if available
