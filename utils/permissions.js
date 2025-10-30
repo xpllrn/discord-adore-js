@@ -150,6 +150,11 @@ function checkUserHierarchy(message, targetMember, sendError = true) {
     return true;
   }
 
+  // Server owner bypasses all hierarchy checks
+  if (isServerOwner(message)) {
+    return true;
+  }
+
   if (targetMember.roles.highest.position >= message.member.roles.highest.position) {
     if (sendError) {
       embeds.warn(message, `**${targetMember.user.username}** is above your role!`);
@@ -177,6 +182,11 @@ function checkUserRoleHierarchy(message, role, enabled = true) {
 
   // DEV_ID user bypasses all hierarchy checks
   if (isGlobalDev(message.author.id)) {
+    return true;
+  }
+
+  // Server owner bypasses all hierarchy checks
+  if (isServerOwner(message)) {
     return true;
   }
 
@@ -214,6 +224,14 @@ function checkSelfAction(message, targetUser, action) {
     return true;
   }
 
+  // For role management, users CAN manage roles for themselves if the role is below their highest role
+  // This is standard Discord behavior - users can assign/remove roles to/from themselves
+  // The hierarchy check (checkUserRoleHierarchy) will handle whether they can manage the specific role
+  if (action.includes('manage roles')) {
+    return true;
+  }
+
+  // For other actions (like moderation), prevent self-targeting
   if (targetUser.id === message.author.id) {
     embeds.warn(message, `You cannot ${action} yourself!`);
     return false;
@@ -304,12 +322,18 @@ function isGlobalDev(userId) {
   return userId === config.bot.ownerId;
 }
 
+// Check if user is the server owner
+function isServerOwner(message) {
+  return message.author.id === message.guild.ownerId;
+}
+
 module.exports = {
   // Permission levels
   hasPermissionLevel,
   checkPermissionLevel,
   hasInstancePermission,
   isGlobalDev,
+  isServerOwner,
   PERMISSION_LEVELS,
 
   // Hierarchy checks

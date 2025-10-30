@@ -6,7 +6,7 @@ const { getGuildPrefix, runHelpCommand } = require('../../utils/commandProcessor
 
 module.exports = {
   name: "spotify",
-  aliases: ['sp'],
+  aliases: [],
   description: 'Manage your Spotify account connection',
   isGroupCommand: true,
   run: async (_client, message, args) => {

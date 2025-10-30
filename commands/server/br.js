@@ -168,6 +168,44 @@ module.exports = {
 
     // Share booster role
     if (subcommand === 'share') {
+      // Check for sub-subcommands
+      const shareSubcommand = args[1]?.toLowerCase();
+      
+      if (shareSubcommand === 'remove') {
+        const subcommandInfo = {
+          description: 'Remove someone from your shared booster role',
+          usage: '{guildprefix}br share remove [@user]',
+          aliases: [],
+          parameters: ['user'],
+          example: '{guildprefix}br share remove @vwsn'
+        };
+
+        // Check if booster role system is enabled
+        const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+        if (!isEnabled) {
+          return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        }
+        return await handleShareRemove(client, message, args.slice(2));
+      }
+      
+      if (shareSubcommand === 'list') {
+        const subcommandInfo = {
+          description: 'Show list of users who have your booster role',
+          usage: '{guildprefix}br share list',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}br share list'
+        };
+
+        // Check if booster role system is enabled
+        const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
+        if (!isEnabled) {
+          return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        }
+        return await handleShareList(client, message, args.slice(2));
+      }
+
+      // Default share behavior
       const subcommandInfo = {
         description: 'Share your booster role with another user',
         usage: '{guildprefix}br share [@user]',

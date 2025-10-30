@@ -9,6 +9,7 @@ const UserService = require('./UserService');
 const PrefixService = require('./PrefixService');
 const SpotifyService = require('./SpotifyService');
 const ModerationService = require('./ModerationService');
+const WebhookService = require('./WebhookService');
 // const SystemService = require('./SystemService'); // Will be implemented in subsequent tasks
 
 // Core infrastructure
@@ -37,6 +38,7 @@ let serviceInstances = {
   prefix: null,
   spotify: null,
   moderation: null,
+  webhook: null,
   // system: null,
   connectionManager: null
 };
@@ -62,6 +64,7 @@ async function initializeServices(config = {}) {
     serviceInstances.user = new UserService();
     serviceInstances.spotify = new SpotifyService();
     serviceInstances.moderation = new ModerationService();
+    serviceInstances.webhook = new WebhookService();
     const SystemService = require('./SystemService');
     serviceInstances.system = new SystemService();
     serviceInstances.prefix = new PrefixService(serviceInstances.guild, serviceInstances.user);
@@ -236,5 +239,6 @@ module.exports = {
   UserService,
   PrefixService,
   SpotifyService,
-  ModerationService
+  ModerationService,
+  WebhookService
 };

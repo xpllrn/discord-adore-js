@@ -117,7 +117,7 @@ module.exports = {
     // Custom Emojis
     google: '<:google:1431572332832489533>',
     spotify: '<:spotify:1432275371881140344>',
-    
+
     // Spotify Control Emojis
     spotifyPlay: '<:play:1432294396828848170>',
     spotifyPause: '<:pause:1432294414457376848>',
