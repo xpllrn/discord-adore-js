@@ -37,7 +37,8 @@ async function connect(connectionStrings) {
             retryReads: true, // Enable retryable reads
             readPreference: 'primaryPreferred', // Read from primary, fallback to secondary
             writeConcern: { w: 'majority', j: true }, // Ensure writes are acknowledged by majority
-            bufferCommands: false, // Disable mongoose buffering
+            bufferCommands: true, // Enable mongoose buffering to handle connection delays
+            bufferMaxEntries: 0, // Disable buffering after connection is established
           });
 
           // Wait for connection to be established
@@ -114,7 +115,8 @@ async function connect(connectionStrings) {
             retryReads: true, // Enable retryable reads
             readPreference: 'primaryPreferred', // Read from primary, fallback to secondary
             writeConcern: { w: 'majority', j: true }, // Ensure writes are acknowledged by majority
-            bufferCommands: false, // Disable mongoose buffering
+            bufferCommands: true, // Enable mongoose buffering to handle connection delays
+            bufferMaxEntries: 0, // Disable buffering after connection is established
           });
 
           // Wait for connection to be established

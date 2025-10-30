@@ -3,6 +3,38 @@ const RetryManager = require('./core/RetryManager');
 const { model: Guild } = require('../models/guild');
 
 /**
+ * Check if database connection is ready
+ * @returns {boolean} Connection readiness status
+ */
+function isDatabaseReady() {
+  try {
+    const { isDatabaseReady } = require('../index');
+    const status = isDatabaseReady();
+    return status.local || status.global || status.legacy;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Wait for database to be ready with timeout
+ * @param {number} timeout - Timeout in milliseconds
+ * @returns {Promise<boolean>} Database readiness status
+ */
+async function waitForDatabase(timeout = 5000) {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeout) {
+    if (isDatabaseReady()) {
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  return false;
+}
+
+/**
  * ModerationService
  * Handles moderation cases and history
  */
@@ -23,6 +55,12 @@ class ModerationService extends BaseService {
    */
   async addModerationCase(guildId, userId, moderatorId, action, reason, duration = null) {
     return RetryManager.executeWithRetry(async () => {
+      // Wait for database to be ready
+      const isReady = await waitForDatabase(5000);
+      if (!isReady) {
+        throw new Error('Database connection timeout - please try again in a moment');
+      }
+      
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild) {
@@ -66,6 +104,12 @@ class ModerationService extends BaseService {
    */
   async getUserCases(guildId, userId, action = null) {
     return RetryManager.executeWithRetry(async () => {
+      // Wait for database to be ready
+      const isReady = await waitForDatabase(5000);
+      if (!isReady) {
+        throw new Error('Database connection timeout - please try again in a moment');
+      }
+      
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {
@@ -90,6 +134,12 @@ class ModerationService extends BaseService {
    */
   async getCase(guildId, caseId) {
     return RetryManager.executeWithRetry(async () => {
+      // Wait for database to be ready
+      const isReady = await waitForDatabase(5000);
+      if (!isReady) {
+        throw new Error('Database connection timeout - please try again in a moment');
+      }
+      
       const guild = await Guild.findOne({ GuildID: guildId });
       
       if (!guild || !guild.Moderation) {

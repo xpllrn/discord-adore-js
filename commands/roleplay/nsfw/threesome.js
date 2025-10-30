@@ -15,7 +15,7 @@ module.exports = {
     try {
       // Check if channel is NSFW
       if (!isNSFWChannel(message.channel)) {
-        return embeds.deny(message, 'This command can only be used in NSFW channels! 🔞');
+        return embeds.deny(message, 'This command can only be used in `NSFW` channels!');
       }
 
       // Check if exactly 2 users are mentioned

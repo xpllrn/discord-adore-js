@@ -76,7 +76,11 @@ module.exports = {
 
     } catch (error) {
       console.error('Error in warn command:', error);
-      embeds.deny(message, `An error occurred while warning **${warnedMember.user.username}**`);
+      if (error.message.includes('Database connection timeout') || error.message.includes('buffering timed out')) {
+        embeds.deny(message, 'Database is still connecting. Please wait a moment and try again.');
+      } else {
+        embeds.deny(message, `An error occurred while warning **${warnedMember.user.username}**`);
+      }
     }
   }
 };

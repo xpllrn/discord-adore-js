@@ -138,6 +138,9 @@ async function initializeDatabaseConnection(client) {
     // Mark services as ready for command processing
     client.cacheReady = true;
     
+    // Wait a moment for database connections to fully stabilize
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     // Resume active sprints
     console.log(chalk.blue('   [~] Resuming active sprints...'));
     try {
