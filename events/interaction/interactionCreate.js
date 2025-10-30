@@ -140,6 +140,11 @@ module.exports = {
           // These are handled by their respective command collectors
           return;
         }
+
+        // Handle welcome buttons
+        if (interaction.customId.startsWith('welcome_')) {
+          return handleWelcomeButton(interaction);
+        }
       }
 
       // Handle modal interactions
@@ -931,5 +936,145 @@ async function handleVMRenameModal(interaction) {
     console.error('Error handling VM rename modal:', error);
     const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'An error occurred while renaming the channel.');
     return await interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+}
+
+async function handleWelcomeButton(interaction) {
+  try {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const guild = interaction.guild;
+    const user = interaction.user;
+    const member = interaction.member;
+
+    // Parse welcome message from custom ID
+    const customIdParts = interaction.customId.split('_');
+    let welcomeMessage = '';
+    
+    if (customIdParts.length >= 2 && customIdParts[1]) {
+      try {
+        welcomeMessage = Buffer.from(customIdParts[1], 'base64').toString('utf-8');
+      } catch (error) {
+        console.error('Error decoding welcome message:', error);
+        welcomeMessage = 'Welcome to the server! 🎉';
+      }
+    } else {
+      welcomeMessage = 'Welcome to the server! 🎉';
+    }
+
+    // Check if user has already used this welcome button
+    const { getService } = require('@services');
+    const welcomeButtonService = getService('welcomeButton');
+    
+    const hasInteracted = await welcomeButtonService.hasUserInteracted(
+      guild.id, 
+      interaction.message.id, 
+      user.id
+    );
+
+    if (hasInteracted) {
+      const embed = embeds.createWarn(
+        { author: { id: user.id } }, 
+        'You have already used this welcome button! You can only welcome someone once per message.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    }
+
+    // Track this interaction to prevent spam
+    await welcomeButtonService.trackInteraction(guild.id, interaction.message.id, user.id);
+
+    // Create or get webhook for this user
+    const webhookService = getService('webhook');
+    let webhook = await webhookService.getWebhookByName(guild.id, user.username);
+
+    if (!webhook) {
+      // Create a new webhook for this user
+      try {
+        const discordWebhook = await interaction.channel.createWebhook({
+          name: user.username,
+          avatar: user.displayAvatarURL({ dynamic: true }),
+          reason: `Welcome button webhook created by ${user.tag}`
+        });
+
+        webhook = await webhookService.createWebhook(
+          guild.id,
+          user.username,
+          discordWebhook.id,
+          discordWebhook.token,
+          interaction.channel.id,
+          user.id
+        );
+      } catch (error) {
+        console.error('Error creating webhook:', error);
+        const embed = embeds.createDeny(
+          { author: { id: user.id } }, 
+          'Failed to create webhook. Please check bot permissions.'
+        );
+        return await interaction.editReply({ embeds: [embed] });
+      }
+    }
+
+    // Send welcome message using webhook
+    try {
+      const { WebhookClient } = require('discord.js');
+      const webhookClient = new WebhookClient({ 
+        id: webhook.webhookId, 
+        token: webhook.webhookToken 
+      });
+
+      // Process variables in welcome message
+      const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+      const processedMessage = EmbedVariableProcessor.replaceVariables(welcomeMessage, {
+        user: user,
+        guild: guild,
+        channel: interaction.channel
+      });
+
+      await webhookClient.send({
+        content: processedMessage,
+        username: member.displayName || user.username,
+        avatarURL: user.displayAvatarURL({ dynamic: true })
+      });
+
+      // Update webhook last used time
+      await webhookService.updateLastUsed(webhook.webhookId);
+
+      // Success response
+      const embed = embeds.createSuccess(
+        { author: { id: user.id } }, 
+        `Welcome message sent! 🎉\n\n*You can only use this button once per message.*`
+      );
+      return await interaction.editReply({ embeds: [embed] });
+
+    } catch (error) {
+      console.error('Error sending welcome message:', error);
+      const embed = embeds.createDeny(
+        { author: { id: user.id } }, 
+        'Failed to send welcome message. The webhook may have been deleted.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    }
+
+  } catch (error) {
+    // Send error to webhook logger
+    if (interaction.client?.errorLogger) {
+      interaction.client.errorLogger.log(error, 'Welcome Button Handler', {
+        command: 'Welcome Button',
+        args: `CustomId: ${interaction.customId}`,
+        user: interaction.user,
+        guild: interaction.guild,
+        channel: interaction.channel
+      });
+    }
+
+    try {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } }, 
+        'An error occurred while processing the welcome button. Please try again.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    } catch (replyError) {
+      // Silent fail for reply error
+    }
   }
 }

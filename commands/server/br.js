@@ -8,6 +8,7 @@ const { ensureGuildData } = require('../../database');
 const { hasDiscordPermission } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findRole, findUser } = require('../../handlers/finder');
+const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
 
@@ -1089,31 +1090,44 @@ async function handleRemove(client, message, args) {
     return embeds.warn(message, 'You don\'t have a booster role to remove!');
   }
 
-  try {
-    // Get the Discord role first to remove it from all users
-    const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+  const roleName = boosterRole.name || 'Unknown Role';
 
-    if (discordRole) {
-      // Remove role from all members who have it (including shared users)
-      const membersWithRole = discordRole.members;
-      for (const [memberId, member] of membersWithRole) {
-        try {
-          await member.roles.remove(discordRole, 'Booster role deleted by owner');
-        } catch (roleError) {
-          console.error(`Failed to remove role from member ${memberId}:`, roleError);
+  // Show confirmation dialog
+  await createConfirmation(
+    message,
+    `Are you sure you want to **delete** your booster role **${roleName}**? This action cannot be undone.`,
+    async (interaction) => {
+      try {
+        // Get the Discord role first to remove it from all users
+        const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+
+        if (discordRole) {
+          // Remove role from all members who have it (including shared users)
+          const membersWithRole = discordRole.members;
+          for (const [memberId, member] of membersWithRole) {
+            try {
+              await member.roles.remove(discordRole, 'Booster role deleted by owner');
+            } catch (roleError) {
+              console.error(`Failed to remove role from member ${memberId}:`, roleError);
+            }
+          }
+
+          // Delete the Discord role
+          await discordRole.delete('Booster role removed by owner');
         }
+
+        // Remove from database - use userId, not boosterRole.id
+        await guildService.deleteBoosterRole(message.guild.id, message.author.id);
+
+        // Edit the confirmation embed to show success message
+        const successEmbed = embeds.createSuccess(message, `Successfully removed your booster role **${roleName}**!`);
+        await interaction.editReply({ embeds: [successEmbed], components: [] });
+
+      } catch (error) {
+        console.error('Error removing booster role:', error);
+        const errorEmbed = embeds.createDeny(message, 'Failed to remove booster role. Please check my permissions or try again.');
+        await interaction.editReply({ embeds: [errorEmbed], components: [] });
       }
-
-      // Delete the Discord role
-      await discordRole.delete('Booster role removed by owner');
     }
-
-    // Remove from database - use userId, not boosterRole.id
-    await guildService.deleteBoosterRole(message.guild.id, message.author.id);
-    return embeds.success(message, `Successfully removed your booster role **${boosterRole.name || 'Unknown Role'}**!`);
-
-  } catch (error) {
-    console.error('Error removing booster role:', error);
-    return embeds.deny(message, 'Failed to remove booster role. Please check my permissions or try again.');
-  }
+  );
 }

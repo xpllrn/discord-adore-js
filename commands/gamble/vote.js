@@ -117,13 +117,25 @@ module.exports = {
 
         const totalVotes = gambling.totalVotes || 0;
         const voteUrl = `https://top.gg/bot/${BOT_ID}/vote`;
+        const lastVote = gambling.lastVote ? new Date(gambling.lastVote) : null;
+        const now = new Date();
+
+        // Check cooldown status
+        let cooldownField = { name: 'Status', value: '✅ Ready to vote!', inline: true };
+        
+        if (lastVote && (now.getTime() - lastVote.getTime()) < VOTE_COOLDOWN) {
+          const nextVote = new Date(lastVote.getTime() + VOTE_COOLDOWN);
+          const unixTimestamp = Math.floor(nextVote.getTime() / 1000);
+          cooldownField = { name: 'Next Vote', value: `<t:${unixTimestamp}:R>`, inline: true };
+        }
 
         const embed = new EmbedBuilder()
           .setColor(colors.info)
           .setDescription(`**Vote for Adore and Claim Your Daily Vote Rewards**`)
           .addFields(
             { name: 'Reward', value: `\`${formatCurrency(VOTE_REWARD)}\``, inline: true },
-            { name: 'Your Votes', value: `\`${totalVotes}\``, inline: true }
+            { name: 'Your Votes', value: `\`${totalVotes}\``, inline: true },
+            cooldownField
           )
           .setFooter({ text: `Use ${await getGuildPrefix(message)}vote claim to claim your reward` });
 

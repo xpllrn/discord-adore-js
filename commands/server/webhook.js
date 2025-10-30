@@ -2,6 +2,7 @@ const { EmbedBuilder, PermissionFlagsBits, WebhookClient } = require('discord.js
 const { embeds } = require('../../core/embeds');
 const { hasDiscordPermission } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 
@@ -128,23 +129,39 @@ async function handleDelete(client, message, args, webhookService) {
       return embeds.warn(message, `Webhook **${identifier}** not found`);
     }
 
-    // Try to delete the Discord webhook
-    try {
-      const webhookClient = new WebhookClient({ id: webhook.webhookId, token: webhook.webhookToken });
-      await webhookClient.destroy();
-    } catch (discordError) {
-      // Webhook might already be deleted on Discord, continue with database cleanup
-      console.log('Discord webhook already deleted or inaccessible:', discordError.message);
-    }
+    // Show confirmation dialog
+    await createConfirmation(
+      message,
+      `Are you sure you want to **delete** webhook **\`${webhook.shortId}\`** (${webhook.name})? This action cannot be undone.`,
+      async (interaction) => {
+        try {
+          // Try to delete the Discord webhook
+          try {
+            const webhookClient = new WebhookClient({ id: webhook.webhookId, token: webhook.webhookToken });
+            await webhookClient.destroy();
+          } catch (discordError) {
+            // Webhook might already be deleted on Discord, continue with database cleanup
+            console.log('Discord webhook already deleted or inaccessible:', discordError.message);
+          }
 
-    // Remove from database
-    await webhookService.deleteWebhook(webhook.webhookId);
+          // Remove from database
+          await webhookService.deleteWebhook(webhook.webhookId);
 
-    return embeds.success(message, `Deleted webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
+          // Edit the confirmation embed to show success message
+          const successEmbed = embeds.createSuccess(message, `Deleted webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
+          await interaction.editReply({ embeds: [successEmbed], components: [] });
+
+        } catch (error) {
+          console.error('Error deleting webhook:', error);
+          const errorEmbed = embeds.createDeny(message, 'Failed to delete webhook. Please try again.');
+          await interaction.editReply({ embeds: [errorEmbed], components: [] });
+        }
+      }
+    );
 
   } catch (error) {
-    console.error('Error deleting webhook:', error);
-    return embeds.deny(message, 'Failed to delete webhook. Please try again.');
+    console.error('Error finding webhook:', error);
+    return embeds.deny(message, 'Failed to find webhook. Please try again.');
   }
 }
 

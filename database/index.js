@@ -8,6 +8,7 @@ const systemSchema = require('./models/system');
 const spotifyAuthSessionSchema = require('./models/spotifyAuthSession');
 const sprintSchema = require('./models/sprint');
 const webhookSchema = require('./models/webhook');
+const welcomeButtonSchema = require('./models/welcomeButton');
 
 // Model instances (will be created after connection)
 let User = null;
@@ -16,6 +17,7 @@ let System = null;
 let SpotifyAuthSession = null;
 let Sprint = null;
 let Webhook = null;
+let WelcomeButton = null;
 
 // Database readiness state
 let isDatabaseFullyReady = false;
@@ -58,6 +60,7 @@ async function _performInitialization(connectionStrings) {
       Guild = connections.local.model('Guild', guildSchema.schema);
       Sprint = connections.local.model('Sprint', sprintSchema.schema);
       Webhook = connections.local.model('Webhook', webhookSchema.schema);
+      WelcomeButton = connections.local.model('WelcomeButton', welcomeButtonSchema);
 
       // If no global connection, put user data in local (backward compatibility)
       if (!connections.global) {
@@ -719,7 +722,7 @@ module.exports = {
     if (!isDatabaseFullyReady) {
       return null;
     }
-    return { User, Guild, System, SpotifyAuthSession, Sprint, Webhook };
+    return { User, Guild, System, SpotifyAuthSession, Sprint, Webhook, WelcomeButton };
   },
 
   // Model getters (since models are created dynamically)
@@ -729,6 +732,7 @@ module.exports = {
   get SpotifyAuthSession() { return SpotifyAuthSession; },
   get Sprint() { return Sprint; },
   get Webhook() { return Webhook; },
+  get WelcomeButton() { return WelcomeButton; },
 
   // Deprecated model aliases for backward compatibility
   // These should be migrated to use cache system instead

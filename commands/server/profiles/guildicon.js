@@ -5,11 +5,11 @@ const { findGuild } = require('../../../handlers/finder');
 
 module.exports = {
   name: "guildicon",
-  aliases: ['servericon', 'icon'],
+  aliases: ['servericon', 'icon', 'serverpfp'],
   description: "show a server's icon",
   syntax: 'guildicon <server>',
   example: 'guildicon',
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     try {
       let targetGuild = message.guild;

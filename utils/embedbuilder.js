@@ -50,17 +50,17 @@ class CustomEmbedBuilder {
         for (const param of parameters) {
             const colonIndex = param.indexOf(':');
             if (colonIndex === -1) {
-                // Handle special cases like timestamp
-                if (param.trim() === 'timestamp') {
+                // Handle special cases like timestamp (case-insensitive)
+                if (param.trim().toLowerCase() === 'timestamp') {
                     Embed.setTimestamp();
                 }
                 continue;
             }
             
-            const paramName = param.substring(0, colonIndex).trim();
+            const paramName = param.substring(0, colonIndex).trim().toLowerCase();
             const paramValue = param.substring(colonIndex + 1).trim();
             
-            // Handle the parameter based on its name
+            // Handle the parameter based on its name (case-insensitive)
             if (paramName === 'title') {
                 Embed.setTitle(paramValue);
             } else if (paramName === 'description') {
@@ -117,13 +117,29 @@ class CustomEmbedBuilder {
                     const buttonParts = paramValue.split('&&');
                     const styleOrUrl = buttonParts[0]?.trim();
                     const label = buttonParts[1]?.trim();
-                    const enabledState = buttonParts[2]?.trim();
+                    const emojiOrState = buttonParts[2]?.trim();
+                    const welcomeMessage = buttonParts[3]?.trim();
                     
                     if (styleOrUrl && label) {
                         const button = new ButtonBuilder();
                         
+                        // Check if it's a welcome button
+                        if (styleOrUrl.toLowerCase() === 'welcome') {
+                            // Encode welcome message in custom ID (base64 to handle special characters)
+                            const encodedMessage = welcomeMessage ? Buffer.from(welcomeMessage).toString('base64') : '';
+                            const customId = `welcome_${encodedMessage}_${Date.now()}`.substring(0, 100); // Discord limit
+                            
+                            button.setStyle(ButtonStyle.Primary)
+                                  .setLabel(label)
+                                  .setCustomId(customId);
+                            
+                            // Add emoji if provided
+                            if (emojiOrState && emojiOrState !== 'disabled' && emojiOrState !== 'disable') {
+                                button.setEmoji(emojiOrState);
+                            }
+                        }
                         // Check if it's a URL button
-                        if (styleOrUrl.startsWith('http')) {
+                        else if (styleOrUrl.startsWith('http')) {
                             button.setStyle(ButtonStyle.Link)
                                   .setURL(styleOrUrl)
                                   .setLabel(label);
@@ -150,8 +166,8 @@ class CustomEmbedBuilder {
                                   .setCustomId(`custom_button_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
                         }
                         
-                        // Handle disabled state
-                        if (enabledState === 'disabled' || enabledState === 'disable') {
+                        // Handle disabled state (for non-welcome buttons)
+                        if (styleOrUrl.toLowerCase() !== 'welcome' && (emojiOrState === 'disabled' || emojiOrState === 'disable')) {
                             button.setDisabled(true);
                         }
                         
@@ -183,7 +199,45 @@ class CustomEmbedBuilder {
             messageOptions.components = components
         }
 
-        channel.send(messageOptions).catch((error) => {
+        channel.send(messageOptions).then((sentMessage) => {
+            // Check if there are any welcome buttons to set up timeout for
+            const hasWelcomeButtons = Buttons.some(button => 
+                button.data && button.data.custom_id && button.data.custom_id.startsWith('welcome_')
+            );
+
+            if (hasWelcomeButtons) {
+                // Set up 60-second timeout to disable welcome buttons
+                setTimeout(async () => {
+                    try {
+                        // Fetch the message to make sure it still exists
+                        const message = await channel.messages.fetch(sentMessage.id).catch(() => null);
+                        if (!message) return;
+
+                        // Create new components with disabled welcome buttons
+                        const updatedComponents = [];
+                        for (const row of message.components) {
+                            const updatedRow = new ActionRowBuilder();
+                            for (const button of row.components) {
+                                const newButton = new ButtonBuilder(button.data);
+                                
+                                // Disable welcome buttons only
+                                if (button.customId && button.customId.startsWith('welcome_')) {
+                                    newButton.setDisabled(true);
+                                }
+                                
+                                updatedRow.addComponents(newButton);
+                            }
+                            updatedComponents.push(updatedRow);
+                        }
+
+                        // Update the message with disabled welcome buttons
+                        await message.edit({ components: updatedComponents });
+                    } catch (error) {
+                        // Silent fail - message might have been deleted or bot lacks permissions
+                    }
+                }, 60000); // 60 seconds
+            }
+        }).catch((error) => {
           console.error('Embed send error:', error)
           const errorEmbed = new EmbedBuilder()
             .setColor(colors.error || '#ff0000')
@@ -279,7 +333,7 @@ class EmbedVariableProcessor {
                     processed = processed.replace(/{user\.joined_timestamp}/g, member.joinedAt ? Math.floor(member.joinedAt.getTime() / 1000).toString() : 'N/A');
                     processed = processed.replace(/{user\.boost}/g, member.premiumSince ? 'Yes' : 'No');
                     processed = processed.replace(/{user\.color}/g, member.displayHexColor || '#000000');
-                    processed = processed.replace(/{boost\.count}/g, member.premiumSince ? '1' : '0'); // Simplified boost count
+                    processed = processed.replace(/{boost\.count}/g, variables.guild.premiumSubscriptionCount?.toString() || '0');
                 }
             }
 
@@ -502,7 +556,7 @@ class EmbedVariableProcessor {
 
                 // Handle special case for timestamp parameter (no colon needed)
                 let paramName, paramValue;
-                if (content === 'timestamp') {
+                if (content.toLowerCase() === 'timestamp') {
                     paramName = 'timestamp';
                     paramValue = 'true'; // timestamp doesn't need a value
                 } else {
@@ -516,7 +570,7 @@ class EmbedVariableProcessor {
 
                     // Split by colon to get parameter name and value
                     const colonIndex = content.indexOf(':');
-                    paramName = content.substring(0, colonIndex).trim();
+                    paramName = content.substring(0, colonIndex).trim().toLowerCase();
                     paramValue = content.substring(colonIndex + 1).trim();
                 }
 
