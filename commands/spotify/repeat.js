@@ -28,8 +28,8 @@ module.exports = {
       let modeText = mode === 'track' ? 'current track' : mode === 'context' ? 'playlist/album' : 'disabled';
       
       const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setDescription(`${config.emojis.spotifyRepeat} Repeat mode set to **${mode === 'off' ? 'disabled' : 'enabled'}** (\`${modeText}\`)`);
+        .setColor(config.colors.spotify)
+        .setDescription(`${config.emojis.spotify} Repeat mode set to **${mode === 'off' ? 'disabled' : 'enabled'}** (\`${modeText}\`)`);
 
       return message.channel.send({ embeds: [embed] });
 

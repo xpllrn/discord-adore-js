@@ -44,7 +44,7 @@ module.exports = {
           );
 
           const embed = new EmbedBuilder()
-            .setColor(config.colors.embed)
+            .setColor(config.colors.spotify)
             .setAuthor({
               name: 'Connect your Spotify account',
               iconURL: message.author.displayAvatarURL()

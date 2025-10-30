@@ -29,14 +29,14 @@ module.exports = {
         const artistName = track.artists.map(a => a.name).join(', ');
 
         const embed = new EmbedBuilder()
-          .setColor(config.colors.embed)
-          .setDescription(`${config.emojis.spotifyNext} Skipped current track — now playing **${trackName}** by **${artistName}**`);
+          .setColor(config.colors.spotify)
+          .setDescription(`${config.emojis.spotify} Skipped current track — now playing **${trackName}** by **${artistName}**`);
 
         return message.channel.send({ embeds: [embed] });
       } else {
         const embed = new EmbedBuilder()
-          .setColor(config.colors.embed)
-          .setDescription(`${config.emojis.spotifyNext} Skipping to **next** track`);
+          .setColor(config.colors.spotify)
+          .setDescription(`${config.emojis.spotify} Skipping to **next** track`);
 
         return message.channel.send({ embeds: [embed] });
       }

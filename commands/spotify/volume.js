@@ -31,8 +31,8 @@ module.exports = {
       await spotifyService.setVolume(volume, accessToken);
 
       const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setDescription(`${config.emojis.spotifyVolume} ${message.author}: Volume set to **${volume}%** successfully`);
+        .setColor(config.colors.spotify)
+        .setDescription(`${config.emojis.spotify} ${message.author}: Volume set to **${volume}%** successfully`);
 
       return message.channel.send({ embeds: [embed] });
 

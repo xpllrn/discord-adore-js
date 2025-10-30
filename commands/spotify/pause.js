@@ -19,8 +19,8 @@ module.exports = {
       await spotifyService.pausePlayback(accessToken);
 
       const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setDescription(`${config.emojis.spotifyPause} ${message.author}: Playback **paused**`);
+        .setColor(config.colors.spotify)
+        .setDescription(`${config.emojis.spotify} ${message.author}: Playback **paused**`);
 
       return message.channel.send({ embeds: [embed] });
 

@@ -15,7 +15,7 @@ module.exports = {
 
     try {
       const guildService = getService('guild');
-      
+
       // Check if the message author is AFK and remove their status using service layer
       const authorAFK = await guildService.getAFKStatus(message.guild.id, message.author.id);
 
@@ -29,7 +29,7 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(colors.info)
-          .setDescription(`Welcome back **${message.author.username}**! You were AFK for **${timeString}**`);
+          .setDescription(`👋 Welcome back **${message.author.username}**! You were AFK for **${timeString}**`);
 
         message.channel.send({ embeds: [embed] });
       }
@@ -50,14 +50,14 @@ module.exports = {
             afkUsers.push({
               user: user,
               message: afkData.message,
-              time: timeString
+              since: afkData.since.getTime()
             });
           }
         }
 
         if (afkUsers.length > 0) {
           const afkList = afkUsers.map(afk =>
-            `**${afk.user.username}** is AFK: **${afk.message}** - ${afk.time} ago`
+            `💤 **${afk.user.mention}** is AFK: **${afk.message}** - \`${Math.floor(afk.since / 1000)}\``
           ).join('\n');
 
           const embed = new EmbedBuilder()

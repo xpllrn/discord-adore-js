@@ -77,8 +77,8 @@ async function queueFromSpotifyLink(message, args, spotifyService, accessToken) 
     );
 
     const embed = new EmbedBuilder()
-      .setColor(config.colors.embed)
-      .setDescription(`${config.emojis.success} ${message.author}: Added track to your **Spotify** queue`);
+      .setColor(config.colors.spotify)
+      .setDescription(`${config.emojis.spotify} ${message.author}: Added track to your **Spotify** queue`);
     
     return message.channel.send({ embeds: [embed] });
 
@@ -118,9 +118,9 @@ async function queueBySearch(message, args, spotifyService, accessToken) {
     const artistName = track.artists.map(a => a.name).join(', ');
     
     const embed = new EmbedBuilder()
-      .setColor(config.colors.embed)
+      .setColor(config.colors.spotify)
       .setDescription(
-        `${config.emojis.success} ${message.author}: Added [\`${trackName}\`](${trackUrl}) by \`${artistName}\` to your queue`
+        `${config.emojis.spotify} ${message.author}: Added [\`${trackName}\`](${trackUrl}) by \`${artistName}\` to your queue`
       );
 
     return message.channel.send({ embeds: [embed] });

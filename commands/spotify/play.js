@@ -81,8 +81,8 @@ async function playFromSpotifyLink(message, args, spotifyService, accessToken) {
     if (type === 'track') {
       await spotifyService.startPlayback(uri, accessToken);
       const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setDescription(`${config.emojis.musicNote} ${message.author}: Now playing track from **Spotify** link`);
+        .setColor(config.colors.spotify)
+        .setDescription(`${config.emojis.spotify} ${message.author}: Now playing track from **Spotify** link`);
       return message.channel.send({ embeds: [embed] });
     } else if (type === 'album' || type === 'playlist') {
       // For albums and playlists, use context_uri
@@ -94,8 +94,8 @@ async function playFromSpotifyLink(message, args, spotifyService, accessToken) {
       );
       const typeLabel = type === 'album' ? 'album' : 'playlist';
       const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setDescription(`${config.emojis.musicNote} ${message.author}: Now playing **Spotify** ${typeLabel}`);
+        .setColor(config.colors.spotify)
+        .setDescription(`${config.emojis.spotify} ${message.author}: Now playing **Spotify** ${typeLabel}`);
       return message.channel.send({ embeds: [embed] });
     }
 
@@ -130,9 +130,9 @@ async function playBySearch(message, args, spotifyService, accessToken) {
     const artistName = track.artists.map(a => a.name).join(', ');
     
     const embed = new EmbedBuilder()
-      .setColor(config.colors.embed)
+      .setColor(config.colors.spotify)
       .setDescription(
-        `${config.emojis.musicNote} ${message.author}: Now playing [\`${trackName}\`](${trackUrl}) by \`${artistName}\``
+        `${config.emojis.spotify} ${message.author}: Now playing [\`${trackName}\`](${trackUrl}) by \`${artistName}\``
       );
 
     return message.channel.send({ embeds: [embed] });

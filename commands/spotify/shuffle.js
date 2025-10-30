@@ -35,8 +35,8 @@ module.exports = {
       await spotifyService.setShuffleMode(shuffleState, accessToken);
 
       const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setDescription(`${config.emojis.spotifyShuffle} Shuffle mode **${shuffleState ? 'enabled' : 'disabled'}** successfully`);
+        .setColor(config.colors.spotify)
+        .setDescription(`${config.emojis.spotify} Shuffle mode **${shuffleState ? 'enabled' : 'disabled'}** successfully`);
 
       return message.channel.send({ embeds: [embed] });
 
