@@ -5,6 +5,11 @@ const webhookSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  shortId: {
+    type: String,
+    required: true,
+    maxlength: 4
+  },
   name: {
     type: String,
     required: true,
@@ -40,6 +45,7 @@ const webhookSchema = new mongoose.Schema({
 
 // Create indexes for better performance
 webhookSchema.index({ guildId: 1 });
+webhookSchema.index({ guildId: 1, shortId: 1 });
 webhookSchema.index({ guildId: 1, name: 1 });
 webhookSchema.index({ webhookId: 1 });
 webhookSchema.index({ createdBy: 1 });

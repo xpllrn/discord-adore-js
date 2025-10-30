@@ -67,7 +67,7 @@ async function handleCreate(client, message, args, webhookService) {
     });
 
     // Save to database
-    await webhookService.createWebhook(
+    const webhookData = await webhookService.createWebhook(
       message.guild.id,
       webhookName,
       webhook.id,
@@ -76,7 +76,7 @@ async function handleCreate(client, message, args, webhookService) {
       message.author.id
     );
 
-    return embeds.success(message, `Created webhook **${webhookName}** in ${message.channel}!`);
+    return embeds.success(message, `Created webhook **\`${webhookData.shortId}\`** for ${message.channel}!`);
 
   } catch (error) {
     console.error('Error creating webhook:', error);
@@ -87,27 +87,41 @@ async function handleCreate(client, message, args, webhookService) {
   }
 }
 
+// Helper function to find webhook by identifier (short ID, name, or full ID)
+async function findWebhookByIdentifier(webhookService, guildId, identifier) {
+  let webhook = null;
+
+  // Try short ID first (4 characters, alphanumeric)
+  if (/^[a-z0-9]{4}$/i.test(identifier)) {
+    webhook = await webhookService.getWebhookByShortId(guildId, identifier.toLowerCase());
+  }
+
+  // If not found, try by name
+  if (!webhook) {
+    webhook = await webhookService.getWebhookByName(guildId, identifier);
+  }
+
+  // If still not found, try by full Discord ID
+  if (!webhook && /^\d{17,19}$/.test(identifier)) {
+    webhook = await webhookService.getWebhook(identifier);
+    if (webhook && webhook.guildId !== guildId) {
+      webhook = null; // Security check - webhook exists but not in this guild
+    }
+  }
+
+  return webhook;
+}
+
 // Delete webhook
 async function handleDelete(client, message, args, webhookService) {
   if (!args[0]) {
-    return embeds.warn(message, 'Please provide a **webhook name** or **webhook ID** to delete');
+    return embeds.warn(message, 'Please provide a **webhook short ID**, **name**, or **webhook ID** to delete');
   }
 
   const identifier = args.join(' ');
 
   try {
-    let webhook;
-
-    // Try to find by name first
-    webhook = await webhookService.getWebhookByName(message.guild.id, identifier);
-
-    // If not found by name, try by ID
-    if (!webhook && /^\d{17,19}$/.test(identifier)) {
-      webhook = await webhookService.getWebhook(identifier);
-      if (webhook && webhook.guildId !== message.guild.id) {
-        webhook = null; // Webhook exists but not in this guild
-      }
-    }
+    const webhook = await findWebhookByIdentifier(webhookService, message.guild.id, identifier);
 
     if (!webhook) {
       return embeds.warn(message, `Webhook **${identifier}** not found`);
@@ -125,7 +139,7 @@ async function handleDelete(client, message, args, webhookService) {
     // Remove from database
     await webhookService.deleteWebhook(webhook.webhookId);
 
-    return embeds.success(message, `Deleted webhook **${webhook.name}**!`);
+    return embeds.success(message, `Deleted webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 
   } catch (error) {
     console.error('Error deleting webhook:', error);
@@ -136,10 +150,10 @@ async function handleDelete(client, message, args, webhookService) {
 // Send message via webhook
 async function handleSend(client, message, args, webhookService) {
   if (args.length < 2) {
-    return embeds.warn(message, 'Usage: `webhook send <webhook_name> <message> [--add <embed_code>]`');
+    return embeds.warn(message, 'Usage: `webhook send <webhook_id> <message> [--add <embed_code>]`');
   }
 
-  const webhookName = args[0];
+  const webhookIdentifier = args[0];
   let messageContent = '';
   let embedCode = '';
   let addFlag = false;
@@ -162,9 +176,9 @@ async function handleSend(client, message, args, webhookService) {
   }
 
   try {
-    const webhook = await webhookService.getWebhookByName(message.guild.id, webhookName);
+    const webhook = await findWebhookByIdentifier(webhookService, message.guild.id, webhookIdentifier);
     if (!webhook) {
-      return embeds.warn(message, `Webhook **${webhookName}** not found`);
+      return embeds.warn(message, `Webhook **${webhookIdentifier}** not found`);
     }
 
     const webhookClient = new WebhookClient({ id: webhook.webhookId, token: webhook.webhookToken });
@@ -185,7 +199,7 @@ async function handleSend(client, message, args, webhookService) {
     await webhookClient.send(payload);
     await webhookService.updateLastUsed(webhook.webhookId);
 
-    return embeds.success(message, `Message sent via webhook **${webhook.name}**!`);
+    return embeds.success(message, `Message sent via webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 
   } catch (error) {
     console.error('Error sending webhook message:', error);
@@ -270,7 +284,7 @@ async function handleEdit(client, message, args, webhookService) {
     await webhookClient.editMessage(messageId, payload);
     await webhookService.updateLastUsed(targetWebhook.webhookId);
 
-    return embeds.success(message, `Message edited via webhook **${targetWebhook.name}**!`);
+    return embeds.success(message, `Message edited via webhook **\`${targetWebhook.shortId}\`** (${targetWebhook.name})!`);
 
   } catch (error) {
     console.error('Error editing webhook message:', error);
@@ -299,15 +313,20 @@ async function handleList(client, message, args, webhookService) {
     for (const webhook of webhooks) {
       const channel = message.guild.channels.cache.get(webhook.channelId);
       const channelMention = channel ? channel.toString() : `#deleted-channel`;
-      const createdBy = `<@${webhook.createdBy}>`;
-      const lastUsed = webhook.lastUsed ? `<t:${Math.floor(webhook.lastUsed.getTime() / 1000)}:R>` : 'Never';
-      const createdAt = webhook.createdAt ? `<t:${Math.floor(webhook.createdAt.getTime() / 1000)}:R>` : 'Unknown';
+      
+      // Get user info for display
+      let userDisplay = 'Unknown User';
+      try {
+        const user = await message.client.users.fetch(webhook.createdBy);
+        userDisplay = user.username;
+      } catch (error) {
+        userDisplay = `<@${webhook.createdBy}>`;
+      }
 
-      description += `**${webhook.name}**\n`;
-      description += `• Channel: ${channelMention}\n`;
-      description += `• Created by: ${createdBy} ${createdAt}\n`;
-      description += `• Last used: ${lastUsed}\n`;
-      description += `• ID: \`${webhook.webhookId}\`\n\n`;
+      const lastUsed = webhook.lastUsed ? `<t:${Math.floor(webhook.lastUsed.getTime() / 1000)}:R>` : 'Never';
+
+      description += `Webhook \`${webhook.shortId}\` **\`${webhook.name}\`** for ${channelMention}, belongs to ${userDisplay}\n`;
+      description += `• Last used: ${lastUsed}\n\n`;
     }
 
     embed.setDescription(description);
@@ -347,7 +366,7 @@ function parseEmbedCode(embedCode) {
 // Rename webhook
 async function handleRename(client, message, args, webhookService) {
   if (args.length < 2) {
-    return embeds.warn(message, 'Usage: `webhook rename <webhook_name|webhook_id> <new_name>`');
+    return embeds.warn(message, 'Usage: `webhook rename <webhook_id> <new_name>`');
   }
 
   const identifier = args[0];
@@ -358,18 +377,7 @@ async function handleRename(client, message, args, webhookService) {
   }
 
   try {
-    let webhook;
-
-    // Try to find by name first
-    webhook = await webhookService.getWebhookByName(message.guild.id, identifier);
-
-    // If not found by name, try by ID
-    if (!webhook && /^\d{17,19}$/.test(identifier)) {
-      webhook = await webhookService.getWebhook(identifier);
-      if (webhook && webhook.guildId !== message.guild.id) {
-        webhook = null; // Webhook exists but not in this guild
-      }
-    }
+    const webhook = await findWebhookByIdentifier(webhookService, message.guild.id, identifier);
 
     if (!webhook) {
       return embeds.warn(message, `Webhook **${identifier}** not found`);
@@ -389,7 +397,7 @@ async function handleRename(client, message, args, webhookService) {
     webhook.name = newName;
     await webhookService.set(webhook.webhookId, webhook);
 
-    return embeds.success(message, `Renamed webhook **${identifier}** to **${newName}**!`);
+    return embeds.success(message, `Renamed webhook **\`${webhook.shortId}\`** to **${newName}**!`);
 
   } catch (error) {
     console.error('Error renaming webhook:', error);
@@ -406,7 +414,7 @@ async function handleRename(client, message, args, webhookService) {
 // Set webhook avatar
 async function handleAvatar(client, message, args, webhookService) {
   if (args.length < 1) {
-    return embeds.warn(message, 'Usage: `webhook avatar <webhook_name|webhook_id> <image_url>` or attach an image');
+    return embeds.warn(message, 'Usage: `webhook avatar <webhook_id> <image_url>` or attach an image');
   }
 
   const identifier = args[0];
@@ -427,18 +435,7 @@ async function handleAvatar(client, message, args, webhookService) {
   }
 
   try {
-    let webhook;
-
-    // Try to find by name first
-    webhook = await webhookService.getWebhookByName(message.guild.id, identifier);
-
-    // If not found by name, try by ID
-    if (!webhook && /^\d{17,19}$/.test(identifier)) {
-      webhook = await webhookService.getWebhook(identifier);
-      if (webhook && webhook.guildId !== message.guild.id) {
-        webhook = null; // Webhook exists but not in this guild
-      }
-    }
+    const webhook = await findWebhookByIdentifier(webhookService, message.guild.id, identifier);
 
     if (!webhook) {
       return embeds.warn(message, `Webhook **${identifier}** not found`);
@@ -455,7 +452,7 @@ async function handleAvatar(client, message, args, webhookService) {
 
     await webhookService.updateLastUsed(webhook.webhookId);
 
-    return embeds.success(message, `Updated avatar for webhook **${webhook.name}**!`);
+    return embeds.success(message, `Updated avatar for webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 
   } catch (error) {
     console.error('Error setting webhook avatar:', error);

@@ -68,8 +68,12 @@ class WebhookService extends BaseService {
       throw new ValidationError('Missing required webhook data');
     }
 
+    // Generate unique short ID for this guild
+    const shortId = await this.generateShortId(guildId);
+
     const webhookData = {
       guildId,
+      shortId,
       name,
       webhookId,
       webhookToken,
@@ -153,6 +157,56 @@ class WebhookService extends BaseService {
    */
   async deleteWebhook(webhookId) {
     await this.delete(webhookId);
+  }
+
+  /**
+   * Get webhook by short ID
+   */
+  async getWebhookByShortId(guildId, shortId) {
+    try {
+      const Model = this.getModel();
+      const webhook = await Model.findOne({ 
+        guildId, 
+        shortId: shortId.toLowerCase()
+      }).lean();
+      
+      if (webhook) {
+        // Cache the result
+        await this.set(webhook.webhookId, webhook);
+      }
+      
+      return webhook;
+    } catch (error) {
+      console.error(`Error finding webhook by short ID:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate unique short ID for guild
+   */
+  async generateShortId(guildId) {
+    const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    while (attempts < maxAttempts) {
+      let shortId = '';
+      for (let i = 0; i < 4; i++) {
+        shortId += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+
+      // Check if this short ID already exists in this guild
+      const existing = await this.getWebhookByShortId(guildId, shortId);
+      if (!existing) {
+        return shortId;
+      }
+
+      attempts++;
+    }
+
+    // Fallback to timestamp-based ID if we can't generate a unique one
+    return Date.now().toString().slice(-4);
   }
 
   /**
