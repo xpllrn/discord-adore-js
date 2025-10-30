@@ -14,14 +14,14 @@ module.exports = {
     }
 
     try {
-      const guildService = getService('guild');
+      const userService = getService('user');
 
       // Check if the message author is AFK and remove their status using service layer
-      const authorAFK = await guildService.getAFKStatus(message.guild.id, message.author.id);
+      const authorAFK = await userService.getAFKStatus(message.author.id);
 
       if (authorAFK) {
         // Remove AFK status using service layer
-        await guildService.removeAFKStatus(message.guild.id, message.author.id);
+        await userService.removeAFKStatus(message.author.id);
 
         // Calculate time since AFK
         const timeAgo = Date.now() - authorAFK.since.getTime();
@@ -41,23 +41,20 @@ module.exports = {
         for (const [userId, user] of message.mentions.users) {
           if (user.bot) continue;
 
-          const afkData = await guildService.getAFKStatus(message.guild.id, userId);
+          const afkData = await userService.getAFKStatus(userId);
 
           if (afkData) {
-            const timeAgo = Date.now() - afkData.since.getTime();
-            const timeString = formatTime(timeAgo);
-
             afkUsers.push({
               user: user,
               message: afkData.message,
-              time: timeString
+              since: afkData.since.getTime()
             });
           }
         }
 
         if (afkUsers.length > 0) {
           const afkList = afkUsers.map(afk =>
-            `💤 **<@${afk.user.id}>** is AFK: **${afk.message}** - ${afk.time} ago`
+            `💤 **<@${afk.user.id}>** is AFK: **${afk.message}** - <t:${Math.floor(afk.since / 1000)}:R>`
           ).join('\n');
 
           const embed = new EmbedBuilder()

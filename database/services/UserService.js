@@ -2048,6 +2048,92 @@ class UserService extends BaseService {
       throw new DatabaseWriteError(`Failed to clear name history for user ${userId}`, error);
     }
   }
+
+  // ===== AFK METHODS =====
+
+  /**
+   * Get AFK status for a user (global across all servers)
+   * @param {string} userId - User ID
+   * @returns {Promise<Object|null>} AFK status or null
+   */
+  async getAFKStatus(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      return userData.AFK || null;
+    } catch (error) {
+      console.error(`Error getting AFK status for user ${userId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set AFK status for a user (global across all servers)
+   * @param {string} userId - User ID
+   * @param {string} reason - AFK reason
+   * @returns {Promise<boolean>} Success status
+   */
+  async setAFKStatus(userId, reason) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+      throw new ValidationError('AFK reason is required', 'reason', reason);
+    }
+
+    if (reason.length > 500) {
+      throw new ValidationError('AFK reason cannot exceed 500 characters', 'reason', reason);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      
+      userData.AFK = {
+        message: reason.trim(),
+        since: new Date()
+      };
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set AFK status for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Remove AFK status for a user (global across all servers)
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeAFKStatus(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      
+      if (userData.AFK) {
+        delete userData.AFK;
+        await this.set(userId, userData);
+        return true;
+      }
+
+      return false; // User was not AFK
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove AFK status for user ${userId}`, error);
+    }
+  }
 }
 
 module.exports = UserService;

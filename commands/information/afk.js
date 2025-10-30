@@ -9,21 +9,21 @@ module.exports = {
   syntax: 'afk (reason)',
   example: 'afk sleeping',
   run: async (client, message, args) => {
-    const guildService = getService('guild');
+    const userService = getService('user');
     const content = args.join(" ") || "AFK";
 
     try {
       // Check if user is already AFK using service layer
-      const existingAFK = await guildService.getAFKStatus(message.guild.id, message.author.id);
+      const existingAFK = await userService.getAFKStatus(message.author.id);
 
       if (existingAFK) {
         // User is already AFK, remove AFK status
-        await guildService.removeAFKStatus(message.guild.id, message.author.id);
+        await userService.removeAFKStatus(message.author.id);
 
         return embeds.success(message, 'Your **AFK** status has been removed');
       } else {
         // Set user as AFK using service layer
-        await guildService.setAFKStatus(message.guild.id, message.author.id, content);
+        await userService.setAFKStatus(message.author.id, content);
 
         const embed = new EmbedBuilder()
           .setColor(colors.success)
