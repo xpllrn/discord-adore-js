@@ -771,10 +771,10 @@ async function handleBoosterRoleShare(interaction) {
     // Get all booster roles and find the one with the matching pending share
     const guildService = getService('guild');
     const allBoosterRoles = await guildService.getBoosterRoles(interaction.guild.id);
-    
+
     let boosterRole = null;
     let pendingShare = null;
-    
+
     for (const br of allBoosterRoles) {
       if (br.pendingShares) {
         const ps = br.pendingShares.find(ps => ps.id === pendingShareId && ps.targetUserId === targetUserId);
@@ -785,7 +785,7 @@ async function handleBoosterRoleShare(interaction) {
         }
       }
     }
-    
+
     if (!boosterRole || !pendingShare) {
       console.error(`Pending share not found: guildId=${interaction.guild.id}, pendingShareId=${pendingShareId}, targetUserId=${targetUserId}`);
 
@@ -838,10 +838,10 @@ async function handleBoosterRoleShare(interaction) {
           userId: interaction.user.id,
           sharedAt: new Date()
         });
-        
+
         // Remove the pending share
         boosterRole.pendingShares = boosterRole.pendingShares.filter(ps => ps.id !== pendingShareId);
-        
+
         // Update the booster role in database
         await guildService.updateBoosterRole(interaction.guild.id, boosterRole.userId || boosterRole.ownerId, {
           sharedWith: boosterRole.sharedWith,
@@ -870,7 +870,7 @@ async function handleBoosterRoleShare(interaction) {
     } else {
       // Decline the share - remove from pending shares
       boosterRole.pendingShares = boosterRole.pendingShares.filter(ps => ps.id !== pendingShareId);
-      
+
       // Update the booster role in database
       await guildService.updateBoosterRole(interaction.guild.id, boosterRole.userId || boosterRole.ownerId, {
         pendingShares: boosterRole.pendingShares
@@ -950,7 +950,7 @@ async function handleWelcomeButton(interaction) {
     // Parse welcome message from custom ID
     const customIdParts = interaction.customId.split('_');
     let welcomeMessage = '';
-    
+
     if (customIdParts.length >= 2 && customIdParts[1]) {
       try {
         welcomeMessage = Buffer.from(customIdParts[1], 'base64').toString('utf-8');
@@ -965,17 +965,17 @@ async function handleWelcomeButton(interaction) {
     // Check if user has already used this welcome button
     const { getService } = require('@services');
     const welcomeButtonService = getService('welcomeButton');
-    
+
     const hasInteracted = await welcomeButtonService.hasUserInteracted(
-      guild.id, 
-      interaction.message.id, 
+      guild.id,
+      interaction.message.id,
       user.id
     );
 
     if (hasInteracted) {
       const embed = embeds.createWarn(
-        { author: { id: user.id } }, 
-        'You have already used this welcome button! You can only welcome someone once per message.'
+        { author: { id: user.id } },
+        'You already **welcomed them once**, don\'t be over excited.'
       );
       return await interaction.editReply({ embeds: [embed] });
     }
@@ -1007,7 +1007,7 @@ async function handleWelcomeButton(interaction) {
       } catch (error) {
         console.error('Error creating webhook:', error);
         const embed = embeds.createDeny(
-          { author: { id: user.id } }, 
+          { author: { id: user.id } },
           'Failed to create webhook. Please check bot permissions.'
         );
         return await interaction.editReply({ embeds: [embed] });
@@ -1017,9 +1017,9 @@ async function handleWelcomeButton(interaction) {
     // Send welcome message using webhook
     try {
       const { WebhookClient } = require('discord.js');
-      const webhookClient = new WebhookClient({ 
-        id: webhook.webhookId, 
-        token: webhook.webhookToken 
+      const webhookClient = new WebhookClient({
+        id: webhook.webhookId,
+        token: webhook.webhookToken
       });
 
       // Process variables in welcome message
@@ -1039,17 +1039,13 @@ async function handleWelcomeButton(interaction) {
       // Update webhook last used time
       await webhookService.updateLastUsed(webhook.webhookId);
 
-      // Success response
-      const embed = embeds.createSuccess(
-        { author: { id: user.id } }, 
-        `Welcome message sent! 🎉\n\n*You can only use this button once per message.*`
-      );
-      return await interaction.editReply({ embeds: [embed] });
+      // Silent success - just dismiss the interaction without showing a message
+      return await interaction.deleteReply();
 
     } catch (error) {
       console.error('Error sending welcome message:', error);
       const embed = embeds.createDeny(
-        { author: { id: user.id } }, 
+        { author: { id: user.id } },
         'Failed to send welcome message. The webhook may have been deleted.'
       );
       return await interaction.editReply({ embeds: [embed] });
@@ -1069,7 +1065,7 @@ async function handleWelcomeButton(interaction) {
 
     try {
       const embed = embeds.createDeny(
-        { author: { id: interaction.user.id } }, 
+        { author: { id: interaction.user.id } },
         'An error occurred while processing the welcome button. Please try again.'
       );
       return await interaction.editReply({ embeds: [embed] });
