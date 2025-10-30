@@ -798,7 +798,7 @@ async function handleBoosterRoleShare(interaction) {
 
     if (isAccept) {
       // Check if already shared with this user
-      if (boosterRole.sharedWith.find(s => s.userId === targetUserId)) {
+      if (boosterRole.sharedWith.find(s => s.userId === interaction.user.id)) {
         const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'You already have access to this booster role.');
         return await safeInteractionResponse(interaction, {
           embeds: [embed],
@@ -830,7 +830,7 @@ async function handleBoosterRoleShare(interaction) {
 
         // Add to shared list and remove from pending shares
         boosterRole.sharedWith.push({
-          userId: targetUserId,
+          userId: interaction.user.id,
           sharedAt: new Date()
         });
         

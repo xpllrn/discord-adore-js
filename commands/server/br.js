@@ -828,7 +828,8 @@ async function handleShare(client, message, args) {
   }
 
   console.log(`Sharing booster role: roleId=${boosterRole.roleId}, ownerId=${boosterRole.ownerId || boosterRole.userId}, name="${boosterRole.name}"`);
-  console.log('Full booster role object:', JSON.stringify(boosterRole, null, 2));
+  console.log('Full booster role object keys:', Object.keys(boosterRole));
+  console.log('Booster role name field:', boosterRole.name, typeof boosterRole.name);
 
   if (!args[0]) {
     return embeds.warn(message, 'Please mention a **user** to share your booster role with');
@@ -874,13 +875,16 @@ async function handleShare(client, message, args) {
   try {
     // Check if the Discord role still exists
     let discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+    console.log(`Role cache check: roleId=${boosterRole.roleId}, found in cache=${!!discordRole}`);
 
     // If not in cache, try to fetch it
     if (!discordRole) {
       try {
+        console.log(`Attempting to fetch role ${boosterRole.roleId} from Discord...`);
         discordRole = await message.guild.roles.fetch(boosterRole.roleId);
+        console.log(`Role fetch result: ${!!discordRole}, name=${discordRole?.name}`);
       } catch (error) {
-        // Role doesn't exist
+        console.log(`Role fetch failed:`, error.message);
         discordRole = null;
       }
     }
@@ -888,13 +892,13 @@ async function handleShare(client, message, args) {
     let roleDisplay;
     if (discordRole) {
       roleDisplay = `<@&${boosterRole.roleId}>`;
+      console.log(`Using role mention: ${roleDisplay}`);
     } else {
       // Role was deleted, use stored name or fallback
       const roleName = boosterRole.name || 'Unknown Role';
       roleDisplay = `**${roleName}** (role deleted)`;
+      console.log(`Role deleted, using fallback: ${roleDisplay}`);
     }
-
-    console.log(`Role display debug: roleId=${boosterRole.roleId}, discordRole=${!!discordRole}, boosterRole.name="${boosterRole.name}", roleDisplay="${roleDisplay}"`);
 
     // Generate pending share ID first
     const pendingShareId = Date.now();
@@ -1048,15 +1052,27 @@ async function handleRemove(client, message, args) {
   }
 
   try {
-    // Try to delete the Discord role
+    // Get the Discord role first to remove it from all users
     const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+
     if (discordRole) {
+      // Remove role from all members who have it (including shared users)
+      const membersWithRole = discordRole.members;
+      for (const [memberId, member] of membersWithRole) {
+        try {
+          await member.roles.remove(discordRole, 'Booster role deleted by owner');
+        } catch (roleError) {
+          console.error(`Failed to remove role from member ${memberId}:`, roleError);
+        }
+      }
+
+      // Delete the Discord role
       await discordRole.delete('Booster role removed by owner');
     }
 
     // Remove from database - use userId, not boosterRole.id
     await guildService.deleteBoosterRole(message.guild.id, message.author.id);
-    return embeds.success(message, `Successfully removed your booster role **${boosterRole.name}**!`);
+    return embeds.success(message, `Successfully removed your booster role **${boosterRole.name || 'Unknown Role'}**!`);
 
   } catch (error) {
     console.error('Error removing booster role:', error);

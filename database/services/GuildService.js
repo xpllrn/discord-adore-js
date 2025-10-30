@@ -6545,19 +6545,40 @@ class GuildService extends BaseService {
   /**
    * Get unused booster roles
    * @param {string} guildId - Guild ID
+   * @param {number} daysSinceLastUsed - Number of days since last used (optional, default 30)
    * @returns {Promise<Object[]>} Array of unused roles
    */
-  async getUnusedBoosterRoles(guildId) {
+  async getUnusedBoosterRoles(guildId, daysSinceLastUsed = 30) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof daysSinceLastUsed !== 'number' || daysSinceLastUsed < 1) {
+      daysSinceLastUsed = 30;
     }
 
     try {
       const guildData = await this.ensureGuildData(guildId);
       const boosterRoles = guildData.BoosterRoles || [];
+      const cutoffDate = new Date(Date.now() - (daysSinceLastUsed * 24 * 60 * 60 * 1000));
 
-      // Filter for deleted roles or roles without userId
-      return boosterRoles.filter(br => br.deleted === true || !br.userId);
+      // Filter for roles that are:
+      // 1. Marked as deleted, OR
+      // 2. Don't have a userId, OR  
+      // 3. Haven't been used in the specified number of days
+      return boosterRoles.filter(br => {
+        if (br.deleted === true || !br.userId) {
+          return true;
+        }
+        
+        // Check if role hasn't been used recently
+        const lastUsed = br.lastUsed || br.lastModified || br.createdAt;
+        if (!lastUsed) {
+          return true; // No usage data, consider it unused
+        }
+        
+        return new Date(lastUsed) < cutoffDate;
+      });
     } catch (error) {
       console.error(`Error getting unused booster roles for guild ${guildId}:`, error.message);
       return [];
