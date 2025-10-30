@@ -15,13 +15,13 @@ function getRelativeTime(timestamp) {
   const days = Math.floor(hours / 24);
 
   if (days > 0) {
-    return `removed ${days} day${days > 1 ? 's' : ''} ago`;
+    return `removed ${days} day${days > 1 ? 's' : ''} before`;
   } else if (hours > 0) {
-    return `removed ${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return `removed ${hours} hour${hours > 1 ? 's' : ''} before`;
   } else if (minutes > 0) {
-    return `removed ${minutes} min${minutes > 1 ? 's' : ''} ago`;
+    return `removed ${minutes} min${minutes > 1 ? 's' : ''} before`;
   } else {
-    return `removed ${seconds} sec${seconds > 1 ? 's' : ''} ago`;
+    return `removed ${seconds} sec${seconds > 1 ? 's' : ''} before`;
   }
 }
 
@@ -36,7 +36,7 @@ module.exports = {
     const snipes = snipeCache.getDeletedMessages(message.channel.id);
 
     if (!snipes || snipes.length === 0) {
-      return embeds.warn(message, `there's nothing to snipe in this channel`);
+      return embeds.warn(message, `There's **nothing** to snipe in this channel`);
     }
 
     if (args[0]) {
@@ -135,7 +135,7 @@ module.exports = {
         const embed = new EmbedBuilder()
           .setColor(config.colors.embed)
           .setAuthor({ name: `${firstMsg.author}`, iconURL: firstMsg.authorAvatar })
-          .setFooter({ text: `snipe 1/${snipes.length} • ${getRelativeTime(firstMsg.timestamp)} • Use 'snipe <number>' for other snipes` })
+          .setFooter({ text: `snipe 1/${snipes.length} • ${getRelativeTime(firstMsg.timestamp)}` })
 
         let description = '';
         if (firstMsg.content && firstMsg.content.trim() && firstMsg.content !== '*No content*') {

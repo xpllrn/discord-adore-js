@@ -14,13 +14,13 @@ function getRelativeTime(timestamp) {
   const days = Math.floor(hours / 24);
 
   if (days > 0) {
-    return `edited ${days} day${days > 1 ? 's' : ''} ago`;
+    return `edited ${days} day${days > 1 ? 's' : ''} before`;
   } else if (hours > 0) {
-    return `edited ${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return `edited ${hours} hour${hours > 1 ? 's' : ''} before`;
   } else if (minutes > 0) {
-    return `edited ${minutes} min${minutes > 1 ? 's' : ''} ago`;
+    return `edited ${minutes} min${minutes > 1 ? 's' : ''} before`;
   } else {
-    return `edited ${seconds} sec${seconds > 1 ? 's' : ''} ago`;
+    return `edited ${seconds} sec${seconds > 1 ? 's' : ''} before`;
   }
 }
 
@@ -35,7 +35,7 @@ module.exports = {
     const editsnipes = snipeCache.getEditedMessages(message.channel.id);
 
     if (!editsnipes || editsnipes.length === 0) {
-      return embeds.warn(message, `there's nothing to snipe in this channel`);
+      return embeds.warn(message, `There's **nothing** to snipe in this channel`);
     }
 
     // Determine which editsnipe to show and prepare data

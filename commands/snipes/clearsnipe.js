@@ -25,7 +25,7 @@ module.exports = {
     const hasReactionSnipeData = reactionsnipes && reactionsnipes.length > 0;
 
     if (!hasSnipeData && !hasEditSnipeData && !hasReactionSnipeData) {
-      return embeds.warn(message, 'There is no snipe data to clear in this channel');
+      return embeds.warn(message, 'There is **no snipe data** to clear in this channel');
     }
 
     snipeCache.clearChannel(channelId);

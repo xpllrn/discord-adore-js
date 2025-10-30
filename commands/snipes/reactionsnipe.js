@@ -14,7 +14,7 @@ module.exports = {
     const reactionsnipes = snipeCache.getRemovedReactions(message.channel.id);
 
     if (!reactionsnipes || reactionsnipes.length === 0) {
-      return embeds.warn(message, `there's nothing to snipe in this channel`);
+      return embeds.warn(message, `There's **nothing** to snipe in this channel`);
     }
 
     // Determine which reactionsnipe to show
@@ -33,7 +33,7 @@ module.exports = {
     // Create custom info embed
     const embed = new EmbedBuilder()
       .setColor(config.colors.embed)
-      .setDescription(`<@${message.author.id}>: ${msg.author} reacted with ${emoji} <t:${Math.floor(msg.timestamp / 1000)}:R>`)
+      .setDescription(`<@${message.author.id}>: **${msg.author}** reacted with ${emoji} <t:${Math.floor(msg.timestamp / 1000)}:R>`)
 
     try {
       const targetMessage = await message.channel.messages.fetch(msg.messageId);
