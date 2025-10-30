@@ -339,6 +339,34 @@ class SpotifyService extends BaseService {
   // ===== SPOTIFY API INTERACTIONS =====
 
   /**
+   * Get client credentials access token for app-only requests
+   * @returns {Promise<string>} Access token
+   */
+  async getClientCredentialsToken() {
+    try {
+      const response = await axios.post(
+        `${SPOTIFY_ACCOUNTS_BASE}/api/token`,
+        new URLSearchParams({
+          grant_type: 'client_credentials'
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': 'Basic ' + Buffer.from(
+              process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
+            ).toString('base64')
+          }
+        }
+      );
+
+      return response.data.access_token;
+    } catch (error) {
+      console.error('[Spotify] Client credentials error:', error.response?.data || error.message);
+      throw new ServiceError('Failed to get Spotify client credentials token');
+    }
+  }
+
+  /**
    * Search for tracks on Spotify
    * @param {string} query - Search query
    * @param {string} accessToken - Valid access token

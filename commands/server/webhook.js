@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { hasDiscordPermission } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { getService } = require('@services');
+const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
 
 module.exports = {
   name: "webhook",
@@ -150,28 +151,13 @@ async function handleDelete(client, message, args, webhookService) {
 // Send message via webhook
 async function handleSend(client, message, args, webhookService) {
   if (args.length < 2) {
-    return embeds.warn(message, 'Usage: `webhook send <webhook_id> <message> [--add <embed_code>]`');
+    return embeds.warn(message, 'Usage: `webhook send <webhook_id> <message_or_embed_code>`');
   }
 
   const webhookIdentifier = args[0];
-  let messageContent = '';
-  let embedCode = '';
-  let addFlag = false;
+  const messageContent = args.slice(1).join(' ');
 
-  // Parse arguments for --add flag
-  for (let i = 1; i < args.length; i++) {
-    if (args[i] === '--add' && args[i + 1]) {
-      addFlag = true;
-      embedCode = args.slice(i + 1).join(' ');
-      break;
-    } else if (!addFlag) {
-      messageContent += args[i] + ' ';
-    }
-  }
-
-  messageContent = messageContent.trim();
-
-  if (!messageContent && !embedCode) {
+  if (!messageContent) {
     return embeds.warn(message, 'Please provide a **message** or **embed code**');
   }
 
@@ -181,22 +167,21 @@ async function handleSend(client, message, args, webhookService) {
       return embeds.warn(message, `Webhook **${webhookIdentifier}** not found`);
     }
 
-    const webhookClient = new WebhookClient({ id: webhook.webhookId, token: webhook.webhookToken });
-
-    const payload = {};
-    if (messageContent) payload.content = messageContent;
-
-    // Parse embed code if provided
-    if (embedCode) {
-      try {
-        const embedData = parseEmbedCode(embedCode);
-        payload.embeds = [embedData];
-      } catch (embedError) {
-        return embeds.warn(message, `Invalid embed code: ${embedError.message}`);
+    // Create a temporary channel-like object for the webhook
+    const webhookChannel = {
+      send: async (options) => {
+        const webhookClient = new WebhookClient({ id: webhook.webhookId, token: webhook.webhookToken });
+        return await webhookClient.send(options);
       }
-    }
+    };
 
-    await webhookClient.send(payload);
+    // Use EmbedVariableProcessor to handle both embed and text messages
+    await EmbedVariableProcessor.process(webhookChannel, messageContent, {
+      user: message.author,
+      guild: message.guild,
+      channel: message.channel
+    });
+
     await webhookService.updateLastUsed(webhook.webhookId);
 
     return embeds.success(message, `Message sent via webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
@@ -204,7 +189,7 @@ async function handleSend(client, message, args, webhookService) {
   } catch (error) {
     console.error('Error sending webhook message:', error);
     if (error.code === 10015) {
-      return embeds.warn(message, 'Webhook not found or has been deleted');
+      return embeds.warn(message, 'No **webhooks** have been created');
     }
     return embeds.deny(message, 'Failed to send webhook message. Please try again.');
   }
@@ -301,7 +286,7 @@ async function handleList(client, message, args, webhookService) {
     const webhooks = await webhookService.getGuildWebhooks(message.guild.id);
 
     if (webhooks.length === 0) {
-      return embeds.info(message, 'No webhooks found in this server');
+      return embeds.info(message, 'No **webhooks** have been created');
     }
 
     const config = require('../../config/setup');
@@ -324,7 +309,7 @@ async function handleList(client, message, args, webhookService) {
         userDisplay = `<@${webhook.createdBy}>`;
       }
 
-      description += `\`${webhook.shortId}\` **\`${webhook.name}\`** for ${channelMention}, belongs to ${userDisplay}\n`;
+      description += `\`${webhook.shortId}\` **\`${webhook.name}\`** for ${channelMention}, by to **${userDisplay}**\n`;
     }
 
     embed.setDescription(description);
@@ -338,28 +323,7 @@ async function handleList(client, message, args, webhookService) {
   }
 }
 
-// Helper function to parse embed code
-function parseEmbedCode(embedCode) {
-  try {
-    // Simple embed code parser - expects JSON format
-    const embedData = JSON.parse(embedCode);
 
-    // Validate required fields and limits
-    if (embedData.title && embedData.title.length > 256) {
-      throw new Error('Title must be 256 characters or less');
-    }
-    if (embedData.description && embedData.description.length > 4096) {
-      throw new Error('Description must be 4096 characters or less');
-    }
-    if (embedData.fields && embedData.fields.length > 25) {
-      throw new Error('Maximum 25 fields allowed');
-    }
-
-    return embedData;
-  } catch (error) {
-    throw new Error('Invalid JSON format');
-  }
-}
 
 // Rename webhook
 async function handleRename(client, message, args, webhookService) {
@@ -455,7 +419,7 @@ async function handleAvatar(client, message, args, webhookService) {
   } catch (error) {
     console.error('Error setting webhook avatar:', error);
     if (error.code === 10015) {
-      return embeds.warn(message, 'Webhook not found or has been deleted');
+      return embeds.warn(message, 'No **webhooks** have been created');
     }
     if (error.code === 50013) {
       return embeds.warn(message, 'I don\'t have permission to edit this webhook');

@@ -32,18 +32,31 @@ module.exports = {
 };
 
 /**
- * Get Spotify link by searching for a song or artist using public API
+ * Get Spotify link by searching for a song or artist using client credentials
  */
 async function getLinkBySearch(message, args) {
   try {
     const query = args.join(' ');
     await message.channel.sendTyping();
 
-    // Use Spotify's public search URL
-    const searchUrl = `https://open.spotify.com/search/${encodeURIComponent(query)}`;
+    const { getService } = require('@services');
+    const spotifyService = getService('spotify');
+
+    // Get client credentials token (no user auth required)
+    const accessToken = await spotifyService.getClientCredentialsToken();
+
+    // Search for tracks
+    const tracks = await spotifyService.searchTrack(query, accessToken);
+
+    if (!tracks || tracks.length === 0) {
+      return embeds.warn(message, `No tracks found for **${query}**`);
+    }
+
+    const track = tracks[0]; // Use first result
+    const trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
     
     // Just send the raw link
-    return message.channel.send(searchUrl);
+    return message.channel.send(trackUrl);
 
   } catch (error) {
     throw error;

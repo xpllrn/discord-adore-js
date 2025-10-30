@@ -109,9 +109,82 @@ module.exports = {
         }
       }
 
+      // Check if the deleted message was a reply and try to reply to the original message
+      if (msg.replyToMessageId) {
+        try {
+          const targetMessage = await message.channel.messages.fetch(msg.replyToMessageId);
+          return targetMessage.reply(messageOptions);
+        } catch (error) {
+          // Original message was deleted or not found, send directly
+          return message.channel.send(messageOptions);
+        }
+      }
+
       return message.channel.send(messageOptions);
     }
 
+    // For pagination, we'll show the first snipe and check if it was a reply
+    const firstMsg = snipes[0];
+    
+    // If the first snipe was a reply, try to reply to the original message
+    if (firstMsg.replyToMessageId) {
+      try {
+        const targetMessage = await message.channel.messages.fetch(firstMsg.replyToMessageId);
+        
+        // Create a simple embed for the first snipe when replying
+        const embed = new EmbedBuilder()
+          .setColor(config.colors.embed)
+          .setAuthor({ name: `${firstMsg.author}`, iconURL: firstMsg.authorAvatar })
+          .setFooter({ text: `snipe 1/${snipes.length} • ${getRelativeTime(firstMsg.timestamp)} • Use 'snipe <number>' for other snipes` })
+
+        let description = '';
+        if (firstMsg.content && firstMsg.content.trim() && firstMsg.content !== '*No content*') {
+          description = firstMsg.content;
+        }
+
+        // Handle attachments
+        let messageOptions = { embeds: [embed] };
+
+        if (firstMsg.attachments && firstMsg.attachments.length > 0) {
+          const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+          const imageAttachments = firstMsg.attachments.filter(url =>
+            imageExtensions.some(ext => url.toLowerCase().includes(ext))
+          );
+
+          if (imageAttachments.length === 1 && firstMsg.attachments.length === 1) {
+            embed.setImage(imageAttachments[0]);
+            if (!description) {
+              description = '*Image*';
+            }
+          } else {
+            if (description) description += '\n\n';
+            if (firstMsg.attachments.length === 1) {
+              description += `📎 **Attachment:** [View File](${firstMsg.attachments[0]})`;
+            } else {
+              description += `📎 **Attachments (${firstMsg.attachments.length} files):**\n`;
+              description += firstMsg.attachments.slice(0, 5).map((url, index) => `[File ${index + 1}](${url})`).join(' • ');
+              if (firstMsg.attachments.length > 5) {
+                description += ` • +${firstMsg.attachments.length - 5} more`;
+              }
+            }
+          }
+        }
+
+        if (description) {
+          embed.setDescription(description);
+        } else {
+          if (!firstMsg.attachments || firstMsg.attachments.length === 0) {
+            embed.setDescription('*No content*');
+          }
+        }
+
+        return targetMessage.reply(messageOptions);
+      } catch (error) {
+        // Original message was deleted, fall back to pagination
+      }
+    }
+
+    // Default pagination behavior
     const formatPage = (_, currentPage, totalPages) => {
       const msg = snipes[currentPage - 1];
       const embed = new EmbedBuilder()

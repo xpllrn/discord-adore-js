@@ -180,7 +180,8 @@ class Snipe {
       image: imageUrl,
       attachments: attachmentUrls,
       timestamp: Date.now(), // Use deletion time for proper chronological order
-      messageId: message.id
+      messageId: message.id,
+      replyToMessageId: message.reference?.messageId || null // Store reply reference
     };
   }
 
