@@ -1,9 +1,38 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { colors, emojis } = require('../config/setup');
+const { embeds } = require('../core/embeds');
 
 
 
 class CustomEmbedBuilder {
+    // Helper method to validate emoji
+    isValidEmoji(emoji) {
+        if (!emoji || typeof emoji !== 'string') return false;
+
+        // Check for custom Discord emoji format <:name:id> or <a:name:id>
+        if (emoji.match(/^<a?:\w+:\d+>$/)) {
+            return true;
+        }
+
+        // Check for Unicode emoji (basic check for common emoji patterns)
+        // This is a simple check - Discord will validate the actual emoji
+        if (emoji.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u)) {
+            return true;
+        }
+
+        // Check for other common emoji characters
+        if (emoji.match(/[\u{1F900}-\u{1F9FF}]|[\u{1FA70}-\u{1FAFF}]/u)) {
+            return true;
+        }
+
+        // If it's a single character and not obviously text, assume it might be an emoji
+        if (emoji.length === 1 || (emoji.length === 2 && emoji.charCodeAt(0) > 127)) {
+            return true;
+        }
+
+        return false;
+    }
+
     constructor(channel, string) {
         const Embed = new EmbedBuilder(); let Content = ''; const Buttons = [];
 
@@ -11,24 +40,24 @@ class CustomEmbedBuilder {
         const parseParameters = (input) => {
             const parameters = [];
             let i = 0;
-            
+
             while (i < input.length) {
                 if (input[i] === '{') {
                     let braceCount = 1;
                     let start = i + 1;
                     let j = i + 1;
-                    
+
                     // Find the matching closing brace, accounting for nested braces
                     while (j < input.length && braceCount > 0) {
                         if (input[j] === '{') braceCount++;
                         else if (input[j] === '}') braceCount--;
                         j++;
                     }
-                    
+
                     if (braceCount === 0) {
                         const content = input.substring(start, j - 1);
                         parameters.push(content);
-                        
+
                         // Skip $v if present
                         if (input.substring(j, j + 2) === '$v') {
                             j += 2;
@@ -41,12 +70,12 @@ class CustomEmbedBuilder {
                     i++;
                 }
             }
-            
+
             return parameters;
         };
-        
+
         const parameters = parseParameters(string);
-        
+
         for (const param of parameters) {
             const colonIndex = param.indexOf(':');
             if (colonIndex === -1) {
@@ -56,10 +85,10 @@ class CustomEmbedBuilder {
                 }
                 continue;
             }
-            
+
             const paramName = param.substring(0, colonIndex).trim().toLowerCase();
             const paramValue = param.substring(colonIndex + 1).trim();
-            
+
             // Handle the parameter based on its name (case-insensitive)
             if (paramName === 'title') {
                 Embed.setTitle(paramValue);
@@ -119,30 +148,33 @@ class CustomEmbedBuilder {
                     const label = buttonParts[1]?.trim();
                     const emojiOrState = buttonParts[2]?.trim();
                     const welcomeMessage = buttonParts[3]?.trim();
-                    
+
                     if (styleOrUrl && label) {
                         const button = new ButtonBuilder();
-                        
+
                         // Check if it's a welcome button
                         if (styleOrUrl.toLowerCase() === 'welcome') {
                             // Encode welcome message in custom ID (base64 to handle special characters)
                             const encodedMessage = welcomeMessage ? Buffer.from(welcomeMessage).toString('base64') : '';
                             const customId = `welcome_${encodedMessage}_${Date.now()}`.substring(0, 100); // Discord limit
-                            
+
                             button.setStyle(ButtonStyle.Primary)
-                                  .setLabel(label)
-                                  .setCustomId(customId);
-                            
-                            // Add emoji if provided
-                            if (emojiOrState && emojiOrState !== 'disabled' && emojiOrState !== 'disable') {
-                                button.setEmoji(emojiOrState);
+                                .setLabel(label)
+                                .setCustomId(customId);
+
+                            // Add emoji if provided and valid
+                            if (emojiOrState && emojiOrState !== 'disabled' && emojiOrState !== 'disable' && emojiOrState !== 'enable' && emojiOrState !== 'enabled') {
+                                // Check if it's a valid emoji (Unicode emoji or custom emoji format)
+                                if (this.isValidEmoji(emojiOrState)) {
+                                    button.setEmoji(emojiOrState);
+                                }
                             }
                         }
                         // Check if it's a URL button
                         else if (styleOrUrl.startsWith('http')) {
                             button.setStyle(ButtonStyle.Link)
-                                  .setURL(styleOrUrl)
-                                  .setLabel(label);
+                                .setURL(styleOrUrl)
+                                .setLabel(label);
                         } else {
                             // Style button
                             let style = ButtonStyle.Secondary; // Default
@@ -160,23 +192,30 @@ class CustomEmbedBuilder {
                                     style = ButtonStyle.Danger;
                                     break;
                             }
-                            
+
                             button.setStyle(style)
-                                  .setLabel(label)
-                                  .setCustomId(`custom_button_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+                                .setLabel(label)
+                                .setCustomId(`custom_button_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+                            // Add emoji for regular buttons if provided and valid
+                            if (emojiOrState && emojiOrState !== 'disabled' && emojiOrState !== 'disable' && emojiOrState !== 'enable' && emojiOrState !== 'enabled') {
+                                if (this.isValidEmoji(emojiOrState)) {
+                                    button.setEmoji(emojiOrState);
+                                }
+                            }
                         }
-                        
-                        // Handle disabled state (for non-welcome buttons)
-                        if (styleOrUrl.toLowerCase() !== 'welcome' && (emojiOrState === 'disabled' || emojiOrState === 'disable')) {
+
+                        // Handle disabled state for all button types
+                        if (emojiOrState === 'disabled' || emojiOrState === 'disable') {
                             button.setDisabled(true);
                         }
-                        
+
                         Buttons.push(button);
                     }
                 }
             }
         }
-        
+
         // Create action rows for buttons (max 5 buttons per row, max 5 rows)
         const components = []
         if (Buttons.length > 0) {
@@ -201,7 +240,7 @@ class CustomEmbedBuilder {
 
         channel.send(messageOptions).then((sentMessage) => {
             // Check if there are any welcome buttons to set up timeout for
-            const hasWelcomeButtons = Buttons.some(button => 
+            const hasWelcomeButtons = Buttons.some(button =>
                 button.data && button.data.custom_id && button.data.custom_id.startsWith('welcome_')
             );
 
@@ -219,12 +258,12 @@ class CustomEmbedBuilder {
                             const updatedRow = new ActionRowBuilder();
                             for (const button of row.components) {
                                 const newButton = new ButtonBuilder(button.data);
-                                
+
                                 // Disable welcome buttons only
                                 if (button.customId && button.customId.startsWith('welcome_')) {
                                     newButton.setDisabled(true);
                                 }
-                                
+
                                 updatedRow.addComponents(newButton);
                             }
                             updatedComponents.push(updatedRow);
@@ -238,13 +277,31 @@ class CustomEmbedBuilder {
                 }, 60000); // 60 seconds
             }
         }).catch((error) => {
-          console.error('Embed send error:', error)
-          const errorEmbed = new EmbedBuilder()
-            .setColor(colors.error || '#ff0000')
-            .setDescription(`${emojis.error || '❌'} Failed to send embed: ${error.message || 'Invalid embed code'}`)
-          return channel.send({ embeds: [errorEmbed] }).catch(() => {
-            return channel.send('Invalid embed code, try again')
-          })
+            // Log error to webhook if available
+            if (channel.client?.errorLogger) {
+                channel.client.errorLogger.log(error, 'Embed Send Error', {
+                    command: 'Embed Builder',
+                    args: `Channel: ${channel.name || 'Unknown'}`,
+                    guild: channel.guild,
+                    channel: channel
+                }).catch(() => {
+                    // Silent fail for error logger
+                });
+            }
+
+            // Create fake message object for embeds.deny
+            const fakeMessage = {
+                author: { id: 'system' },
+                channel: {
+                    send: async (options) => {
+                        return await channel.send(options);
+                    }
+                }
+            };
+
+            return embeds.deny(fakeMessage, `Failed to send embed: ${error.message || 'Invalid embed code'}`).catch(() => {
+                return channel.send('Invalid embed code, try again')
+            })
         })
     }
 }
@@ -279,10 +336,16 @@ class EmbedVariableProcessor {
                 processedContent = correctionResult.content;
             } else {
                 // Show error if auto-correction failed
-                const embed = new EmbedBuilder()
-                    .setColor(colors.warn)
-                    .setDescription(`**I was unable to understand this due to errors, solve the following**:\n\n\`\`\`\n${validation.error}\n\`\`\``)
-                return channel.send({ embeds: [embed] });
+                const fakeMessage = {
+                    author: { id: 'system' },
+                    channel: {
+                        send: async (options) => {
+                            return await channel.send(options);
+                        }
+                    }
+                };
+
+                return embeds.warn(fakeMessage, `**I was unable to understand this due to errors, solve the following**:\n\n\`\`\`\n${validation.error}\n\`\`\``);
             }
         }
 
@@ -306,7 +369,7 @@ class EmbedVariableProcessor {
         if (variables.user) {
             // Get display name with proper fallback
             let displayName = variables.user.displayName || variables.user.username;
-            
+
             // If user doesn't have displayName, try to get it from guild member
             if (!variables.user.displayName && variables.guild && variables.guild.members) {
                 const member = variables.guild.members.cache.get(variables.user.id);
@@ -314,7 +377,7 @@ class EmbedVariableProcessor {
                     displayName = member.displayName || member.user.username;
                 }
             }
-            
+
             processed = processed.replace(/{user}/g, displayName);
             processed = processed.replace(/{user\.mention}/g, `<@${variables.user.id}>`);
             processed = processed.replace(/{user\.name}/g, variables.user.username);
@@ -370,8 +433,8 @@ class EmbedVariableProcessor {
 
             // Calculate ordinal for humanmembercount
             const ordinal = (memberCount.toString().endsWith(1) && !memberCount.toString().endsWith(11)) ? 'st' :
-                           (memberCount.toString().endsWith(2) && !memberCount.toString().endsWith(12)) ? 'nd' :
-                           (memberCount.toString().endsWith(3) && !memberCount.toString().endsWith(13)) ? 'rd' : 'th';
+                (memberCount.toString().endsWith(2) && !memberCount.toString().endsWith(12)) ? 'nd' :
+                    (memberCount.toString().endsWith(3) && !memberCount.toString().endsWith(13)) ? 'rd' : 'th';
             processed = processed.replace(/{server\.humanmembercount}/g, memberCount + ordinal);
         }
 

@@ -121,8 +121,8 @@ module.exports = {
         const now = new Date();
 
         // Check cooldown status
-        let cooldownField = { name: 'Status', value: '✅ Ready to vote!', inline: true };
-        
+        let cooldownField = { name: 'Status', value: 'Ready to vote!', inline: true };
+
         if (lastVote && (now.getTime() - lastVote.getTime()) < VOTE_COOLDOWN) {
           const nextVote = new Date(lastVote.getTime() + VOTE_COOLDOWN);
           const unixTimestamp = Math.floor(nextVote.getTime() / 1000);

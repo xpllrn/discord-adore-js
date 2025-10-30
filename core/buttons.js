@@ -285,6 +285,9 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                 }
 
                 if (interaction.customId === 'confirm_approve') {
+                    // Defer the interaction so onApprove can use editReply
+                    await interaction.deferUpdate();
+                    
                     // Execute approve function and pass interaction for editing
                     if (onApprove) {
                         await onApprove(interaction, sentMessage);
