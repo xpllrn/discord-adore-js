@@ -247,7 +247,7 @@ async function handleEdit(client, message, args, webhookService) {
 
     // Get all webhooks for the guild to find which one sent the message
     const guildWebhooks = await webhookService.getGuildWebhooks(message.guild.id);
-    
+
     let targetWebhook = null;
     for (const webhook of guildWebhooks) {
       try {
@@ -304,16 +304,17 @@ async function handleList(client, message, args, webhookService) {
       return embeds.info(message, 'No webhooks found in this server');
     }
 
+    const config = require('../../config/setup');
     const embed = new EmbedBuilder()
-      .setColor(0x5865F2)
-      .setTitle(`Webhooks in ${message.guild.name}`)
+      .setColor(config.colors.embed)
+      .setTitle(`${message.guild.name} Webhooks`)
       .setTimestamp();
 
     let description = '';
     for (const webhook of webhooks) {
       const channel = message.guild.channels.cache.get(webhook.channelId);
       const channelMention = channel ? channel.toString() : `#deleted-channel`;
-      
+
       // Get user info for display
       let userDisplay = 'Unknown User';
       try {
@@ -323,10 +324,7 @@ async function handleList(client, message, args, webhookService) {
         userDisplay = `<@${webhook.createdBy}>`;
       }
 
-      const lastUsed = webhook.lastUsed ? `<t:${Math.floor(webhook.lastUsed.getTime() / 1000)}:R>` : 'Never';
-
-      description += `Webhook \`${webhook.shortId}\` **\`${webhook.name}\`** for ${channelMention}, belongs to ${userDisplay}\n`;
-      description += `• Last used: ${lastUsed}\n\n`;
+      description += `\`${webhook.shortId}\` **\`${webhook.name}\`** for ${channelMention}, belongs to ${userDisplay}\n`;
     }
 
     embed.setDescription(description);
@@ -345,7 +343,7 @@ function parseEmbedCode(embedCode) {
   try {
     // Simple embed code parser - expects JSON format
     const embedData = JSON.parse(embedCode);
-    
+
     // Validate required fields and limits
     if (embedData.title && embedData.title.length > 256) {
       throw new Error('Title must be 256 characters or less');
@@ -473,19 +471,19 @@ async function handleAvatar(client, message, args, webhookService) {
 function isValidImageUrl(url) {
   try {
     const parsedUrl = new URL(url);
-    
+
     // Only allow HTTP and HTTPS protocols
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
       return false;
     }
-    
+
     const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
     const pathname = parsedUrl.pathname.toLowerCase();
-    
+
     // Check if URL ends with valid image extension or is a Discord CDN link
-    return validExtensions.some(ext => pathname.endsWith(ext)) || 
-           parsedUrl.hostname.includes('discord') ||
-           parsedUrl.hostname.includes('cdn.');
+    return validExtensions.some(ext => pathname.endsWith(ext)) ||
+      parsedUrl.hostname.includes('discord') ||
+      parsedUrl.hostname.includes('cdn.');
   } catch {
     return false;
   }

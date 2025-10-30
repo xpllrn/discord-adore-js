@@ -1,5 +1,6 @@
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
+const { embeds } = require('../../core/embeds');
 
 module.exports = {
   name: "sp",
@@ -25,7 +26,7 @@ module.exports = {
 
     } catch (error) {
       console.error('[SP Command] Error:', error);
-      return message.channel.send('❌ An error occurred while searching for the track.');
+      return embeds.warn(message, 'An error occurred while searching for the track.');
     }
   }
 };
@@ -38,13 +39,11 @@ async function getLinkBySearch(message, args) {
     const query = args.join(' ');
     await message.channel.sendTyping();
 
-    // Use Spotify's public search (no auth required for basic search)
-    // We'll use a simple web scraping approach or public API
+    // Use Spotify's public search URL
     const searchUrl = `https://open.spotify.com/search/${encodeURIComponent(query)}`;
     
-    // For now, just return the search URL since we don't have public API access
-    // In a real implementation, you'd want to use Spotify Web API with client credentials
-    return message.channel.send(`🎵 **${query}**: ${searchUrl}`);
+    // Just send the raw link
+    return message.channel.send(searchUrl);
 
   } catch (error) {
     throw error;
@@ -60,7 +59,7 @@ async function getLinkFromUser(client, message, args) {
     const userResult = await findUser(message.guild, args[0], client);
     
     if (!userResult.found) {
-      return message.channel.send('❌ User not found.');
+      return embeds.warn(message, userResult.error || 'User not found.');
     }
 
     const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
@@ -72,22 +71,20 @@ async function getLinkFromUser(client, message, args) {
     const spotifyActivity = member.presence?.activities?.find(activity => activity.name === 'Spotify' && activity.type === 2);
 
     if (!spotifyActivity) {
-      return message.channel.send(`❌ **${targetUser.username}** isn't listening to any music right now!`);
+      return embeds.warn(message, `**${targetUser.username}** isn't listening to any **music** right now!`);
     }
 
-    // Extract track info from presence
-    const trackName = spotifyActivity.details; // Song name
-    const artistName = spotifyActivity.state; // Artist name
+    // Extract track ID from presence
     const trackId = spotifyActivity.syncId; // Spotify track ID
     
     if (!trackId) {
-      return message.channel.send(`❌ Could not get track information from **${targetUser.username}**'s Spotify status.`);
+      return embeds.warn(message, `Could not get track information from **${targetUser.username}**'s Spotify status.`);
     }
 
     const trackUrl = `https://open.spotify.com/track/${trackId}`;
     
-    // Just send the link
-    return message.channel.send(`🎵 **${trackName}** by **${artistName}**: ${trackUrl}`);
+    // Just send the raw link
+    return message.channel.send(trackUrl);
 
   } catch (error) {
     throw error;
