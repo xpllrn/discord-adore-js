@@ -154,19 +154,34 @@ class CustomEmbedBuilder {
 
                         // Check if it's a welcome button
                         if (styleOrUrl.toLowerCase() === 'welcome') {
+                            // For welcome buttons, the 3rd parameter can be either emoji OR welcome message
+                            // If 4th parameter exists, 3rd is emoji and 4th is message
+                            // If only 3rd parameter exists, it's the welcome message
+                            let emoji = '';
+                            let message = '';
+                            
+                            if (welcomeMessage) {
+                                // 4 parameters: welcome && label && emoji && message
+                                emoji = emojiOrState;
+                                message = welcomeMessage;
+                            } else {
+                                // 3 parameters: welcome && label && message
+                                message = emojiOrState;
+                            }
+
                             // Encode welcome message in custom ID (base64 to handle special characters)
-                            const encodedMessage = welcomeMessage ? Buffer.from(welcomeMessage).toString('base64') : '';
+                            const encodedMessage = message ? Buffer.from(message).toString('base64') : '';
                             const customId = `welcome_${encodedMessage}_${Date.now()}`.substring(0, 100); // Discord limit
 
-                            button.setStyle(ButtonStyle.Primary)
+                            button.setStyle(ButtonStyle.Secondary) // Always grey for welcome buttons
                                 .setLabel(label)
                                 .setCustomId(customId);
 
                             // Add emoji if provided and valid
-                            if (emojiOrState && emojiOrState !== 'disabled' && emojiOrState !== 'disable' && emojiOrState !== 'enable' && emojiOrState !== 'enabled') {
+                            if (emoji && emoji !== 'disabled' && emoji !== 'disable' && emoji !== 'enable' && emoji !== 'enabled') {
                                 // Check if it's a valid emoji (Unicode emoji or custom emoji format)
-                                if (this.isValidEmoji(emojiOrState)) {
-                                    button.setEmoji(emojiOrState);
+                                if (this.isValidEmoji(emoji)) {
+                                    button.setEmoji(emoji);
                                 }
                             }
                         }
