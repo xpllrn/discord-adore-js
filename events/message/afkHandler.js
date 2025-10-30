@@ -50,18 +50,18 @@ module.exports = {
             afkUsers.push({
               user: user,
               message: afkData.message,
-              since: afkData.since.getTime()
+              time: timeString
             });
           }
         }
 
         if (afkUsers.length > 0) {
           const afkList = afkUsers.map(afk =>
-            `💤 **${afk.user.mention}** is AFK: **${afk.message}** - \`${Math.floor(afk.since / 1000)}\``
+            `💤 **<@${afk.user.id}>** is AFK: **${afk.message}** - ${afk.time} ago`
           ).join('\n');
 
           const embed = new EmbedBuilder()
-            .setColor(colors.warn)
+            .setColor(colors.embed)
             .setDescription(afkList);
 
           message.channel.send({ embeds: [embed] });
