@@ -121,8 +121,7 @@ class UserService extends BaseService {
       // Try to get existing data first
       let userData = await this.get(userId);
       
-      // Log what ensureUserData is returning
-      console.log(`🔍 ensureUserData for ${userId}: bankLimit = ${userData?.Gambling?.bankLimit}`);
+
 
 
 
@@ -231,21 +230,14 @@ class UserService extends BaseService {
       const userData = await this.ensureUserData(userId);
       let gamblingData = userData.Gambling || this.getDefaultGamblingData();
       
-      // Log every call to getGamblingData for debugging
-      console.log(`📊 getGamblingData called for ${userId}: bankLimit = ${gamblingData.bankLimit}`);
+
       
       // Fix undefined bankLimit in existing gambling data - ONLY for truly missing values
       if (gamblingData && (gamblingData.bankLimit === undefined || gamblingData.bankLimit === null)) {
-        console.log(`🚨 CRITICAL: Found undefined bankLimit for user ${userId}`);
-        console.log(`   - userData.Gambling.bankLimit: ${userData?.Gambling?.bankLimit}`);
-        console.log(`   - gamblingData.bankLimit: ${gamblingData.bankLimit}`);
-        console.log(`   - Stack trace:`, new Error().stack);
-        
         gamblingData.bankLimit = 50000;
         // Update the database to fix this permanently
         userData.Gambling = gamblingData;
         await this.set(userId, userData);
-        console.log(`🔧 FIXED: Set missing bankLimit to 50000 for user ${userId}`);
       }
       
 
@@ -2264,11 +2256,7 @@ class UserService extends BaseService {
       // Handle undefined, null, or missing bankLimit
       let bankLimit = userData.Gambling?.bankLimit;
       
-      // Log every call to getBankLimit for debugging
-      console.log(`🏦 getBankLimit called for ${userId}: raw value = ${bankLimit} (type: ${typeof bankLimit})`);
-      
       if (bankLimit === undefined || bankLimit === null || typeof bankLimit !== 'number') {
-        console.log(`⚠️ getBankLimit fallback triggered for ${userId}: ${bankLimit} -> 50000`);
         bankLimit = 50000;
       }
       
@@ -2311,12 +2299,7 @@ class UserService extends BaseService {
       
       await this.set(userId, userData);
       
-      // Don't invalidate cache - the set() method should have cached the correct data
-      console.log(`✅ Bank limit updated: ${userId} -> ${newLimit} (was ${oldLimit})`);
-      
-      // Verify the cache has the correct data
-      const cachedData = this.cache.get(userId);
-      console.log(`🔍 Cache verification: ${userId} bankLimit = ${cachedData?.Gambling?.bankLimit}`);
+
       
       return true;
     } catch (error) {
