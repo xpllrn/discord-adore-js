@@ -36,11 +36,7 @@ class UserService extends BaseService {
       const updateData = { ...data };
       delete updateData._id;
 
-      // Debug logging for bank limit writes
-      if (updateData.Gambling?.bankLimit !== undefined) {
-        console.log(`🔍 DEBUG writeToDatabase for ${key}:`);
-        console.log(`   - Writing bankLimit: ${updateData.Gambling.bankLimit} (type: ${typeof updateData.Gambling.bankLimit})`);
-      }
+
 
       await Model.updateOne(query, { $set: updateData }, { upsert: true });
     } catch (error) {
@@ -60,11 +56,7 @@ class UserService extends BaseService {
 
       const doc = await Model.findOne(query).lean();
       
-      // Debug logging for bank limit reads
-      if (doc?.Gambling) {
-        console.log(`🔍 DEBUG readFromDatabase for ${key}:`);
-        console.log(`   - Read bankLimit: ${doc.Gambling.bankLimit} (type: ${typeof doc.Gambling.bankLimit})`);
-      }
+
       
       return doc || null;
     } catch (error) {
@@ -129,12 +121,7 @@ class UserService extends BaseService {
       // Try to get existing data first
       let userData = await this.get(userId);
 
-      // Debug logging for bank limit issues - always log for troubleshooting
-      console.log(`🔍 DEBUG ensureUserData for ${userId}:`);
-      console.log(`   - userData from cache/db: ${!!userData}`);
-      if (userData) {
-        console.log(`   - existing bankLimit: ${userData.Gambling?.bankLimit}`);
-      }
+
 
       if (!userData) {
         // Create default user data with UTC timestamps
@@ -255,15 +242,13 @@ class UserService extends BaseService {
         await this.set(userId, userData);
       }
       
-      // Debug logging for bank limit issues - log when bankLimit is missing or default
-      if (!userData?.Gambling?.bankLimit || gamblingData.bankLimit === 50000) {
-        console.log(`🔍 DEBUG getGamblingData for ${userId}:`);
-        console.log(`   - userData exists: ${!!userData}`);
-        console.log(`   - userData.Gambling exists: ${!!userData?.Gambling}`);
-        console.log(`   - userData.Gambling.bankLimit: ${userData?.Gambling?.bankLimit}`);
-        console.log(`   - returning bankLimit: ${gamblingData.bankLimit}`);
-        console.log(`   - Source: ${userData?.Gambling ? 'database' : 'default'}`);
-      }
+      // Debug logging for bank limit issues
+      console.log(`🔍 DEBUG getGamblingData for ${userId}:`);
+      console.log(`   - userData exists: ${!!userData}`);
+      console.log(`   - userData.Gambling exists: ${!!userData?.Gambling}`);
+      console.log(`   - userData.Gambling.bankLimit: ${userData?.Gambling?.bankLimit}`);
+      console.log(`   - returning bankLimit: ${gamblingData.bankLimit}`);
+      console.log(`   - Source: ${userData?.Gambling ? 'database' : 'default'}`);
       
       return gamblingData;
     } catch (error) {
@@ -2284,14 +2269,12 @@ class UserService extends BaseService {
       }
       
       // Debug logging for bank limit issues - log when bankLimit is missing or using fallback
-      if (!userData?.Gambling?.bankLimit || bankLimit === 50000) {
-        console.log(`🔍 DEBUG getBankLimit for ${userId}:`);
-        console.log(`   - userData exists: ${!!userData}`);
-        console.log(`   - userData.Gambling exists: ${!!userData?.Gambling}`);
-        console.log(`   - userData.Gambling.bankLimit: ${userData?.Gambling?.bankLimit}`);
-        console.log(`   - returning bankLimit: ${bankLimit}`);
-        console.log(`   - fallback used: ${!userData?.Gambling?.bankLimit}`);
-      }
+      console.log(`🔍 DEBUG getBankLimit for ${userId}:`);
+      console.log(`   - userData exists: ${!!userData}`);
+      console.log(`   - userData.Gambling exists: ${!!userData?.Gambling}`);
+      console.log(`   - userData.Gambling.bankLimit: ${userData?.Gambling?.bankLimit}`);
+      console.log(`   - returning bankLimit: ${bankLimit}`);
+      console.log(`   - fallback used: ${!userData?.Gambling?.bankLimit}`);
       
       return bankLimit;
     } catch (error) {
@@ -2328,13 +2311,17 @@ class UserService extends BaseService {
       }
       
       userData.Gambling.bankLimit = newLimit;
+      
+      // Force cache invalidation to ensure fresh data
+      this.cache.delete(userId);
+      
       await this.set(userId, userData);
       
       // Debug logging for bank limit updates
       console.log(`🔍 DEBUG updateBankLimit for ${userId}:`);
       console.log(`   - oldLimit: ${oldLimit}`);
       console.log(`   - newLimit: ${newLimit}`);
-      console.log(`   - Stack trace:`, new Error().stack);
+      console.log(`   - Cache invalidated: true`);
       
       return true;
     } catch (error) {
