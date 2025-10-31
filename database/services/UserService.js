@@ -232,7 +232,15 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      const gamblingData = userData.Gambling || this.getDefaultGamblingData();
+      let gamblingData = userData.Gambling || this.getDefaultGamblingData();
+      
+      // Fix undefined bankLimit in existing gambling data
+      if (gamblingData && (gamblingData.bankLimit === undefined || gamblingData.bankLimit === null || typeof gamblingData.bankLimit !== 'number')) {
+        gamblingData.bankLimit = 50000;
+        // Update the database to fix this permanently
+        userData.Gambling = gamblingData;
+        await this.set(userId, userData);
+      }
       
       // Debug logging for bank limit issues - log when bankLimit is missing or default
       if (!userData?.Gambling?.bankLimit || gamblingData.bankLimit === 50000) {
@@ -2256,7 +2264,11 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      const bankLimit = userData.Gambling?.bankLimit || 50000;
+      // Handle undefined, null, or missing bankLimit
+      let bankLimit = userData.Gambling?.bankLimit;
+      if (bankLimit === undefined || bankLimit === null || typeof bankLimit !== 'number') {
+        bankLimit = 50000;
+      }
       
       // Debug logging for bank limit issues - log when bankLimit is missing or using fallback
       if (!userData?.Gambling?.bankLimit || bankLimit === 50000) {
@@ -2288,6 +2300,10 @@ class UserService extends BaseService {
   async updateBankLimit(userId, newLimit) {
     if (!userId) {
       throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (typeof newLimit !== 'number' || newLimit < 0) {
+      throw new ValidationError('New limit must be a positive number', 'newLimit', newLimit);
     }
 
     try {

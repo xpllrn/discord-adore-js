@@ -91,25 +91,38 @@ module.exports = {
     if (args[0].toLowerCase() === 'fix') {
       await createConfirmation(
         message,
-        `🔧 **FIX MISSING BANK LIMITS** 🔧\n\nThis will **add default bank limits (50,000) to users who are missing them** without affecting users who already have bank limits set.\n\n**This will:**\n• Add bank limits to users missing them\n• NOT change existing bank limits\n• Only affect users with missing data\n\n**This is safe to run!**`,
+        `🔧 **FIX MISSING/UNDEFINED BANK LIMITS** 🔧\n\nThis will **fix users with missing or undefined bank limits** without affecting users who already have valid bank limits set.\n\n**This will:**\n• Fix users with missing bankLimit field\n• Fix users with undefined bankLimit values\n• Fix users with null bankLimit values\n• NOT change existing valid bank limits\n\n**This is safe to run!**`,
         async (interaction) => {
           try {
             // Get the User model directly for bulk operations
             const { User } = require('../../database');
             const UserModel = User;
 
-            // Fix users who have gambling data but no bankLimit field
-            const result = await UserModel.updateMany(
+            // Fix users who have gambling data but no bankLimit field OR undefined/null bankLimit
+            const result1 = await UserModel.updateMany(
               { 'Gambling': { $exists: true }, 'Gambling.bankLimit': { $exists: false } },
+              { $set: { 'Gambling.bankLimit': 50000 } }
+            );
+
+            // Fix users who have undefined or null bankLimit
+            const result2 = await UserModel.updateMany(
+              { 
+                'Gambling': { $exists: true }, 
+                $or: [
+                  { 'Gambling.bankLimit': null },
+                  { 'Gambling.bankLimit': undefined }
+                ]
+              },
               { $set: { 'Gambling.bankLimit': 50000 } }
             );
 
             // Clear the service cache to ensure fresh data
             userService.clearCache();
 
+            const totalFixed = result1.modifiedCount + result2.modifiedCount;
             const successEmbed = embeds.createSuccess(
               message, 
-              `🔧 **Missing Bank Limits Fixed**\n\n**${result.modifiedCount}** users had missing bank limits fixed\n\n**Fixed users now have:**\n• **Bank Limit:** 50,000 coins`
+              `🔧 **Missing/Undefined Bank Limits Fixed**\n\n**${result1.modifiedCount}** users had missing bank limits fixed\n**${result2.modifiedCount}** users had undefined/null bank limits fixed\n**${totalFixed}** total users fixed\n\n**Fixed users now have:**\n• **Bank Limit:** 50,000 coins`
             );
 
             await interaction.editReply({ embeds: [successEmbed], components: [] });
