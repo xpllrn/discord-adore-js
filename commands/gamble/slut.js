@@ -22,18 +22,18 @@ module.exports = {
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);
 
-      // Check work cooldown (1 hour = 3600000 ms) - same as work command
-      const workCooldown = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
-      const lastWorked = gambling.lastWorked || null;
+      // Check slut cooldown (1 hour = 3600000 ms) - separate from work command
+      const slutCooldown = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
+      const lastSlut = gambling.lastSlut || null;
       const now = Date.now();
 
-      if (lastWorked && (now - lastWorked) < workCooldown) {
-        const timeLeft = workCooldown - (now - lastWorked);
+      if (lastSlut && (now - lastSlut) < slutCooldown) {
+        const timeLeft = slutCooldown - (now - lastSlut);
         const unixTimestamp = Math.floor((now + timeLeft) / 1000);
 
         const embed = new EmbedBuilder()
           .setColor('#fc6464')
-          .setDescription(`${emojis.warn} <@${message.author.id}>: You can **work** again <t:${unixTimestamp}:R>`);
+          .setDescription(`${emojis.warn} <@${message.author.id}>: You can **slut** again <t:${unixTimestamp}:R>`);
 
         return message.channel.send({ embeds: [embed] });
       }
@@ -77,9 +77,9 @@ module.exports = {
       const job = jobs[Math.floor(Math.random() * jobs.length)];
       const finalEarnings = Math.floor(baseEarnings * job.multiplier);
 
-      // Update user's wallet and work timestamp using service layer
+      // Update user's wallet and slut timestamp using service layer
       await userService.updateWallet(message.author.id, finalEarnings);
-      await userService.updateWorkTimestamp(message.author.id);
+      await userService.setUserField(message.author.id, 'Gambling.lastSlut', now);
 
       // Create success message with funny descriptions
       const embed = new EmbedBuilder()

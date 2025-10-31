@@ -378,7 +378,7 @@ function createGameMessage(board, players, currentPlayerIndex, playerSymbols, ga
     const winnerName = winnerIndex !== -1 ? `🏅 **${players[winnerIndex].username}** won!` : 'Unknown player won!';
     title = `**${players[0].username}** vs **${players[1].username}** - ${winnerName}`;
     
-    if (betAmount > 0) {
+    if (betAmount > 0 && winnerIndex !== -1) {
       title += `\n💰 **${players[winnerIndex].username}** wins **${formatCurrency(betAmount * 2)}** coins!`;
     }
   } else if (gameState === 'draw') {
