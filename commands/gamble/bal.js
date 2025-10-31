@@ -48,13 +48,14 @@ module.exports = {
 
       const walletBalance = gambling.wallet || 0;
       const bankBalance = gambling.bank || 0;
+      const bankLimit = await userService.getBankLimit(targetUser.id);
       
       // Create embed with minimal format
       const isOwnBalance = targetUser.id === message.author.id;
       const userMention = isOwnBalance ? `<@${message.author.id}>` : `<@${targetUser.id}>`;
       const userText = isOwnBalance ? 'You have' : `**${targetUser.displayName || targetUser.username || 'User'}** has`;
 
-      let description = `🏦 ${userMention}: ${userText} a **wallet** balance of **${formatCurrency(walletBalance)}** and a **bank** balance of **${formatCurrency(bankBalance)}** coins!`;
+      let description = `🏦 ${userMention}: ${userText} a **wallet** balance of **${formatCurrency(walletBalance)}** and a **bank** balance of **${formatCurrency(bankBalance)}**/**${formatCurrency(bankLimit)}** coins!`;
 
       // Add interest notification if earned
       if (interestEarned > 0) {

@@ -26,8 +26,7 @@ module.exports = {
   name: "vote",
   aliases: ['topgg', 'upvote'],
   description: 'Vote for the bot on Top.gg and earn 10,000 coins!',
-  syntax: 'vote [claim]',
-  example: 'vote\nvote claim',
+  syntax: 'vote claim',
   run: async (client, message, args) => {
 
     try {
@@ -86,7 +85,7 @@ module.exports = {
             await userService.updateWallet(userId, VOTE_REWARD);
             await userService.updateVoteTimestamp(userId);
 
-            return embeds.success(message, `You received **${formatCurrency(VOTE_REWARD)}** coins for voting!\n\nYou can vote again in **12 hours** for another **${formatCurrency(VOTE_REWARD)}** coins!\n\nThank you for supporting us! ❤️`);
+            return embeds.success(message, `You received **${formatCurrency(VOTE_REWARD)}** coins for voting!\n\nYou can vote again in **12 hours** for another **${formatCurrency(VOTE_REWARD)}** coins!`);
           } catch (rewardError) {
             return embeds.deny(message, 'You voted successfully, but there was an error giving your reward. Please contact an administrator.');
           }

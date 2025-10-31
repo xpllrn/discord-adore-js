@@ -46,6 +46,8 @@ module.exports = {
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);
       const walletBalance = gambling.wallet || 0;
+      const bankBalance = gambling.bank || 0;
+      const bankLimit = await userService.getBankLimit(message.author.id);
       
       if (walletBalance <= 0) {
         return embeds.deny(message, 'You don\'t have any money in your wallet to deposit');
@@ -60,6 +62,15 @@ module.exports = {
       
       if (amount > walletBalance) {
         return embeds.deny(message, `You only have **${formatCurrency(walletBalance)}** coins in your **wallet**`);
+      }
+
+      // Check bank limit
+      if (bankBalance + amount > bankLimit) {
+        const availableSpace = bankLimit - bankBalance;
+        if (availableSpace <= 0) {
+          return embeds.deny(message, `Your bank is full! Bank limit: **${formatCurrency(bankLimit)}** coins. Buy banknotes from the store to increase your limit.`);
+        }
+        return embeds.deny(message, `You can only deposit **${formatCurrency(availableSpace)}** more coins. Bank limit: **${formatCurrency(bankLimit)}** coins. Buy banknotes to increase your limit.`);
       }
       
       // Transfer money from wallet to bank using service layer

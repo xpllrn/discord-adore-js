@@ -124,6 +124,7 @@ class UserService extends BaseService {
           Gambling: {
             wallet: 1000,
             bank: 0,
+            bankLimit: 50000, // Default bank limit
             dailyClaim: {
               lastClaimed: null,
               streak: 0
@@ -137,6 +138,9 @@ class UserService extends BaseService {
             totalGambled: 0,
             totalWon: 0,
             totalLost: 0
+          },
+          Inventory: {
+            items: []
           },
           LastFMUsername: null,
           LastFMLibrary: {
@@ -2132,6 +2136,160 @@ class UserService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to remove AFK status for user ${userId}`, error);
+    }
+  }
+
+  // ===== INVENTORY OPERATIONS =====
+
+  /**
+   * Get user's inventory
+   * @param {string} userId - User ID
+   * @returns {Promise<Array>} User's inventory items
+   */
+  async getInventory(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      return userData.Inventory?.items || [];
+    } catch (error) {
+      console.error(`Error getting inventory for user ${userId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add item to user's inventory
+   * @param {string} userId - User ID
+   * @param {Object} item - Item to add
+   * @returns {Promise<boolean>} Success status
+   */
+  async addInventoryItem(userId, item) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      if (!userData.Inventory) {
+        userData.Inventory = { items: [] };
+      }
+
+      // Check if item already exists (for stackable items)
+      const existingItem = userData.Inventory.items.find(i => i.id === item.id);
+      if (existingItem && item.stackable) {
+        existingItem.quantity = (existingItem.quantity || 1) + (item.quantity || 1);
+      } else {
+        userData.Inventory.items.push({
+          ...item,
+          quantity: item.quantity || 1,
+          acquiredAt: new Date().toISOString()
+        });
+      }
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      console.error(`Error adding item to inventory for user ${userId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Remove item from user's inventory
+   * @param {string} userId - User ID
+   * @param {string} itemId - Item ID to remove
+   * @param {number} quantity - Quantity to remove (default: 1)
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeInventoryItem(userId, itemId, quantity = 1) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      if (!userData.Inventory) {
+        return false;
+      }
+
+      const itemIndex = userData.Inventory.items.findIndex(i => i.id === itemId);
+      if (itemIndex === -1) {
+        return false;
+      }
+
+      const item = userData.Inventory.items[itemIndex];
+      if (item.quantity > quantity) {
+        item.quantity -= quantity;
+      } else {
+        userData.Inventory.items.splice(itemIndex, 1);
+      }
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      console.error(`Error removing item from inventory for user ${userId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get user's bank limit
+   * @param {string} userId - User ID
+   * @returns {Promise<number>} Bank limit
+   */
+  async getBankLimit(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      return userData.Gambling?.bankLimit || 50000;
+    } catch (error) {
+      console.error(`Error getting bank limit for user ${userId}:`, error.message);
+      return 50000;
+    }
+  }
+
+  /**
+   * Update user's bank limit
+   * @param {string} userId - User ID
+   * @param {number} newLimit - New bank limit
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateBankLimit(userId, newLimit) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      if (!userData.Gambling) {
+        userData.Gambling = this.getDefaultGamblingData();
+      }
+      
+      userData.Gambling.bankLimit = newLimit;
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      console.error(`Error updating bank limit for user ${userId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get all users from database
+   * @returns {Promise<Map>} Map of all users
+   */
+  async getAllUsers() {
+    try {
+      return await this.getAll();
+    } catch (error) {
+      console.error('Error getting all users:', error.message);
+      return new Map();
     }
   }
 }
