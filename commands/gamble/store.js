@@ -104,7 +104,7 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor(colors.embed)
-        .setTitle('🏪 Welcome to the Gambling Store!')
+        .setTitle('Welcome to the Gambling Store!')
         .setDescription(description);
 
       return message.channel.send({ embeds: [embed] });

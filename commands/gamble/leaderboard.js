@@ -38,7 +38,7 @@ module.exports = {
         // Get users from current guild only
         const guildMembers = await message.guild.members.fetch();
         userIds = Array.from(guildMembers.keys());
-        scopeTitle = `${message.guild.name} Wealth Leaderboard`;
+        scopeTitle = `Wealth Leaderboard in ${message.guild.name}`;
       }
 
       if (userIds.length === 0) {
