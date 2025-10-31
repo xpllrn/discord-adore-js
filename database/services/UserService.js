@@ -234,12 +234,13 @@ class UserService extends BaseService {
       const userData = await this.ensureUserData(userId);
       let gamblingData = userData.Gambling || this.getDefaultGamblingData();
       
-      // Fix undefined bankLimit in existing gambling data
-      if (gamblingData && (gamblingData.bankLimit === undefined || gamblingData.bankLimit === null || typeof gamblingData.bankLimit !== 'number')) {
+      // Fix undefined bankLimit in existing gambling data - ONLY for truly missing values
+      if (gamblingData && (gamblingData.bankLimit === undefined || gamblingData.bankLimit === null)) {
         gamblingData.bankLimit = 50000;
         // Update the database to fix this permanently
         userData.Gambling = gamblingData;
         await this.set(userId, userData);
+        console.log(`🔧 FIXED: Set missing bankLimit to 50000 for user ${userId}`);
       }
       
       // Debug logging for bank limit issues
@@ -2313,7 +2314,7 @@ class UserService extends BaseService {
       userData.Gambling.bankLimit = newLimit;
       
       // Force cache invalidation to ensure fresh data
-      this.cache.delete(userId);
+      this.cache.invalidate(userId);
       
       await this.set(userId, userData);
       
