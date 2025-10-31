@@ -75,14 +75,14 @@ module.exports = {
         return embeds.deny(message, 'You can\'t rob yourself');
       }
 
-      // Can't rob bots
-      if (targetUser.bot) {
-        return embeds.deny(message, 'You can\'t rob bots');
-      }
-
-      // Can't rob the bot
+      // Can't rob the bot (specific check first)
       if (targetUser.id === message.guild.members.me.id) {
         return message.channel.send('Leave me alone!');
+      }
+
+      // Can't rob other bots
+      if (targetUser.bot) {
+        return embeds.deny(message, 'You can\'t rob bots');
       }
       
       // Get robber's gambling data (creates account if doesn't exist)

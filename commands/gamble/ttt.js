@@ -68,13 +68,13 @@ module.exports = {
       return embeds.warn(message, 'You cannot play against yourself!');
     }
 
-    if (opponentUser.bot) {
-      return embeds.warn(message, 'You cannot play against bots!');
-    }
-
-    // Can't play against the bot
+    // Can't play against the bot (specific check first)
     if (opponentUser.id === message.guild.members.me.id) {
       return message.channel.send('Leave me alone!');
+    }
+
+    if (opponentUser.bot) {
+      return embeds.warn(message, 'You cannot play against bots!');
     }
 
     // Parse betting amount if provided

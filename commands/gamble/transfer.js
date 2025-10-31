@@ -68,14 +68,14 @@ module.exports = {
         return embeds.deny(message, 'You can\'t give money to yourself');
       }
 
-      // Can't give money to bots
-      if (targetUser.bot) {
-        return embeds.deny(message, 'You can\'t give money to bots');
-      }
-
-      // Can't give money to the bot
+      // Can't give money to the bot (specific check first)
       if (targetUser.id === message.guild.members.me.id) {
         return message.channel.send('Leave me alone!');
+      }
+
+      // Can't give money to other bots
+      if (targetUser.bot) {
+        return embeds.deny(message, 'You can\'t give money to bots');
       }
 
       // Get sender's gambling data (creates account if doesn't exist)
