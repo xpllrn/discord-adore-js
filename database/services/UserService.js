@@ -178,8 +178,7 @@ class UserService extends BaseService {
 
         // Save to database and cache
         await this.set(userId, userData);
-        
-
+      }
 
       return userData;
     } catch (error) {
