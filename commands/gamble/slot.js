@@ -273,9 +273,9 @@ module.exports = {
             { name: `${message.author.username}'s Slots`, value: `\`\`${slot1} | ${slot2} | ${slot3}\`\``, inline: true },
             { name: '​', value: '​', inline: true },
             { name: '​', value: `> **Bet:** ${formatCurrency(amount)}`, inline: true },
-            { name: '​', value: `> **Winss:** ${formatCurrency(winAmount)}`, inline: true },
-            { name: '​', value: `>>> ${result}` }
-          );
+            { name: '​', value: `> **Winss:** ${formatCurrency(winAmount)}`, inline: true }
+          )
+          .setFooter({ text: result });
       };
 
       const finalEmbed = createFinalEmbed(finalSlot1, finalSlot2, finalSlot3, resultText, winnings);

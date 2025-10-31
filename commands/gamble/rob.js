@@ -48,7 +48,7 @@ function calculateRobResult(targetWallet) {
 module.exports = {
   name: "rob",
   aliases: ['steal'],
-  description: 'Attempt to rob money from another user (30% success rate, 1 hour cooldown)',
+  description: 'Attempt to rob money from another user',
   syntax: 'rob (user)',
   example: 'rob @vwsn',
   run: async(client, message, args) => {
@@ -106,7 +106,7 @@ module.exports = {
 
       // Target must have at least 500 coins to be robbed
       if (targetWallet < 500) {
-        return embeds.deny(message, `**${targetUser.displayName || targetUser.username || 'User'}** doesn't have enough **money** to rob (minimum **500** coins)`);
+        return embeds.deny(message, `**${targetUser.displayName || targetUser.username || 'User'}** is too **poor** to rob`);
       }
       
       // Update rob cooldown using service layer
