@@ -234,6 +234,8 @@ class UserService extends BaseService {
       
       // Fix undefined bankLimit in existing gambling data - ONLY for truly missing values
       if (gamblingData && (gamblingData.bankLimit === undefined || gamblingData.bankLimit === null)) {
+        console.log(`🚨 SELF-HEALING TRIGGERED for ${userId}: ${gamblingData.bankLimit} -> 50000`);
+        console.log(`   - Stack trace:`, new Error().stack);
         gamblingData.bankLimit = 50000;
         // Update the database to fix this permanently
         userData.Gambling = gamblingData;
@@ -2257,6 +2259,8 @@ class UserService extends BaseService {
       let bankLimit = userData.Gambling?.bankLimit;
       
       if (bankLimit === undefined || bankLimit === null || typeof bankLimit !== 'number') {
+        console.log(`🚨 GETBANKLIMIT FALLBACK TRIGGERED for ${userId}: ${bankLimit} (${typeof bankLimit}) -> 50000`);
+        console.log(`   - Stack trace:`, new Error().stack);
         bankLimit = 50000;
         // Fix the database permanently
         if (!userData.Gambling) {

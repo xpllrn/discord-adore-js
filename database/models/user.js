@@ -108,8 +108,8 @@ const userSchema = new mongoose.Schema({
       default: 0 // Starting bank balance
     },
     bankLimit: {
-      type: Number,
-      default: 50000 // Default bank limit
+      type: Number
+      // No default - let the application handle defaults
     },
     dailyClaim: {
       lastClaimed: {

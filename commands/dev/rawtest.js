@@ -3,7 +3,7 @@ const { hasPermissionLevel } = require('../../utils/permissions');
 
 module.exports = {
   name: "rawtest",
-  description: 'Test raw database access bypassing UserService (dev only)',
+  description: 'Test raw database access without destroying existing data (dev only)',
   syntax: 'rawtest @user',
   example: 'rawtest @user',
   permission: 'dev',
@@ -16,12 +16,12 @@ module.exports = {
       const { User } = require('../../database');
       const UserModel = User;
 
-      // Test 1: Create a fresh user document directly
-      const testUserId = message.author.id;
+      // Use a dedicated test user ID that won't interfere with real users
+      const testUserId = 'rawtest_user_12345';
       
       console.log('🧪 RAW DATABASE TEST STARTING');
       
-      // Delete existing document
+      // Delete existing test document (only the dedicated test user)
       await UserModel.deleteOne({ UserID: testUserId });
       console.log('🗑️ Deleted existing test user document');
 
@@ -53,12 +53,28 @@ module.exports = {
       const gamblingData = await userService.getGamblingData(testUserId);
       console.log('🎰 UserService gambling bankLimit:', gamblingData.bankLimit, typeof gamblingData.bankLimit);
 
+      // Now test the actual user's data (non-destructive)
+      const actualUserId = message.author.id;
+      const actualUserResult = await userService.getBankLimit(actualUserId);
+      const actualGamblingData = await userService.getGamblingData(actualUserId);
+      
+      console.log('👤 Actual user bankLimit:', actualUserResult, typeof actualUserResult);
+      console.log('👤 Actual user gambling bankLimit:', actualGamblingData.bankLimit, typeof actualGamblingData.bankLimit);
+
+      // Clean up test user
+      await UserModel.deleteOne({ UserID: testUserId });
+      console.log('🧹 Cleaned up test user document');
+
       return embeds.success(message, 
         `🧪 **Raw Database Test Complete**\n\n` +
+        `**Test User Results:**\n` +
         `**Direct Insert:** ${insertResult.Gambling.bankLimit} (${typeof insertResult.Gambling.bankLimit})\n` +
         `**Direct Read:** ${readResult?.Gambling?.bankLimit} (${typeof readResult?.Gambling?.bankLimit})\n` +
         `**UserService getBankLimit:** ${serviceResult} (${typeof serviceResult})\n` +
         `**UserService getGamblingData:** ${gamblingData.bankLimit} (${typeof gamblingData.bankLimit})\n\n` +
+        `**Your Actual Data:**\n` +
+        `**Your BankLimit:** ${actualUserResult} (${typeof actualUserResult})\n` +
+        `**Your Gambling BankLimit:** ${actualGamblingData.bankLimit} (${typeof actualGamblingData.bankLimit})\n\n` +
         `Check console for detailed logs.`
       );
       
