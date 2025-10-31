@@ -4061,7 +4061,10 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const crowns = guildData.LastFMCrowns || [];
 
-      return crowns.find(c => c.artistName.toLowerCase() === artistName.toLowerCase()) || null;
+      return crowns.find(c => 
+        c && c.artistName && typeof c.artistName === 'string' && 
+        c.artistName.toLowerCase() === artistName.toLowerCase()
+      ) || null;
     } catch (error) {
       console.error(`Error getting Last.fm crown for guild ${guildId}:`, error.message);
       return null;
@@ -4097,7 +4100,10 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const crowns = guildData.LastFMCrowns || [];
 
-      const existingCrownIndex = crowns.findIndex(c => c.artistName.toLowerCase() === artistName.toLowerCase());
+      const existingCrownIndex = crowns.findIndex(c => 
+        c && c.artistName && typeof c.artistName === 'string' && 
+        c.artistName.toLowerCase() === artistName.toLowerCase()
+      );
 
       if (existingCrownIndex !== -1) {
         // Update existing crown
@@ -4193,7 +4199,10 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const crowns = guildData.LastFMCrowns || [];
 
-      guildData.LastFMCrowns = crowns.filter(c => c.artistName.toLowerCase() !== artistName.toLowerCase());
+      guildData.LastFMCrowns = crowns.filter(c => 
+        c && c.artistName && typeof c.artistName === 'string' && 
+        c.artistName.toLowerCase() !== artistName.toLowerCase()
+      );
 
       await this.set(guildId, guildData);
       return true;

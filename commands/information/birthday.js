@@ -93,7 +93,7 @@ module.exports = {
 
     } else if (args[0] === 'reset') {
       const subcommandInfo = {
-        description: 'Reset a user\'s birthday (dev only)',
+        description: 'Reset a user birthday (dev only)',
         usage: '{guildprefix}bday reset [user]',
         aliases: [],
         parameters: ['user'],

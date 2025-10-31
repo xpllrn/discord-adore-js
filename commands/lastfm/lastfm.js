@@ -995,6 +995,17 @@ class WhoKnows {
 
     async handleCrown(message, crownUserId, artistName, crownPlays) {
         try {
+            // Validate input parameters
+            if (!artistName || typeof artistName !== 'string' || !artistName.trim()) {
+                console.error('Invalid artist name for crown:', artistName);
+                return;
+            }
+            
+            if (!crownUserId || typeof crownPlays !== 'number' || crownPlays <= 0) {
+                console.error('Invalid crown data:', { crownUserId, crownPlays });
+                return;
+            }
+
             const { getService } = require('@services');
             const guildService = getService('guild');
             
@@ -2245,17 +2256,32 @@ class ServerIndex {
             const savingEmbed = embeds.createLoading(message, `Updating crown database with **${artistCrowns.size.toLocaleString()}** crowns...`);
             await loadingMsg.edit({ embeds: [savingEmbed] });
 
-            // Clear existing crowns for this guild
+            // Clear existing crowns for this guild (including corrupted data)
             const existingCrowns = await guildService.getAllLastFMCrowns(message.guild.id);
-            for (const crown of existingCrowns) {
-                // Only remove crowns with valid artist names
-                if (crown && crown.artistName && typeof crown.artistName === 'string' && crown.artistName.trim()) {
-                    try {
-                        await guildService.removeLastFMCrown(message.guild.id, crown.artistName);
-                    } catch (error) {
-                        console.error(`Error removing crown for ${crown.artistName}:`, error);
-                        // Continue with other crowns
-                    }
+            
+            // Clean up corrupted crown data by directly filtering the array
+            const validCrowns = existingCrowns.filter(crown => 
+                crown && crown.artistName && typeof crown.artistName === 'string' && crown.artistName.trim()
+            );
+            
+            // If there were corrupted crowns, update the database with only valid ones
+            if (validCrowns.length !== existingCrowns.length) {
+                try {
+                    const guildData = await guildService.ensureGuildData(message.guild.id);
+                    guildData.LastFMCrowns = validCrowns;
+                    await guildService.set(message.guild.id, guildData);
+                } catch (error) {
+                    console.error('Error cleaning up corrupted crown data:', error);
+                }
+            }
+            
+            // Now clear all remaining valid crowns
+            for (const crown of validCrowns) {
+                try {
+                    await guildService.removeLastFMCrown(message.guild.id, crown.artistName);
+                } catch (error) {
+                    console.error(`Error removing crown for ${crown.artistName}:`, error);
+                    // Continue with other crowns
                 }
             }
 
@@ -2308,29 +2334,8 @@ class ServerIndex {
                 }
             }
 
-            // Send success message
-            const successEmbed = new EmbedBuilder()
-                .setColor(config.colors.success)
-                .setAuthor({
-                    name: message.member.displayName,
-                    iconURL: message.member.displayAvatarURL({ dynamic: true })
-                })
-                .setTitle(`Server Last.fm Indexing Complete - ${message.guild.name}`)
-                .setDescription(`Successfully indexed **${totalLastFMUsers}** Last.fm users and **${newCrownsCount.toLocaleString()}** crowns.`)
-                .addFields(
-                    { name: 'Total Last.fm Users', value: totalLastFMUsers.toString(), inline: true },
-                    { name: 'Libraries Indexed', value: usersToIndex.length.toString(), inline: true },
-                    { name: 'Crowns Created', value: newCrownsCount.toLocaleString(), inline: true },
-                    { name: 'Artists Processed', value: totalArtistsProcessed.toLocaleString(), inline: true },
-                    { name: 'Users with Libraries', value: usersWithLastFM.length.toString(), inline: true },
-                    { name: 'Crown Holders', value: userCrownCounts.size.toString(), inline: true }
-                )
-                .setFooter({ text: `Use 'lf crownsall' to see the crown leaderboard` });
-
-            if (topHoldersText) {
-                successEmbed.addFields({ name: 'Top Crown Holders', value: topHoldersText, inline: false });
-            }
-
+            // Send simple success message
+            const successEmbed = embeds.createSuccess(message, `Server Last.fm indexing complete! **${newCrownsCount.toLocaleString()}** total crowns indexed.`);
             return loadingMsg.edit({ embeds: [successEmbed] });
 
         } catch (error) {
