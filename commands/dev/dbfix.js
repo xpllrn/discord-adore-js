@@ -94,9 +94,12 @@ module.exports = {
           userService.clearCache();
           console.log('🧹 Cleared all service caches');
 
-          // Step 5: Verify the fix worked
-          const verifyResult = await UserModel.findOne({}, { 'Gambling.bankLimit': 1 });
-          console.log(`🔍 Verification: Sample bankLimit = ${verifyResult?.Gambling?.bankLimit} (type: ${typeof verifyResult?.Gambling?.bankLimit})`);
+          // Step 5: Verify the fix worked - check raw database
+          const verifyResult = await UserModel.findOne({}).lean();
+          console.log(`🔍 RAW Database verification:`);
+          console.log(`   - Full Gambling object:`, JSON.stringify(verifyResult?.Gambling, null, 2));
+          console.log(`   - bankLimit value: ${verifyResult?.Gambling?.bankLimit}`);
+          console.log(`   - bankLimit type: ${typeof verifyResult?.Gambling?.bankLimit}`);
 
           // Step 6: Count total documents
           const totalCount = await UserModel.countDocuments();

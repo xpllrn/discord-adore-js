@@ -2258,16 +2258,18 @@ class UserService extends BaseService {
       
       if (bankLimit === undefined || bankLimit === null || typeof bankLimit !== 'number') {
         bankLimit = 50000;
+        // Fix the database permanently
+        if (!userData.Gambling) {
+          userData.Gambling = this.getDefaultGamblingData();
+        } else {
+          userData.Gambling.bankLimit = bankLimit;
+        }
+        await this.set(userId, userData);
       }
-      
-
       
       return bankLimit;
     } catch (error) {
       console.error(`Error getting bank limit for user ${userId}:`, error.message);
-      
-
-      
       return 50000;
     }
   }
