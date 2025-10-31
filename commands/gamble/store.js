@@ -5,7 +5,7 @@ const { colors, emojis } = require('../../config/setup');
 // Store items configuration
 const STORE_ITEMS = {
   'banknote_commoner': {
-    id: 'banknote_commoner',
+    id: '1',
     name: 'Commoner Banknote',
     description: 'Increases your bank limit by 50,000 coins',
     price: 50000,
@@ -15,7 +15,7 @@ const STORE_ITEMS = {
     sellPrice: 25000
   },
   'banknote_regular': {
-    id: 'banknote_regular',
+    id: '2',
     name: 'Regular Banknote',
     description: 'Increases your bank limit by 100,000 coins',
     price: 90000,
@@ -25,7 +25,7 @@ const STORE_ITEMS = {
     sellPrice: 45000
   },
   'banknote_noble': {
-    id: 'banknote_noble',
+    id: '3',
     name: 'Noble Banknote',
     description: 'Increases your bank limit by 500,000 coins',
     price: 400000,
@@ -35,7 +35,7 @@ const STORE_ITEMS = {
     sellPrice: 200000
   },
   'banknote_royal': {
-    id: 'banknote_royal',
+    id: '4',
     name: 'Royal Banknote',
     description: 'Increases your bank limit by 1,000,000 coins',
     price: 800000,
@@ -45,7 +45,7 @@ const STORE_ITEMS = {
     sellPrice: 400000
   },
   'banknote_mythical': {
-    id: 'banknote_mythical',
+    id: '5',
     name: 'Mythical Banknote',
     description: 'Increases your bank limit by 10,000,000 coins',
     price: 8000000,
@@ -66,7 +66,7 @@ module.exports = {
   aliases: ['shop'],
   description: 'View the gambling store to buy items',
   syntax: 'store',
-  example: 'store',
+
   run: async (client, message, args) => {
     
     try {
@@ -85,7 +85,7 @@ module.exports = {
         categories[item.category].push(item);
       });
 
-      let description = `${emojis.success} **Welcome to the Gambling Store!**\n\n`;
+      let description = '';
       
       // Display items by category with position numbers
       let itemPosition = 1;
@@ -95,18 +95,17 @@ module.exports = {
         
         categoryItems.forEach(item => {
           description += `**${itemPosition}.** ${item.emoji} **${item.name}** - **${formatCurrency(item.price)}** coins\n`;
-          description += `   ${item.description}\n\n`;
+          description += `-# ${item.description}\n\n`;
           itemPosition++;
         });
       });
 
-      description += `Use \`buy <number>\` or \`buy <item_id>\` to purchase items\n`;
-      description += `Use \`inventory\` to view your items`;
+      description += `-# Use \`buy <number>\` to purchase and \`inventory\` to view your items`;
 
       const embed = new EmbedBuilder()
         .setColor(colors.embed)
-        .setDescription(description)
-        .setFooter({ text: 'Item IDs: banknote_commoner, banknote_regular, banknote_noble, banknote_royal, banknote_mythical' });
+        .setTitle('🏪 Welcome to the Gambling Store!')
+        .setDescription(description);
 
       return message.channel.send({ embeds: [embed] });
       

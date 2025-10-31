@@ -71,7 +71,7 @@ module.exports = {
   name: "sell",
   aliases: [],
   description: 'Sell items from your inventory',
-  syntax: 'sell <number|item_id> [quantity]',
+  syntax: 'sell <number> [quantity]',
   example: 'sell 1 2',
   run: async (client, message, args) => {
     
