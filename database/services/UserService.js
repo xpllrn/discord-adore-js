@@ -116,6 +116,13 @@ class UserService extends BaseService {
       // Try to get existing data first
       let userData = await this.get(userId);
 
+      // Debug logging for bank limit issues - always log for troubleshooting
+      console.log(`🔍 DEBUG ensureUserData for ${userId}:`);
+      console.log(`   - userData from cache/db: ${!!userData}`);
+      if (userData) {
+        console.log(`   - existing bankLimit: ${userData.Gambling?.bankLimit}`);
+      }
+
       if (!userData) {
         // Create default user data with UTC timestamps
         userData = {
@@ -171,6 +178,12 @@ class UserService extends BaseService {
 
         // Save to database and cache
         await this.set(userId, userData);
+        
+        // Debug logging for new user creation
+        console.log(`🔍 DEBUG ensureUserData - created new user ${userId} with bankLimit: ${userData.Gambling.bankLimit}`);
+      } else {
+        // Debug logging for existing user
+        console.log(`🔍 DEBUG ensureUserData - returning existing user ${userId} with bankLimit: ${userData.Gambling?.bankLimit}`);
       }
 
       return userData;
@@ -219,10 +232,27 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      return userData.Gambling || this.getDefaultGamblingData();
+      const gamblingData = userData.Gambling || this.getDefaultGamblingData();
+      
+      // Debug logging for bank limit issues - log when bankLimit is missing or default
+      if (!userData?.Gambling?.bankLimit || gamblingData.bankLimit === 50000) {
+        console.log(`🔍 DEBUG getGamblingData for ${userId}:`);
+        console.log(`   - userData exists: ${!!userData}`);
+        console.log(`   - userData.Gambling exists: ${!!userData?.Gambling}`);
+        console.log(`   - userData.Gambling.bankLimit: ${userData?.Gambling?.bankLimit}`);
+        console.log(`   - returning bankLimit: ${gamblingData.bankLimit}`);
+        console.log(`   - Source: ${userData?.Gambling ? 'database' : 'default'}`);
+      }
+      
+      return gamblingData;
     } catch (error) {
       console.error(`Error getting gambling data for user ${userId}:`, error.message);
-      return this.getDefaultGamblingData();
+      const defaultData = this.getDefaultGamblingData();
+      
+      // Debug logging for errors
+      console.log(`🔍 DEBUG getGamblingData ERROR for ${userId}: returning default with bankLimit ${defaultData.bankLimit}`);
+      
+      return defaultData;
     }
   }
 
@@ -2226,9 +2256,25 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      return userData.Gambling?.bankLimit || 50000;
+      const bankLimit = userData.Gambling?.bankLimit || 50000;
+      
+      // Debug logging for bank limit issues - log when bankLimit is missing or using fallback
+      if (!userData?.Gambling?.bankLimit || bankLimit === 50000) {
+        console.log(`🔍 DEBUG getBankLimit for ${userId}:`);
+        console.log(`   - userData exists: ${!!userData}`);
+        console.log(`   - userData.Gambling exists: ${!!userData?.Gambling}`);
+        console.log(`   - userData.Gambling.bankLimit: ${userData?.Gambling?.bankLimit}`);
+        console.log(`   - returning bankLimit: ${bankLimit}`);
+        console.log(`   - fallback used: ${!userData?.Gambling?.bankLimit}`);
+      }
+      
+      return bankLimit;
     } catch (error) {
       console.error(`Error getting bank limit for user ${userId}:`, error.message);
+      
+      // Debug logging for errors
+      console.log(`🔍 DEBUG getBankLimit ERROR for ${userId}: returning default 50000`);
+      
       return 50000;
     }
   }
@@ -2246,12 +2292,21 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
+      const oldLimit = userData.Gambling?.bankLimit;
+      
       if (!userData.Gambling) {
         userData.Gambling = this.getDefaultGamblingData();
       }
       
       userData.Gambling.bankLimit = newLimit;
       await this.set(userId, userData);
+      
+      // Debug logging for bank limit updates
+      console.log(`🔍 DEBUG updateBankLimit for ${userId}:`);
+      console.log(`   - oldLimit: ${oldLimit}`);
+      console.log(`   - newLimit: ${newLimit}`);
+      console.log(`   - Stack trace:`, new Error().stack);
+      
       return true;
     } catch (error) {
       console.error(`Error updating bank limit for user ${userId}:`, error.message);

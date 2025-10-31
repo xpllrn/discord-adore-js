@@ -25,8 +25,8 @@ module.exports = {
   name: "banklimit",
   aliases: ["setbanklimit", "bl"],
   description: 'Manage user bank limits (dev only)',
-  syntax: 'banklimit <user> [amount]\nbanklimit reset <user>\nbanklimit reset all\nbanklimit fix',
-  example: 'banklimit @user 100000\nbanklimit @user\nbanklimit reset @user\nbanklimit reset all\nbanklimit fix',
+  syntax: 'banklimit <user> [amount]\nbanklimit reset <user>\nbanklimit reset all\nbanklimit fix\nbanklimit debug <user>',
+  example: 'banklimit @user 100000\nbanklimit @user\nbanklimit reset @user\nbanklimit reset all\nbanklimit fix\nbanklimit debug @user',
   permission: 'dev',
   run: async (client, message, args) => {
     const userService = getService('user');
@@ -36,6 +36,55 @@ module.exports = {
 
     if (!args[0]) {
       return runHelpCommand(message, 'banklimit');
+    }
+
+    // Handle debug command
+    if (args[0].toLowerCase() === 'debug') {
+      if (!args[1]) {
+        return embeds.warn(message, 'Please specify a user to debug: `banklimit debug @user`');
+      }
+
+      const userResult = await findUser(message.guild, args[1], client);
+      if (!userResult.found) {
+        return embeds.warn(message, userResult.error || 'User not found');
+      }
+
+      let targetUser;
+      if (userResult.isGlobal) {
+        targetUser = userResult.user;
+      } else {
+        targetUser = userResult.user.user || userResult.user;
+      }
+
+      try {
+        // Get current data and show debug info
+        const gambling = await userService.getGamblingData(targetUser.id);
+        const bankLimit = await userService.getBankLimit(targetUser.id);
+        
+        // Force a cache refresh and check again
+        userService.cache.delete(targetUser.id);
+        const freshGambling = await userService.getGamblingData(targetUser.id);
+        const freshBankLimit = await userService.getBankLimit(targetUser.id);
+
+        const embed = new EmbedBuilder()
+          .setColor('#ff9900')
+          .setTitle('🔍 Bank Limit Debug Information')
+          .setDescription(`Debug info for **${targetUser.username}**`)
+          .addFields(
+            { name: 'Cached Bank Limit', value: `${formatCurrency(bankLimit)}`, inline: true },
+            { name: 'Fresh Bank Limit', value: `${formatCurrency(freshBankLimit)}`, inline: true },
+            { name: 'Match?', value: bankLimit === freshBankLimit ? '✅ Yes' : '❌ No', inline: true },
+            { name: 'Cached Wallet', value: `${formatCurrency(gambling.wallet || 0)}`, inline: true },
+            { name: 'Fresh Wallet', value: `${formatCurrency(freshGambling.wallet || 0)}`, inline: true },
+            { name: 'Cache Status', value: userService.cache.has(targetUser.id) ? 'Cached' : 'Not Cached', inline: true }
+          )
+          .setFooter({ text: 'Check console logs for detailed debug information' });
+
+        return message.channel.send({ embeds: [embed] });
+      } catch (error) {
+        console.error('Error in debug command:', error);
+        return embeds.deny(message, 'Failed to get debug information');
+      }
     }
 
     // Handle fix command (fix missing bank limits without resetting existing ones)
