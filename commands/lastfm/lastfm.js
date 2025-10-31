@@ -2205,28 +2205,39 @@ class ServerIndex {
             let totalArtistsProcessed = 0;
 
             for (const user of usersWithLastFM) {
-                for (const artist of user.library.artists) {
-                    const artistNameLower = artist.name.toLowerCase();
-                    
-                    if (!artistCrowns.has(artistNameLower)) {
-                        artistCrowns.set(artistNameLower, {
-                            artistName: artist.name, // Keep original casing
-                            topUser: user.userId,
-                            topPlays: artist.plays,
-                            topUsername: user.username
-                        });
-                    } else {
-                        const current = artistCrowns.get(artistNameLower);
-                        if (artist.plays > current.topPlays) {
-                            artistCrowns.set(artistNameLower, {
-                                artistName: artist.name, // Keep original casing
-                                topUser: user.userId,
-                                topPlays: artist.plays,
-                                topUsername: user.username
-                            });
+                if (user.library && user.library.artists && Array.isArray(user.library.artists)) {
+                    for (const artist of user.library.artists) {
+                        // Validate artist data
+                        if (artist && 
+                            artist.name && 
+                            typeof artist.name === 'string' && 
+                            artist.name.trim() &&
+                            typeof artist.plays === 'number' && 
+                            artist.plays > 0) {
+                            
+                            const artistNameLower = artist.name.toLowerCase();
+                            
+                            if (!artistCrowns.has(artistNameLower)) {
+                                artistCrowns.set(artistNameLower, {
+                                    artistName: artist.name, // Keep original casing
+                                    topUser: user.userId,
+                                    topPlays: artist.plays,
+                                    topUsername: user.username
+                                });
+                            } else {
+                                const current = artistCrowns.get(artistNameLower);
+                                if (artist.plays > current.topPlays) {
+                                    artistCrowns.set(artistNameLower, {
+                                        artistName: artist.name, // Keep original casing
+                                        topUser: user.userId,
+                                        topPlays: artist.plays,
+                                        topUsername: user.username
+                                    });
+                                }
+                            }
+                            totalArtistsProcessed++;
                         }
                     }
-                    totalArtistsProcessed++;
                 }
             }
 
@@ -2237,19 +2248,42 @@ class ServerIndex {
             // Clear existing crowns for this guild
             const existingCrowns = await guildService.getAllLastFMCrowns(message.guild.id);
             for (const crown of existingCrowns) {
-                await guildService.removeLastFMCrown(message.guild.id, crown.artistName);
+                // Only remove crowns with valid artist names
+                if (crown && crown.artistName && typeof crown.artistName === 'string' && crown.artistName.trim()) {
+                    try {
+                        await guildService.removeLastFMCrown(message.guild.id, crown.artistName);
+                    } catch (error) {
+                        console.error(`Error removing crown for ${crown.artistName}:`, error);
+                        // Continue with other crowns
+                    }
+                }
             }
 
             // Set new crowns
             let newCrownsCount = 0;
             for (const [artistNameLower, crownData] of artistCrowns) {
-                await guildService.setLastFMCrown(
-                    message.guild.id, 
-                    crownData.artistName, 
-                    crownData.topUser, 
-                    crownData.topPlays
-                );
-                newCrownsCount++;
+                // Validate crown data before setting
+                if (crownData && 
+                    crownData.artistName && 
+                    typeof crownData.artistName === 'string' && 
+                    crownData.artistName.trim() &&
+                    crownData.topUser &&
+                    typeof crownData.topPlays === 'number' && 
+                    crownData.topPlays > 0) {
+                    
+                    try {
+                        await guildService.setLastFMCrown(
+                            message.guild.id, 
+                            crownData.artistName, 
+                            crownData.topUser, 
+                            crownData.topPlays
+                        );
+                        newCrownsCount++;
+                    } catch (error) {
+                        console.error(`Error setting crown for ${crownData.artistName}:`, error);
+                        // Continue with other crowns
+                    }
+                }
             }
 
             // Count crowns per user for summary
