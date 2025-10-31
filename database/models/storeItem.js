@@ -72,4 +72,7 @@ storeItemSchema.pre('save', function(next) {
 storeItemSchema.index({ category: 1, enabled: 1 });
 storeItemSchema.index({ id: 1 });
 
-module.exports = mongoose.model('StoreItem', storeItemSchema);
+module.exports = {
+  schema: storeItemSchema,
+  model: mongoose.model('StoreItem', storeItemSchema)
+};

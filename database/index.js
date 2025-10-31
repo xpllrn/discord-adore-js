@@ -55,7 +55,7 @@ async function _performInitialization(connectionStrings) {
       User = connections.global.model('User', userSchema.schema);
       System = connections.global.model('System', systemSchema.schema);
       SpotifyAuthSession = connections.global.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
-      StoreItem = connections.global.model('StoreItem', storeItemSchema);
+      StoreItem = connections.global.model('StoreItem', storeItemSchema.schema);
     }
 
     if (connections.local) {
@@ -70,7 +70,7 @@ async function _performInitialization(connectionStrings) {
         User = connections.local.model('User', userSchema.schema);
         System = connections.local.model('System', systemSchema.schema);
         SpotifyAuthSession = connections.local.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
-        StoreItem = connections.local.model('StoreItem', storeItemSchema);
+        StoreItem = connections.local.model('StoreItem', storeItemSchema.schema);
       }
     }
 
