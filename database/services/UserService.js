@@ -36,6 +36,12 @@ class UserService extends BaseService {
       const updateData = { ...data };
       delete updateData._id;
 
+      // Debug logging for bank limit writes
+      if (updateData.Gambling?.bankLimit !== undefined) {
+        console.log(`🔍 DEBUG writeToDatabase for ${key}:`);
+        console.log(`   - Writing bankLimit: ${updateData.Gambling.bankLimit} (type: ${typeof updateData.Gambling.bankLimit})`);
+      }
+
       await Model.updateOne(query, { $set: updateData }, { upsert: true });
     } catch (error) {
       throw new DatabaseWriteError(`Failed to write user data for ${key}`, error);
@@ -53,6 +59,13 @@ class UserService extends BaseService {
       const query = { [this.keyField]: key };
 
       const doc = await Model.findOne(query).lean();
+      
+      // Debug logging for bank limit reads
+      if (doc?.Gambling) {
+        console.log(`🔍 DEBUG readFromDatabase for ${key}:`);
+        console.log(`   - Read bankLimit: ${doc.Gambling.bankLimit} (type: ${typeof doc.Gambling.bankLimit})`);
+      }
+      
       return doc || null;
     } catch (error) {
       console.error(`Error reading user data for ${key}:`, error.message);
@@ -281,7 +294,7 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      const gambling = userData.Gambling || {};
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
       
       gambling.wallet = Math.max(0, (gambling.wallet || 0) + amount);
       userData.Gambling = gambling;
@@ -318,7 +331,7 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      const gambling = userData.Gambling || {};
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
 
       if (toBank) {
         // Deposit: wallet -> bank
@@ -364,7 +377,7 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      const gambling = userData.Gambling || {};
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
       
       gambling.dailyClaim = {
         lastClaimed: new Date(), // UTC timestamp
@@ -394,7 +407,7 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      const gambling = userData.Gambling || {};
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
       
       gambling.lastWorked = new Date(); // UTC timestamp
       userData.Gambling = gambling;
@@ -418,7 +431,7 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      const gambling = userData.Gambling || {};
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
       
       gambling.lastVote = new Date(); // UTC timestamp
       gambling.totalVotes = (gambling.totalVotes || 0) + 1;
@@ -458,7 +471,7 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      const gambling = userData.Gambling || {};
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
       
       gambling.totalGambled = (gambling.totalGambled || 0) + gambledAmount;
       gambling.totalWon = (gambling.totalWon || 0) + wonAmount;
