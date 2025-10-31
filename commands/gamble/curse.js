@@ -34,7 +34,8 @@ module.exports = {
         resultMessage = `**${authorName}** puts a curse on **${targetName}**! They feel **unlucky** with only **${luckPoints} luck** points!`;
       }
 
-      return embeds.createSuccess(message, resultMessage);
+      const embed = embeds.createSuccess(message, resultMessage);
+      return message.channel.send({ embeds: [embed] });
     } catch (error) {
       console.error('Error in curse command:', error);
       return embeds.deny(message, 'An error occurred while cursing');

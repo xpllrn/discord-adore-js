@@ -33,7 +33,8 @@ module.exports = {
         resultMessage = `You prayed for **${targetName}**, they feel very lucky with **${luckPoints} luck** points!`;
       }
 
-      return embeds.createSuccess(message, resultMessage);
+      const embed = embeds.createSuccess(message, resultMessage);
+      return message.channel.send({ embeds: [embed] });
     } catch (error) {
       console.error('Error in pray command:', error);
       return embeds.deny(message, 'An error occurred while praying');
