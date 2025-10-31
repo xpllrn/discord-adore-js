@@ -125,11 +125,30 @@ class WelcomeButtonService extends BaseService {
       });
 
       // Clean up cache - iterate through cache and remove expired items
-      const cacheKeys = Array.from(this.cache.keys());
+      // Use fallback approach since cache.keys() is not available
+      let cacheKeys = [];
+      
+      try {
+        // Try to get keys from cache storage if available
+        if (this.cache && this.cache.storage && typeof this.cache.storage.keys === 'function') {
+          cacheKeys = Array.from(this.cache.storage.keys());
+        } else if (this.cache && typeof this.cache.keys === 'function') {
+          cacheKeys = Array.from(this.cache.keys());
+        }
+      } catch (cacheError) {
+        console.warn('Could not access cache keys for cleanup, skipping cache cleanup:', cacheError.message);
+        return; // Skip cache cleanup but continue with database cleanup
+      }
+
+      // Clean expired items from cache
       for (const key of cacheKeys) {
-        const interaction = this.cache.get(key);
-        if (interaction && interaction.expiresAt && now > new Date(interaction.expiresAt)) {
-          this.cache.delete(key);
+        try {
+          const interaction = this.cache.get(key);
+          if (interaction && interaction.expiresAt && now > new Date(interaction.expiresAt)) {
+            this.cache.invalidate(key);
+          }
+        } catch (itemError) {
+          console.warn(`Error processing cache item ${key}:`, itemError.message);
         }
       }
     } catch (error) {

@@ -51,8 +51,6 @@ module.exports = {
           `⚠️ **GLOBAL BANK LIMIT RESET** ⚠️\n\nAre you sure you want to **reset ALL users' bank limits to 50,000**?\n\n**This will:**\n• Reset all bank limits to default (50,000)\n• Affect all users globally\n\n**THIS ACTION CANNOT BE UNDONE!**`,
           async (interaction) => {
             try {
-              await interaction.deferUpdate();
-
               // Get the User model directly for bulk operations
               const { User } = require('../../database');
               const UserModel = User;
@@ -74,10 +72,6 @@ module.exports = {
               await interaction.editReply({ embeds: [successEmbed], components: [] });
             } catch (error) {
               console.error('Error performing global bank limit reset:', error);
-              
-              if (!interaction.deferred && !interaction.replied) {
-                await interaction.deferUpdate();
-              }
               
               const errorEmbed = embeds.createDeny(message, 'Failed to perform global bank limit reset');
               await interaction.editReply({ embeds: [errorEmbed], components: [] });
@@ -113,8 +107,6 @@ module.exports = {
           `Are you sure you want to **reset** the bank limit for **${username}**?\n\n**Current Bank Limit:** ${formatCurrency(currentLimit)} coins\n**New Bank Limit:** 50,000 coins\n\n**This action cannot be undone!**`,
           async (interaction) => {
             try {
-              await interaction.deferUpdate();
-
               // Reset bank limit to default
               await userService.updateBankLimit(targetUser.id, 50000);
 
@@ -126,10 +118,6 @@ module.exports = {
               await interaction.editReply({ embeds: [successEmbed], components: [] });
             } catch (error) {
               console.error('Error resetting individual bank limit:', error);
-              
-              if (!interaction.deferred && !interaction.replied) {
-                await interaction.deferUpdate();
-              }
               
               const errorEmbed = embeds.createDeny(message, 'Failed to reset bank limit');
               await interaction.editReply({ embeds: [errorEmbed], components: [] });
@@ -209,8 +197,6 @@ module.exports = {
         `Are you sure you want to **change** the bank limit for **${username}**?\n\n**Current Bank Limit:** ${formatCurrency(currentLimit)} coins\n**New Bank Limit:** ${formatCurrency(newLimit)} coins\n\n**This action cannot be undone!**`,
         async (interaction) => {
           try {
-            await interaction.deferUpdate();
-
             // Update bank limit
             await userService.updateBankLimit(targetUser.id, newLimit);
 
@@ -222,10 +208,6 @@ module.exports = {
             await interaction.editReply({ embeds: [successEmbed], components: [] });
           } catch (error) {
             console.error('Error updating bank limit:', error);
-            
-            if (!interaction.deferred && !interaction.replied) {
-              await interaction.deferUpdate();
-            }
             
             const errorEmbed = embeds.createDeny(message, 'Failed to update bank limit');
             await interaction.editReply({ embeds: [errorEmbed], components: [] });
