@@ -17,7 +17,6 @@ module.exports = {
       `🚨 **NUCLEAR OPTION - COMPLETE DATA RESET** 🚨\n\n**THIS WILL COMPLETELY WIPE AND RECREATE ALL GAMBLING DATA FOR ALL USERS**\n\n**What this does:**\n• Deletes ALL existing gambling data\n• Recreates fresh gambling data with proper defaults\n• Sets everyone to: 1,000 wallet, 0 bank, 50,000 bank limit\n• Resets all gambling stats to 0\n• Clears all cooldowns\n\n**⚠️ THIS CANNOT BE UNDONE ⚠️**\n**⚠️ ALL GAMBLING PROGRESS WILL BE LOST ⚠️**\n\n**Are you absolutely sure?**`,
       async (interaction) => {
         try {
-          await interaction.deferUpdate();
 
           // Get the User model directly
           const { User } = require('../../database');
