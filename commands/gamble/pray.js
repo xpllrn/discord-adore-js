@@ -1,5 +1,5 @@
 const { embeds } = require('../../core/embeds');
-const { UserService } = require('../../database/services');
+const { getService } = require('@services');
 
 module.exports = {
   name: "pray",
@@ -7,6 +7,7 @@ module.exports = {
   description: 'Pray for yourself or someone else to gain luck points',
   syntax: 'pray [user]',
   example: 'pray @user',
+  cooldowns: 30, // 30 second cooldown
   run: async (client, message, args) => {
     try {
       // Determine target user
@@ -23,8 +24,9 @@ module.exports = {
       // Generate random luck gain (1-7 points, higher than curse)
       const luckGain = Math.floor(Math.random() * 7) + 1;
 
-      // Update luck in database (add points)
-      const newLuck = await UserService.updateLuck(targetUser.id, luckGain);
+      // Get user service and update luck in database (add points)
+      const userService = getService('user');
+      const newLuck = await userService.updateLuck(targetUser.id, luckGain);
 
       // Get display name
       const targetName = targetMember ? targetMember.displayName : targetUser.username;

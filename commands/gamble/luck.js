@@ -1,5 +1,5 @@
 const { embeds } = require('../../core/embeds');
-const { UserService } = require('../../database/services');
+const { getService } = require('@services');
 
 module.exports = {
   name: "luck",
@@ -7,6 +7,7 @@ module.exports = {
   description: 'Check your or someone else\'s luck points',
   syntax: 'luck [user]',
   example: 'luck @user',
+  cooldowns: 5, // 5 second cooldown
   run: async (client, message, args) => {
     try {
       // Determine target user
@@ -20,8 +21,9 @@ module.exports = {
         isTargetingSelf = false;
       }
 
-      // Get current luck from database
-      const currentLuck = await UserService.getLuck(targetUser.id);
+      // Get user service and current luck from database
+      const userService = getService('user');
+      const currentLuck = await userService.getLuck(targetUser.id);
 
       // Get display name
       const targetName = targetMember ? targetMember.displayName : targetUser.username;
