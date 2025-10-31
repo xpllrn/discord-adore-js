@@ -54,7 +54,7 @@ module.exports = {
       }
 
       // Use the item through StoreService
-      const useResult = await storeService.useItem(message.author.id, storeItem, quantity);
+      const useResult = await storeService.useItem(message.author.id, storeItem, quantity, userService);
       
       if (!useResult.success) {
         return embeds.deny(message, useResult.message);

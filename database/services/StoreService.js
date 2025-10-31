@@ -317,18 +317,19 @@ class StoreService extends BaseService {
    * @param {string} userId - User ID
    * @param {Object} item - Store item data
    * @param {number} quantity - Quantity to use
+   * @param {Object} userService - User service instance (passed from caller)
    * @returns {Promise<Object>} Result object with success status and message
    */
-  async useItem(userId, item, quantity = 1) {
+  async useItem(userId, item, quantity = 1, userService = null) {
     if (!userId || !item) {
       throw new ValidationError('User ID and item are required');
     }
 
-    try {
-      // Get user service from the service registry
-      const { getService } = require('./index');
-      const userService = getService('user');
+    if (!userService) {
+      throw new ValidationError('User service is required for item usage');
+    }
 
+    try {
       // Handle different item categories
       switch (item.category) {
         case 'banknotes':
