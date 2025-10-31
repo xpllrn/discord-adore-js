@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
+const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const { colors, emojis } = require('../../config/setup');
 
@@ -115,32 +116,57 @@ module.exports = {
         return embeds.deny(message, `You need **${formatCurrency(totalCost)}** coins but only have **${formatCurrency(walletBalance)}** coins in your wallet.`);
       }
 
-      // Deduct money from wallet
-      const deductSuccess = await userService.updateWallet(message.author.id, -totalCost);
-      if (!deductSuccess) {
-        return embeds.deny(message, 'Failed to process payment. Please try again.');
-      }
-
-      // Add item to inventory
-      const itemToAdd = {
-        ...item,
-        quantity: quantity
-      };
-      
-      const addSuccess = await userService.addInventoryItem(message.author.id, itemToAdd);
-      if (!addSuccess) {
-        // Refund the money if inventory addition failed
-        await userService.updateWallet(message.author.id, totalCost);
-        return embeds.deny(message, 'Failed to add item to inventory. Payment refunded.');
-      }
-
-      // Success message
+      // Create confirmation message
       const quantityText = quantity > 1 ? ` x${quantity}` : '';
-      const embed = new EmbedBuilder()
-        .setColor('#a4ec7c')
-        .setDescription(`${emojis.success} <@${message.author.id}>: Successfully purchased **${item.name}**${quantityText} for **${formatCurrency(totalCost)}** coins!`);
+      const confirmationText = `Are you sure you want to buy **${item.name}**${quantityText} for **${formatCurrency(totalCost)}** coins?\n\n${item.emoji} **${item.name}**\n${item.description}\n\n**Cost:** ${formatCurrency(totalCost)} coins`;
 
-      return message.channel.send({ embeds: [embed] });
+      // Show confirmation dialog
+      await createConfirmation(
+        message,
+        confirmationText,
+        async (interaction) => {
+          try {
+            // Re-check balance in case it changed during confirmation
+            const updatedGambling = await userService.getGamblingData(message.author.id);
+            const currentBalance = updatedGambling.wallet || 0;
+
+            if (currentBalance < totalCost) {
+              const errorEmbed = embeds.createDeny(message, `You no longer have enough coins. You need **${formatCurrency(totalCost)}** but only have **${formatCurrency(currentBalance)}**.`);
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            // Deduct money from wallet
+            const deductSuccess = await userService.updateWallet(message.author.id, -totalCost);
+            if (!deductSuccess) {
+              const errorEmbed = embeds.createDeny(message, 'Failed to process payment. Please try again.');
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            // Add item to inventory
+            const itemToAdd = {
+              ...item,
+              quantity: quantity
+            };
+            
+            const addSuccess = await userService.addInventoryItem(message.author.id, itemToAdd);
+            if (!addSuccess) {
+              // Refund the money if inventory addition failed
+              await userService.updateWallet(message.author.id, totalCost);
+              const errorEmbed = embeds.createDeny(message, 'Failed to add item to inventory. Payment refunded.');
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            // Success message
+            const successEmbed = embeds.createSuccess(message, `Successfully purchased **${item.name}**${quantityText} for **${formatCurrency(totalCost)}** coins!`);
+            await interaction.editReply({ embeds: [successEmbed], components: [] });
+
+          } catch (error) {
+            console.error('Error in buy confirmation:', error);
+            const errorEmbed = embeds.createDeny(message, 'An error occurred while processing your purchase.');
+            await interaction.editReply({ embeds: [errorEmbed], components: [] });
+          }
+        }
+      );
       
     } catch (error) {
       console.error('Error in buy command:', error);

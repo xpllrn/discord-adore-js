@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
+const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
 
@@ -123,27 +124,58 @@ module.exports = {
       const sellPrice = storeItem.sellPrice || Math.floor(storeItem.price * 0.5);
       const totalValue = sellPrice * quantity;
 
-      // Remove items from inventory
-      const removeSuccess = await userService.removeInventoryItem(message.author.id, itemId, quantity);
-      if (!removeSuccess) {
-        return embeds.deny(message, 'Failed to remove items from inventory. Please try again.');
-      }
-
-      // Add money to wallet
-      const addSuccess = await userService.updateWallet(message.author.id, totalValue);
-      if (!addSuccess) {
-        // Try to add the items back if wallet update failed
-        await userService.addInventoryItem(message.author.id, { ...userItem, quantity: quantity });
-        return embeds.deny(message, 'Failed to add money to wallet. Please try again.');
-      }
-
-      // Success message
+      // Create confirmation message
       const quantityText = quantity > 1 ? ` x${quantity}` : '';
-      const embed = new EmbedBuilder()
-        .setColor('#a4ec7c')
-        .setDescription(`${emojis.success} <@${message.author.id}>: Successfully sold **${storeItem.name}**${quantityText} for **${formatCurrency(totalValue)}** coins!`);
+      const confirmationText = `Are you sure you want to sell **${storeItem.name}**${quantityText} for **${formatCurrency(totalValue)}** coins?\n\n${storeItem.emoji} **${storeItem.name}**\n${storeItem.description}\n\n**You will receive:** ${formatCurrency(totalValue)} coins\n**Original price:** ${formatCurrency(storeItem.price * quantity)} coins`;
 
-      return message.channel.send({ embeds: [embed] });
+      // Show confirmation dialog
+      await createConfirmation(
+        message,
+        confirmationText,
+        async (interaction) => {
+          try {
+            // Re-check inventory in case it changed during confirmation
+            const updatedInventory = await userService.getInventory(message.author.id);
+            const currentItem = updatedInventory.find(item => item.id === itemId);
+            
+            if (!currentItem) {
+              const errorEmbed = embeds.createDeny(message, `You no longer have **${storeItem.name}** in your inventory.`);
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            const currentQuantity = currentItem.quantity || 1;
+            if (quantity > currentQuantity) {
+              const errorEmbed = embeds.createDeny(message, `You only have **${currentQuantity}** ${storeItem.name}(s) but tried to sell **${quantity}**.`);
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            // Remove items from inventory
+            const removeSuccess = await userService.removeInventoryItem(message.author.id, itemId, quantity);
+            if (!removeSuccess) {
+              const errorEmbed = embeds.createDeny(message, 'Failed to remove items from inventory. Please try again.');
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            // Add money to wallet
+            const addSuccess = await userService.updateWallet(message.author.id, totalValue);
+            if (!addSuccess) {
+              // Try to add the items back if wallet update failed
+              await userService.addInventoryItem(message.author.id, { ...userItem, quantity: quantity });
+              const errorEmbed = embeds.createDeny(message, 'Failed to add money to wallet. Please try again.');
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            // Success message
+            const successEmbed = embeds.createSuccess(message, `Successfully sold **${storeItem.name}**${quantityText} for **${formatCurrency(totalValue)}** coins!`);
+            await interaction.editReply({ embeds: [successEmbed], components: [] });
+
+          } catch (error) {
+            console.error('Error in sell confirmation:', error);
+            const errorEmbed = embeds.createDeny(message, 'An error occurred while processing your sale.');
+            await interaction.editReply({ embeds: [errorEmbed], components: [] });
+          }
+        }
+      );
       
     } catch (error) {
       console.error('Error in sell command:', error);

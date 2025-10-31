@@ -243,6 +243,30 @@ class SmartCache {
   }
 
   /**
+   * Get all cache keys
+   * @returns {IterableIterator<string>} Iterator of cache keys
+   */
+  keys() {
+    return this.storage.keys();
+  }
+
+  /**
+   * Get all cache values
+   * @returns {IterableIterator<*>} Iterator of cache values
+   */
+  values() {
+    return Array.from(this.storage.values()).map(item => item.value);
+  }
+
+  /**
+   * Get all cache entries as [key, value] pairs
+   * @returns {Array<[string, *]>} Array of [key, value] pairs
+   */
+  entries() {
+    return Array.from(this.storage.entries()).map(([key, item]) => [key, item.value]);
+  }
+
+  /**
    * Get memory usage estimation
    * @returns {Object} Memory usage information
    */
