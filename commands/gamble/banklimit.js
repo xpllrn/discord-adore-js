@@ -99,22 +99,26 @@ module.exports = {
             const UserModel = User;
 
             // Fix users who have gambling data but no bankLimit field OR undefined/null bankLimit
+            console.log('🔍 DEBUG: Running banklimit fix queries...');
+            
             const result1 = await UserModel.updateMany(
               { 'Gambling': { $exists: true }, 'Gambling.bankLimit': { $exists: false } },
               { $set: { 'Gambling.bankLimit': 50000 } }
             );
+            console.log(`🔍 DEBUG: Fixed ${result1.modifiedCount} users with missing bankLimit field`);
 
-            // Fix users who have undefined or null bankLimit
+            // Fix users who have undefined or null bankLimit (but NOT valid numbers)
             const result2 = await UserModel.updateMany(
               { 
                 'Gambling': { $exists: true }, 
                 $or: [
                   { 'Gambling.bankLimit': null },
-                  { 'Gambling.bankLimit': undefined }
+                  { 'Gambling.bankLimit': { $type: 'undefined' } }
                 ]
               },
               { $set: { 'Gambling.bankLimit': 50000 } }
             );
+            console.log(`🔍 DEBUG: Fixed ${result2.modifiedCount} users with null/undefined bankLimit`);
 
             // Clear the service cache to ensure fresh data
             userService.clearCache();

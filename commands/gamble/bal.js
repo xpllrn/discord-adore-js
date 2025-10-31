@@ -50,11 +50,7 @@ module.exports = {
       const bankBalance = gambling.bank || 0;
       const bankLimit = await userService.getBankLimit(targetUser.id);
       
-      // Debug logging for bank limit issues
-      console.log(`🔍 DEBUG bal command for ${targetUser.id}:`);
-      console.log(`   - gambling.bankLimit: ${gambling.bankLimit}`);
-      console.log(`   - getBankLimit result: ${bankLimit}`);
-      console.log(`   - Match: ${gambling.bankLimit === bankLimit}`);
+
       
       // Create embed with minimal format
       const isOwnBalance = targetUser.id === message.author.id;
