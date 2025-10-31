@@ -193,6 +193,7 @@ class UserService extends BaseService {
     return {
       wallet: 1000,
       bank: 0,
+      bankLimit: 50000, // Default bank limit
       dailyClaim: { lastClaimed: null, streak: 0 },
       robCooldown: null,
       lastWorked: null,
@@ -807,18 +808,7 @@ class UserService extends BaseService {
 
       for (const userId of userIds) {
         const userData = userDataMap.get(userId);
-        const gamblingData = userData?.Gambling || {
-          wallet: 1000,
-          bank: 0,
-          dailyClaim: { lastClaimed: null, streak: 0 },
-          robCooldown: null,
-          lastWorked: null,
-          begCooldown: null,
-          lastInterestClaim: null,
-          totalGambled: 0,
-          totalWon: 0,
-          totalLost: 0
-        };
+        const gamblingData = userData?.Gambling || this.getDefaultGamblingData();
         gamblingMap.set(userId, gamblingData);
       }
 
@@ -829,18 +819,7 @@ class UserService extends BaseService {
       // Return default gambling data for all users on error
       const defaultMap = new Map();
       for (const userId of userIds) {
-        defaultMap.set(userId, {
-          wallet: 1000,
-          bank: 0,
-          dailyClaim: { lastClaimed: null, streak: 0 },
-          robCooldown: null,
-          lastWorked: null,
-          begCooldown: null,
-          lastInterestClaim: null,
-          totalGambled: 0,
-          totalWon: 0,
-          totalLost: 0
-        });
+        defaultMap.set(userId, this.getDefaultGamblingData());
       }
       return defaultMap;
     }

@@ -25,8 +25,8 @@ module.exports = {
   name: "banklimit",
   aliases: ["setbanklimit", "bl"],
   description: 'Manage user bank limits (dev only)',
-  syntax: 'banklimit <user> [amount]\nbanklimit reset <user>\nbanklimit reset all',
-  example: 'banklimit @user 100000\nbanklimit @user\nbanklimit reset @user\nbanklimit reset all',
+  syntax: 'banklimit <user> [amount]\nbanklimit reset <user>\nbanklimit reset all\nbanklimit fix',
+  example: 'banklimit @user 100000\nbanklimit @user\nbanklimit reset @user\nbanklimit reset all\nbanklimit fix',
   permission: 'dev',
   run: async (client, message, args) => {
     const userService = getService('user');
@@ -36,6 +36,43 @@ module.exports = {
 
     if (!args[0]) {
       return runHelpCommand(message, 'banklimit');
+    }
+
+    // Handle fix command (fix missing bank limits without resetting existing ones)
+    if (args[0].toLowerCase() === 'fix') {
+      await createConfirmation(
+        message,
+        `🔧 **FIX MISSING BANK LIMITS** 🔧\n\nThis will **add default bank limits (50,000) to users who are missing them** without affecting users who already have bank limits set.\n\n**This will:**\n• Add bank limits to users missing them\n• NOT change existing bank limits\n• Only affect users with missing data\n\n**This is safe to run!**`,
+        async (interaction) => {
+          try {
+            // Get the User model directly for bulk operations
+            const { User } = require('../../database');
+            const UserModel = User;
+
+            // Fix users who have gambling data but no bankLimit field
+            const result = await UserModel.updateMany(
+              { 'Gambling': { $exists: true }, 'Gambling.bankLimit': { $exists: false } },
+              { $set: { 'Gambling.bankLimit': 50000 } }
+            );
+
+            // Clear the service cache to ensure fresh data
+            userService.clearCache();
+
+            const successEmbed = embeds.createSuccess(
+              message, 
+              `🔧 **Missing Bank Limits Fixed**\n\n**${result.modifiedCount}** users had missing bank limits fixed\n\n**Fixed users now have:**\n• **Bank Limit:** 50,000 coins`
+            );
+
+            await interaction.editReply({ embeds: [successEmbed], components: [] });
+          } catch (error) {
+            console.error('Error fixing missing bank limits:', error);
+            
+            const errorEmbed = embeds.createDeny(message, 'Failed to fix missing bank limits');
+            await interaction.editReply({ embeds: [errorEmbed], components: [] });
+          }
+        }
+      );
+      return;
     }
 
     // Handle reset commands
@@ -48,16 +85,22 @@ module.exports = {
         // Global bank limit reset
         await createConfirmation(
           message,
-          `⚠️ **GLOBAL BANK LIMIT RESET** ⚠️\n\nAre you sure you want to **reset ALL users' bank limits to 50,000**?\n\n**This will:**\n• Reset all bank limits to default (50,000)\n• Affect all users globally\n\n**THIS ACTION CANNOT BE UNDONE!**`,
+          `⚠️ **GLOBAL BANK LIMIT RESET** ⚠️\n\nAre you sure you want to **reset ALL users' bank limits to 50,000**?\n\n**This will:**\n• Reset all bank limits to default (50,000)\n• Fix users with missing bank limits\n• Affect all users globally\n\n**THIS ACTION CANNOT BE UNDONE!**`,
           async (interaction) => {
             try {
               // Get the User model directly for bulk operations
               const { User } = require('../../database');
               const UserModel = User;
 
-              // Reset all users' bank limits to default
+              // Reset all users' bank limits to default and fix missing bank limits
               const result = await UserModel.updateMany(
                 {}, // Empty filter = all documents
+                { $set: { 'Gambling.bankLimit': 50000 } }
+              );
+
+              // Also fix users who might have gambling data but no bankLimit field
+              const fixResult = await UserModel.updateMany(
+                { 'Gambling': { $exists: true }, 'Gambling.bankLimit': { $exists: false } },
                 { $set: { 'Gambling.bankLimit': 50000 } }
               );
 
@@ -66,7 +109,7 @@ module.exports = {
 
               const successEmbed = embeds.createSuccess(
                 message, 
-                `🌍 **Global Bank Limit Reset Complete**\n\n**${result.modifiedCount}** users affected\n\n**All users now have:**\n• **Bank Limit:** 50,000 coins`
+                `🌍 **Global Bank Limit Reset Complete**\n\n**${result.modifiedCount}** users reset\n**${fixResult.modifiedCount}** users fixed (missing bank limits)\n\n**All users now have:**\n• **Bank Limit:** 50,000 coins`
               );
 
               await interaction.editReply({ embeds: [successEmbed], components: [] });
