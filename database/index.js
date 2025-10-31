@@ -19,6 +19,7 @@ let SpotifyAuthSession = null;
 let Sprint = null;
 let Webhook = null;
 let WelcomeButton = null;
+let StoreItem = null;
 
 // Database readiness state
 let isDatabaseFullyReady = false;
@@ -54,6 +55,7 @@ async function _performInitialization(connectionStrings) {
       User = connections.global.model('User', userSchema.schema);
       System = connections.global.model('System', systemSchema.schema);
       SpotifyAuthSession = connections.global.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
+      StoreItem = connections.global.model('StoreItem', storeItemSchema);
     }
 
     if (connections.local) {
@@ -68,6 +70,7 @@ async function _performInitialization(connectionStrings) {
         User = connections.local.model('User', userSchema.schema);
         System = connections.local.model('System', systemSchema.schema);
         SpotifyAuthSession = connections.local.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
+        StoreItem = connections.local.model('StoreItem', storeItemSchema);
       }
     }
 
@@ -723,7 +726,7 @@ module.exports = {
     if (!isDatabaseFullyReady) {
       return null;
     }
-    return { User, Guild, System, SpotifyAuthSession, Sprint, Webhook, WelcomeButton };
+    return { User, Guild, System, SpotifyAuthSession, Sprint, Webhook, WelcomeButton, StoreItem };
   },
 
   // Model getters (since models are created dynamically)
@@ -734,6 +737,7 @@ module.exports = {
   get Sprint() { return Sprint; },
   get Webhook() { return Webhook; },
   get WelcomeButton() { return WelcomeButton; },
+  get StoreItem() { return StoreItem; },
 
   // Deprecated model aliases for backward compatibility
   // These should be migrated to use cache system instead
