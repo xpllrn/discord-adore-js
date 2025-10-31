@@ -1,4 +1,5 @@
 const { embeds } = require('../../core/embeds');
+const { UserService } = require('../../database/services');
 
 module.exports = {
   name: "pray",
@@ -19,8 +20,11 @@ module.exports = {
         isTargetingSelf = false;
       }
 
-      // Generate random luck points (1-5)
-      const luckPoints = Math.floor(Math.random() * 5) + 1;
+      // Generate random luck gain (1-7 points, higher than curse)
+      const luckGain = Math.floor(Math.random() * 7) + 1;
+
+      // Update luck in database (add points)
+      const newLuck = await UserService.updateLuck(targetUser.id, luckGain);
 
       // Get display name
       const targetName = targetMember ? targetMember.displayName : targetUser.username;
@@ -28,9 +32,9 @@ module.exports = {
       let resultMessage;
 
       if (isTargetingSelf) {
-        resultMessage = `You feel very **lucky** with **${luckPoints} luck** points!`;
+        resultMessage = `You feel very **lucky**! You gained **${luckGain} luck** points! Current luck: **${newLuck}**`;
       } else {
-        resultMessage = `You prayed for **${targetName}**, they feel very lucky with **${luckPoints} luck** points!`;
+        resultMessage = `You prayed for **${targetName}**, they gained **${luckGain} luck** points! Their luck is now: **${newLuck}**`;
       }
 
       const embed = embeds.createSuccess(message, resultMessage);

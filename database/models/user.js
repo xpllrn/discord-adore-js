@@ -156,6 +156,12 @@ const userSchema = new mongoose.Schema({
     totalLost: {
       type: Number,
       default: 0
+    },
+    luck: {
+      type: Number,
+      default: 0,
+      min: -100,
+      max: 100
     }
   },
   // Roleplay interaction tracking

@@ -146,7 +146,8 @@ class UserService extends BaseService {
             totalVotes: 0,
             totalGambled: 0,
             totalWon: 0,
-            totalLost: 0
+            totalLost: 0,
+            luck: 0
           },
           Inventory: {
             items: []
@@ -212,7 +213,8 @@ class UserService extends BaseService {
       totalVotes: 0,
       totalGambled: 0,
       totalWon: 0,
-      totalLost: 0
+      totalLost: 0,
+      luck: 0
     };
   }
 
@@ -419,6 +421,97 @@ class UserService extends BaseService {
       return true;
     } catch (error) {
       throw new DatabaseWriteError(`Failed to update vote timestamp for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Get user luck points
+   * @param {string} userId - User ID
+   * @returns {Promise<number>} Current luck points
+   */
+  async getLuck(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
+      return gambling.luck || 0;
+    } catch (error) {
+      console.error(`Error getting luck for user ${userId}:`, error.message);
+      return 0;
+    }
+  }
+
+  /**
+   * Update user luck points
+   * @param {string} userId - User ID
+   * @param {number} amount - Amount to add/subtract from luck
+   * @returns {Promise<number>} New luck value
+   */
+  async updateLuck(userId, amount) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (typeof amount !== 'number') {
+      throw new ValidationError('Amount must be a number', 'amount', amount);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
+      
+      // Update luck with bounds (-100 to 100)
+      const currentLuck = gambling.luck || 0;
+      const newLuck = Math.max(-100, Math.min(100, currentLuck + amount));
+      
+      gambling.luck = newLuck;
+      userData.Gambling = gambling;
+      
+      await this.set(userId, userData);
+      return newLuck;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update luck for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Set user luck points directly
+   * @param {string} userId - User ID
+   * @param {number} luck - Luck value to set
+   * @returns {Promise<number>} New luck value
+   */
+  async setLuck(userId, luck) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (typeof luck !== 'number') {
+      throw new ValidationError('Luck must be a number', 'luck', luck);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
+      
+      // Set luck with bounds (-100 to 100)
+      const newLuck = Math.max(-100, Math.min(100, luck));
+      
+      gambling.luck = newLuck;
+      userData.Gambling = gambling;
+      
+      await this.set(userId, userData);
+      return newLuck;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set luck for user ${userId}`, error);
     }
   }
 
