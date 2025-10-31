@@ -162,6 +162,14 @@ const userSchema = new mongoose.Schema({
       default: 0,
       min: -100,
       max: 100
+    },
+    lastCursed: {
+      type: Date,
+      default: null
+    },
+    lastPrayed: {
+      type: Date,
+      default: null
     }
   },
   // Roleplay interaction tracking

@@ -147,7 +147,9 @@ class UserService extends BaseService {
             totalGambled: 0,
             totalWon: 0,
             totalLost: 0,
-            luck: 0
+            luck: 0,
+            lastCursed: null,
+            lastPrayed: null
           },
           Inventory: {
             items: []
@@ -214,7 +216,9 @@ class UserService extends BaseService {
       totalGambled: 0,
       totalWon: 0,
       totalLost: 0,
-      luck: 0
+      luck: 0,
+      lastCursed: null,
+      lastPrayed: null
     };
   }
 
@@ -512,6 +516,54 @@ class UserService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to set luck for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Update curse timestamp with UTC
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateCurseTimestamp(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
+      
+      gambling.lastCursed = new Date(); // UTC timestamp
+      userData.Gambling = gambling;
+      
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to update curse timestamp for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Update pray timestamp with UTC
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async updatePrayTimestamp(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
+      
+      gambling.lastPrayed = new Date(); // UTC timestamp
+      userData.Gambling = gambling;
+      
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to update pray timestamp for user ${userId}`, error);
     }
   }
 

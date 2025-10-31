@@ -1,5 +1,7 @@
+const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
+const { emojis } = require('../../config/setup');
 
 module.exports = {
   name: "curse",
@@ -7,9 +9,29 @@ module.exports = {
   description: 'Curse yourself or someone else to lose luck points',
   syntax: 'curse [user]',
   example: 'curse @user',
-  cooldowns: 30, // 30 second cooldown
   run: async (client, message, args) => {
     try {
+      const userService = getService('user');
+
+      // Get user's gambling data (creates account if doesn't exist)
+      const gambling = await userService.getGamblingData(message.author.id);
+
+      // Check curse cooldown (1 hour = 3600000 ms)
+      const curseCooldown = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
+      const lastCursed = gambling.lastCursed || null;
+      const now = Date.now();
+
+      if (lastCursed && (now - lastCursed) < curseCooldown) {
+        const timeLeft = curseCooldown - (now - lastCursed);
+        const unixTimestamp = Math.floor((now + timeLeft) / 1000);
+
+        const embed = new EmbedBuilder()
+          .setColor('#fc6464')
+          .setDescription(`${emojis.warn} <@${message.author.id}>: You can **curse** again <t:${unixTimestamp}:R>`);
+
+        return message.channel.send({ embeds: [embed] });
+      }
+
       // Determine target user
       let targetUser = message.author;
       let targetMember = message.member;
@@ -21,12 +43,14 @@ module.exports = {
         isTargetingSelf = false;
       }
 
-      // Generate random luck loss (1-5 points)
-      const luckLoss = Math.floor(Math.random() * 5) + 1;
+      // Generate random luck loss (1-10 points)
+      const luckLoss = Math.floor(Math.random() * 10) + 1;
 
-      // Get user service and update luck in database (subtract points)
-      const userService = getService('user');
+      // Update luck in database (subtract points)
       const newLuck = await userService.updateLuck(targetUser.id, -luckLoss);
+
+      // Update curse timestamp
+      await userService.updateCurseTimestamp(message.author.id);
 
       // Get display names
       const targetName = targetMember ? targetMember.displayName : targetUser.username;
@@ -35,12 +59,15 @@ module.exports = {
       let resultMessage;
 
       if (isTargetingSelf) {
-        resultMessage = `You cursed yourself! You lost **${luckLoss} luck** points! Current luck: **${newLuck}**`;
+        resultMessage = `💀 <@${message.author.id}>: You cursed yourself! You lost **${luckLoss} luck** points! Current luck: **${newLuck}**`;
       } else {
-        resultMessage = `**${authorName}** puts a curse on **${targetName}**! They lost **${luckLoss} luck** points! Their luck is now: **${newLuck}**`;
+        resultMessage = `💀 <@${message.author.id}>: **${authorName}** puts a curse on **${targetName}**! They lost **${luckLoss} luck** points! Their luck is now: **${newLuck}**`;
       }
 
-      const embed = embeds.createSuccess(message, resultMessage);
+      const embed = new EmbedBuilder()
+        .setColor('#a4ec7c')
+        .setDescription(resultMessage);
+
       return message.channel.send({ embeds: [embed] });
     } catch (error) {
       console.error('Error in curse command:', error);
