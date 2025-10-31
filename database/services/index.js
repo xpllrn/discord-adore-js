@@ -148,8 +148,13 @@ function getServiceHealth() {
 
   // Check connection manager
   if (serviceInstances.connectionManager) {
-    const connectionStatus = serviceInstances.connectionManager.isReady();
-    health.connectionManager = connectionStatus.overall;
+    try {
+      const connectionStatus = serviceInstances.connectionManager.isReady();
+      health.connectionManager = connectionStatus?.overall || false;
+    } catch (error) {
+      console.error('Error checking connection manager health:', error.message);
+      health.connectionManager = false;
+    }
   }
 
   // Check service health
@@ -162,8 +167,8 @@ function getServiceHealth() {
   health.welcomeButton = serviceInstances.welcomeButton?.initialized || false;
   health.system = serviceInstances.system?.initialized || false;
 
-  // Overall health is true if connection manager and core services are healthy
-  health.overall = health.connectionManager && health.guild && health.user && health.prefix && health.system;
+  // Overall health is true if core services are healthy (connection manager is optional)
+  health.overall = health.guild && health.user && health.prefix && health.system;
 
   return health;
 }

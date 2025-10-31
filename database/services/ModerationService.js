@@ -40,7 +40,15 @@ async function waitForDatabase(timeout = 5000) {
  */
 class ModerationService extends BaseService {
   constructor() {
-    super('ModerationService');
+    super({
+      modelName: 'Guild',
+      keyField: 'GuildID',
+      database: 'local',
+      ttl: 30 * 60 * 1000, // 30 minutes TTL for moderation data
+      maxSize: 1000 // Max 1000 guilds in cache
+    });
+    
+    this.initialized = true;
   }
 
   /**
