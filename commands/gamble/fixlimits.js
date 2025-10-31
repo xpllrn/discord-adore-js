@@ -32,14 +32,14 @@ module.exports = {
     try {
       const userService = getService('user');
       
-      // Get all users from database
-      const allUsers = await userService.getAllUsers();
+      // Get all users with gambling data from database
+      const allUsers = await userService.getAllUsersWithGamblingData();
       let fixedCount = 0;
       let totalChecked = 0;
 
       const loadingMsg = await message.channel.send({ embeds: [embeds.createLoading(message, 'Checking and fixing bank limits...')] });
 
-      for (const [userId, userData] of allUsers) {
+      for (const userData of allUsers) {
         totalChecked++;
         
         if (userData.Gambling) {
@@ -50,10 +50,10 @@ module.exports = {
             const requiredLimit = calculateRequiredLimit(bankBalance);
             
             // Update the bank limit
-            await userService.updateBankLimit(userId, requiredLimit);
+            await userService.updateBankLimit(userData.UserID, requiredLimit);
             fixedCount++;
             
-            console.log(`Fixed ${userId}: Bank ${formatCurrency(bankBalance)} -> Limit ${formatCurrency(requiredLimit)}`);
+            console.log(`Fixed ${userData.UserID}: Bank ${formatCurrency(bankBalance)} -> Limit ${formatCurrency(requiredLimit)}`);
           }
         }
       }
@@ -69,7 +69,7 @@ module.exports = {
       
     } catch (error) {
       console.error('Error in fixlimits command:', error);
-      return embeds.deny(message, 'An error occurred while fixing bank limits');
+      return embeds.deny(message, `An error occurred while fixing bank limits: ${error.message}`);
     }
   }
 };
