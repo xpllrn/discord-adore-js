@@ -33,29 +33,29 @@ module.exports = {
           );
           console.log(`🗑️ Deleted gambling data from ${deleteResult.modifiedCount} users`);
 
-          // Step 2: Create fresh gambling data with proper defaults
-          const defaultGamblingData = {
-            wallet: 1000,
-            bank: 0,
-            bankLimit: 50000,
-            dailyClaim: {
-              lastClaimed: null,
-              streak: 0
-            },
-            robCooldown: null,
-            lastWorked: null,
-            begCooldown: null,
-            lastInterestClaim: null,
-            lastVote: null,
-            totalVotes: 0,
-            totalGambled: 0,
-            totalWon: 0,
-            totalLost: 0
-          };
-
+          // Step 2: Create fresh gambling data with proper defaults (ensuring proper types)
           const createResult = await UserModel.updateMany(
             {},
-            { $set: { 'Gambling': defaultGamblingData } }
+            { 
+              $set: { 
+                'Gambling.wallet': 1000,
+                'Gambling.bank': 0,
+                'Gambling.bankLimit': 50000,
+                'Gambling.dailyClaim': {
+                  lastClaimed: null,
+                  streak: 0
+                },
+                'Gambling.robCooldown': null,
+                'Gambling.lastWorked': null,
+                'Gambling.begCooldown': null,
+                'Gambling.lastInterestClaim': null,
+                'Gambling.lastVote': null,
+                'Gambling.totalVotes': 0,
+                'Gambling.totalGambled': 0,
+                'Gambling.totalWon': 0,
+                'Gambling.totalLost': 0
+              }
+            }
           );
           console.log(`✅ Created fresh gambling data for ${createResult.modifiedCount} users`);
 
@@ -63,9 +63,22 @@ module.exports = {
           userService.clearCache();
           console.log('🧹 Cleared all service caches');
 
-          // Step 4: Verify the reset worked
+          // Step 4: Fix any remaining undefined values explicitly
+          const fixUndefinedResult = await UserModel.updateMany(
+            { 
+              $or: [
+                { 'Gambling.bankLimit': { $exists: false } },
+                { 'Gambling.bankLimit': null },
+                { 'Gambling.bankLimit': { $type: 'undefined' } }
+              ]
+            },
+            { $set: { 'Gambling.bankLimit': 50000 } }
+          );
+          console.log(`🔧 Fixed ${fixUndefinedResult.modifiedCount} users with undefined bankLimit`);
+
+          // Step 5: Verify the reset worked
           const verifyResult = await UserModel.findOne({}, { 'Gambling.bankLimit': 1 });
-          console.log(`🔍 Verification: Sample bankLimit = ${verifyResult?.Gambling?.bankLimit}`);
+          console.log(`🔍 Verification: Sample bankLimit = ${verifyResult?.Gambling?.bankLimit} (type: ${typeof verifyResult?.Gambling?.bankLimit})`);
 
           const successEmbed = embeds.createSuccess(
             message, 
