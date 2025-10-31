@@ -4,18 +4,28 @@ const { colors, emojis } = require('../../config/setup');
 
 // Store items configuration
 const STORE_ITEMS = {
-  'banknote_commoner': {
+  'banknote_dirt': {
     id: '1',
+    name: 'Dirt Banknote',
+    description: 'Increases your bank limit by 20,000 coins',
+    price: 20000,
+    emoji: '🌱',
+    category: 'banknotes',
+    bankLimitIncrease: 20000,
+    sellPrice: 10000
+  },
+  'banknote_commoner': {
+    id: '2',
     name: 'Commoner Banknote',
     description: 'Increases your bank limit by 50,000 coins',
-    price: 50000,
+    price: 45000,
     emoji: '🪙',
     category: 'banknotes',
     bankLimitIncrease: 50000,
-    sellPrice: 25000
+    sellPrice: 22500
   },
   'banknote_regular': {
-    id: '2',
+    id: '3',
     name: 'Regular Banknote',
     description: 'Increases your bank limit by 100,000 coins',
     price: 90000,
@@ -25,7 +35,7 @@ const STORE_ITEMS = {
     sellPrice: 45000
   },
   'banknote_noble': {
-    id: '3',
+    id: '4',
     name: 'Noble Banknote',
     description: 'Increases your bank limit by 500,000 coins',
     price: 400000,
@@ -35,7 +45,7 @@ const STORE_ITEMS = {
     sellPrice: 200000
   },
   'banknote_royal': {
-    id: '4',
+    id: '5',
     name: 'Royal Banknote',
     description: 'Increases your bank limit by 1,000,000 coins',
     price: 800000,
@@ -45,7 +55,7 @@ const STORE_ITEMS = {
     sellPrice: 400000
   },
   'banknote_mythical': {
-    id: '5',
+    id: '6',
     name: 'Mythical Banknote',
     description: 'Increases your bank limit by 10,000,000 coins',
     price: 8000000,
