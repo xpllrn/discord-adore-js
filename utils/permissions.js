@@ -241,7 +241,7 @@ function checkSelfAction(message, targetUser, action) {
 
 function checkBotAction(message, targetUser) {
   if (targetUser.id === message.guild.members.me.id) {
-    embeds.warn(message, 'Leave me alone!');
+    message.channel.send('Leave me alone!');
     return false;
   }
   return true;

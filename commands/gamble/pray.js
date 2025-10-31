@@ -12,6 +12,11 @@ module.exports = {
   run: async (client, message, args) => {
     try {
       const userService = getService('user');
+      
+      // Debug logging
+      console.log('UserService instance:', !!userService);
+      console.log('UserService methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(userService)));
+      console.log('updateLuck method exists:', typeof userService.updateLuck);
 
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);

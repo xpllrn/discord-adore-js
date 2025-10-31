@@ -58,9 +58,9 @@ module.exports = {
         });
       } else {
         // Show detailed view for single category
-        items.forEach((item, index) => {
+        items.forEach((item) => {
           const status = item.enabled ? '✅' : '❌';
-          const number = String(index + 1).padStart(2, '0');
+          const number = String(item.id).padStart(2, '0');
           description += `${status} **${number}.** \`${item.id}\`\n`;
           description += `   ${item.emoji} **${item.name}** - ${item.price.toLocaleString()} coins\n`;
           description += `   ${item.description}\n`;

@@ -72,6 +72,11 @@ module.exports = {
       return embeds.warn(message, 'You cannot play against bots!');
     }
 
+    // Can't play against the bot
+    if (opponentUser.id === message.guild.members.me.id) {
+      return message.channel.send('Leave me alone!');
+    }
+
     // Parse betting amount if provided
     let betAmount = 0;
     let isBetting = false;

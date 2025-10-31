@@ -53,38 +53,21 @@ module.exports = {
         return embeds.deny(message, `You only have **${availableQuantity}** ${storeItem.name}(s) but tried to use **${quantity}**.`);
       }
 
-      // Handle different item types
-      let resultMessage = '';
-      let success = false;
-
-      if (storeItem.category === 'banknotes' && storeItem.bankLimitIncrease) {
-        // Handle banknote usage
-        const currentLimit = await userService.getBankLimit(message.author.id);
-        const newLimit = currentLimit + (storeItem.bankLimitIncrease * quantity);
-        
-        const updateSuccess = await userService.updateBankLimit(message.author.id, newLimit);
-        if (updateSuccess) {
-          success = true;
-          const quantityText = quantity > 1 ? ` x${quantity}` : '';
-          const increaseAmount = storeItem.bankLimitIncrease * quantity;
-          resultMessage = `Used **${storeItem.name}**${quantityText}! Your bank limit increased by **${formatCurrency(increaseAmount)}** coins to **${formatCurrency(newLimit)}** coins total.`;
-        }
-      } else {
-        return embeds.deny(message, `**${storeItem.name}** cannot be used or its effect is not implemented yet.`);
+      // Use the item through StoreService
+      const useResult = await storeService.useItem(message.author.id, storeItem, quantity);
+      
+      if (!useResult.success) {
+        return embeds.deny(message, useResult.message);
       }
 
-      if (!success) {
-        return embeds.deny(message, 'Failed to use the item. Please try again.');
-      }
+      const resultMessage = useResult.message;
 
       // Remove items from inventory
       const removeSuccess = await userService.removeInventoryItem(message.author.id, itemId, quantity);
       if (!removeSuccess) {
         // Try to revert the changes if inventory removal failed
-        if (storeItem.category === 'banknotes' && storeItem.bankLimitIncrease) {
-          const currentLimit = await userService.getBankLimit(message.author.id);
-          const revertedLimit = currentLimit - (storeItem.bankLimitIncrease * quantity);
-          await userService.updateBankLimit(message.author.id, revertedLimit);
+        if (useResult.oldLimit !== undefined && useResult.newLimit !== undefined) {
+          await userService.updateBankLimit(message.author.id, useResult.oldLimit);
         }
         return embeds.deny(message, 'Failed to remove items from inventory. Changes reverted.');
       }

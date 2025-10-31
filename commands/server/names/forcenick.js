@@ -1,7 +1,7 @@
 const { PermissionFlagsBits, EmbedBuilder } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
-const { runHelpCommand } = require('../../../utils/commandProcessor');
+
 const { getService } = require('@services');
 const { createPagination, createConfirmation } = require('../../../core/buttons');
 const config = require('../../../config/setup');
@@ -26,7 +26,7 @@ module.exports = {
 
     // Check if user provided input
     if (!args[0]) {
-      return runHelpCommand(message, 'forcenick');
+      return false;
     }
 
     // Handle list subcommand
@@ -166,6 +166,15 @@ module.exports = {
 
     const member = userResult.user;
     const nickname = args.slice(1).join(" ");
+
+    const subcommandInfo = {
+      name: 'set',
+      description: 'Force a nickname on a user or remove their forced nickname',
+      usage: '{guildprefix}forcenick [@user] [nickname]',
+      aliases: [],
+      parameters: ['user', 'nickname (optional)'],
+      example: '{guildprefix}forcenick @user NewNickname'
+    };
 
     if (!checkSelfAction(message, member, 'forcenick')) return;
     if (!checkBotAction(message, member)) return;

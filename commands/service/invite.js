@@ -3,7 +3,7 @@ const { colors, bot } = require('../../config/setup')
 
 module.exports = {
   name: "invite",
-  aliases: ['inv'],
+  aliases: ['addme'],
   description: `Send an invite link of the bot`,
   syntax: 'invite',
   example: 'invite',

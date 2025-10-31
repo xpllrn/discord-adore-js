@@ -79,6 +79,11 @@ module.exports = {
       if (targetUser.bot) {
         return embeds.deny(message, 'You can\'t rob bots');
       }
+
+      // Can't rob the bot
+      if (targetUser.id === message.guild.members.me.id) {
+        return message.channel.send('Leave me alone!');
+      }
       
       // Get robber's gambling data (creates account if doesn't exist)
       const robberGambling = await userService.getGamblingData(message.author.id);

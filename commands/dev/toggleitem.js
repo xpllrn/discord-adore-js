@@ -16,7 +16,7 @@ module.exports = {
 
     try {
       const storeService = getService('store');
-      const itemId = args[0].toLowerCase();
+      const itemId = args[0]; // Keep as provided (numeric or string)
       
       // Get the item first
       const item = await storeService.get(itemId);

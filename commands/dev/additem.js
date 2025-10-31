@@ -5,19 +5,19 @@ module.exports = {
   name: "additem",
   aliases: [],
   description: 'Add a new item to the store',
-  syntax: 'additem <id> <name> <price> <category> <emoji> <description>',
-  example: 'additem test_item "Test Item" 1000 banknotes 🧪 "A test item for testing"',
+  syntax: 'additem <id> <name> <price> <category> <emoji> <description> [bankLimitIncrease]',
+  example: 'additem 7 "Test Banknote" 1000 banknotes 🧪 "A test banknote" 1000',
   permission: 'dev',
   run: async (client, message, args) => {
     
     if (args.length < 6) {
-      return embeds.warn(message, 'Usage: `additem <id> <name> <price> <category> <emoji> <description>`');
+      return embeds.warn(message, 'Usage: `additem <id> <name> <price> <category> <emoji> <description> [bankLimitIncrease]`');
     }
 
     try {
       const storeService = getService('store');
       
-      const itemId = args[0].toLowerCase();
+      const itemId = args[0]; // Keep as provided (numeric or string)
       const itemName = args[1].replace(/"/g, ''); // Remove quotes
       const price = parseInt(args[2]);
       const category = args[3].toLowerCase();
@@ -42,18 +42,30 @@ module.exports = {
 
       // Add category-specific properties
       if (category === 'banknotes') {
-        // For banknotes, ask for bank limit increase
-        const bankLimitIncrease = parseInt(args[6]) || price; // Default to price if not specified
-        itemData.bankLimitIncrease = bankLimitIncrease;
+        // For banknotes, use a reasonable bank limit increase
+        // If 7th argument is provided, use it, otherwise use price as default
+        const bankLimitIncrease = args[6] ? parseInt(args[6]) : price;
+        if (!isNaN(bankLimitIncrease) && bankLimitIncrease > 0) {
+          itemData.bankLimitIncrease = bankLimitIncrease;
+        } else {
+          itemData.bankLimitIncrease = price; // Fallback to price
+        }
       }
 
       const createdItem = await storeService.createOrUpdateItem(itemData);
       
-      return embeds.success(message, `Successfully added **${createdItem.name}** to the store!\n\n` +
+      let successMessage = `Successfully added **${createdItem.name}** to the store!\n\n` +
         `**ID:** ${createdItem.id}\n` +
         `**Price:** ${createdItem.price.toLocaleString()} coins\n` +
+        `**Sell Price:** ${createdItem.sellPrice.toLocaleString()} coins\n` +
         `**Category:** ${createdItem.category}\n` +
-        `**Description:** ${createdItem.description}`);
+        `**Description:** ${createdItem.description}`;
+      
+      if (createdItem.bankLimitIncrease) {
+        successMessage += `\n**Bank Limit Increase:** ${createdItem.bankLimitIncrease.toLocaleString()} coins`;
+      }
+      
+      return embeds.success(message, successMessage);
       
     } catch (error) {
       console.error('Error adding store item:', error);

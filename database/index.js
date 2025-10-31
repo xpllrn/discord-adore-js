@@ -9,6 +9,7 @@ const spotifyAuthSessionSchema = require('./models/spotifyAuthSession');
 const sprintSchema = require('./models/sprint');
 const webhookSchema = require('./models/webhook');
 const welcomeButtonSchema = require('./models/welcomeButton');
+const storeItemSchema = require('./models/storeItem');
 
 // Model instances (will be created after connection)
 let User = null;

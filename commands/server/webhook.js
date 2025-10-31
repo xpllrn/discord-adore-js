@@ -1,7 +1,7 @@
 const { EmbedBuilder, PermissionFlagsBits, WebhookClient } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { hasDiscordPermission } = require('../../utils/permissions');
-const { runHelpCommand } = require('../../utils/commandProcessor');
+
 const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
@@ -16,30 +16,93 @@ module.exports = {
 
     // If no subcommand provided, show help
     if (!subcommand) {
-      return runHelpCommand(message, 'webhook');
+      return false;
     }
 
     // All webhook commands require Manage Webhooks permission
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageWebhooks, 'Manage Webhooks')) return;
 
     switch (subcommand) {
-      case 'create':
+      case 'create': {
+        const subcommandInfo = {
+          name: 'create',
+          description: 'Create a new webhook in the current channel',
+          usage: '{guildprefix}webhook create [name]',
+          aliases: [],
+          parameters: ['name'],
+          example: '{guildprefix}webhook create MyBot'
+        };
         return await handleCreate(client, message, args.slice(1), webhookService);
+      }
       case 'delete':
-      case 'remove':
+      case 'remove': {
+        const subcommandInfo = {
+          name: 'delete',
+          description: 'Delete a webhook by ID, name, or short ID',
+          usage: '{guildprefix}webhook delete [webhook_id/name/short_id]',
+          aliases: ['remove'],
+          parameters: ['webhook_identifier'],
+          example: '{guildprefix}webhook delete abc1'
+        };
         return await handleDelete(client, message, args.slice(1), webhookService);
-      case 'send':
+      }
+      case 'send': {
+        const subcommandInfo = {
+          name: 'send',
+          description: 'Send a message through a webhook',
+          usage: '{guildprefix}webhook send [webhook_id] [message]',
+          aliases: [],
+          parameters: ['webhook_id', 'message'],
+          example: '{guildprefix}webhook send abc1 Hello world!'
+        };
         return await handleSend(client, message, args.slice(1), webhookService);
-      case 'edit':
+      }
+      case 'edit': {
+        const subcommandInfo = {
+          name: 'edit',
+          description: 'Edit a webhook message',
+          usage: '{guildprefix}webhook edit [message_link] [new_message]',
+          aliases: [],
+          parameters: ['message_link', 'new_message'],
+          example: '{guildprefix}webhook edit https://discord.com/... New content'
+        };
         return await handleEdit(client, message, args.slice(1), webhookService);
-      case 'rename':
+      }
+      case 'rename': {
+        const subcommandInfo = {
+          name: 'rename',
+          description: 'Rename a webhook',
+          usage: '{guildprefix}webhook rename [webhook_id] [new_name]',
+          aliases: [],
+          parameters: ['webhook_id', 'new_name'],
+          example: '{guildprefix}webhook rename abc1 NewName'
+        };
         return await handleRename(client, message, args.slice(1), webhookService);
-      case 'avatar':
+      }
+      case 'avatar': {
+        const subcommandInfo = {
+          name: 'avatar',
+          description: 'Set a webhook\'s avatar',
+          usage: '{guildprefix}webhook avatar [webhook_id] [image_url]',
+          aliases: [],
+          parameters: ['webhook_id', 'image_url'],
+          example: '{guildprefix}webhook avatar abc1 https://example.com/image.png'
+        };
         return await handleAvatar(client, message, args.slice(1), webhookService);
-      case 'list':
+      }
+      case 'list': {
+        const subcommandInfo = {
+          name: 'list',
+          description: 'List all webhooks in the server',
+          usage: '{guildprefix}webhook list',
+          aliases: [],
+          parameters: [],
+          example: '{guildprefix}webhook list'
+        };
         return await handleList(client, message, args.slice(1), webhookService);
+      }
       default:
-        return runHelpCommand(message, 'webhook');
+        return false;
     }
   }
 };

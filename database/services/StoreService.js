@@ -108,8 +108,14 @@ class StoreService extends BaseService {
   async getAllItems() {
     try {
       const Model = this.getModel();
-      const items = await Model.find({ enabled: true }).sort({ category: 1, price: 1 }).lean();
-      return items || [];
+      const items = await Model.find({ enabled: true }).lean();
+      
+      // Sort by numeric ID to maintain sequential order
+      return items.sort((a, b) => {
+        const idA = parseInt(a.id) || 0;
+        const idB = parseInt(b.id) || 0;
+        return idA - idB;
+      });
     } catch (error) {
       console.error('Error getting all store items:', error.message);
       return [];
@@ -131,9 +137,14 @@ class StoreService extends BaseService {
       const items = await Model.find({ 
         category: category.toLowerCase(), 
         enabled: true 
-      }).sort({ price: 1 }).lean();
+      }).lean();
       
-      return items || [];
+      // Sort by numeric ID to maintain sequential order
+      return items.sort((a, b) => {
+        const idA = parseInt(a.id) || 0;
+        const idB = parseInt(b.id) || 0;
+        return idA - idB;
+      });
     } catch (error) {
       console.error(`Error getting items for category ${category}:`, error.message);
       return [];
@@ -181,36 +192,13 @@ class StoreService extends BaseService {
     }
 
     try {
-      // First try to find by exact ID
-      let item = await this.get(identifier.toLowerCase());
+      // Convert identifier to string for consistent handling
+      const id = identifier.toString();
+      
+      // Try to find by exact ID (numeric IDs are stored as strings)
+      let item = await this.get(id);
       if (item) {
         return item;
-      }
-
-      // If it's a number, find by position in sorted list
-      const itemNumber = parseInt(identifier);
-      if (!isNaN(itemNumber) && itemNumber > 0) {
-        const allItems = await this.getAllItems();
-        
-        // Group items by category and sort
-        const categories = {};
-        allItems.forEach(item => {
-          if (!categories[item.category]) {
-            categories[item.category] = [];
-          }
-          categories[item.category].push(item);
-        });
-
-        // Create a flat list with proper ordering
-        const sortedItems = [];
-        Object.keys(categories).sort().forEach(category => {
-          const categoryItems = categories[category].sort((a, b) => a.price - b.price);
-          sortedItems.push(...categoryItems);
-        });
-
-        if (itemNumber <= sortedItems.length) {
-          return sortedItems[itemNumber - 1]; // Convert to 0-based index
-        }
       }
 
       return null;
@@ -255,7 +243,7 @@ class StoreService extends BaseService {
       // Set default values
       const item = {
         ...itemData,
-        id: itemData.id.toLowerCase(),
+        id: itemData.id.toString(), // Keep numeric IDs as strings
         category: itemData.category.toLowerCase(),
         stackable: itemData.stackable !== false,
         enabled: itemData.enabled !== false,
@@ -284,7 +272,7 @@ class StoreService extends BaseService {
     }
 
     try {
-      await this.delete(itemId.toLowerCase());
+      await this.delete(itemId.toString());
       return true;
     } catch (error) {
       console.error(`Error deleting store item ${itemId}:`, error.message);
@@ -308,7 +296,7 @@ class StoreService extends BaseService {
     }
 
     try {
-      const item = await this.get(itemId.toLowerCase());
+      const item = await this.get(itemId.toString());
       if (!item) {
         return false;
       }
@@ -325,13 +313,105 @@ class StoreService extends BaseService {
   }
 
   /**
-   * Initialize default store items
+   * Use an item (handles item-specific logic)
+   * @param {string} userId - User ID
+   * @param {Object} item - Store item data
+   * @param {number} quantity - Quantity to use
+   * @returns {Promise<Object>} Result object with success status and message
+   */
+  async useItem(userId, item, quantity = 1) {
+    if (!userId || !item) {
+      throw new ValidationError('User ID and item are required');
+    }
+
+    try {
+      // Get user service from the service registry
+      const { getService } = require('./index');
+      const userService = getService('user');
+
+      // Handle different item categories
+      switch (item.category) {
+        case 'banknotes':
+          return await this.useBanknote(userId, item, quantity, userService);
+        
+        case 'consumables':
+          // Future: Handle consumable items
+          return { success: false, message: 'Consumable items are not implemented yet' };
+        
+        case 'tools':
+          // Future: Handle tool items
+          return { success: false, message: 'Tool items are not implemented yet' };
+        
+        default:
+          return { success: false, message: `Items of category '${item.category}' cannot be used` };
+      }
+    } catch (error) {
+      console.error(`Error using item ${item.id}:`, error.message);
+      return { success: false, message: 'An error occurred while using the item' };
+    }
+  }
+
+  /**
+   * Use a banknote item
+   * @private
+   * @param {string} userId - User ID
+   * @param {Object} item - Banknote item data
+   * @param {number} quantity - Quantity to use
+   * @param {Object} userService - User service instance
+   * @returns {Promise<Object>} Result object
+   */
+  async useBanknote(userId, item, quantity, userService) {
+    if (!item.bankLimitIncrease) {
+      return { success: false, message: 'This banknote has no bank limit increase value' };
+    }
+
+    try {
+      // Get current bank limit
+      const currentLimit = await userService.getBankLimit(userId);
+      const increaseAmount = item.bankLimitIncrease * quantity;
+      const newLimit = currentLimit + increaseAmount;
+      
+      // Update bank limit
+      const updateSuccess = await userService.updateBankLimit(userId, newLimit);
+      
+      if (updateSuccess) {
+        const quantityText = quantity > 1 ? ` x${quantity}` : '';
+        const message = `Used **${item.name}**${quantityText}! Your bank limit increased by **${this.formatCurrency(increaseAmount)}** coins to **${this.formatCurrency(newLimit)}** coins total.`;
+        
+        return { 
+          success: true, 
+          message: message,
+          oldLimit: currentLimit,
+          newLimit: newLimit,
+          increase: increaseAmount
+        };
+      } else {
+        return { success: false, message: 'Failed to update bank limit' };
+      }
+    } catch (error) {
+      console.error(`Error using banknote ${item.id}:`, error.message);
+      return { success: false, message: 'Failed to process banknote usage' };
+    }
+  }
+
+  /**
+   * Format currency for display
+   * @private
+   * @param {number} amount - Amount to format
+   * @returns {string} Formatted currency string
+   */
+  formatCurrency(amount) {
+    return Math.floor(amount).toLocaleString();
+  }
+
+  /**
+   * Initialize default store items with numeric IDs
    * @returns {Promise<void>}
    */
   async initializeDefaultItems() {
     const defaultItems = [
       {
-        id: 'banknote_dirt',
+        id: '1',
         name: 'Dirt Banknote',
         description: 'Increases your bank limit by 20,000 coins',
         price: 20000,
@@ -343,7 +423,7 @@ class StoreService extends BaseService {
         enabled: true
       },
       {
-        id: 'banknote_commoner',
+        id: '2',
         name: 'Commoner Banknote',
         description: 'Increases your bank limit by 50,000 coins',
         price: 45000,
@@ -355,7 +435,7 @@ class StoreService extends BaseService {
         enabled: true
       },
       {
-        id: 'banknote_regular',
+        id: '3',
         name: 'Regular Banknote',
         description: 'Increases your bank limit by 100,000 coins',
         price: 90000,
@@ -367,7 +447,7 @@ class StoreService extends BaseService {
         enabled: true
       },
       {
-        id: 'banknote_noble',
+        id: '4',
         name: 'Noble Banknote',
         description: 'Increases your bank limit by 500,000 coins',
         price: 400000,
@@ -379,7 +459,7 @@ class StoreService extends BaseService {
         enabled: true
       },
       {
-        id: 'banknote_royal',
+        id: '5',
         name: 'Royal Banknote',
         description: 'Increases your bank limit by 1,000,000 coins',
         price: 800000,
@@ -391,7 +471,7 @@ class StoreService extends BaseService {
         enabled: true
       },
       {
-        id: 'banknote_mythical',
+        id: '6',
         name: 'Mythical Banknote',
         description: 'Increases your bank limit by 10,000,000 coins',
         price: 8000000,

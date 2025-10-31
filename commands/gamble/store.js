@@ -137,8 +137,8 @@ async function createCategoryEmbed(categoryName, items) {
   const categoryTitle = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
   let description = `${emojis.success} **${categoryTitle} Items:**\n\n`;
   
-  items.forEach((item, index) => {
-    const itemNumber = String(index + 1).padStart(2, '0');
+  items.forEach((item) => {
+    const itemNumber = String(item.id).padStart(2, '0');
     description += `**${itemNumber}** ${item.emoji} **${item.name}** — **${formatCurrency(item.price)}** coins\n`;
     description += `-# ${item.description}\n\n`;
   });
