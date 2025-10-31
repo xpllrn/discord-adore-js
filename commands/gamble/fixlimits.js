@@ -25,7 +25,7 @@ module.exports = {
   run: async (client, message, args) => {
     
     // Check if user is admin/owner (you can modify this check)
-    if (message.author.id !== '771255831021944832') { // Replace with your user ID
+    if (message.author.id !== '1243888419403206660') { // Replace with your user ID
       return embeds.deny(message, 'This command is for administrators only.');
     }
 
