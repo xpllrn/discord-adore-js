@@ -2,7 +2,11 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
-const { STORE_ITEMS, findItemByIdentifier, formatCurrency } = require('../../config/store-items');
+
+// Utility function to format currency
+function formatCurrency(amount) {
+  return Math.floor(amount).toLocaleString();
+}
 
 module.exports = {
   name: "use",
@@ -23,12 +27,14 @@ module.exports = {
     }
 
     // Find item by identifier (number or name)
-    const itemResult = findItemByIdentifier(args[0]);
-    if (!itemResult) {
+    const storeService = getService('store');
+    const storeItem = await storeService.findItemByIdentifier(args[0]);
+    
+    if (!storeItem) {
       return embeds.deny(message, `Item **${args[0]}** is not a valid item. Use \`inventory\` to see your items.`);
     }
 
-    const { key: itemId, item: storeItem } = itemResult;
+    const itemId = storeItem.id;
 
     try {
       const userService = getService('user');

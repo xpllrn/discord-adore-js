@@ -22,6 +22,15 @@ module.exports = {
     const globaldata = await ensureGuildData(message.guild.id);
 
     if (args[0] === 'set') {
+      const subcommandInfo = {
+        name: 'set',
+        description: 'Set the vanity text that users need in their status',
+        usage: '{guildprefix}vanity set [text]',
+        aliases: [],
+        parameters: ['text'],
+        example: '{guildprefix}vanity set MyServer'
+      };
+
       if (!args[1]) return false;
 
       if (args[1] === 'none' || args[1] === 'off') {
@@ -40,6 +49,15 @@ module.exports = {
       }
 
     } else if (args[0] === 'role') {
+      const subcommandInfo = {
+        name: 'role',
+        description: 'Set the role given to users who rep the server',
+        usage: '{guildprefix}vanity role [@role]',
+        aliases: [],
+        parameters: ['role'],
+        example: '{guildprefix}vanity role @Rep Role'
+      };
+
       if (!args[1]) return false;
 
       if (args[1] === 'none' || args[1] === 'clear') {
@@ -88,6 +106,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'add') {
+      const subcommandInfo = {
+        name: 'add',
+        description: 'Add a vanity message to be sent when someone reps',
+        usage: '{guildprefix}vanity add [#channel] [message]',
+        aliases: [],
+        parameters: ['channel', 'message'],
+        example: '{guildprefix}vanity add #general Thanks for repping {user.mention}!'
+      };
 
       const channelInput = args[1];
       const vanitymessage = args.slice(2).join(' ');
@@ -127,6 +153,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'remove') {
+      const subcommandInfo = {
+        name: 'remove',
+        description: 'Remove the vanity message for a channel',
+        usage: '{guildprefix}vanity remove [#channel]',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}vanity remove #general'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -160,6 +194,14 @@ module.exports = {
       }
 
     } else if (args[0] === 'view') {
+      const subcommandInfo = {
+        name: 'view',
+        description: 'Preview the vanity message for a channel',
+        usage: '{guildprefix}vanity view [#channel]',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}vanity view #general'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -188,6 +230,15 @@ module.exports = {
       });
 
     } else if (args[0] === 'variables') {
+      const subcommandInfo = {
+        name: 'variables',
+        description: 'Show available variables for vanity messages',
+        usage: '{guildprefix}vanity variables',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}vanity variables'
+      };
+
       const embed = new EmbedBuilder()
         .setColor(config.colors.embed)
         .setTitle('Vanity Message Variables')
@@ -196,6 +247,15 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'check') {
+      const subcommandInfo = {
+        name: 'check',
+        description: 'Check current vanity configuration',
+        usage: '{guildprefix}vanity check',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}vanity check'
+      };
+
       // Format vanity display
       const vanityDisplay = globaldata.Vanity || '`none`';
 
@@ -249,6 +309,14 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'enable') {
+      const subcommandInfo = {
+        name: 'enable',
+        description: 'Re-enable the vanity system if it was disabled',
+        usage: '{guildprefix}vanity enable',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}vanity enable'
+      };
 
       // Check if vanity is currently disabled
       const vanityDisabledInfo = await guildService.getVanityDisabledInfo(message.guild.id);

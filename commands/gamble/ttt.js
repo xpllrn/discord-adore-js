@@ -248,6 +248,8 @@ async function startGame(message, opponent, isAI, client, betAmount = 0, inviteM
   const board = Array(9).fill(null);
   
   // Ensure proper player objects with consistent structure
+  // Handle both GuildMember and User objects
+  const opponentUser = opponent.user ? opponent.user : opponent;
   const players = [
     { 
       id: message.author.id, 
@@ -255,9 +257,9 @@ async function startGame(message, opponent, isAI, client, betAmount = 0, inviteM
       user: message.author 
     },
     { 
-      id: opponent.id, 
-      username: opponent.username, 
-      user: opponent 
+      id: opponentUser.id, 
+      username: opponentUser.username, 
+      user: opponentUser 
     }
   ];
 

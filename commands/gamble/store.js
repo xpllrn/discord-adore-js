@@ -1,55 +1,47 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { colors, emojis } = require('../../config/setup');
-const { STORE_ITEMS, formatCurrency } = require('../../config/store-items');
+const { getService } = require('@services');
+
+// Utility function to format currency
+function formatCurrency(amount) {
+  return Math.floor(amount).toLocaleString();
+}
 
 module.exports = {
   name: "store",
   aliases: ['shop'],
   description: 'View the gambling store to buy items',
-  syntax: 'store',
+  syntax: 'store [category]',
+  example: 'store banknotes',
 
   run: async (client, message, args) => {
     
     try {
-      const items = Object.values(STORE_ITEMS);
+      const storeService = getService('store');
       
-      if (items.length === 0) {
-        return embeds.warn(message, 'The store is currently empty. Check back later!');
-      }
-
-      // Group items by category
-      const categories = {};
-      items.forEach(item => {
-        if (!categories[item.category]) {
-          categories[item.category] = [];
-        }
-        categories[item.category].push(item);
-      });
-
-      let description = '';
+      // Get requested category or show all categories
+      const requestedCategory = args[0]?.toLowerCase();
       
-      // Display items by category with position numbers
-      let itemPosition = 1;
-      Object.entries(categories).forEach(([category, categoryItems]) => {
-        const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
-        description += `**${categoryName}:**\n`;
+      if (requestedCategory) {
+        // Show specific category
+        const items = await storeService.getItemsByCategory(requestedCategory);
         
-        categoryItems.forEach(item => {
-          description += `**${itemPosition}.** ${item.emoji} **${item.name}** - **${formatCurrency(item.price)}** coins\n`;
-          description += `-# ${item.description}\n\n`;
-          itemPosition++;
-        });
-      });
+        if (items.length === 0) {
+          return embeds.warn(message, `No items found in category **${requestedCategory}**. Use \`store\` to see all categories.`);
+        }
 
-      description += `-# Use \`buy <number>\` to purchase and \`inventory\` to view your items`;
+        return await showCategoryItems(message, requestedCategory, items);
+      } else {
+        // Show all categories with pagination
+        const categories = await storeService.getCategories();
+        
+        if (categories.length === 0) {
+          return embeds.warn(message, 'The store is currently empty. Check back later!');
+        }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle('Welcome to the Gambling Store!')
-        .setDescription(description);
-
-      return message.channel.send({ embeds: [embed] });
+        return await showCategoriesOverview(message, categories);
+      }
       
     } catch (error) {
       console.error('Error in store command:', error);
@@ -57,3 +49,105 @@ module.exports = {
     }
   }
 };
+
+/**
+ * Show overview of all categories
+ */
+async function showCategoriesOverview(message, categories) {
+  let description = `${emojis.success} **Available Categories:**\n\n`;
+  
+  categories.forEach((category, index) => {
+    const categoryName = category.name.charAt(0).toUpperCase() + category.name.slice(1);
+    description += `**${index + 1}.** ${categoryName} (${category.count} items)\n`;
+  });
+  
+  description += `\n-# Use \`store <category>\` to view items in a specific category`;
+  description += `\n-# Example: \`store banknotes\``;
+
+  const embed = new EmbedBuilder()
+    .setColor(colors.embed)
+    .setTitle('🏪 Gambling Store')
+    .setDescription(description);
+
+  // Add category buttons
+  const buttons = [];
+  categories.forEach((category, index) => {
+    if (index < 5) { // Discord limit of 5 buttons per row
+      const categoryName = category.name.charAt(0).toUpperCase() + category.name.slice(1);
+      buttons.push(
+        new ButtonBuilder()
+          .setCustomId(`store_category_${category.name}`)
+          .setLabel(categoryName)
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('📦')
+      );
+    }
+  });
+
+  const actionRow = new ActionRowBuilder().addComponents(buttons);
+  
+  const sentMessage = await message.channel.send({ 
+    embeds: [embed], 
+    components: buttons.length > 0 ? [actionRow] : [] 
+  });
+
+  // Handle button interactions
+  if (buttons.length > 0) {
+    const collector = sentMessage.createMessageComponentCollector({
+      time: 60000 // 1 minute
+    });
+
+    collector.on('collect', async (interaction) => {
+      if (interaction.user.id !== message.author.id) {
+        return interaction.reply({ 
+          content: 'Only the command user can use these buttons!', 
+          ephemeral: true 
+        });
+      }
+
+      const categoryName = interaction.customId.replace('store_category_', '');
+      const storeService = getService('store');
+      const items = await storeService.getItemsByCategory(categoryName);
+      
+      const categoryEmbed = await createCategoryEmbed(categoryName, items);
+      await interaction.update({ embeds: [categoryEmbed], components: [] });
+    });
+
+    collector.on('end', () => {
+      // Remove buttons after timeout
+      sentMessage.edit({ components: [] }).catch(() => {});
+    });
+  }
+
+  return sentMessage;
+}
+
+/**
+ * Show items in a specific category
+ */
+async function showCategoryItems(message, categoryName, items) {
+  const embed = await createCategoryEmbed(categoryName, items);
+  return message.channel.send({ embeds: [embed] });
+}
+
+/**
+ * Create embed for category items
+ */
+async function createCategoryEmbed(categoryName, items) {
+  const categoryTitle = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+  let description = `${emojis.success} **${categoryTitle} Items:**\n\n`;
+  
+  items.forEach((item, index) => {
+    const itemNumber = String(index + 1).padStart(2, '0');
+    description += `**${itemNumber}** ${item.emoji} **${item.name}** — **${formatCurrency(item.price)}** coins\n`;
+    description += `-# ${item.description}\n\n`;
+  });
+  
+  description += `-# Use \`buy <number>\` to purchase items`;
+  description += `\n-# Use \`store\` to go back to categories`;
+
+  return new EmbedBuilder()
+    .setColor(colors.embed)
+    .setTitle(`🏪 ${categoryTitle} Store`)
+    .setDescription(description);
+}

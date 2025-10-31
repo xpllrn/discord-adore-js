@@ -8,6 +8,7 @@ const GuildService = require('./GuildService');
 const UserService = require('./UserService');
 const PrefixService = require('./PrefixService');
 const SpotifyService = require('./SpotifyService');
+const StoreService = require('./StoreService');
 const ModerationService = require('./ModerationService');
 const WebhookService = require('./WebhookService');
 const WelcomeButtonService = require('./WelcomeButtonService');
@@ -38,6 +39,7 @@ let serviceInstances = {
   user: null,
   prefix: null,
   spotify: null,
+  store: null,
   moderation: null,
   webhook: null,
   welcomeButton: null,
@@ -65,6 +67,7 @@ async function initializeServices(config = {}) {
     serviceInstances.guild = new GuildService();
     serviceInstances.user = new UserService();
     serviceInstances.spotify = new SpotifyService();
+    serviceInstances.store = new StoreService();
     serviceInstances.moderation = new ModerationService();
     serviceInstances.webhook = new WebhookService();
     serviceInstances.welcomeButton = new WelcomeButtonService();
@@ -154,6 +157,7 @@ function getServiceHealth() {
   health.user = serviceInstances.user?.initialized || false;
   health.prefix = serviceInstances.prefix?.initialized || false;
   health.spotify = serviceInstances.spotify?.initialized || false;
+  health.store = serviceInstances.store?.initialized || false;
   health.moderation = serviceInstances.moderation?.initialized || false;
   health.welcomeButton = serviceInstances.welcomeButton?.initialized || false;
   health.system = serviceInstances.system?.initialized || false;
@@ -243,6 +247,7 @@ module.exports = {
   UserService,
   PrefixService,
   SpotifyService,
+  StoreService,
   ModerationService,
   WebhookService,
   WelcomeButtonService

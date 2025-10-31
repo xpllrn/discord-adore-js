@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { hasPermissionLevel } = require('../../utils/permissions');
-const { runHelpCommand } = require('../../utils/commandProcessor');
+
 const { findUser } = require('../../handlers/finder');
 const { ensureUserData } = require('../../database');
 const { createConfirmation, createPagination } = require('../../core/buttons');
@@ -12,15 +12,26 @@ module.exports = {
   name: "bday",
   aliases: ['birthday'],
   description: `manage birthday settings`,
-  syntax: 'bday set [day] [month] | bday list | bday reset [user] | bday [user]',
-  example: 'bday set 15 March',
+  isGroupCommand: true,
   run: async (client, message, args) => {
     const userService = getService('user');
 
+    // Show help if no subcommand provided
+    if (!args[0]) return false;
+
     if (args[0] === 'set') {
+      const subcommandInfo = {
+        name: 'set',
+        description: 'Set your birthday (cannot be changed once set)',
+        usage: '{guildprefix}bday set [day] [month]',
+        aliases: [],
+        parameters: ['day', 'month'],
+        example: '{guildprefix}bday set 15 March'
+      };
+
       // Set birthday (universal)
       if (!args[1] || !args[2]) {
-        return runHelpCommand(message, 'bday');
+        return false;
       }
 
       const day = parseInt(args[1]);
@@ -85,11 +96,20 @@ module.exports = {
       }
 
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        name: 'reset',
+        description: 'Reset a user\'s birthday (dev only)',
+        usage: '{guildprefix}bday reset [user]',
+        aliases: [],
+        parameters: ['user'],
+        example: '{guildprefix}bday reset @user'
+      };
+
       // Reset user's birthday (dev only)
       if (!await hasPermissionLevel(message, 'dev')) return;
 
       if (!args[1]) {
-        return runHelpCommand(message, 'bday');
+        return false;
       }
 
       // Find the target user
@@ -142,6 +162,15 @@ module.exports = {
       }
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        name: 'list',
+        description: 'List all birthdays in the server',
+        usage: '{guildprefix}bday list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}bday list'
+      };
+
       // List all birthdays in the server
       try {
         const guildMembers = await message.guild.members.fetch();
@@ -231,6 +260,15 @@ module.exports = {
       }
 
     } else if (args[0]) {
+      const subcommandInfo = {
+        name: 'view',
+        description: 'View a specific user\'s birthday',
+        usage: '{guildprefix}bday [user]',
+        aliases: [],
+        parameters: ['user'],
+        example: '{guildprefix}bday @user'
+      };
+
       // Show specific user's birthday
       const userResult = await findUser(message.guild, args[0], client);
 
@@ -271,6 +309,15 @@ module.exports = {
       }
 
     } else {
+      const subcommandInfo = {
+        name: 'show',
+        description: 'Show your own birthday',
+        usage: '{guildprefix}bday',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}bday'
+      };
+
       // Show user's own birthday
       try {
         const formattedBirthday = await userService.getFormattedBirthday(message.author.id);

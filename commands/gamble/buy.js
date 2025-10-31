@@ -3,7 +3,11 @@ const { embeds } = require('../../core/embeds');
 const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const { colors, emojis } = require('../../config/setup');
-const { STORE_ITEMS, findItemByIdentifier, formatCurrency } = require('../../config/store-items');
+
+// Utility function to format currency
+function formatCurrency(amount) {
+  return Math.floor(amount).toLocaleString();
+}
 
 module.exports = {
   name: "buy",
@@ -24,12 +28,14 @@ module.exports = {
     }
 
     // Find item by identifier (number or name)
-    const itemResult = findItemByIdentifier(args[0]);
-    if (!itemResult) {
+    const storeService = getService('store');
+    const item = await storeService.findItemByIdentifier(args[0]);
+    
+    if (!item) {
       return embeds.deny(message, `Item **${args[0]}** not found in store. Use \`store\` to see available items.`);
     }
 
-    const { key: itemId, item } = itemResult;
+    const itemId = item.id;
 
     try {
       const userService = getService('user');
