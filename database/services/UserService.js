@@ -120,6 +120,9 @@ class UserService extends BaseService {
     try {
       // Try to get existing data first
       let userData = await this.get(userId);
+      
+      // Log what ensureUserData is returning
+      console.log(`🔍 ensureUserData for ${userId}: bankLimit = ${userData?.Gambling?.bankLimit}`);
 
 
 
@@ -2308,10 +2311,12 @@ class UserService extends BaseService {
       
       await this.set(userId, userData);
       
-      // Force cache invalidation AFTER database write to ensure fresh data on next read
-      this.cache.invalidate(userId);
-      
+      // Don't invalidate cache - the set() method should have cached the correct data
       console.log(`✅ Bank limit updated: ${userId} -> ${newLimit} (was ${oldLimit})`);
+      
+      // Verify the cache has the correct data
+      const cachedData = this.cache.get(userId);
+      console.log(`🔍 Cache verification: ${userId} bankLimit = ${cachedData?.Gambling?.bankLimit}`);
       
       return true;
     } catch (error) {
