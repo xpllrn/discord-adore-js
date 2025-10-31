@@ -228,8 +228,16 @@ class UserService extends BaseService {
       const userData = await this.ensureUserData(userId);
       let gamblingData = userData.Gambling || this.getDefaultGamblingData();
       
+      // Log every call to getGamblingData for debugging
+      console.log(`📊 getGamblingData called for ${userId}: bankLimit = ${gamblingData.bankLimit}`);
+      
       // Fix undefined bankLimit in existing gambling data - ONLY for truly missing values
       if (gamblingData && (gamblingData.bankLimit === undefined || gamblingData.bankLimit === null)) {
+        console.log(`🚨 CRITICAL: Found undefined bankLimit for user ${userId}`);
+        console.log(`   - userData.Gambling.bankLimit: ${userData?.Gambling?.bankLimit}`);
+        console.log(`   - gamblingData.bankLimit: ${gamblingData.bankLimit}`);
+        console.log(`   - Stack trace:`, new Error().stack);
+        
         gamblingData.bankLimit = 50000;
         // Update the database to fix this permanently
         userData.Gambling = gamblingData;
@@ -2252,7 +2260,12 @@ class UserService extends BaseService {
       const userData = await this.ensureUserData(userId);
       // Handle undefined, null, or missing bankLimit
       let bankLimit = userData.Gambling?.bankLimit;
+      
+      // Log every call to getBankLimit for debugging
+      console.log(`🏦 getBankLimit called for ${userId}: raw value = ${bankLimit} (type: ${typeof bankLimit})`);
+      
       if (bankLimit === undefined || bankLimit === null || typeof bankLimit !== 'number') {
+        console.log(`⚠️ getBankLimit fallback triggered for ${userId}: ${bankLimit} -> 50000`);
         bankLimit = 50000;
       }
       
@@ -2293,12 +2306,12 @@ class UserService extends BaseService {
       
       userData.Gambling.bankLimit = newLimit;
       
-      // Force cache invalidation to ensure fresh data
-      this.cache.invalidate(userId);
-      
       await this.set(userId, userData);
       
-
+      // Force cache invalidation AFTER database write to ensure fresh data on next read
+      this.cache.invalidate(userId);
+      
+      console.log(`✅ Bank limit updated: ${userId} -> ${newLimit} (was ${oldLimit})`);
       
       return true;
     } catch (error) {

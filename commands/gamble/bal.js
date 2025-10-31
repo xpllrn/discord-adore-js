@@ -50,6 +50,13 @@ module.exports = {
       const bankBalance = gambling.bank || 0;
       const bankLimit = await userService.getBankLimit(targetUser.id);
       
+      // Debug logging for bank limit discrepancies
+      if (gambling.bankLimit !== bankLimit) {
+        console.log(`⚠️ MISMATCH in bal command for ${targetUser.id}:`);
+        console.log(`   - gambling.bankLimit: ${gambling.bankLimit}`);
+        console.log(`   - getBankLimit result: ${bankLimit}`);
+      }
+      
 
       
       // Create embed with minimal format
