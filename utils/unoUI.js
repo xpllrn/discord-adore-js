@@ -44,6 +44,7 @@ class UnoUI {
           inline: true 
         }
       )
+      .setThumbnail('https://cdn.discordapp.com/emojis/1434125464770838598.png') // UNO card thumbnail
       .setFooter({ 
         text: game.players.length >= 2 
           ? 'Click Play to start or wait 2 minutes for auto-start' 
@@ -67,20 +68,17 @@ class UnoUI {
         new ButtonBuilder()
           .setCustomId('uno_play')
           .setLabel('Play')
-          .setStyle(ButtonStyle.Success)
-          .setEmoji('▶️')
+          .setStyle(ButtonStyle.Secondary)
           .setDisabled(!canStart),
         new ButtonBuilder()
           .setCustomId('uno_join')
           .setLabel('Join')
-          .setStyle(ButtonStyle.Primary)
-          .setEmoji('➕')
+          .setStyle(ButtonStyle.Secondary)
           .setDisabled(game.players.length >= game.settings.maxPlayers),
         new ButtonBuilder()
           .setCustomId('uno_settings')
           .setLabel('Settings')
           .setStyle(ButtonStyle.Secondary)
-          .setEmoji('⚙️')
       );
   }
 
@@ -121,7 +119,8 @@ class UnoUI {
         { name: 'Current Card', value: currentCardDisplay, inline: true },
         { name: 'Direction', value: `${directionEmoji} ${directionText}`, inline: true },
         { name: 'Cards in Deck', value: game.deck.getCardCount().toString(), inline: true }
-      );
+      )
+      .setThumbnail('https://cdn.discordapp.com/emojis/1434125464770838598.png'); // Current card thumbnail
     
     // Add special effects if any
     if (game.drawCount > 0) {
@@ -163,30 +162,25 @@ class UnoUI {
           new ButtonBuilder()
             .setCustomId('uno_cards')
             .setLabel('Cards')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('🃏'),
+            .setStyle(ButtonStyle.Secondary),
           new ButtonBuilder()
             .setCustomId('uno_choose')
             .setLabel('Choose')
-            .setStyle(ButtonStyle.Success)
-            .setEmoji('✅')
+            .setStyle(ButtonStyle.Secondary)
             .setDisabled(!isPlayerTurn),
           new ButtonBuilder()
             .setCustomId('uno_draw')
             .setLabel('Draw')
             .setStyle(ButtonStyle.Secondary)
-            .setEmoji('📥')
             .setDisabled(!isPlayerTurn),
           new ButtonBuilder()
             .setCustomId('uno_uno')
             .setLabel('UNO!')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji('🔥'),
+            .setStyle(ButtonStyle.Secondary),
           new ButtonBuilder()
             .setCustomId('uno_exit')
             .setLabel('Exit')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji('❌')
+            .setStyle(ButtonStyle.Secondary)
         )
     ];
   }

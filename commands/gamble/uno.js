@@ -192,10 +192,16 @@ function setupLobbyCollector(message, game) {
       await handleLobbyInteraction(interaction, message, game);
     } catch (error) {
       console.error('Error handling lobby interaction:', error);
-      await interaction.reply({
-        embeds: [embeds.createDeny(interaction, 'An error occurred')],
-        flags: MessageFlags.Ephemeral
-      });
+      try {
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: '❌ An error occurred while processing your request',
+            flags: MessageFlags.Ephemeral
+          });
+        }
+      } catch (replyError) {
+        console.error('Error sending error reply:', replyError);
+      }
     }
   });
   
@@ -216,7 +222,7 @@ async function handleLobbyInteraction(interaction, message, game) {
   
   if (!activeGame || activeGame.gameId !== game.gameId) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'This game is no longer active')],
+      content: '⚠️ This game is no longer active',
       flags: MessageFlags.Ephemeral
     });
   }
@@ -242,7 +248,7 @@ async function handlePlayButton(interaction, message) {
   
   if (!result.success) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, result.message)],
+      content: `⚠️ ${result.message}`,
       flags: MessageFlags.Ephemeral
     });
   }
@@ -272,7 +278,7 @@ async function handleJoinButton(interaction, message) {
   
   if (!result.success) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, result.message)],
+      content: `⚠️ ${result.message}`,
       flags: MessageFlags.Ephemeral
     });
   }
@@ -293,23 +299,50 @@ async function handleSettingsButton(interaction, message) {
   
   if (!game) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'No active game found')],
+      content: '⚠️ No active game found',
       flags: MessageFlags.Ephemeral
     });
   }
   
   if (game.hostId !== interaction.user.id) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'Only the host can change settings')],
+      content: '⚠️ Only the host can change settings',
       flags: MessageFlags.Ephemeral
     });
   }
   
-  // Show current settings
-  const settingsEmbed = UnoUI.createSettingsEmbed(game);
+  // Create settings dropdown
+  const settingsDropdown = new StringSelectMenuBuilder()
+    .setCustomId('uno_settings_select')
+    .setPlaceholder('Choose a setting to modify')
+    .addOptions([
+      {
+        label: 'Max Players',
+        description: `Currently: ${game.settings.maxPlayers}`,
+        value: 'max_players'
+      },
+      {
+        label: 'Turn Time Limit',
+        description: `Currently: ${game.settings.turnTimeLimit / 1000}s`,
+        value: 'turn_time'
+      },
+      {
+        label: 'Allow Stacking',
+        description: `Currently: ${game.settings.allowStacking ? 'Yes' : 'No'}`,
+        value: 'allow_stacking'
+      },
+      {
+        label: 'Must Call UNO',
+        description: `Currently: ${game.settings.customRules.mustCallUno ? 'Yes' : 'No'}`,
+        value: 'must_call_uno'
+      }
+    ]);
+  
+  const row = new ActionRowBuilder().addComponents(settingsDropdown);
   
   return interaction.reply({
-    embeds: [settingsEmbed],
+    content: '⚙️ **Game Settings** - Choose a setting to modify:',
+    components: [row],
     flags: MessageFlags.Ephemeral
   });
 }
@@ -328,7 +361,7 @@ function setupGameCollector(message, game) {
     } catch (error) {
       console.error('Error handling game interaction:', error);
       await interaction.reply({
-        embeds: [embeds.createDeny(interaction, 'An error occurred')],
+        content: '❌ An error occurred',
         flags: MessageFlags.Ephemeral
       });
     }
@@ -353,7 +386,7 @@ async function handleGameInteraction(interaction, message) {
   
   if (!game || game.status !== GAME_STATUS.ACTIVE) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'No active game found')],
+      content: '⚠️ No active game found',
       flags: MessageFlags.Ephemeral
     });
   }
@@ -380,6 +413,9 @@ async function handleGameInteraction(interaction, message) {
     case 'uno_wild_color':
       await handleWildColorSelection(interaction, game);
       break;
+    case 'uno_settings_select':
+      await handleSettingsSelection(interaction, game);
+      break;
   }
 }
 
@@ -391,7 +427,7 @@ async function handleCardsButton(interaction, game) {
   
   if (!player) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'You\'re not in this game')],
+      content: '⚠️ You\'re not in this game',
       flags: MessageFlags.Ephemeral
     });
   }
@@ -416,7 +452,7 @@ async function handleChooseButton(interaction, game) {
   
   if (!player) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'You\'re not in this game')],
+      content: '⚠️ You\'re not in this game',
       flags: MessageFlags.Ephemeral
     });
   }
@@ -424,7 +460,7 @@ async function handleChooseButton(interaction, game) {
   const currentPlayer = game.getCurrentPlayer();
   if (!currentPlayer || currentPlayer.userId !== interaction.user.id) {
     return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'It\'s not your turn')],
+      content: '⚠️ It\'s not your turn',
       flags: MessageFlags.Ephemeral
     });
   }
@@ -437,12 +473,12 @@ async function handleChooseButton(interaction, game) {
     
     if (result.success) {
       return interaction.reply({
-        embeds: [embeds.createInfo(interaction, `Drew 1 card. ${result.cards[0].getDisplayString()}`)],
+        content: `ℹ️ Drew 1 card. ${result.cards[0].getDisplayString()}`,
         flags: MessageFlags.Ephemeral
       });
     } else {
       return interaction.reply({
-        embeds: [embeds.createDeny(interaction, 'Could not draw card')],
+        content: '❌ Could not draw card',
         flags: MessageFlags.Ephemeral
       });
     }
@@ -728,7 +764,7 @@ async function handleDrawFromDropdown(interaction, game) {
     const drawnCard = result.cards[0];
     
     await interaction.reply({
-      embeds: [embeds.createSuccess(interaction, `Drew: ${drawnCard.getDisplayString()}`)],
+      content: `✅ Drew: ${drawnCard.getDisplayString()}`,
       flags: MessageFlags.Ephemeral
     });
     
@@ -740,8 +776,29 @@ async function handleDrawFromDropdown(interaction, game) {
     }
   } else {
     return interaction.reply({
-      embeds: [embeds.createDeny(interaction, 'Could not draw card')],
+      content: '❌ Could not draw card',
       flags: MessageFlags.Ephemeral
     });
   }
+}
+
+/**
+ * Handle settings selection from dropdown
+ */
+async function handleSettingsSelection(interaction, game) {
+  const selectedSetting = interaction.values[0];
+  
+  // For now, just show that the setting was selected
+  // You can expand this to actually modify settings
+  const settingNames = {
+    max_players: 'Max Players',
+    turn_time: 'Turn Time Limit',
+    allow_stacking: 'Allow Stacking',
+    must_call_uno: 'Must Call UNO'
+  };
+  
+  await interaction.reply({
+    content: `⚙️ Selected: ${settingNames[selectedSetting]}\n*Settings modification coming soon!*`,
+    flags: MessageFlags.Ephemeral
+  });
 }
