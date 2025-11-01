@@ -25,11 +25,7 @@ module.exports = {
         const timeLeft = curseCooldown - (now - lastCursed);
         const unixTimestamp = Math.floor((now + timeLeft) / 1000);
 
-        const embed = new EmbedBuilder()
-          .setColor('#fc6464')
-          .setDescription(`${emojis.warn} <@${message.author.id}>: You can **curse** again <t:${unixTimestamp}:R>`);
-
-        return message.channel.send({ embeds: [embed] });
+        return embeds.warn(message, `You can **curse** again <t:${unixTimestamp}:R>`);
       }
 
       // Determine target user
@@ -44,7 +40,7 @@ module.exports = {
       }
 
       // Generate random luck loss (1-10 points)
-      const luckLoss = Math.floor(Math.random() * 10) + 1;
+      const luckLoss = Math.floor(Math.random() * 10) + 1; // 1-10 points
 
       // Update luck in database (subtract points)
       const newLuck = await userService.updateLuck(targetUser.id, -luckLoss);
@@ -54,21 +50,16 @@ module.exports = {
 
       // Get display names
       const targetName = targetMember ? targetMember.displayName : targetUser.username;
-      const authorName = message.member ? message.member.displayName : message.author.username;
 
       let resultMessage;
 
       if (isTargetingSelf) {
         resultMessage = `💀 <@${message.author.id}>: You cursed yourself! You lost **${luckLoss} luck** points! Current luck: **${newLuck}**`;
       } else {
-        resultMessage = `💀 <@${message.author.id}>: **${authorName}** puts a curse on **${targetName}**! They lost **${luckLoss} luck** points! Their luck is now: **${newLuck}**`;
+        resultMessage = `💀 <@${message.author.id}>: You cursed **${targetName}**! They lost **${luckLoss} luck** points! Their luck is now: **${newLuck}**`;
       }
 
-      const embed = new EmbedBuilder()
-        .setColor('#a4ec7c')
-        .setDescription(resultMessage);
-
-      return message.channel.send({ embeds: [embed] });
+      return embeds.success(message, resultMessage.replace(`💀 <@${message.author.id}>: `, ''));
     } catch (error) {
       console.error('Error in curse command:', error);
       return embeds.deny(message, 'An error occurred while cursing');

@@ -54,20 +54,18 @@ module.exports = {
  * Show overview of all categories
  */
 async function showCategoriesOverview(message, categories) {
-  let description = `${emojis.success} **Available Categories:**\n\n`;
+  let description = ``;
   
   categories.forEach((category, index) => {
     const categoryName = category.name.charAt(0).toUpperCase() + category.name.slice(1);
     description += `**${index + 1}.** ${categoryName} (${category.count} items)\n`;
   });
   
-  description += `\n-# Use \`store <category>\` to view items in a specific category`;
-  description += `\n-# Example: \`store banknotes\``;
-
   const embed = new EmbedBuilder()
     .setColor(colors.embed)
-    .setTitle('🏪 Gambling Store')
-    .setDescription(description);
+    .setTitle('Gambling Store')
+    .setDescription(description)
+    .setFooter({ text: 'Use store <store name> to view items in a specific store' });
 
   // Add category buttons
   const buttons = [];
@@ -135,19 +133,17 @@ async function showCategoryItems(message, categoryName, items) {
  */
 async function createCategoryEmbed(categoryName, items) {
   const categoryTitle = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
-  let description = `${emojis.success} **${categoryTitle} Items:**\n\n`;
+  let description = ``;
   
   items.forEach((item) => {
     const itemNumber = String(item.id).padStart(2, '0');
-    description += `**${itemNumber}** ${item.emoji} **${item.name}** — **${formatCurrency(item.price)}** coins\n`;
+    description += `**${itemNumber}** **${item.name}** — **${formatCurrency(item.price)}** coins\n`;
     description += `-# ${item.description}\n\n`;
   });
   
-  description += `-# Use \`buy <number>\` to purchase items`;
-  description += `\n-# Use \`store\` to go back to categories`;
-
   return new EmbedBuilder()
     .setColor(colors.embed)
-    .setTitle(`🏪 ${categoryTitle} Store`)
-    .setDescription(description);
-}
+    .setTitle(`${categoryTitle} Store`)
+    .setDescription(description)
+    .setFooter({ text: 'Use buy <number> to purchase items' });
+} 

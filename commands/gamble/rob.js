@@ -29,11 +29,11 @@ function checkRobCooldown(gamblingData) {
 }
 
 function calculateRobResult(targetWallet) {
-  const success = Math.random() < 0.30; // 30% success rate
+  const success = Math.random() < 0.40; // 40% success rate
 
   if (success) {
-    // Steal 10-30% of target's wallet
-    const percentage = Math.random() * 0.20 + 0.10; // 10-30%
+    // Steal 5-30% of target's wallet
+    const percentage = Math.random() * 0.25 + 0.05; // 5-30%
     let amount = Math.floor(targetWallet * percentage);
 
     // Min 100, max 10,000
@@ -97,11 +97,7 @@ module.exports = {
         const nextRob = new Date(lastRob.getTime() + 60 * 60 * 1000); // 1 hour later
         const unixTimestamp = Math.floor(nextRob.getTime() / 1000);
 
-        const embed = new EmbedBuilder()
-          .setColor('#fbd03b')
-          .setDescription(`${emojis.warn} <@${message.author.id}>: You can rob again <t:${unixTimestamp}:R>`);
-
-        return message.channel.send({ embeds: [embed] });
+        return embeds.warn(message, `You can rob again <t:${unixTimestamp}:R>`);
       }
       
       // Get target's gambling data (creates account if doesn't exist)
@@ -131,9 +127,9 @@ module.exports = {
         description = `${emojis.success} <@${message.author.id}>: Successfully robbed **${formatCurrency(result.amount)}** coins from **${targetUser.displayName || targetUser.username || 'User'}**`;
         color = '#a4ec7c';
       } else {
-        // Rob failed - robber loses 10-30% of their wallet
+        // Rob failed - robber loses 5-30% of their wallet
         const robberWallet = robberGambling.wallet || 0;
-        const penaltyPercentage = Math.random() * 0.20 + 0.10; // 10-30%
+        const penaltyPercentage = Math.random() * 0.25 + 0.05; // 5-30%
         const penalty = Math.floor(robberWallet * penaltyPercentage);
 
         if (robberWallet >= penalty && penalty > 0) {
@@ -152,11 +148,11 @@ module.exports = {
         color = '#fc6464';
       }
       
-      const embed = new EmbedBuilder()
-        .setColor(color)
-        .setDescription(description);
-      
-      return message.channel.send({ embeds: [embed] });
+      if (color === '#a4ec7c') {
+        return embeds.success(message, description.replace(`${emojis.success} <@${message.author.id}>: `, ''));
+      } else {
+        return embeds.deny(message, description.replace(`${emojis.error} <@${message.author.id}>: `, ''));
+      }
       
     } catch (error) {
       console.error('Error in rob command:', error);

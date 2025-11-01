@@ -64,11 +64,7 @@ module.exports = {
         const nextClaim = new Date(lastClaimed.getTime() + 24 * 60 * 60 * 1000);
         const unixTimestamp = Math.floor(nextClaim.getTime() / 1000);
 
-        const embed = new EmbedBuilder()
-          .setColor('#fbd03b')
-          .setDescription(`${emojis.warn} <@${message.author.id}>: You can claim your **daily coins** <t:${unixTimestamp}:R>`);
-
-        return message.channel.send({ embeds: [embed] });
+        return embeds.warn(message, `You can claim your **daily coins** <t:${unixTimestamp}:R>`);
       }
 
       // Calculate reward and new streak
@@ -92,11 +88,7 @@ module.exports = {
         description += `\nKeep your streak for better rewards!`;
       }
 
-      const embed = new EmbedBuilder()
-        .setColor('#a4ec7c')
-        .setDescription(description);
-
-      return message.channel.send({ embeds: [embed] });
+      return embeds.success(message, description.replace(`${emojis.success} <@${message.author.id}>: `, ''));
 
     } catch (error) {
       // Send error to webhook instead of console

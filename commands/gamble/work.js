@@ -25,8 +25,8 @@ module.exports = {
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);
 
-      // Check work cooldown (1 hour = 3600000 ms)
-      const workCooldown = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
+      // Check work cooldown (20 minutes)
+      const workCooldown = 20 * 60 * 1000; // 20 minutes in milliseconds
       const lastWorked = gambling.lastWorked || null;
       const now = Date.now();
 
@@ -34,66 +34,63 @@ module.exports = {
         const timeLeft = workCooldown - (now - lastWorked);
         const unixTimestamp = Math.floor((now + timeLeft) / 1000);
 
-        const embed = new EmbedBuilder()
-          .setColor('#fc6464')
-          .setDescription(`${emojis.warn} <@${message.author.id}>: You can **work** again <t:${unixTimestamp}:R>`);
-
-        return message.channel.send({ embeds: [embed] });
+        return embeds.warn(message, `You can **work** again <t:${unixTimestamp}:R>`);
       }
 
-      // Calculate earnings based on total wealth (wallet + bank)
-      const walletBalance = gambling.wallet || 0;
-      const bankBalance = gambling.bank || 0;
-      const totalWealth = walletBalance + bankBalance;
-
-      let baseEarnings;
-
-      if (totalWealth === 0) {
-        // If user has no money, give them 100-500 coins to get started
-        baseEarnings = Math.floor(Math.random() * 401) + 100; // 100-500 coins
-      } else {
-        // Payout: 8–20% of total balance (amount decreases as user gets richer)
-        const basePercentage = 20; // Start at 20%
-        const reductionFactor = Math.min(totalWealth / 100000, 0.6); // Reduce up to 60% as wealth increases
-        const finalPercentage = basePercentage * (1 - reductionFactor);
-        const actualPercentage = Math.max(finalPercentage, 8); // Minimum 8%
-
-        baseEarnings = Math.floor(totalWealth * (actualPercentage / 100));
-        baseEarnings = Math.max(100, Math.min(baseEarnings, 5000)); // Min 100, max 5000
-      }
-
-      // Work jobs with different multipliers
-      const jobs = [
-        { name: 'delivery driver', multiplier: 1.0, emoji: '🚗' },
-        { name: 'cashier', multiplier: 1.1, emoji: '🏪' },
-        { name: 'waiter', multiplier: 1.2, emoji: '🍽️' },
-        { name: 'programmer', multiplier: 1.3, emoji: '💻' },
-        { name: 'doctor', multiplier: 1.5, emoji: '👨‍⚕️' },
-        { name: 'lawyer', multiplier: 1.4, emoji: '⚖️' },
-        { name: 'teacher', multiplier: 1.1, emoji: '👨‍🏫' },
-        { name: 'chef', multiplier: 1.2, emoji: '👨‍🍳' },
-        { name: 'mechanic', multiplier: 1.1, emoji: '🔧' },
-        { name: 'pilot', multiplier: 1.6, emoji: '✈️' }
-      ];
-
-      // Randomly select a job
-      const job = jobs[Math.floor(Math.random() * jobs.length)];
-      const finalEarnings = Math.floor(baseEarnings * job.multiplier);
-
-      // Update user's wallet and work timestamp using service layer
-      await userService.updateWallet(message.author.id, finalEarnings);
+      // Update work timestamp first
       await userService.updateWorkTimestamp(message.author.id);
 
-      // Get updated wallet balance
-      const updatedGambling = await userService.getGamblingData(message.author.id);
-      const newWallet = updatedGambling.wallet || 0;
+      // 80% chance of success, 20% chance of failure (no pay)
+      const success = Math.random() < 0.80;
 
-      // Create success message
-      const embed = new EmbedBuilder()
-        .setColor('#a4ec7c')
-        .setDescription(`${job.emoji} <@${message.author.id}>: You worked as a **${job.name}** and earned **${formatCurrency(finalEarnings)}** coins!`);
+      if (success) {
+        // Success - earn money
+        const baseEarnings = Math.floor(Math.random() * 4501) + 500; // 500-5000 coins
 
-      return message.channel.send({ embeds: [embed] });
+        // Work jobs with different multipliers and success messages
+        const jobs = [
+          { name: 'delivery driver', multiplier: 1.0, emoji: '🚗', message: 'delivered packages **efficiently** and got paid' },
+          { name: 'cashier', multiplier: 1.1, emoji: '🏪', message: 'handled customers **professionally** and earned your wage' },
+          { name: 'waiter', multiplier: 1.2, emoji: '🍽️', message: 'served tables with a **smile** and received good tips' },
+          { name: 'programmer', multiplier: 1.3, emoji: '💻', message: 'coded like a **boss** and impressed your manager' },
+          { name: 'doctor', multiplier: 1.5, emoji: '👨‍⚕️', message: '**saved lives** and got paid handsomely' },
+          { name: 'lawyer', multiplier: 1.4, emoji: '⚖️', message: '**won** your case and collected your fee' },
+          { name: 'teacher', multiplier: 1.1, emoji: '👨‍🏫', message: 'educated **young minds** and earned your salary' },
+          { name: 'chef', multiplier: 1.2, emoji: '👨‍🍳', message: 'cooked **delicious meals** and got paid well' },
+          { name: 'mechanic', multiplier: 1.1, emoji: '🔧', message: 'fixed cars **perfectly** and earned your wage' },
+          { name: 'pilot', multiplier: 1.6, emoji: '✈️', message: 'flew passengers **safely** and got paid premium' }
+        ];
+
+        const job = jobs[Math.floor(Math.random() * jobs.length)];
+        const finalEarnings = Math.floor(baseEarnings * job.multiplier);
+
+        await userService.updateWallet(message.author.id, finalEarnings);
+
+        return embeds.success(message, `${job.emoji} You worked as a **${job.name}** and ${job.message}, earning **${formatCurrency(finalEarnings)}** coins!`);
+      } else {
+        // Failure - no pay with funny messages
+        const failures = [
+          { emoji: '🚗', job: 'delivery driver', message: '**crashed** the delivery truck into a **fire hydrant** and got fired without pay' },
+          { emoji: '🏪', job: 'cashier', message: 'accidentally gave away **free stuff** all day and got fired without pay' },
+          { emoji: '🍽️', job: 'waiter', message: 'spilled **hot soup** on a customer and got fired without pay' },
+          { emoji: '💻', job: 'programmer', message: '**deleted** the entire **database** and got fired without pay' },
+          { emoji: '👨‍⚕️', job: 'doctor', message: 'mixed up **patient files** and got **sued**, no payment received' },
+          { emoji: '⚖️', job: 'lawyer', message: 'showed up to court **drunk** and **lost** the case, no fee collected' },
+          { emoji: '👨‍🏫', job: 'teacher', message: 'taught the kids **swear words** and got fired without pay' },
+          { emoji: '👨‍🍳', job: 'chef', message: '**burned down** the kitchen and got fired without pay' },
+          { emoji: '🔧', job: 'mechanic', message: '**broke** the car even more and got fired without pay' },
+          { emoji: '✈️', job: 'pilot', message: 'landed at the **wrong airport** and got fired without pay' },
+          { emoji: '💤', job: 'security guard', message: 'fell **asleep** on duty and the place got **robbed**, no pay' },
+          { emoji: '🧹', job: 'janitor', message: '**flooded** the entire building and got fired without pay' },
+          { emoji: '📞', job: 'call center agent', message: '**hung up** on every customer and got fired without pay' },
+          { emoji: '🚛', job: 'truck driver', message: 'got the truck **stuck under a bridge** and got fired without pay' },
+          { emoji: '🏗️', job: 'construction worker', message: 'accidentally **demolished** the **wrong building** and got fired without pay' }
+        ];
+
+        const failure = failures[Math.floor(Math.random() * failures.length)];
+
+        return embeds.deny(message, `${failure.emoji} You worked as a **${failure.job}** but ${failure.message}!`);
+      }
 
     } catch (error) {
       console.error('Error in work command:', error);

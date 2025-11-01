@@ -30,11 +30,7 @@ module.exports = {
         const timeLeft = prayCooldown - (now - lastPrayed);
         const unixTimestamp = Math.floor((now + timeLeft) / 1000);
 
-        const embed = new EmbedBuilder()
-          .setColor('#fc6464')
-          .setDescription(`${emojis.warn} <@${message.author.id}>: You can **pray** again <t:${unixTimestamp}:R>`);
-
-        return message.channel.send({ embeds: [embed] });
+        return embeds.warn(message, `You can **pray** again <t:${unixTimestamp}:R>`);
       }
 
       // Determine target user
@@ -48,8 +44,8 @@ module.exports = {
         isTargetingSelf = false;
       }
 
-      // Generate random luck gain (1-10 points)
-      const luckGain = Math.floor(Math.random() * 10) + 1;
+      // Generate random luck gain (1-3 points)
+      const luckGain = Math.floor(Math.random() * 3) + 1; // 1-3 points
 
       // Update luck in database (add points)
       const newLuck = await userService.updateLuck(targetUser.id, luckGain);
@@ -63,16 +59,12 @@ module.exports = {
       let resultMessage;
 
       if (isTargetingSelf) {
-        resultMessage = `🙏 <@${message.author.id}>: You feel very **lucky**! You gained **${luckGain} luck** points! Current luck: **${newLuck}**`;
+        resultMessage = `🙏 <@${message.author.id}>: You feel **blessed**! You gained **${luckGain} luck** points! Current luck: **${newLuck}**`;
       } else {
         resultMessage = `🙏 <@${message.author.id}>: You prayed for **${targetName}**, they gained **${luckGain} luck** points! Their luck is now: **${newLuck}**`;
       }
 
-      const embed = new EmbedBuilder()
-        .setColor('#a4ec7c')
-        .setDescription(resultMessage);
-
-      return message.channel.send({ embeds: [embed] });
+      return embeds.success(message, resultMessage.replace(`🙏 <@${message.author.id}>: `, ''));
     } catch (error) {
       console.error('Error in pray command:', error);
       return embeds.deny(message, 'An error occurred while praying');

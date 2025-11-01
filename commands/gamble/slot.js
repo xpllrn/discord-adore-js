@@ -25,6 +25,21 @@ function parseAmount(input, balance) {
     return Math.floor((percentage / 100) * balance);
   }
 
+  // Handle "k" notation (e.g., 3k = 3000, 500k50 = 500050, 100k500 = 100500)
+  if (cleanInput.includes('k')) {
+    const parts = cleanInput.split('k');
+    if (parts.length === 2) {
+      const beforeK = parseFloat(parts[0]);
+      const afterK = parseFloat(parts[1]) || 0;
+      
+      if (isNaN(beforeK) || beforeK < 0) return null;
+      if (isNaN(afterK) || afterK < 0) return null;
+      
+      const amount = Math.floor(beforeK * 1000 + afterK);
+      return amount;
+    }
+  }
+
   const amount = parseInt(cleanInput);
   if (isNaN(amount) || amount < 0) return null;
   return amount;
@@ -90,32 +105,21 @@ module.exports = {
       // Deduct the bet amount first using service layer
       await userService.updateWallet(message.author.id, -amount);
 
-      // Slot machine outcomes with exact probabilities for 3-matching symbols
-      // 🎰 OPTIMIZED FOR PLAYER ENGAGEMENT & ADDICTION
-      // 
-      // WIN RATE: 40% total (profit wins)
-      // - 💎 Triple Diamond (10x): 1% → Expected return: 0.10x
-      // - 💸 Triple Money Bag (5x): 4% → Expected return: 0.20x
-      // - 🍒 Triple Cherry (3x): 10% → Expected return: 0.30x
-      // - 🍓 Triple Strawberry (2x): 25% → Expected return: 0.50x
-      // 
-      // BREAK-EVEN: 20% total (psychological win)
-      // - 🍌 Triple Banana (1x): 20% → Expected return: 0.20x
-      // 
-      // LOSS RATE: 40% total
-      // - ❌ No match (0x): 40% → Expected return: 0.00x
-      // 
-      // TOTAL EXPECTED RTP: 1.30x return = 97% RTP (3% house edge)
-      // Win frequency: 60% (40% profit + 20% break-even)
-      // This creates the "near-miss" effect and keeps players engaged!
+      // Slot machine outcomes with updated probabilities
+      // 💎 Triple Diamond: 1% chance, 10x multiplier
+      // 💸 Triple Money Bag: 3% chance, 5x multiplier  
+      // 🍒 Triple Cherry: 10% chance, 3x multiplier
+      // 🍓 Triple Strawberry: 16% chance, 2x multiplier
+      // 🍌 Triple Banana: 20% chance, 1x multiplier (break-even)
+      // ❌ No Match: 50% chance, 0x multiplier
 
       const outcomes = [
         { type: 'triple', emoji: '💎', weight: 1, multiplier: 10 },    // 1% - Triple Diamond (JACKPOT!)
-        { type: 'triple', emoji: '💸', weight: 4, multiplier: 5 },     // 4% - Triple Money Bag
+        { type: 'triple', emoji: '💸', weight: 3, multiplier: 5 },     // 3% - Triple Money Bag
         { type: 'triple', emoji: '🍒', weight: 10, multiplier: 3 },    // 10% - Triple Cherry
-        { type: 'triple', emoji: '🍓', weight: 25, multiplier: 2 },    // 25% - Triple Strawberry
+        { type: 'triple', emoji: '🍓', weight: 16, multiplier: 2 },    // 16% - Triple Strawberry
         { type: 'triple', emoji: '🍌', weight: 20, multiplier: 1 },    // 20% - Triple Banana (break-even)
-        { type: 'nomatch', emoji: null, weight: 40, multiplier: 0 }    // 40% - No match
+        { type: 'nomatch', emoji: null, weight: 50, multiplier: 0 }    // 50% - No match
       ];
 
       // Create weighted array for outcome selection
@@ -237,35 +241,45 @@ module.exports = {
       // Calculate winnings based on predetermined outcome
       let winnings = 0;
       let resultText = '';
+      let taxAmount = 0;
 
       if (selectedOutcome.type === 'triple') {
-        // Apply multiplier for matching symbols
-        winnings = Math.floor(amount * selectedOutcome.multiplier);
-
+        // Calculate gross winnings (payout)
+        const grossWinnings = Math.floor(amount * selectedOutcome.multiplier);
+        
         if (selectedOutcome.multiplier === 1) {
-          // Triple bananas - break even (return bet)
+          // Triple bananas - break even (return bet, no tax)
+          winnings = grossWinnings;
           await userService.updateWallet(message.author.id, winnings);
           await userService.updateGamblingStats(message.author.id, amount, 0, 0); // No net gain/loss
-          resultText = 'You **broke even**. Your bet was returned!';
-        } else if (selectedOutcome.multiplier === 10) {
-          // JACKPOT!
-          await userService.updateWallet(message.author.id, winnings);
-          await userService.updateGamblingStats(message.author.id, amount, winnings - amount, 0);
-          resultText = `🎰 **JACKPOT!** You won **${formatCurrency(winnings - amount)}** coins! 💎💎💎`;
+          resultText = 'You broke even. Your bet was returned!';
         } else {
+          // Calculate profit and tax for winning outcomes
+          const profit = grossWinnings - amount; // profit = payout - bet
+          const taxRate = Math.random() * 0.15 + 0.05; // Random tax between 5% and 20%
+          taxAmount = Math.floor(profit * taxRate);
+          
+          // Final winnings after tax
+          winnings = grossWinnings - taxAmount;
+          
           await userService.updateWallet(message.author.id, winnings);
           await userService.updateGamblingStats(message.author.id, amount, winnings - amount, 0);
-          resultText = `You **won** **${formatCurrency(winnings - amount)}** coins!`;
+          
+          if (selectedOutcome.multiplier === 10) {
+            resultText = `JACKPOT! You won ${formatCurrency(profit)} coins but paid ${formatCurrency(taxAmount)} in taxes (${Math.floor(taxRate * 100)}%). Net profit: ${formatCurrency(winnings - amount)} coins! 💎💎💎`;
+          } else {
+            resultText = `You won ${formatCurrency(profit)} coins but paid ${formatCurrency(taxAmount)} in taxes (${Math.floor(taxRate * 100)}%). Net profit: ${formatCurrency(winnings - amount)} coins!`;
+          }
         }
       } else {
         // No match - lose bet (money already deducted at the beginning)
         await userService.updateGamblingStats(message.author.id, amount, 0, amount);
-        resultText = 'You **lost**. Better luck next time!';
+        resultText = 'You lost loser. Better luck next time!';
       }
 
       // Create final result embed with proper format
-      const createFinalEmbed = (slot1, slot2, slot3, result, winAmount) => {
-        return new EmbedBuilder()
+      const createFinalEmbed = (slot1, slot2, slot3, result, winAmount, tax = 0) => {
+        const embed = new EmbedBuilder()
           .setColor('#729bb0')
           .setDescription('### :slot_machine: Slot Machine')
           .addFields(
@@ -273,12 +287,18 @@ module.exports = {
             { name: `${message.author.username}'s Slots`, value: `\`\`${slot1} | ${slot2} | ${slot3}\`\``, inline: true },
             { name: '​', value: '​', inline: true },
             { name: '​', value: `> **Bet:** ${formatCurrency(amount)}`, inline: true },
-            { name: '​', value: `> **Winss:** ${formatCurrency(winAmount)}`, inline: true }
-          )
-          .setFooter({ text: result });
+            { name: '​', value: `> **Payout:** ${formatCurrency(winAmount)}`, inline: true }
+          );
+        
+        if (tax > 0) {
+          embed.addFields({ name: '​', value: `> **Tax:** ${formatCurrency(tax)}`, inline: true });
+        }
+        
+        embed.setFooter({ text: result });
+        return embed;
       };
 
-      const finalEmbed = createFinalEmbed(finalSlot1, finalSlot2, finalSlot3, resultText, winnings);
+      const finalEmbed = createFinalEmbed(finalSlot1, finalSlot2, finalSlot3, resultText, winnings, taxAmount);
       return slotMessage.edit({ embeds: [finalEmbed] });
 
     } catch (error) {

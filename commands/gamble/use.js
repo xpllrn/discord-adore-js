@@ -73,11 +73,7 @@ module.exports = {
       }
 
       // Success message
-      const embed = new EmbedBuilder()
-        .setColor('#a4ec7c')
-        .setDescription(`${emojis.success} <@${message.author.id}>: ${resultMessage}`);
-
-      return message.channel.send({ embeds: [embed] });
+      return embeds.success(message, resultMessage);
       
     } catch (error) {
       console.error('Error in use command:', error);

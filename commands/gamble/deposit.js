@@ -21,6 +21,21 @@ function parseAmount(input, balance) {
     return Math.floor((percentage / 100) * balance);
   }
 
+  // Handle "k" notation (e.g., 3k = 3000, 500k50 = 500050, 100k500 = 100500)
+  if (cleanInput.includes('k')) {
+    const parts = cleanInput.split('k');
+    if (parts.length === 2) {
+      const beforeK = parseFloat(parts[0]);
+      const afterK = parseFloat(parts[1]) || 0;
+      
+      if (isNaN(beforeK) || beforeK < 0) return null;
+      if (isNaN(afterK) || afterK < 0) return null;
+      
+      const amount = Math.floor(beforeK * 1000 + afterK);
+      return amount;
+    }
+  }
+
   const amount = parseInt(cleanInput);
   if (isNaN(amount) || amount < 0) return null;
   return amount;

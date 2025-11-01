@@ -25,6 +25,21 @@ function parseAmount(input, balance) {
     return Math.floor((percentage / 100) * balance);
   }
 
+  // Handle "k" notation (e.g., 3k = 3000, 500k50 = 500050, 100k500 = 100500)
+  if (cleanInput.includes('k')) {
+    const parts = cleanInput.split('k');
+    if (parts.length === 2) {
+      const beforeK = parseFloat(parts[0]);
+      const afterK = parseFloat(parts[1]) || 0;
+      
+      if (isNaN(beforeK) || beforeK < 0) return null;
+      if (isNaN(afterK) || afterK < 0) return null;
+      
+      const amount = Math.floor(beforeK * 1000 + afterK);
+      return amount;
+    }
+  }
+
   const amount = parseInt(cleanInput);
   if (isNaN(amount) || amount < 0) return null;
   return amount;
@@ -82,11 +97,7 @@ module.exports = {
       }
 
       // Create loading embed
-      const loadingEmbed = new EmbedBuilder()
-        .setColor('#7985cd')
-        .setDescription(`🪙 <@${message.author.id}>: Flipping coin for **${formatCurrency(amount)}** coins...`);
-
-      const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
+      const loadingMessage = await embeds.loading(message, `🪙 Flipping coin for **${formatCurrency(amount)}** coins...`);
 
       // Wait for excitement (2 seconds)
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -134,11 +145,13 @@ module.exports = {
         color = '#fc6464';
       }
       
-      const embed = new EmbedBuilder()
-        .setColor(color)
-        .setDescription(description);
-
-      return loadingMessage.edit({ embeds: [embed] });
+      if (color === '#a4ec7c') {
+        const successEmbed = embeds.createSuccess(message, description.replace(`🪙 <@${message.author.id}>: `, '🪙 '));
+        return loadingMessage.edit({ embeds: [successEmbed] });
+      } else {
+        const denyEmbed = embeds.createDeny(message, description.replace(`🪙 <@${message.author.id}>: `, '🪙 '));
+        return loadingMessage.edit({ embeds: [denyEmbed] });
+      }
       
     } catch (error) {
       // Send error to webhook instead of console

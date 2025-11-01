@@ -25,6 +25,21 @@ function parseAmount(input, balance) {
     return Math.floor((percentage / 100) * balance);
   }
 
+  // Handle "k" notation (e.g., 3k = 3000, 500k50 = 500050, 100k500 = 100500)
+  if (cleanInput.includes('k')) {
+    const parts = cleanInput.split('k');
+    if (parts.length === 2) {
+      const beforeK = parseFloat(parts[0]);
+      const afterK = parseFloat(parts[1]) || 0;
+      
+      if (isNaN(beforeK) || beforeK < 0) return null;
+      if (isNaN(afterK) || afterK < 0) return null;
+      
+      const amount = Math.floor(beforeK * 1000 + afterK);
+      return amount;
+    }
+  }
+
   const amount = parseInt(cleanInput);
   if (isNaN(amount) || amount < 0) return null;
   return amount;
@@ -111,9 +126,8 @@ module.exports = {
       const confirmationText = `**${opponentUser.username}**, **${message.author.username}** wants to play **Tic-Tac-Toe** with you!\n\n💰 **Bet Amount:** ${formatCurrency(betAmount)} coins\n🏆 **Winner takes:** ${formatCurrency(betAmount * 2)} coins\n\nDo you accept this challenge?`;
       
       // Send confirmation to opponent
-      const confirmEmbed = new EmbedBuilder()
-        .setColor(colors.warn)
-        .setDescription(`${emojis.warn} <@${opponentUser.id}>: ${confirmationText}`);
+      const confirmEmbed = embeds.createWarn(message, confirmationText);
+      confirmEmbed.setDescription(`${emojis.warn} <@${opponentUser.id}>: ${confirmationText}`);
 
       const createButtons = (disabled = false) => {
         const row = new ActionRowBuilder()
@@ -144,9 +158,8 @@ module.exports = {
 
       collector.on('collect', async (interaction) => {
         if (interaction.user.id !== opponentUser.id) {
-          const warnEmbed = new EmbedBuilder()
-            .setColor(colors.warn)
-            .setDescription(`${emojis.warn} <@${interaction.user.id}>: This invitation is not for you!`);
+          const warnEmbed = embeds.createWarn(message, 'This invitation is not for you!');
+          warnEmbed.setDescription(`${emojis.warn} <@${interaction.user.id}>: This invitation is not for you!`);
 
           return interaction.reply({
             embeds: [warnEmbed],
