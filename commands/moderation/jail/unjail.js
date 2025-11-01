@@ -75,25 +75,9 @@ module.exports = {
     }
 
     try {
-      // Get saved roles using service layer
-      const roleCases = await guildService.getModerationHistory(message.guild.id, user.user.id, 'role_save');
-      
-      let savedRoles = [];
-      if (roleCases.length > 0) {
-        // Get the most recent role_save case
-        const latestRoleCase = roleCases.sort((a, b) => 
-          new Date(b.timestamp) - new Date(a.timestamp)
-        )[0];
-        
-        if (latestRoleCase && latestRoleCase.reason) {
-          try {
-            savedRoles = JSON.parse(latestRoleCase.reason);
-          } catch (parseError) {
-            console.error('[UNJAIL] Error parsing saved roles:', parseError);
-          }
-        }
-      }
-
+      // Get saved roles using database helper (with timeout protection)
+      const { getSavedUserRoles } = require('../../../database');
+      const savedRoles = await getSavedUserRoles(message.guild.id, user.user.id);
       console.log(`[UNJAIL DEBUG] User: ${user.user.tag}, Saved roles:`, savedRoles);
 
       // Remove jail role and restore saved roles
@@ -151,7 +135,8 @@ module.exports = {
 
       // Add to moderation history
       try {
-        await moderationService.addModerationCase(
+        const { addModerationCase } = require('../../../database');
+        await addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,
@@ -160,6 +145,15 @@ module.exports = {
         );
       } catch (historyError) {
         // Don't fail the command if history logging fails
+        console.log('Failed to log moderation case:', historyError.message);
+      }
+
+      // Clean up saved roles
+      try {
+        const { removeSavedUserRoles } = require('../../../database');
+        await removeSavedUserRoles(message.guild.id, user.user.id);
+      } catch (cleanupError) {
+        console.log('Failed to clean up saved roles:', cleanupError.message);
       }
 
       // Send success message

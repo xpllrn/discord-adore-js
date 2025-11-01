@@ -6,6 +6,20 @@ const { GAME_STATUS } = require('../../utils/unoGameState');
 const UnoUI = require('../../utils/unoUI');
 const { getService } = require('@services');
 
+// Helper function for interaction replies
+function replyWithMessage(interaction, message, type = 'info') {
+  const icons = {
+    success: '✅',
+    error: '❌',
+    warn: '⚠️',
+    info: 'ℹ️'
+  };
+  return interaction.reply({
+    content: `${icons[type]} ${message}`,
+    flags: MessageFlags.Ephemeral
+  });
+}
+
 module.exports = {
   name: "uno",
   aliases: ['unocard', 'cards'],
@@ -538,7 +552,8 @@ async function handleExitButton(interaction, message) {
       
       if (result.success) {
         await exitInteraction.update({
-          embeds: [embeds.createSuccess(exitInteraction, result.message)],
+          content: `✅ ${result.message}`,
+          embeds: [],
           components: []
         });
         
@@ -551,13 +566,15 @@ async function handleExitButton(interaction, message) {
         }
       } else {
         await exitInteraction.update({
-          embeds: [embeds.createDeny(exitInteraction, result.message)],
+          content: `❌ ${result.message}`,
+          embeds: [],
           components: []
         });
       }
     } else {
       await exitInteraction.update({
-        embeds: [embeds.createInfo(exitInteraction, 'Exit cancelled')],
+        content: 'ℹ️ Exit cancelled',
+        embeds: [],
         components: []
       });
     }
@@ -577,18 +594,12 @@ async function handleDrawButton(interaction, game) {
   const player = game.getPlayer(interaction.user.id);
   
   if (!player) {
-    return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'You\'re not in this game')],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, 'You\'re not in this game', 'warn');
   }
   
   const currentPlayer = game.getCurrentPlayer();
   if (!currentPlayer || currentPlayer.userId !== interaction.user.id) {
-    return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'It\'s not your turn')],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, 'It\'s not your turn', 'warn');
   }
   
   const result = gameManager.drawCards(game.channelId, interaction.user.id, 1);
@@ -604,10 +615,7 @@ async function handleDrawButton(interaction, game) {
       message += '\nThis card is playable! Use Choose to play it.';
     }
     
-    await interaction.reply({
-      embeds: [embeds.createSuccess(interaction, message)],
-      flags: MessageFlags.Ephemeral
-    });
+    await replyWithMessage(interaction, message, 'success');
     
     // Update main game message
     const updatedGame = gameManager.getActiveGame(game.channelId);
@@ -616,10 +624,7 @@ async function handleDrawButton(interaction, game) {
       await UnoUI.updateGameMessage(gameMessage, updatedGame);
     }
   } else {
-    return interaction.reply({
-      embeds: [embeds.createDeny(interaction, 'Could not draw card')],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, 'Could not draw card', 'error');
   }
 }
 
@@ -630,17 +635,11 @@ async function handleUnoButton(interaction, game) {
   const player = game.getPlayer(interaction.user.id);
   
   if (!player) {
-    return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'You\'re not in this game')],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, 'You\'re not in this game', 'warn');
   }
   
   if (!player.hasUno()) {
-    return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'You don\'t have UNO (need exactly 1 card)')],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, 'You don\'t have UNO (need exactly 1 card)', 'warn');
   }
   
   const success = gameManager.callUno(game.channelId, interaction.user.id);
@@ -656,10 +655,7 @@ async function handleUnoButton(interaction, game) {
       content: `🔥 **${interaction.user.username}** called UNO!`
     });
   } else {
-    return interaction.reply({
-      embeds: [embeds.createDeny(interaction, success.message)],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, success.message, 'error');
   }
 }
 
@@ -676,18 +672,14 @@ async function handleCardSelection(interaction, game) {
   // Find the selected card
   const player = game.getPlayer(interaction.user.id);
   if (!player) {
-    return interaction.reply({
-      embeds: [embeds.createWarn(interaction, 'You\'re not in this game')],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, 'You\'re not in this game', 'warn');
   }
   
-  const selectedCard = player.hand.find(card => card.id === selectedValue);
+  // Extract card ID from value (remove index suffix)
+  const cardId = selectedValue.split('_')[0];
+  const selectedCard = player.hand.find(card => card.id === cardId);
   if (!selectedCard) {
-    return interaction.reply({
-      embeds: [embeds.createDeny(interaction, 'Card not found in your hand')],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, 'Card not found in your hand', 'error');
   }
   
   // Check if it's a wild card that needs color selection
@@ -726,10 +718,7 @@ async function handleCardSelection(interaction, game) {
       }
     }
     
-    await interaction.reply({
-      embeds: [embeds.createSuccess(interaction, message)],
-      flags: MessageFlags.Ephemeral
-    });
+    await replyWithMessage(interaction, message, 'success');
     
     // Update main game message
     const updatedGame = gameManager.getActiveGame(game.channelId);
@@ -738,10 +727,7 @@ async function handleCardSelection(interaction, game) {
       await UnoUI.updateGameMessage(gameMessage, updatedGame);
     }
   } else {
-    return interaction.reply({
-      embeds: [embeds.createDeny(interaction, result.message)],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, result.message, 'error');
   }
 }
 
@@ -755,20 +741,14 @@ async function handleWildColorSelection(interaction, game) {
   const lastCard = game.discardPile[game.discardPile.length - 1];
   
   if (!lastCard || lastCard.type !== 'wild') {
-    return interaction.reply({
-      embeds: [embeds.createDeny(interaction, 'No wild card to set color for')],
-      flags: MessageFlags.Ephemeral
-    });
+    return replyWithMessage(interaction, 'No wild card to set color for', 'error');
   }
   
   // Set the wild color
   game.wildColor = selectedColor;
   game.currentCard.color = selectedColor;
   
-  await interaction.reply({
-    embeds: [embeds.createSuccess(interaction, `Wild color set to ${UnoUI.getColorEmoji(selectedColor)} ${selectedColor}`)],
-    flags: MessageFlags.Ephemeral
-  });
+  await replyWithMessage(interaction, `Wild color set to ${UnoUI.getColorEmoji(selectedColor)} ${selectedColor}`, 'success');
   
   // Update main game message
   const gameMessage = await interaction.channel.messages.fetch(interaction.message.id);

@@ -163,14 +163,9 @@ module.exports = {
 
       console.log(`[JAIL DEBUG] User: ${user.user.tag}, Roles to save:`, rolesToSave);
 
-      // Save roles using service layer
-      await moderationService.addModerationCase(
-        message.guild.id,
-        user.user.id,
-        'system',
-        'role_save',
-        JSON.stringify(rolesToSave)
-      );
+      // Save roles using database helper (with timeout protection)
+      const { saveUserRoles } = require('../../../database');
+      await saveUserRoles(message.guild.id, user.user.id, rolesToSave);
       
       console.log(`[JAIL DEBUG] Roles saved successfully`);
 
@@ -193,7 +188,8 @@ module.exports = {
 
       // Add to moderation history
       try {
-        await moderationService.addModerationCase(
+        const { addModerationCase } = require('../../../database');
+        await addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,
@@ -202,6 +198,7 @@ module.exports = {
         );
       } catch (historyError) {
         // Don't fail the command if history logging fails
+        console.log('Failed to log moderation case:', historyError.message);
       }
 
       // Send success message

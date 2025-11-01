@@ -198,7 +198,7 @@ async function ensureGuildData(guildId) {
         upsert: true,
         new: true,
         setDefaultsOnInsert: true,
-        maxTimeMS: 15000 // 15 second timeout
+        maxTimeMS: 30000 // 30 second timeout
       }
     );
 
@@ -207,7 +207,7 @@ async function ensureGuildData(guildId) {
     // If there's still a duplicate key error, just find and return the existing record
     if (error.code === 11000) {
       try {
-        return await Guild.findOne({ GuildID: guildId }).maxTimeMS(15000);
+        return await Guild.findOne({ GuildID: guildId }).maxTimeMS(30000);
       } catch (findError) {
         // Silent fail for find error
         return null;
@@ -248,7 +248,7 @@ async function ensureUserData(userId) {
         upsert: true,
         new: true,
         setDefaultsOnInsert: true,
-        maxTimeMS: 15000 // 15 second timeout
+        maxTimeMS: 30000 // 30 second timeout
       }
     );
 

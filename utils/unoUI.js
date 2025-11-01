@@ -111,16 +111,18 @@ class UnoUI {
     }
     description += `**Current Players**\n${playerList}`;
     
+    // Get current card thumbnail URL
+    const cardThumbnail = game.currentCard ? this.getCardImageUrl(game.currentCard) : 'https://cdn.discordapp.com/emojis/1434125464770838598.png';
+    
     const embed = new EmbedBuilder()
       .setColor(colors.success)
       .setTitle('🃏 UNO Game Active')
       .setDescription(description)
       .addFields(
         { name: 'Current Card', value: currentCardDisplay, inline: true },
-        { name: 'Direction', value: `${directionEmoji} ${directionText}`, inline: true },
         { name: 'Cards in Deck', value: game.deck.getCardCount().toString(), inline: true }
       )
-      .setThumbnail('https://cdn.discordapp.com/emojis/1434125464770838598.png'); // Current card thumbnail
+      .setThumbnail(cardThumbnail);
     
     // Add special effects if any
     if (game.drawCount > 0) {
@@ -229,11 +231,11 @@ class UnoUI {
     const options = [];
     
     // Add playable cards (limit to 24 to leave room for draw option)
-    playableCards.slice(0, canDraw ? 24 : 25).forEach(card => {
+    playableCards.slice(0, canDraw ? 24 : 25).forEach((card, index) => {
       options.push({
         label: card.getCardName(),
         description: `Play ${card.getDisplayString()}`,
-        value: card.id,
+        value: `${card.id}_${index}`, // Make unique by adding index
         emoji: this.getCardTypeEmoji(card)
       });
     });
@@ -399,6 +401,16 @@ class UnoUI {
       wild: emojis.unoInformation || '⚫'
     };
     return colorEmojis[color] || '⚪';
+  }
+
+  /**
+   * Get card image URL for thumbnail
+   * @param {UnoCard} card - Card object
+   * @returns {string} Image URL
+   */
+  static getCardImageUrl(card) {
+    // For now, return a generic UNO card image
+    return 'https://cdn.discordapp.com/emojis/1434125464770838598.png';
   }
 
   /**
