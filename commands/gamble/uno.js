@@ -66,11 +66,15 @@ async function handleDefault(message) {
  * Handle starting a new UNO game
  */
 async function handleStart(message) {
+  console.log(`[UNO] Creating game in channel ${message.channel.id} by ${message.author.username}`);
+  
   const result = gameManager.createGame(
     message.channel.id,
     message.author.id,
     message.author.username
   );
+  
+  console.log(`[UNO] Create game result:`, result);
   
   if (!result.success) {
     return embeds.warn(message, result.message);
@@ -79,6 +83,8 @@ async function handleStart(message) {
   // Create lobby embed and buttons
   const lobbyEmbed = UnoUI.createLobbyEmbed(result.game);
   const lobbyButtons = UnoUI.createLobbyButtons(result.game);
+  
+  console.log(`[UNO] Game created with ${result.game.players.length} players`);
   
   const gameMessage = await message.channel.send({
     embeds: [lobbyEmbed],
@@ -244,7 +250,16 @@ async function handleLobbyInteraction(interaction, message, game) {
  * Handle play button (force start)
  */
 async function handlePlayButton(interaction, message) {
+  console.log(`[UNO] Play button clicked by ${interaction.user.username} in channel ${message.channel.id}`);
+  
+  const game = gameManager.getActiveGame(message.channel.id);
+  if (game) {
+    console.log(`[UNO] Current game status: ${game.status}, Players: ${game.players.length}`);
+  }
+  
   const result = gameManager.startGame(message.channel.id, interaction.user.id);
+  
+  console.log(`[UNO] Start game result:`, result);
   
   if (!result.success) {
     return interaction.reply({
@@ -270,11 +285,15 @@ async function handlePlayButton(interaction, message) {
  * Handle join button
  */
 async function handleJoinButton(interaction, message) {
+  console.log(`[UNO] Join button clicked by ${interaction.user.username} in channel ${message.channel.id}`);
+  
   const result = gameManager.joinGame(
     message.channel.id,
     interaction.user.id,
     interaction.user.username
   );
+  
+  console.log(`[UNO] Join game result:`, result);
   
   if (!result.success) {
     return interaction.reply({
@@ -285,9 +304,11 @@ async function handleJoinButton(interaction, message) {
   
   // Update lobby embed
   const lobbyEmbed = UnoUI.createLobbyEmbed(result.game);
+  const lobbyButtons = UnoUI.createLobbyButtons(result.game);
   
   await interaction.update({
-    embeds: [lobbyEmbed]
+    embeds: [lobbyEmbed],
+    components: [lobbyButtons]
   });
 }
 
