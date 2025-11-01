@@ -387,6 +387,7 @@ async function handleSettingsButton(interaction, message) {
  */
 function setupGameCollector(message, game) {
   const collector = message.createMessageComponentCollector({
+    filter: (i) => i.message.id === message.id, // Only collect interactions from this message
     time: 1800000 // 30 minutes
   });
   
@@ -441,12 +442,6 @@ async function handleGameInteraction(interaction, message) {
       break;
     case 'uno_exit':
       await handleExitButton(interaction, message);
-      break;
-    case 'uno_card_select':
-      await handleCardSelection(interaction, game);
-      break;
-    case 'uno_wild_color':
-      await handleWildColorSelection(interaction, game);
       break;
     case 'uno_settings_select':
       await handleSettingsSelection(interaction, game);
@@ -522,10 +517,45 @@ async function handleChooseButton(interaction, game) {
   // Create card selection dropdown
   const row = UnoUI.createCardSelectionDropdown(playableCards, true);
   
-  return interaction.reply({
+  const dropdownMessage = await interaction.reply({
     content: 'Choose a card to play:',
     components: [row],
-    flags: MessageFlags.Ephemeral
+    flags: MessageFlags.Ephemeral,
+    fetchReply: true
+  });
+  
+  // Set up collector for this specific dropdown
+  const dropdownCollector = dropdownMessage.createMessageComponentCollector({
+    filter: (i) => i.user.id === interaction.user.id,
+    time: 60000, // 1 minute timeout
+    max: 1 // Only one selection
+  });
+  
+  dropdownCollector.on('collect', async (dropdownInteraction) => {
+    try {
+      await handleCardSelection(dropdownInteraction, game);
+      
+      // Update main game message after card play
+      const updatedGame = gameManager.getActiveGame(game.channelId);
+      if (updatedGame) {
+        const gameMessage = await interaction.channel.messages.fetch(interaction.message.id);
+        await UnoUI.updateGameMessage(gameMessage, updatedGame);
+      }
+    } catch (error) {
+      console.error('Error handling card selection:', error);
+      await dropdownInteraction.reply({
+        content: '❌ An error occurred while playing the card',
+        flags: MessageFlags.Ephemeral
+      });
+    }
+  });
+  
+  dropdownCollector.on('end', () => {
+    // Disable the dropdown after timeout
+    const disabledRow = UnoUI.createCardSelectionDropdown(playableCards, true);
+    disabledRow.components[0].setDisabled(true);
+    
+    dropdownMessage.edit({ components: [disabledRow] }).catch(() => {});
   });
 }
 
@@ -675,10 +705,14 @@ async function handleCardSelection(interaction, game) {
     return replyWithMessage(interaction, 'You\'re not in this game', 'warn');
   }
   
-  // Extract card ID from value (remove index suffix)
-  const cardId = selectedValue.split('_')[0];
-  const selectedCard = player.hand.find(card => card.id === cardId);
+  // Find the selected card by ID
+  const selectedCard = player.hand.find(card => card.id === selectedValue);
   if (!selectedCard) {
+    console.log('Card selection debug:', {
+      selectedValue,
+      playerHandIds: player.hand.map(c => c.id),
+      playerHandCards: player.hand.map(c => c.getDisplayString())
+    });
     return replyWithMessage(interaction, 'Card not found in your hand', 'error');
   }
   
@@ -686,11 +720,52 @@ async function handleCardSelection(interaction, game) {
   if (selectedCard.type === 'wild') {
     const colorSelection = UnoUI.createWildColorSelection();
     
-    return interaction.reply({
+    const colorMessage = await interaction.reply({
       content: `You selected: ${selectedCard.getDisplayString()}\nChoose a color:`,
       components: [colorSelection],
-      flags: MessageFlags.Ephemeral
+      flags: MessageFlags.Ephemeral,
+      fetchReply: true
     });
+    
+    // Set up collector for color selection
+    const colorCollector = colorMessage.createMessageComponentCollector({
+      filter: (i) => i.user.id === interaction.user.id,
+      time: 30000, // 30 seconds timeout
+      max: 1
+    });
+    
+    colorCollector.on('collect', async (colorInteraction) => {
+      const selectedColor = colorInteraction.values[0];
+      
+      // Play the wild card with the selected color
+      const result = gameManager.playCard(game.channelId, interaction.user.id, selectedCard.id, selectedColor);
+      
+      if (result.success) {
+        let message = `Played: ${selectedCard.getDisplayString()} (${selectedColor})`;
+        
+        // Add effect messages
+        if (result.effects) {
+          if (result.effects.includes('wild_draw_four')) {
+            message += `\n🌈 Next player draws ${result.drawCount} cards!`;
+          }
+          if (result.effects.includes('game_won')) {
+            message += '\n🏆 **YOU WON THE GAME!**';
+          }
+        }
+        
+        await colorInteraction.update({
+          content: `✅ ${message}`,
+          components: []
+        });
+      } else {
+        await colorInteraction.update({
+          content: `❌ ${result.message}`,
+          components: []
+        });
+      }
+    });
+    
+    return; // Exit early for wild cards
   }
   
   // Play the card

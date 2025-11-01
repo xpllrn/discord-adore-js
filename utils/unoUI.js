@@ -231,12 +231,11 @@ class UnoUI {
     const options = [];
     
     // Add playable cards (limit to 24 to leave room for draw option)
-    playableCards.slice(0, canDraw ? 24 : 25).forEach((card, index) => {
+    playableCards.slice(0, canDraw ? 24 : 25).forEach(card => {
       options.push({
         label: card.getCardName(),
-        description: `Play ${card.getDisplayString()}`,
-        value: `${card.id}_${index}`, // Make unique by adding index
-        emoji: this.getCardTypeEmoji(card)
+        description: `Play this card`,
+        value: card.id
       });
     });
     
@@ -245,8 +244,7 @@ class UnoUI {
       options.push({
         label: 'Draw a card',
         description: 'Draw a card from the deck',
-        value: 'draw_card',
-        emoji: '📥'
+        value: 'draw_card'
       });
     }
     
