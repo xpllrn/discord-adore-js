@@ -76,14 +76,70 @@ async function showUserTimezone(message, userId, targetUser = null) {
 async function setUserTimezone(message, cityName) {
   try {
     const userService = getService('user');
-    // Try to find timezone by city name first
-    let timezoneId = timezone.findTimezoneByCityName(cityName);
+    let timezoneId = null;
     let locationName = cityName;
+    const searchTerm = cityName.toLowerCase();
 
-    // If not found, try by country name with fuzzy matching
+    // First, try to find the best matching city by searching all locations
+    const locations = timezone.getLocations();
+    
+    // Priority matching for common ambiguous names
+    const priorityMatches = {
+      'london': 'United Kingdom of Great Britain and Northern Ireland',
+      'paris': 'France',
+      'berlin': 'Germany',
+      'moscow': 'Russian Federation'
+    };
+
+    if (priorityMatches[searchTerm]) {
+      const priorityLocation = locations.find(loc => 
+        loc.city && loc.city.toLowerCase() === searchTerm && 
+        loc.country.name === priorityMatches[searchTerm]
+      );
+      if (priorityLocation) {
+        timezoneId = priorityLocation.timezone;
+        locationName = `${priorityLocation.city}, ${priorityLocation.country.name}`;
+      }
+    }
+
+    // If no priority match, try exact city name match (first result)
+    if (!timezoneId) {
+      const cityMatch = locations.find(loc => 
+        loc.city && loc.city.toLowerCase() === searchTerm
+      );
+      if (cityMatch) {
+        timezoneId = cityMatch.timezone;
+        locationName = `${cityMatch.city}, ${cityMatch.country.name}`;
+      }
+    }
+
+    // Try common location aliases and regions
+    if (!timezoneId) {
+      const aliases = {
+        'england': 'Europe/London',
+        'uk': 'Europe/London',
+        'britain': 'Europe/London',
+        'great britain': 'Europe/London',
+        'united kingdom': 'Europe/London',
+        'maine': 'America/New_York',
+        'california': 'America/Los_Angeles',
+        'texas': 'America/Chicago',
+        'florida': 'America/New_York',
+        'new york state': 'America/New_York',
+        'ontario': 'America/Toronto',
+        'quebec': 'America/Montreal',
+        'british columbia': 'America/Vancouver'
+      };
+
+      if (aliases[searchTerm]) {
+        timezoneId = aliases[searchTerm];
+        locationName = cityName;
+      }
+    }
+
+    // Try by country name with fuzzy matching
     if (!timezoneId) {
       const countries = timezone.getCountries();
-      const searchTerm = cityName.toLowerCase();
 
       // Find country by exact name or partial match
       const matchedCountry = countries.find(country =>

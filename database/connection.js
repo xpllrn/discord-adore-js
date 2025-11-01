@@ -18,8 +18,6 @@ async function connect(connectionStrings) {
   try {
     // Configure mongoose
     mongoose.set('strictQuery', false);
-    mongoose.set('bufferCommands', false); // Disable command buffering
-    mongoose.set('bufferMaxEntries', 0); // Don't buffer any commands
 
     // Connect to global user database
     if (connectionStrings.global) {
@@ -33,9 +31,7 @@ async function connect(connectionStrings) {
             maxIdleTimeMS: 120000, // Close connections after 2 minutes of inactivity
             heartbeatFrequencyMS: 30000, // Heartbeat every 30 seconds
             retryWrites: true, // Enable retryable writes
-            retryReads: true, // Enable retryable reads
-            bufferCommands: false, // Disable command buffering
-            bufferMaxEntries: 0 // Don't buffer any commands
+            retryReads: true // Enable retryable reads
           });
 
           // Wait for connection to be established
@@ -106,9 +102,7 @@ async function connect(connectionStrings) {
             maxIdleTimeMS: 120000, // Close connections after 2 minutes of inactivity
             heartbeatFrequencyMS: 30000, // Heartbeat every 30 seconds
             retryWrites: true, // Enable retryable writes
-            retryReads: true, // Enable retryable reads
-            bufferCommands: false, // Disable command buffering
-            bufferMaxEntries: 0 // Don't buffer any commands
+            retryReads: true // Enable retryable reads
           });
 
           // Wait for connection to be established
