@@ -8,12 +8,16 @@ module.exports = {
     // Skip bots and DMs
     if (message.author.bot || !message.guild) return;
 
-    // CRITICAL: Skip all message processing until cache is ready
-    if (!message.client.cacheReady) {
-      return; // Don't process any messages during startup
-    }
-
     try {
+      const { getService } = require('@services');
+      const { isDatabaseReady } = require('../../database');
+      
+      // Check if database is ready (following reminder/giveaway pattern)
+      const dbStatus = isDatabaseReady();
+      if (!dbStatus.global && !dbStatus.local && !dbStatus.legacy) {
+        return; // Don't process AFK when database isn't ready
+      }
+
       const userService = getService('user');
 
       // Check if the message author is AFK and remove their status using service layer
