@@ -46,16 +46,18 @@ module.exports = {
 
         // Adult entertainment jobs with different multipliers and funny messages
         const jobs = [
-          { name: 'cam model', multiplier: 1.2, emoji: '📹', message: 'streamed for some **lonely viewers** and **made bank**' },
-          { name: 'exotic dancer', multiplier: 1.3, emoji: '💃', message: 'danced at the local strip club and got **showered with tips**' },
-          { name: 'escort', multiplier: 1.5, emoji: '💋', message: 'provided companionship services to a **wealthy client**' },
-          { name: 'phone operator', multiplier: 1.1, emoji: '📞', message: 'answered some **spicy phone calls** and earned good money' },
-          { name: 'OnlyFans creator', multiplier: 1.4, emoji: '📱', message: 'posted some **exclusive content** and got **tons of subscribers**' },
-          { name: 'sugar baby', multiplier: 1.6, emoji: '💎', message: 'spent time with a **generous benefactor** who **spoiled you**' },
-          { name: 'adult film actor', multiplier: 1.7, emoji: '🎬', message: 'starred in an adult production and **nailed every scene**' },
-          { name: 'massage therapist', multiplier: 1.2, emoji: '💆', message: 'gave some **"special" massages** and received **generous tips**' },
-          { name: 'dominatrix', multiplier: 1.5, emoji: '🖤', message: 'dominated some willing clients who paid **premium rates**' },
-          { name: 'fetish model', multiplier: 1.3, emoji: '👠', message: 'modeled for some **unique requests** and got **paid handsomely**' }
+          { name: 'Twitch thot', multiplier: 1.4, emoji: '💜', message: 'showed some **cleavage** on stream and got **simps donating**' },
+          { name: 'OnlyFans creator', multiplier: 1.5, emoji: '📱', message: 'posted some **exclusive content** and got **tons of subscribers**' },
+          { name: 'Discord kitten', multiplier: 2.0, emoji: '🐱', message: 'meowed for **daddy** and got **spoiled rotten** with nitros' },
+          { name: 'E-girl', multiplier: 1.3, emoji: '🎮', message: 'sold **gamer girl bathwater** to **thirsty incels**' },
+          { name: 'TikTok dancer', multiplier: 1.2, emoji: '💃', message: 'did **cringe dances** and got **sugar daddies** in DMs' },
+          { name: 'Snapchat premium', multiplier: 1.6, emoji: '👻', message: 'sold **private snaps** to **horny teenagers**' },
+          { name: 'Instagram model', multiplier: 1.3, emoji: '📸', message: 'posted **thirst traps** and got **sponsored by simps**' },
+          { name: 'VTuber', multiplier: 1.7, emoji: '🎭', message: 'used a **cute avatar** to milk **lonely weebs** for donations' },
+          { name: 'Feet pic seller', multiplier: 1.1, emoji: '🦶', message: 'sold **toe pics** to **foot fetish degenerates**' },
+          { name: 'ASMR girlfriend', multiplier: 1.4, emoji: '🎧', message: 'whispered **sweet nothings** to **touch-starved losers**' },
+          { name: 'Patreon e-thot', multiplier: 1.5, emoji: '💸', message: 'teased **premium content** and got **monthly simps**' },
+          { name: 'Reddit moderator', multiplier: 0.8, emoji: '🤓', message: 'worked for **free** like a **basement dweller** (negative rizz)' }
         ];
 
         const job = jobs[Math.floor(Math.random() * jobs.length)];
