@@ -3,6 +3,10 @@ const { embeds } = require('../../core/embeds');
 const { colors, emojis } = require('../../config/setup');
 const { getService } = require('@services');
 
+// Note: Specific store categories are now in ./store/ folder:
+// - ./store/banknotes.js - For banknote items
+// - ./store/items.js - For other consumable items and tools
+
 // Utility function to format currency
 function formatCurrency(amount) {
   return Math.floor(amount).toLocaleString();

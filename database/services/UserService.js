@@ -1973,6 +1973,274 @@ class UserService extends BaseService {
     }
   }
 
+  // ===== UNO GAME OPERATIONS =====
+
+  /**
+   * Get UNO statistics
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} UNO statistics
+   */
+  async getUnoStats(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      return userData.UnoStats || {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        totalCardsPlayed: 0,
+        fastestWin: null,
+        longestGame: null,
+        specialCardsPlayed: {
+          skip: 0,
+          reverse: 0,
+          draw2: 0,
+          wild: 0,
+          wildDraw4: 0
+        },
+        achievements: [],
+        lastPlayed: null
+      };
+    } catch (error) {
+      console.error(`Error getting UNO stats for user ${userId}:`, error.message);
+      return {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        totalCardsPlayed: 0,
+        fastestWin: null,
+        longestGame: null,
+        specialCardsPlayed: {
+          skip: 0,
+          reverse: 0,
+          draw2: 0,
+          wild: 0,
+          wildDraw4: 0
+        },
+        achievements: [],
+        lastPlayed: null
+      };
+    }
+  }
+
+  /**
+   * Update UNO game statistics
+   * @param {string} userId - User ID
+   * @param {string} result - Game result ('win' or 'loss')
+   * @param {number} gameTime - Game duration in milliseconds
+   * @param {number} cardsPlayed - Number of cards played by user
+   * @param {Object} specialCards - Special cards played count
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateUnoStats(userId, result, gameTime = 0, cardsPlayed = 0, specialCards = {}) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!['win', 'loss'].includes(result)) {
+      throw new ValidationError('Result must be win or loss', 'result', result);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const stats = userData.UnoStats || {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        totalCardsPlayed: 0,
+        fastestWin: null,
+        longestGame: null,
+        specialCardsPlayed: {
+          skip: 0,
+          reverse: 0,
+          draw2: 0,
+          wild: 0,
+          wildDraw4: 0
+        },
+        achievements: [],
+        lastPlayed: null
+      };
+
+      // Update basic stats
+      stats.gamesPlayed++;
+      stats.totalCardsPlayed += cardsPlayed;
+      stats.lastPlayed = new Date();
+
+      if (result === 'win') {
+        stats.gamesWon++;
+        
+        // Update fastest win if applicable
+        if (gameTime > 0 && (!stats.fastestWin || gameTime < stats.fastestWin)) {
+          stats.fastestWin = gameTime;
+        }
+      } else {
+        stats.gamesLost++;
+      }
+
+      // Update longest game
+      if (gameTime > 0 && (!stats.longestGame || gameTime > stats.longestGame)) {
+        stats.longestGame = gameTime;
+      }
+
+      // Update special cards played
+      if (specialCards.skip) stats.specialCardsPlayed.skip += specialCards.skip;
+      if (specialCards.reverse) stats.specialCardsPlayed.reverse += specialCards.reverse;
+      if (specialCards.draw2) stats.specialCardsPlayed.draw2 += specialCards.draw2;
+      if (specialCards.wild) stats.specialCardsPlayed.wild += specialCards.wild;
+      if (specialCards.wildDraw4) stats.specialCardsPlayed.wildDraw4 += specialCards.wildDraw4;
+
+      userData.UnoStats = stats;
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update UNO stats for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Add UNO achievement
+   * @param {string} userId - User ID
+   * @param {string} achievement - Achievement ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async addUnoAchievement(userId, achievement) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!achievement || typeof achievement !== 'string') {
+      throw new ValidationError('Achievement must be a string', 'achievement', achievement);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const stats = userData.UnoStats || {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        totalCardsPlayed: 0,
+        fastestWin: null,
+        longestGame: null,
+        specialCardsPlayed: {
+          skip: 0,
+          reverse: 0,
+          draw2: 0,
+          wild: 0,
+          wildDraw4: 0
+        },
+        achievements: [],
+        lastPlayed: null
+      };
+
+      // Add achievement if not already present
+      if (!stats.achievements.includes(achievement)) {
+        stats.achievements.push(achievement);
+        userData.UnoStats = stats;
+        await this.set(userId, userData);
+        return true;
+      }
+
+      return false; // Achievement already exists
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add UNO achievement for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Get UNO leaderboard
+   * @param {string} type - Leaderboard type ('wins', 'games', 'cards')
+   * @param {number} limit - Number of results to return
+   * @returns {Promise<Array>} Leaderboard data
+   */
+  async getUnoLeaderboard(type = 'wins', limit = 10) {
+    if (typeof limit !== 'number' || limit < 1 || limit > 100) {
+      throw new ValidationError('Limit must be between 1 and 100', 'limit', limit);
+    }
+
+    const validTypes = ['wins', 'games', 'cards'];
+    if (!validTypes.includes(type)) {
+      throw new ValidationError('Type must be wins, games, or cards', 'type', type);
+    }
+
+    try {
+      const Model = this.getModel();
+      let sortField;
+
+      switch (type) {
+        case 'wins':
+          sortField = { 'UnoStats.gamesWon': -1 };
+          break;
+        case 'games':
+          sortField = { 'UnoStats.gamesPlayed': -1 };
+          break;
+        case 'cards':
+          sortField = { 'UnoStats.totalCardsPlayed': -1 };
+          break;
+      }
+
+      const users = await Model.find({
+        'UnoStats.gamesPlayed': { $gt: 0 }
+      })
+      .sort(sortField)
+      .limit(limit)
+      .lean();
+
+      return users.map(user => ({
+        userId: user[this.keyField],
+        stats: user.UnoStats
+      }));
+    } catch (error) {
+      console.error(`Error getting UNO leaderboard for ${type}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Reset UNO statistics
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async resetUnoStats(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      userData.UnoStats = {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        gamesLost: 0,
+        totalCardsPlayed: 0,
+        fastestWin: null,
+        longestGame: null,
+        specialCardsPlayed: {
+          skip: 0,
+          reverse: 0,
+          draw2: 0,
+          wild: 0,
+          wildDraw4: 0
+        },
+        achievements: [],
+        lastPlayed: null
+      };
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to reset UNO stats for user ${userId}`, error);
+    }
+  }
+
   // ===== REMINDER SYSTEM EXTENDED =====
 
   /**

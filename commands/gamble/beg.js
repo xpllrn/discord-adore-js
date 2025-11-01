@@ -43,14 +43,18 @@ module.exports = {
       
       // Random beg messages
       const begMessages = [
-        'A **kind stranger** gave you',
-        'You found some **coins** on the ground:',
-        'Someone felt **sorry** for you and gave you',
-        'You received a small **donation** of',
-        'A **generous person** handed you',
-        'You discovered some **loose change**:',
-        'Someone **dropped** some coins and you got',
-        'A passerby took **pity** on you and gave you'
+        'A **simp** felt bad for you and gave you',
+        'You found **drug money** on the ground:',
+        'Your **mom** gave you her **grocery money**:',
+        'A **sugar daddy** accidentally dropped you',
+        'Some **boomer** took pity on your **broke ass** and gave you',
+        'You **robbed** a kid\'s **lunch money**:',
+        'A **Karen** threw coins at you to **go away**:',
+        'You sold your **dignity** for',
+        'A **homeless guy** shared his **spare change**:',
+        'You **scammed** a **grandma** out of',
+        'Someone **accidentally** venmo\'d you',
+        'Your **OnlyFans** subscriber sent you'
       ];
       
       const randomMessage = begMessages[Math.floor(Math.random() * begMessages.length)];

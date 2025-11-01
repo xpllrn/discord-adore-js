@@ -46,18 +46,18 @@ module.exports = {
 
         // Adult entertainment jobs with different multipliers and funny messages
         const jobs = [
-          { name: 'Twitch thot', multiplier: 1.4, emoji: '💜', message: 'showed some **cleavage** on stream and got **simps donating**' },
-          { name: 'OnlyFans creator', multiplier: 1.5, emoji: '📱', message: 'posted some **exclusive content** and got **tons of subscribers**' },
-          { name: 'Discord kitten', multiplier: 2.0, emoji: '🐱', message: 'meowed for **daddy** and got **spoiled rotten** with nitros' },
-          { name: 'E-girl', multiplier: 1.3, emoji: '🎮', message: 'sold **gamer girl bathwater** to **thirsty incels**' },
-          { name: 'TikTok dancer', multiplier: 1.2, emoji: '💃', message: 'did **cringe dances** and got **sugar daddies** in DMs' },
-          { name: 'Snapchat premium', multiplier: 1.6, emoji: '👻', message: 'sold **private snaps** to **horny teenagers**' },
-          { name: 'Instagram model', multiplier: 1.3, emoji: '📸', message: 'posted **thirst traps** and got **sponsored by simps**' },
-          { name: 'VTuber', multiplier: 1.7, emoji: '🎭', message: 'used a **cute avatar** to milk **lonely weebs** for donations' },
-          { name: 'Feet pic seller', multiplier: 1.1, emoji: '🦶', message: 'sold **toe pics** to **foot fetish degenerates**' },
-          { name: 'ASMR girlfriend', multiplier: 1.4, emoji: '🎧', message: 'whispered **sweet nothings** to **touch-starved losers**' },
-          { name: 'Patreon e-thot', multiplier: 1.5, emoji: '💸', message: 'teased **premium content** and got **monthly simps**' },
-          { name: 'Reddit moderator', multiplier: 0.8, emoji: '🤓', message: 'worked for **free** like a **basement dweller** (negative rizz)' }
+          { name: 'Twitch thot', multiplier: 1.4, emoji: '💜', message: 'showed **cleavage** and **milked simps**' },
+          { name: 'OnlyFans whore', multiplier: 1.5, emoji: '📱', message: 'posted **nudes** and got **coomer subs**' },
+          { name: 'Discord kitten', multiplier: 2.0, emoji: '🐱', message: 'meowed for **daddy** and got **nitro**' },
+          { name: 'E-kitten', multiplier: 1.3, emoji: '🎮', message: 'sold **bathwater** to **incels**' },
+          { name: 'TikTok slut', multiplier: 1.2, emoji: '💃', message: 'danced like a **whore** for **zoomers**' },
+          { name: 'Snap premium', multiplier: 1.6, emoji: '👻', message: 'sold **nudes** to **horny teens**' },
+          { name: 'Insta thot', multiplier: 1.3, emoji: '📸', message: 'posted **ass pics** for **simps**' },
+          { name: 'VTuber', multiplier: 1.7, emoji: '🎭', message: 'used **anime avatar** to milk **weebs**' },
+          { name: 'Feet seller', multiplier: 1.1, emoji: '🦶', message: 'sold **toe pics** to **foot freaks**' },
+          { name: 'Mommy ASMR', multiplier: 1.4, emoji: '🎧', message: 'whispered to **lonely virgins**' },
+          { name: 'Patreon thot', multiplier: 1.5, emoji: '💸', message: 'teased **content** for **monthly cucks**' },
+          { name: 'Femboy', multiplier: 1.8, emoji: '🏳️‍⚧️', message: 'tapped **straight guys** and got **paid**' }
         ];
 
         const job = jobs[Math.floor(Math.random() * jobs.length)];
@@ -84,18 +84,18 @@ module.exports = {
 
         // Funny failure messages
         const failures = [
-          { emoji: '🚔', message: 'The **police raided** your operation and you had to pay **bail**' },
-          { emoji: '🤢', message: 'Your client took one look at your **saggy tits** and asked for a **refund**' },
-          { emoji: '😷', message: 'You caught an **STD** and had to pay for **expensive treatment**' },
-          { emoji: '🏃‍♀️', message: 'Your **pimp** found out you were **holding out** on him and took your cut' },
-          { emoji: '💸', message: 'Your **OnlyFans got banned** and you lost all your **subscribers**' },
-          { emoji: '🤡', message: 'You showed up to work looking like a **clown** and got **fired**' },
-          { emoji: '🦶', message: 'Your feet were so **crusty** that even the **foot fetish guys** ran away' },
-          { emoji: '🧄', message: 'Your **breath was so bad** that clients **paid you to leave**' },
-          { emoji: '🐷', message: 'You were so **ugly** that the client paid extra to **keep the lights off**' },
-          { emoji: '💩', message: 'You **shit yourself** during work and had to pay for **cleanup**' },
-          { emoji: '🤮', message: 'Your performance was so **bad** that the client **threw up and sued you**' },
-          { emoji: '🔥', message: 'You accidentally **set the brothel on fire** and had to pay **damages**' }
+          { emoji: '🚔', message: 'Got **raided** by feds and paid **bail**' },
+          { emoji: '🤢', message: 'Client saw your **saggy tits** and wanted a **refund**' },
+          { emoji: '😷', message: 'Caught **STDs** and paid for **treatment**' },
+          { emoji: '🏃‍♀️', message: 'Your **pimp** found out you were **holding out**' },
+          { emoji: '💸', message: 'Got **banned** from OnlyFans for being **too ugly**' },
+          { emoji: '🤡', message: 'Showed up looking like a **clown** and got **fired**' },
+          { emoji: '🦶', message: 'Your **crusty feet** scared away the **foot freaks**' },
+          { emoji: '🧄', message: 'Your **breath** was so bad clients **paid you to leave**' },
+          { emoji: '🐷', message: 'So **ugly** they paid extra to **keep lights off**' },
+          { emoji: '💩', message: '**Shit yourself** and paid for **cleanup**' },
+          { emoji: '🤮', message: 'Performance so **bad** the client **threw up**' },
+          { emoji: '🔥', message: 'Set the **brothel on fire** like a **retard**' }
         ];
 
         const failure = failures[Math.floor(Math.random() * failures.length)];

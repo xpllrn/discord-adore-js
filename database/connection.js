@@ -24,27 +24,21 @@ async function connect(connectionStrings) {
       if (!connections.global) {
         try {
           connections.global = mongoose.createConnection(connectionStrings.global, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 15000, // 15 second timeout (increased)
-            socketTimeoutMS: 60000, // 60 second socket timeout (increased)
-            maxPoolSize: 20, // Maintain up to 20 socket connections (increased)
-            minPoolSize: 5, // Maintain at least 5 socket connections
-            maxIdleTimeMS: 60000, // Close connections after 60 seconds of inactivity (increased)
-            maxConnecting: 5, // Maximum number of connections being established at once
-            heartbeatFrequencyMS: 10000, // Heartbeat every 10 seconds
+            serverSelectionTimeoutMS: 30000, // 30 second timeout
+            socketTimeoutMS: 120000, // 2 minute socket timeout
+            maxPoolSize: 10, // Maintain up to 10 socket connections
+            minPoolSize: 2, // Maintain at least 2 socket connections
+            maxIdleTimeMS: 120000, // Close connections after 2 minutes of inactivity
+            heartbeatFrequencyMS: 30000, // Heartbeat every 30 seconds
             retryWrites: true, // Enable retryable writes
-            retryReads: true, // Enable retryable reads
-            readPreference: 'primaryPreferred', // Read from primary, fallback to secondary
-            writeConcern: { w: 'majority', j: true }, // Ensure writes are acknowledged by majority
-            bufferCommands: true, // Enable mongoose buffering to handle connection delays
+            retryReads: true // Enable retryable reads
           });
 
           // Wait for connection to be established
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
               reject(new Error('Global database connection timeout'));
-            }, 15000); // 15 second timeout
+            }, 30000); // 30 second timeout
 
             connections.global.once('open', () => {
               clearTimeout(timeout);
@@ -101,27 +95,21 @@ async function connect(connectionStrings) {
       if (!connections.local) {
         try {
           connections.local = mongoose.createConnection(connectionStrings.local, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 15000, // 15 second timeout (increased)
-            socketTimeoutMS: 60000, // 60 second socket timeout (increased)
-            maxPoolSize: 15, // Maintain up to 15 socket connections (increased)
-            minPoolSize: 3, // Maintain at least 3 socket connections
-            maxIdleTimeMS: 60000, // Close connections after 60 seconds of inactivity (increased)
-            maxConnecting: 3, // Maximum number of connections being established at once
-            heartbeatFrequencyMS: 10000, // Heartbeat every 10 seconds
+            serverSelectionTimeoutMS: 30000, // 30 second timeout
+            socketTimeoutMS: 120000, // 2 minute socket timeout
+            maxPoolSize: 8, // Maintain up to 8 socket connections
+            minPoolSize: 1, // Maintain at least 1 socket connection
+            maxIdleTimeMS: 120000, // Close connections after 2 minutes of inactivity
+            heartbeatFrequencyMS: 30000, // Heartbeat every 30 seconds
             retryWrites: true, // Enable retryable writes
-            retryReads: true, // Enable retryable reads
-            readPreference: 'primaryPreferred', // Read from primary, fallback to secondary
-            writeConcern: { w: 'majority', j: true }, // Ensure writes are acknowledged by majority
-            bufferCommands: true, // Enable mongoose buffering to handle connection delays
+            retryReads: true // Enable retryable reads
           });
 
           // Wait for connection to be established
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
               reject(new Error('Local database connection timeout'));
-            }, 15000); // 15 second timeout
+            }, 30000); // 30 second timeout
 
             connections.local.once('open', () => {
               clearTimeout(timeout);
