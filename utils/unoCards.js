@@ -99,19 +99,26 @@ class UnoCard {
       return false;
     }
 
-    // If current card is wild, check against the wild color
-    const currentColor = gameState.wildColor || currentCard.color;
+    // If current card is wild, only check against the wild color
+    if (currentCard.type === CARD_TYPES.WILD && gameState.wildColor) {
+      return this.color === gameState.wildColor;
+    }
 
-    // Color match (including wild color)
-    if (this.color === currentColor) {
+    // For regular cards, check color match
+    if (this.color === currentCard.color) {
       return true;
     }
 
-    // For non-wild current cards, also check value/effect match
+    // Check value/effect match for non-wild cards
     if (currentCard.type !== CARD_TYPES.WILD) {
-      // Value/effect match (number or action)
-      if (this.value === currentCard.value || this.effect === currentCard.effect) {
-        return true;
+      // Number cards: match by value
+      if (this.type === CARD_TYPES.NUMBER && currentCard.type === CARD_TYPES.NUMBER) {
+        return this.value === currentCard.value;
+      }
+      
+      // Action cards: match by effect
+      if (this.type === CARD_TYPES.ACTION && currentCard.type === CARD_TYPES.ACTION) {
+        return this.effect === currentCard.effect;
       }
     }
 

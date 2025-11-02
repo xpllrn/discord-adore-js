@@ -451,12 +451,13 @@ async function handleChooseButton(interaction, game) {
   // Create card selection dropdown
   const row = UnoUI.createCardSelectionDropdown(playableCards, true);
   
-  const dropdownMessage = await interaction.reply({
+  await interaction.reply({
     content: 'Choose a card to play:',
     components: [row],
-    flags: MessageFlags.Ephemeral,
-    fetchReply: true
+    flags: MessageFlags.Ephemeral
   });
+  
+  const dropdownMessage = await interaction.fetchReply();
   
   // Set up collector for this specific dropdown
   const dropdownCollector = dropdownMessage.createMessageComponentCollector({
@@ -468,12 +469,7 @@ async function handleChooseButton(interaction, game) {
   dropdownCollector.on('collect', async (dropdownInteraction) => {
     try {
       await handleCardSelection(dropdownInteraction, game);
-      
-      // Send new game message after card play
-      const updatedGame = gameManager.getActiveGame(game.channelId);
-      if (updatedGame) {
-        await UnoUI.sendGameMessage(interaction.channel, updatedGame);
-      }
+      // Note: handleCardSelection will send the new game message itself
     } catch (error) {
       console.error('Error handling card selection:', error);
       await dropdownInteraction.reply({
@@ -583,12 +579,13 @@ async function handleCardSelection(interaction, game) {
   if (selectedCard.type === 'wild') {
     const colorSelection = UnoUI.createWildColorSelection();
     
-    const colorMessage = await interaction.reply({
+    await interaction.reply({
       content: `You selected: ${selectedCard.getDisplayString()}\nChoose a color:`,
       components: [colorSelection],
-      flags: MessageFlags.Ephemeral,
-      fetchReply: true
+      flags: MessageFlags.Ephemeral
     });
+    
+    const colorMessage = await interaction.fetchReply();
     
     // Set up collector for color selection
     const colorCollector = colorMessage.createMessageComponentCollector({
