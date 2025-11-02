@@ -291,11 +291,8 @@ async function handlePlayButton(interaction, message) {
     });
   }
   
-  // Reply to the interaction first
-  await interaction.reply({
-    content: '🎮 Starting game...',
-    flags: MessageFlags.Ephemeral
-  });
+  // Defer the interaction update (this acknowledges the interaction without showing a message)
+  await interaction.deferUpdate();
   
   // Send new game message (this will delete the old lobby message and create a new one)
   const newMessage = await UnoUI.sendGameMessage(interaction.channel, result.game, setupGameCollector);
