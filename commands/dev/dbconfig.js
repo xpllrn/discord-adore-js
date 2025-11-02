@@ -41,7 +41,7 @@ module.exports = {
     try {
       const newDbUrl = process.env.New_DB;
       if (!newDbUrl) {
-        return message.channel.send({ embeds: [embeds.deny('New_DB environment variable not found! Please set it first.')] });
+        return embeds.deny(message, 'New_DB environment variable not found! Please set it first.');
       }
 
       // Create new connection URLs

@@ -30,7 +30,14 @@ module.exports = {
       const currentConnections = getConnections();
 
       if (!currentConnections.global && !currentConnections.local) {
-        return statusMessage.edit({ embeds: [embeds.deny('No current database connections found!')] });
+        const { EmbedBuilder } = require('discord.js');
+        const config = require('../../config/setup');
+        
+        const errorEmbed = new EmbedBuilder()
+          .setColor(config.colors.error)
+          .setDescription(`${config.emojis.error} <@${message.author.id}>: No current database connections found!`);
+        
+        return statusMessage.edit({ embeds: [errorEmbed] });
       }
 
       // Connect to new MongoDB Atlas database
@@ -38,7 +45,14 @@ module.exports = {
       
       const newDbUrl = process.env.New_DB;
       if (!newDbUrl) {
-        return statusMessage.edit({ embeds: [embeds.deny('New_DB environment variable not found!')] });
+        const { EmbedBuilder } = require('discord.js');
+        const config = require('../../config/setup');
+        
+        const errorEmbed = new EmbedBuilder()
+          .setColor(config.colors.error)
+          .setDescription(`${config.emojis.error} <@${message.author.id}>: New_DB environment variable not found!`);
+        
+        return statusMessage.edit({ embeds: [errorEmbed] });
       }
 
       // Create connections to new database with different database names
