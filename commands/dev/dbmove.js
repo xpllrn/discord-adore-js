@@ -25,6 +25,9 @@ module.exports = {
     const statusMessage = await embeds.loading(message, 'Starting database migration...');
 
     try {
+      // Force reload environment variables
+      require('dotenv').config();
+      
       // Get current connections
       const { getConnections } = require('../../database/connection');
       const currentConnections = getConnections();
@@ -44,13 +47,16 @@ module.exports = {
       await updateStatus(statusMessage, 'Connecting to new MongoDB Atlas database...');
       
       const newDbUrl = process.env.New_DB;
+      console.log('Debug - New_DB value:', newDbUrl);
+      console.log('Debug - All env vars containing "DB":', Object.keys(process.env).filter(key => key.includes('DB')));
+      
       if (!newDbUrl) {
         const { EmbedBuilder } = require('discord.js');
         const config = require('../../config/setup');
         
         const errorEmbed = new EmbedBuilder()
           .setColor(config.colors.error)
-          .setDescription(`${config.emojis.error} <@${message.author.id}>: New_DB environment variable not found!`);
+          .setDescription(`${config.emojis.error} <@${message.author.id}>: New_DB environment variable not found!\n\nAvailable DB vars: ${Object.keys(process.env).filter(key => key.includes('DB')).join(', ')}`);
         
         return statusMessage.edit({ embeds: [errorEmbed] });
       }
