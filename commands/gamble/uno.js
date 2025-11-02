@@ -429,7 +429,7 @@ async function handleChooseButton(interaction, game) {
     });
   }
   
-  const playableCards = player.getPlayableCards(game.currentCard);
+  const playableCards = player.getPlayableCards(game.currentCard, { wildColor: game.wildColor });
   
   if (playableCards.length === 0) {
     // No playable cards, must draw
@@ -469,11 +469,10 @@ async function handleChooseButton(interaction, game) {
     try {
       await handleCardSelection(dropdownInteraction, game);
       
-      // Update main game message after card play
+      // Send new game message after card play
       const updatedGame = gameManager.getActiveGame(game.channelId);
       if (updatedGame) {
-        const gameMessage = await interaction.channel.messages.fetch(interaction.message.id);
-        await UnoUI.updateGameMessage(gameMessage, updatedGame);
+        await UnoUI.sendGameMessage(interaction.channel, updatedGame);
       }
     } catch (error) {
       console.error('Error handling card selection:', error);
@@ -521,11 +520,11 @@ async function handleExitButton(interaction, message) {
           components: []
         });
         
-        // Update main game message if game still exists
+        // Send new game message if game still exists
         if (!result.gameEnded) {
           const game = gameManager.getActiveGame(message.channel.id);
           if (game) {
-            await UnoUI.updateGameMessage(message, game);
+            await UnoUI.sendGameMessage(message.channel, game);
           }
         }
       } else {
@@ -605,7 +604,7 @@ async function handleCardSelection(interaction, game) {
       const result = gameManager.playCard(game.channelId, interaction.user.id, selectedCard.id, selectedColor);
       
       if (result.success) {
-        let message = `Played: ${selectedCard.getDisplayString()} (${selectedColor})`;
+        let message = `${selectedCard.getDisplayString()} (${selectedColor})`;
         
         // Add effect messages
         if (result.effects) {
@@ -621,6 +620,12 @@ async function handleCardSelection(interaction, game) {
           content: `✅ ${message}`,
           components: []
         });
+        
+        // Send new game message
+        const updatedGame = gameManager.getActiveGame(game.channelId);
+        if (updatedGame) {
+          await UnoUI.sendGameMessage(colorInteraction.channel, updatedGame);
+        }
       } else {
         await colorInteraction.update({
           content: `❌ ${result.message}`,
@@ -636,7 +641,7 @@ async function handleCardSelection(interaction, game) {
   const result = gameManager.playCard(game.channelId, interaction.user.id, selectedCard.id);
   
   if (result.success) {
-    let message = `Played: ${selectedCard.getDisplayString()}`;
+    let message = `${selectedCard.getDisplayString()}`;
     
     // Add effect messages
     if (result.effects) {
@@ -644,7 +649,7 @@ async function handleCardSelection(interaction, game) {
         message += '\n🚫 Next player is skipped!';
       }
       if (result.effects.includes('reverse')) {
-        message += `\n🔄 Direction reversed! (${result.newDirection})`;
+        message += '\n🔄 Direction reversed!';
       }
       if (result.effects.includes('draw_two')) {
         message += `\n➕ Next player draws ${result.drawCount} cards!`;
@@ -659,11 +664,10 @@ async function handleCardSelection(interaction, game) {
     
     await replyWithMessage(interaction, message, 'success');
     
-    // Update main game message
+    // Send new game message
     const updatedGame = gameManager.getActiveGame(game.channelId);
     if (updatedGame) {
-      const gameMessage = await interaction.channel.messages.fetch(interaction.message.id);
-      await UnoUI.updateGameMessage(gameMessage, updatedGame);
+      await UnoUI.sendGameMessage(interaction.channel, updatedGame);
     }
   } else {
     return replyWithMessage(interaction, result.message, 'error');
@@ -708,11 +712,10 @@ async function handleDrawFromDropdown(interaction, game) {
       flags: MessageFlags.Ephemeral
     });
     
-    // Update main game message
+    // Send new game message
     const updatedGame = gameManager.getActiveGame(game.channelId);
     if (updatedGame) {
-      const gameMessage = await interaction.channel.messages.fetch(interaction.message.id);
-      await UnoUI.updateGameMessage(gameMessage, updatedGame);
+      await UnoUI.sendGameMessage(interaction.channel, updatedGame);
     }
   } else {
     return interaction.reply({

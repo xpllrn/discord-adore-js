@@ -352,7 +352,7 @@ class UnoGameState {
     }
 
     // Validate card play
-    if (!card.isPlayable(this.currentCard)) {
+    if (!card.isPlayable(this.currentCard, { wildColor: this.wildColor })) {
       // Return card to hand
       currentPlayer.addCards([card]);
       result.message = 'Invalid card play!';

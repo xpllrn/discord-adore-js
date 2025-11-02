@@ -97,8 +97,6 @@ class UnoUI {
       return `${indicator} **${player.username}**${statusIcon}${unoIcon} - ${cardText}`;
     }).join('\n');
     
-    const directionEmoji = game.direction > 0 ? '🔄' : '🔃';
-    const directionText = game.direction > 0 ? 'Clockwise' : 'Counterclockwise';
     const currentCardDisplay = game.currentCard ? game.currentCard.getDisplayString() : 'None';
     
     let description = '';
@@ -114,9 +112,6 @@ class UnoUI {
       .setColor(colors.success)
       .setTitle('🃏 UNO Game Active')
       .setDescription(description)
-      .addFields(
-        { name: 'Direction', value: `${directionEmoji} ${directionText}`, inline: true }
-      )
       .setThumbnail(cardThumbnail);
     
     // Add special effects if any
@@ -182,7 +177,7 @@ class UnoUI {
       ? player.hand.map(card => card.getDisplayString()).join(' ')
       : 'No cards';
     
-    const playableCards = player.getPlayableCards(game.currentCard);
+    const playableCards = player.getPlayableCards(game.currentCard, { wildColor: game.wildColor });
     const playableDisplay = playableCards.length > 0
       ? playableCards.map(card => card.getDisplayString()).join(' ')
       : 'None (you must draw)';
@@ -214,7 +209,7 @@ class UnoUI {
   static createCardSelectionDropdown(playableCards, canDraw = true) {
     const options = [];
     
-    // Add playable cards (limit to 24 to leave room for draw option)
+    // Add ONLY playable cards (limit to 24 to leave room for draw option)
     playableCards.slice(0, canDraw ? 24 : 25).forEach(card => {
       const cardDisplay = card.getDisplayString();
       
@@ -445,12 +440,12 @@ class UnoUI {
   }
 
   /**
-   * Update game message with current state
-   * @param {Message} message - Discord message to update
+   * Send new game message with current state (instead of editing)
+   * @param {Channel} channel - Discord channel to send to
    * @param {UnoGameState} game - Game state
    * @param {string} userId - Current user ID (optional)
    */
-  static async updateGameMessage(message, game, userId = null) {
+  static async sendGameMessage(channel, game, userId = null) {
     try {
       let embed, components;
       
@@ -466,12 +461,13 @@ class UnoUI {
         components = [];
       }
       
-      await message.edit({
+      return await channel.send({
         embeds: [embed],
         components: components
       });
     } catch (error) {
-      console.error('Error updating game message:', error);
+      console.error('Error sending game message:', error);
+      return null;
     }
   }
 }

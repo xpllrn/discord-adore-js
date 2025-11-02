@@ -99,20 +99,20 @@ class UnoCard {
       return false;
     }
 
-    // Color match
-    if (this.color === currentCard.color) {
+    // If current card is wild, check against the wild color
+    const currentColor = gameState.wildColor || currentCard.color;
+
+    // Color match (including wild color)
+    if (this.color === currentColor) {
       return true;
     }
 
-    // Value/effect match (number or action)
-    if (this.value === currentCard.value || this.effect === currentCard.effect) {
-      return true;
-    }
-
-    // Wild Draw Four special rule - can only be played if no other cards are playable
-    if (currentCard.type === CARD_TYPES.WILD && gameState.allowWildDrawFourChallenge) {
-      // This would need to be validated against the player's hand
-      return true;
+    // For non-wild current cards, also check value/effect match
+    if (currentCard.type !== CARD_TYPES.WILD) {
+      // Value/effect match (number or action)
+      if (this.value === currentCard.value || this.effect === currentCard.effect) {
+        return true;
+      }
     }
 
     return false;
