@@ -47,7 +47,7 @@ class UnoUI {
       .setThumbnail('https://cdn.discordapp.com/emojis/1434125464770838598.png') // UNO card thumbnail
       .setFooter({ 
         text: game.players.length >= 2 
-          ? 'Click Play to start or wait 2 minutes for auto-start' 
+          ? 'Ready to start!' 
           : 'Need at least 2 players to start'
       })
       .setTimestamp();
@@ -448,6 +448,15 @@ class UnoUI {
    */
   static async sendGameMessage(channel, game, setupCollector = null, userId = null) {
     try {
+      // Delete old message if it exists
+      if (game.currentMessage) {
+        try {
+          await game.currentMessage.delete();
+        } catch (error) {
+          console.log('Could not delete old message (may already be deleted):', error.message);
+        }
+      }
+      
       let embed, components, content = '';
       
       if (game.status === GAME_STATUS.LOBBY) {
