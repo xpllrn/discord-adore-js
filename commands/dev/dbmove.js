@@ -61,41 +61,33 @@ module.exports = {
         return statusMessage.edit({ embeds: [errorEmbed] });
       }
 
-      // Create connections to new database with different database names
-      const globalDbUrl = newDbUrl.replace('/adore', '/global');
-      const localDbUrl = newDbUrl.replace('/adore', '/local');
+      // Connect to the main database - we'll use collections to separate data
+      console.log(chalk.blue(`Connecting to MongoDB Atlas: ${newDbUrl.replace(/\/\/.*@/, '//***:***@')}`));
 
-      const newGlobalConnection = mongoose.createConnection(globalDbUrl, {
+      const newConnection = mongoose.createConnection(newDbUrl, {
         serverSelectionTimeoutMS: 30000,
         socketTimeoutMS: 120000,
         maxPoolSize: 10,
         minPoolSize: 2,
         retryWrites: true,
-        retryReads: true
+        retryReads: true,
+        authSource: 'admin' // Specify auth source
       });
 
-      const newLocalConnection = mongoose.createConnection(localDbUrl, {
-        serverSelectionTimeoutMS: 30000,
-        socketTimeoutMS: 120000,
-        maxPoolSize: 10,
-        minPoolSize: 2,
-        retryWrites: true,
-        retryReads: true
+      // Wait for connection
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Connection timeout')), 30000);
+        newConnection.once('open', () => { 
+          clearTimeout(timeout); 
+          console.log(chalk.green('✓ Connected to MongoDB Atlas'));
+          resolve(); 
+        });
+        newConnection.once('error', (err) => { 
+          clearTimeout(timeout); 
+          console.error(chalk.red('✗ Connection failed:', err.message));
+          reject(err); 
+        });
       });
-
-      // Wait for connections
-      await Promise.all([
-        new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Global connection timeout')), 30000);
-          newGlobalConnection.once('open', () => { clearTimeout(timeout); resolve(); });
-          newGlobalConnection.once('error', (err) => { clearTimeout(timeout); reject(err); });
-        }),
-        new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Local connection timeout')), 30000);
-          newLocalConnection.once('open', () => { clearTimeout(timeout); resolve(); });
-          newLocalConnection.once('error', (err) => { clearTimeout(timeout); reject(err); });
-        })
-      ]);
 
       console.log(chalk.green('✓ Connected to new MongoDB Atlas databases'));
 
@@ -119,15 +111,15 @@ module.exports = {
       const oldSprintModel = currentConnections.global ? currentConnections.global.model('Sprint', sprintSchema) : null;
       const oldSpotifyAuthSessionModel = currentConnections.global ? currentConnections.global.model('SpotifyAuthSession', spotifyAuthSessionSchema) : null;
 
-      // Create models for new connections
-      const newUserModel = newGlobalConnection.model('User', userSchema);
-      const newGuildModel = newLocalConnection.model('Guild', guildSchema);
-      const newSystemModel = newGlobalConnection.model('System', systemSchema);
-      const newWebhookModel = newLocalConnection.model('Webhook', webhookSchema);
-      const newWelcomeButtonModel = newLocalConnection.model('WelcomeButton', welcomeButtonSchema);
-      const newStoreItemModel = newGlobalConnection.model('StoreItem', storeItemSchema);
-      const newSprintModel = newGlobalConnection.model('Sprint', sprintSchema);
-      const newSpotifyAuthSessionModel = newGlobalConnection.model('SpotifyAuthSession', spotifyAuthSessionSchema);
+      // Create models for new connection with prefixed collection names
+      const newUserModel = newConnection.model('GlobalUser', userSchema, 'global_users');
+      const newGuildModel = newConnection.model('LocalGuild', guildSchema, 'local_guilds');
+      const newSystemModel = newConnection.model('GlobalSystem', systemSchema, 'global_systems');
+      const newWebhookModel = newConnection.model('LocalWebhook', webhookSchema, 'local_webhooks');
+      const newWelcomeButtonModel = newConnection.model('LocalWelcomeButton', welcomeButtonSchema, 'local_welcomebuttons');
+      const newStoreItemModel = newConnection.model('GlobalStoreItem', storeItemSchema, 'global_storeitems');
+      const newSprintModel = newConnection.model('GlobalSprint', sprintSchema, 'global_sprints');
+      const newSpotifyAuthSessionModel = newConnection.model('GlobalSpotifyAuthSession', spotifyAuthSessionSchema, 'global_spotifyauthsessions');
 
       let totalMigrated = 0;
 
@@ -309,9 +301,8 @@ module.exports = {
       console.log(chalk.blue(`New global database: ${newUserCount} users`));
       console.log(chalk.blue(`New local database: ${newGuildCount} guilds`));
 
-      // Close new connections
-      await newGlobalConnection.close();
-      await newLocalConnection.close();
+      // Close new connection
+      await newConnection.close();
 
       const { EmbedBuilder } = require('discord.js');
       
@@ -322,12 +313,12 @@ module.exports = {
         .addFields([
           {
             name: '📊 Migration Summary',
-            value: `**Global Database:** ${newUserCount} users and related data\n**Local Database:** ${newGuildCount} guilds and related data`,
+            value: `**Global Collections:** ${newUserCount} users and related data\n**Local Collections:** ${newGuildCount} guilds and related data`,
             inline: false
           },
           {
-            name: '🔗 Database URLs',
-            value: `**Global:** \`${globalDbUrl.replace(/\/\/.*@/, '//***:***@')}\`\n**Local:** \`${localDbUrl.replace(/\/\/.*@/, '//***:***@')}\``,
+            name: '🔗 Database URL',
+            value: `**MongoDB Atlas:** \`${newDbUrl.replace(/\/\/.*@/, '//***:***@')}\`\n**Collections:** global_* and local_* prefixes`,
             inline: false
           },
           {
