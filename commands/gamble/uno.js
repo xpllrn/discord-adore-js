@@ -7,17 +7,29 @@ const UnoUI = require('../../utils/unoUI');
 const { getService } = require('@services');
 
 // Helper function for interaction replies
-function replyWithMessage(interaction, message, type = 'info') {
+async function replyWithMessage(interaction, message, type = 'info') {
   const icons = {
     success: '✅',
     error: '❌',
     warn: '⚠️',
     info: 'ℹ️'
   };
-  return interaction.reply({
-    content: `${icons[type]} ${message}`,
-    flags: MessageFlags.Ephemeral
-  });
+  
+  try {
+    if (interaction.replied || interaction.deferred) {
+      return await interaction.followUp({
+        content: `${icons[type]} ${message}`,
+        flags: MessageFlags.Ephemeral
+      });
+    } else {
+      return await interaction.reply({
+        content: `${icons[type]} ${message}`,
+        flags: MessageFlags.Ephemeral
+      });
+    }
+  } catch (error) {
+    console.error('Error in replyWithMessage:', error);
+  }
 }
 
 module.exports = {
@@ -80,15 +92,11 @@ async function handleDefault(message) {
  * Handle starting a new UNO game
  */
 async function handleStart(message) {
-  console.log(`[UNO] Creating game in channel ${message.channel.id} by ${message.author.username}`);
-  
   const result = gameManager.createGame(
     message.channel.id,
     message.author.id,
     message.author.username
   );
-  
-  console.log(`[UNO] Create game result:`, result);
   
   if (!result.success) {
     return embeds.warn(message, result.message);
@@ -97,8 +105,6 @@ async function handleStart(message) {
   // Create lobby embed and buttons
   const lobbyEmbed = UnoUI.createLobbyEmbed(result.game);
   const lobbyButtons = UnoUI.createLobbyButtons(result.game);
-  
-  console.log(`[UNO] Game created with ${result.game.players.length} players`);
   
   const gameMessage = await message.channel.send({
     embeds: [lobbyEmbed],
@@ -276,16 +282,7 @@ async function handleLobbyInteraction(interaction, message, game) {
  * Handle play button (force start)
  */
 async function handlePlayButton(interaction, message) {
-  console.log(`[UNO] Play button clicked by ${interaction.user.username} in channel ${message.channel.id}`);
-  
-  const game = gameManager.getActiveGame(message.channel.id);
-  if (game) {
-    console.log(`[UNO] Current game status: ${game.status}, Players: ${game.players.length}`);
-  }
-  
   const result = gameManager.startGame(message.channel.id, interaction.user.id);
-  
-  console.log(`[UNO] Start game result:`, result);
   
   if (!result.success) {
     return interaction.reply({
@@ -294,33 +291,28 @@ async function handlePlayButton(interaction, message) {
     });
   }
   
-  // Update message to show active game
-  const gameData = UnoUI.createGameEmbed(result.game);
-  const gameButtons = UnoUI.createGameButtons(result.game, interaction.user.id);
-  
-  await interaction.update({
-    content: gameData.content,
-    embeds: [gameData.embed],
-    components: gameButtons
+  // Reply to the interaction first
+  await interaction.reply({
+    content: '🎮 Starting game...',
+    flags: MessageFlags.Ephemeral
   });
   
-  // Set up game collector
-  setupGameCollector(message, result.game);
+  // Send new game message (this will delete the old lobby message and create a new one)
+  const newMessage = await UnoUI.sendGameMessage(interaction.channel, result.game, setupGameCollector);
+  if (newMessage) {
+    result.game.setCurrentMessage(newMessage);
+  }
 }
 
 /**
  * Handle join button
  */
 async function handleJoinButton(interaction, message) {
-  console.log(`[UNO] Join button clicked by ${interaction.user.username} in channel ${message.channel.id}`);
-  
   const result = gameManager.joinGame(
     message.channel.id,
     interaction.user.id,
     interaction.user.username
   );
-  
-  console.log(`[UNO] Join game result:`, result);
   
   if (!result.success) {
     return interaction.reply({
@@ -358,10 +350,16 @@ function setupGameCollector(message, game) {
       await handleGameInteraction(interaction, message);
     } catch (error) {
       console.error('Error handling game interaction:', error);
-      await interaction.reply({
-        content: '❌ An error occurred',
-        flags: MessageFlags.Ephemeral
-      });
+      try {
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: '❌ An error occurred',
+            flags: MessageFlags.Ephemeral
+          });
+        }
+      } catch (replyError) {
+        console.error('Error sending error reply:', replyError);
+      }
     }
   });
   
@@ -599,11 +597,7 @@ async function handleCardSelection(interaction, game) {
   // Find the selected card by ID
   const selectedCard = player.hand.find(card => card.id === selectedValue);
   if (!selectedCard) {
-    console.log('Card selection debug:', {
-      selectedValue,
-      playerHandIds: player.hand.map(c => c.id),
-      playerHandCards: player.hand.map(c => c.getDisplayString())
-    });
+    // Card not found in hand
     return replyWithMessage(interaction, 'Card not found in your hand', 'error');
   }
   

@@ -243,12 +243,7 @@ class UnoUI {
       });
     }
     
-    // Debug: Log the options to see what we're creating
-    console.log('Creating dropdown with options:', options.map(opt => ({
-      label: opt.label,
-      emoji: opt.emoji,
-      hasEmoji: !!opt.emoji
-    })));
+    // Create dropdown menu
     
     const selectMenu = new StringSelectMenuBuilder()
       .setCustomId('uno_card_select')
@@ -457,7 +452,7 @@ class UnoUI {
         try {
           await game.currentMessage.delete();
         } catch (error) {
-          console.log('Could not delete old message (may already be deleted):', error.message);
+          // Message may already be deleted, ignore error
         }
       }
       
