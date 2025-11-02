@@ -74,11 +74,7 @@ class UnoUI {
           .setCustomId('uno_join')
           .setLabel('Join')
           .setStyle(ButtonStyle.Secondary)
-          .setDisabled(game.players.length >= game.settings.maxPlayers),
-        new ButtonBuilder()
-          .setCustomId('uno_settings')
-          .setLabel('Settings')
-          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(game.players.length >= game.settings.maxPlayers)
       );
   }
 
@@ -171,15 +167,6 @@ class UnoUI {
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(!isPlayerTurn),
           new ButtonBuilder()
-            .setCustomId('uno_draw')
-            .setLabel('Draw')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(!isPlayerTurn),
-          new ButtonBuilder()
-            .setCustomId('uno_uno')
-            .setLabel('UNO!')
-            .setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder()
             .setCustomId('uno_exit')
             .setLabel('Exit')
             .setStyle(ButtonStyle.Secondary)
@@ -233,7 +220,7 @@ class UnoUI {
     // Add playable cards (limit to 24 to leave room for draw option)
     playableCards.slice(0, canDraw ? 24 : 25).forEach(card => {
       options.push({
-        label: card.getCardName(),
+        label: `${card.getDisplayString()} ${card.getCardName()}`,
         description: `Play this card`,
         value: card.id
       });
@@ -242,7 +229,7 @@ class UnoUI {
     // Add draw option if no playable cards or if allowed
     if (playableCards.length === 0 || canDraw) {
       options.push({
-        label: 'Draw a card',
+        label: '📥 Draw a card',
         description: 'Draw a card from the deck',
         value: 'draw_card'
       });

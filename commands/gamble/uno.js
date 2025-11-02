@@ -254,9 +254,6 @@ async function handleLobbyInteraction(interaction, message, game) {
     case 'uno_join':
       await handleJoinButton(interaction, message);
       break;
-    case 'uno_settings':
-      await handleSettingsButton(interaction, message);
-      break;
   }
 }
 
@@ -326,61 +323,7 @@ async function handleJoinButton(interaction, message) {
   });
 }
 
-/**
- * Handle settings button
- */
-async function handleSettingsButton(interaction, message) {
-  const game = gameManager.getActiveGame(message.channel.id);
-  
-  if (!game) {
-    return interaction.reply({
-      content: '⚠️ No active game found',
-      flags: MessageFlags.Ephemeral
-    });
-  }
-  
-  if (game.hostId !== interaction.user.id) {
-    return interaction.reply({
-      content: '⚠️ Only the host can change settings',
-      flags: MessageFlags.Ephemeral
-    });
-  }
-  
-  // Create settings dropdown
-  const settingsDropdown = new StringSelectMenuBuilder()
-    .setCustomId('uno_settings_select')
-    .setPlaceholder('Choose a setting to modify')
-    .addOptions([
-      {
-        label: 'Max Players',
-        description: `Currently: ${game.settings.maxPlayers}`,
-        value: 'max_players'
-      },
-      {
-        label: 'Turn Time Limit',
-        description: `Currently: ${game.settings.turnTimeLimit / 1000}s`,
-        value: 'turn_time'
-      },
-      {
-        label: 'Allow Stacking',
-        description: `Currently: ${game.settings.allowStacking ? 'Yes' : 'No'}`,
-        value: 'allow_stacking'
-      },
-      {
-        label: 'Must Call UNO',
-        description: `Currently: ${game.settings.customRules.mustCallUno ? 'Yes' : 'No'}`,
-        value: 'must_call_uno'
-      }
-    ]);
-  
-  const row = new ActionRowBuilder().addComponents(settingsDropdown);
-  
-  return interaction.reply({
-    content: '⚙️ **Game Settings** - Choose a setting to modify:',
-    components: [row],
-    flags: MessageFlags.Ephemeral
-  });
-}
+
 
 /**
  * Set up game button collector
@@ -434,17 +377,8 @@ async function handleGameInteraction(interaction, message) {
     case 'uno_choose':
       await handleChooseButton(interaction, game);
       break;
-    case 'uno_draw':
-      await handleDrawButton(interaction, game);
-      break;
-    case 'uno_uno':
-      await handleUnoButton(interaction, game);
-      break;
     case 'uno_exit':
       await handleExitButton(interaction, message);
-      break;
-    case 'uno_settings_select':
-      await handleSettingsSelection(interaction, game);
       break;
   }
 }
@@ -617,77 +551,7 @@ async function handleExitButton(interaction, message) {
   });
 }
 
-/**
- * Handle draw button
- */
-async function handleDrawButton(interaction, game) {
-  const player = game.getPlayer(interaction.user.id);
-  
-  if (!player) {
-    return replyWithMessage(interaction, 'You\'re not in this game', 'warn');
-  }
-  
-  const currentPlayer = game.getCurrentPlayer();
-  if (!currentPlayer || currentPlayer.userId !== interaction.user.id) {
-    return replyWithMessage(interaction, 'It\'s not your turn', 'warn');
-  }
-  
-  const result = gameManager.drawCards(game.channelId, interaction.user.id, 1);
-  
-  if (result.success) {
-    const drawnCard = result.cards[0];
-    
-    // Check if drawn card is playable
-    const isPlayable = drawnCard.isPlayable(game.currentCard);
-    
-    let message = `Drew: ${drawnCard.getDisplayString()}`;
-    if (isPlayable) {
-      message += '\nThis card is playable! Use Choose to play it.';
-    }
-    
-    await replyWithMessage(interaction, message, 'success');
-    
-    // Update main game message
-    const updatedGame = gameManager.getActiveGame(game.channelId);
-    if (updatedGame) {
-      const gameMessage = await interaction.channel.messages.fetch(interaction.message.id);
-      await UnoUI.updateGameMessage(gameMessage, updatedGame);
-    }
-  } else {
-    return replyWithMessage(interaction, 'Could not draw card', 'error');
-  }
-}
 
-/**
- * Handle UNO button
- */
-async function handleUnoButton(interaction, game) {
-  const player = game.getPlayer(interaction.user.id);
-  
-  if (!player) {
-    return replyWithMessage(interaction, 'You\'re not in this game', 'warn');
-  }
-  
-  if (!player.hasUno()) {
-    return replyWithMessage(interaction, 'You don\'t have UNO (need exactly 1 card)', 'warn');
-  }
-  
-  const success = gameManager.callUno(game.channelId, interaction.user.id);
-  
-  if (success.success) {
-    await interaction.reply({
-      content: `🔥 **${interaction.user.username}** called UNO!`,
-      flags: MessageFlags.Ephemeral
-    });
-    
-    // Also announce in channel
-    await interaction.followUp({
-      content: `🔥 **${interaction.user.username}** called UNO!`
-    });
-  } else {
-    return replyWithMessage(interaction, success.message, 'error');
-  }
-}
 
 /**
  * Handle card selection from dropdown
@@ -858,23 +722,3 @@ async function handleDrawFromDropdown(interaction, game) {
   }
 }
 
-/**
- * Handle settings selection from dropdown
- */
-async function handleSettingsSelection(interaction, game) {
-  const selectedSetting = interaction.values[0];
-  
-  // For now, just show that the setting was selected
-  // You can expand this to actually modify settings
-  const settingNames = {
-    max_players: 'Max Players',
-    turn_time: 'Turn Time Limit',
-    allow_stacking: 'Allow Stacking',
-    must_call_uno: 'Must Call UNO'
-  };
-  
-  await interaction.reply({
-    content: `⚙️ Selected: ${settingNames[selectedSetting]}\n*Settings modification coming soon!*`,
-    flags: MessageFlags.Ephemeral
-  });
-}
