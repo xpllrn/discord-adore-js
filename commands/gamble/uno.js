@@ -239,11 +239,13 @@ function setupLobbyCollector(message, game) {
       game.currentCollector = null;
     }
     
-    // Disable buttons when collector ends
-    const disabledButtons = UnoUI.createLobbyButtons(game);
-    disabledButtons.components.forEach(button => button.setDisabled(true));
-    
-    message.edit({ components: [disabledButtons] }).catch(() => {});
+    // Only try to disable buttons if this is still the current message
+    if (game.currentMessage && game.currentMessage.id === message.id) {
+      const disabledButtons = UnoUI.createLobbyButtons(game);
+      disabledButtons.components.forEach(button => button.setDisabled(true));
+      
+      message.edit({ components: [disabledButtons] }).catch(() => {});
+    }
   });
 }
 
@@ -369,13 +371,15 @@ function setupGameCollector(message, game) {
       game.currentCollector = null;
     }
     
-    // Disable buttons when collector ends
-    const disabledButtons = UnoUI.createGameButtons(game);
-    disabledButtons.forEach(row => {
-      row.components.forEach(button => button.setDisabled(true));
-    });
-    
-    message.edit({ components: disabledButtons }).catch(() => {});
+    // Only try to disable buttons if this is still the current message
+    if (game.currentMessage && game.currentMessage.id === message.id) {
+      const disabledButtons = UnoUI.createGameButtons(game);
+      disabledButtons.forEach(row => {
+        row.components.forEach(button => button.setDisabled(true));
+      });
+      
+      message.edit({ components: disabledButtons }).catch(() => {});
+    }
   });
 }
 

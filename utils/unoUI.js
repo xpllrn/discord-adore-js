@@ -448,7 +448,11 @@ class UnoUI {
    */
   static async sendGameMessage(channel, game, setupCollector = null, userId = null) {
     try {
-      // Delete old message if it exists
+      // Stop old collector and delete old message if they exist
+      if (game.currentCollector) {
+        game.currentCollector.stop();
+      }
+      
       if (game.currentMessage) {
         try {
           await game.currentMessage.delete();
