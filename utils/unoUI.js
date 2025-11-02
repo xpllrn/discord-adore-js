@@ -440,12 +440,13 @@ class UnoUI {
   }
 
   /**
-   * Send new game message with current state (instead of editing)
+   * Send new game message with current state and set up collectors
    * @param {Channel} channel - Discord channel to send to
    * @param {UnoGameState} game - Game state
+   * @param {Function} setupCollector - Function to set up collectors
    * @param {string} userId - Current user ID (optional)
    */
-  static async sendGameMessage(channel, game, userId = null) {
+  static async sendGameMessage(channel, game, setupCollector = null, userId = null) {
     try {
       let embed, components;
       
@@ -461,10 +462,17 @@ class UnoUI {
         components = [];
       }
       
-      return await channel.send({
+      const message = await channel.send({
         embeds: [embed],
         components: components
       });
+      
+      // Set up collectors if provided
+      if (setupCollector && game.status === GAME_STATUS.ACTIVE) {
+        setupCollector(message, game);
+      }
+      
+      return message;
     } catch (error) {
       console.error('Error sending game message:', error);
       return null;

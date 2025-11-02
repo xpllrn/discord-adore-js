@@ -167,6 +167,10 @@ class UnoGameState {
       lobbyTimer: null
     };
     
+    // Message and collector tracking
+    this.currentMessage = null;
+    this.currentCollector = null;
+    
     // Timestamps
     this.createdAt = new Date();
     this.startedAt = null;
@@ -715,6 +719,37 @@ class UnoGameState {
       }
     });
     this.timers = { turnTimer: null, gameTimer: null, lobbyTimer: null };
+  }
+
+  /**
+   * Set current message and stop old collector
+   * @param {Message} message - Discord message
+   */
+  setCurrentMessage(message) {
+    // Stop old collector if exists
+    if (this.currentCollector) {
+      this.currentCollector.stop();
+    }
+    this.currentMessage = message;
+    this.currentCollector = null;
+  }
+
+  /**
+   * Set current collector
+   * @param {MessageComponentCollector} collector - Message collector
+   */
+  setCurrentCollector(collector) {
+    this.currentCollector = collector;
+  }
+
+  /**
+   * Stop current collector
+   */
+  stopCurrentCollector() {
+    if (this.currentCollector) {
+      this.currentCollector.stop();
+      this.currentCollector = null;
+    }
   }
 
   /**

@@ -237,7 +237,8 @@ class UnoGameManager {
     // Clear all timers
     this.clearAllTimers(channelId);
 
-    // End the game
+    // Stop collectors and end the game
+    game.stopCurrentCollector();
     game.endGame(reason);
 
     // Remove from games map

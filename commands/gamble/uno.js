@@ -105,7 +105,8 @@ async function handleStart(message) {
     components: [lobbyButtons]
   });
   
-  // Set up button collector
+  // Store message in game state and set up collector
+  result.game.setCurrentMessage(gameMessage);
   setupLobbyCollector(gameMessage, result.game);
   
   return gameMessage;
@@ -207,6 +208,9 @@ function setupLobbyCollector(message, game) {
     time: 300000 // 5 minutes
   });
   
+  // Store collector in game state
+  game.setCurrentCollector(collector);
+  
   collector.on('collect', async (interaction) => {
     try {
       await handleLobbyInteraction(interaction, message, game);
@@ -226,6 +230,11 @@ function setupLobbyCollector(message, game) {
   });
   
   collector.on('end', () => {
+    // Clear collector from game state
+    if (game.currentCollector === collector) {
+      game.currentCollector = null;
+    }
+    
     // Disable buttons when collector ends
     const disabledButtons = UnoUI.createLobbyButtons(game);
     disabledButtons.components.forEach(button => button.setDisabled(true));
@@ -334,6 +343,9 @@ function setupGameCollector(message, game) {
     time: 1800000 // 30 minutes
   });
   
+  // Store collector in game state
+  game.setCurrentCollector(collector);
+  
   collector.on('collect', async (interaction) => {
     try {
       await handleGameInteraction(interaction, message);
@@ -347,6 +359,11 @@ function setupGameCollector(message, game) {
   });
   
   collector.on('end', () => {
+    // Clear collector from game state
+    if (game.currentCollector === collector) {
+      game.currentCollector = null;
+    }
+    
     // Disable buttons when collector ends
     const disabledButtons = UnoUI.createGameButtons(game);
     disabledButtons.forEach(row => {
@@ -520,7 +537,10 @@ async function handleExitButton(interaction, message) {
         if (!result.gameEnded) {
           const game = gameManager.getActiveGame(message.channel.id);
           if (game) {
-            await UnoUI.sendGameMessage(message.channel, game);
+            const newMessage = await UnoUI.sendGameMessage(message.channel, game, setupGameCollector);
+            if (newMessage) {
+              game.setCurrentMessage(newMessage);
+            }
           }
         }
       } else {
@@ -618,10 +638,13 @@ async function handleCardSelection(interaction, game) {
           components: []
         });
         
-        // Send new game message
+        // Send new game message with collector
         const updatedGame = gameManager.getActiveGame(game.channelId);
         if (updatedGame) {
-          await UnoUI.sendGameMessage(colorInteraction.channel, updatedGame);
+          const newMessage = await UnoUI.sendGameMessage(colorInteraction.channel, updatedGame, setupGameCollector);
+          if (newMessage) {
+            updatedGame.setCurrentMessage(newMessage);
+          }
         }
       } else {
         await colorInteraction.update({
@@ -661,10 +684,13 @@ async function handleCardSelection(interaction, game) {
     
     await replyWithMessage(interaction, message, 'success');
     
-    // Send new game message
+    // Send new game message with collector
     const updatedGame = gameManager.getActiveGame(game.channelId);
     if (updatedGame) {
-      await UnoUI.sendGameMessage(interaction.channel, updatedGame);
+      const newMessage = await UnoUI.sendGameMessage(interaction.channel, updatedGame, setupGameCollector);
+      if (newMessage) {
+        updatedGame.setCurrentMessage(newMessage);
+      }
     }
   } else {
     return replyWithMessage(interaction, result.message, 'error');
@@ -709,10 +735,13 @@ async function handleDrawFromDropdown(interaction, game) {
       flags: MessageFlags.Ephemeral
     });
     
-    // Send new game message
+    // Send new game message with collector
     const updatedGame = gameManager.getActiveGame(game.channelId);
     if (updatedGame) {
-      await UnoUI.sendGameMessage(interaction.channel, updatedGame);
+      const newMessage = await UnoUI.sendGameMessage(interaction.channel, updatedGame, setupGameCollector);
+      if (newMessage) {
+        updatedGame.setCurrentMessage(newMessage);
+      }
     }
   } else {
     return interaction.reply({
