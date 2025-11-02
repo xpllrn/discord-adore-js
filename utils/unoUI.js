@@ -115,8 +115,7 @@ class UnoUI {
       .setTitle('🃏 UNO Game Active')
       .setDescription(description)
       .addFields(
-        { name: 'Current Card', value: currentCardDisplay, inline: true },
-        { name: 'Cards in Deck', value: game.deck.getCardCount().toString(), inline: true }
+        { name: 'Direction', value: `${directionEmoji} ${directionText}`, inline: true }
       )
       .setThumbnail(cardThumbnail);
     
@@ -152,8 +151,7 @@ class UnoUI {
    * @returns {ActionRowBuilder[]} Array of button rows
    */
   static createGameButtons(game, userId = null) {
-    const isPlayerTurn = userId && game.getCurrentPlayer()?.userId === userId;
-    
+    // Don't disable buttons - let the handler check if it's the player's turn
     return [
       new ActionRowBuilder()
         .addComponents(
@@ -164,8 +162,7 @@ class UnoUI {
           new ButtonBuilder()
             .setCustomId('uno_choose')
             .setLabel('Choose')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(!isPlayerTurn),
+            .setStyle(ButtonStyle.Secondary),
           new ButtonBuilder()
             .setCustomId('uno_exit')
             .setLabel('Exit')
@@ -219,21 +216,44 @@ class UnoUI {
     
     // Add playable cards (limit to 24 to leave room for draw option)
     playableCards.slice(0, canDraw ? 24 : 25).forEach(card => {
-      options.push({
-        label: `${card.getDisplayString()} ${card.getCardName()}`,
+      const cardDisplay = card.getDisplayString();
+      
+      // Try to extract emoji ID for the emoji property
+      const emojiMatch = cardDisplay.match(/<:(.*?):(\d+)>/);
+      
+      const option = {
+        label: card.getCardName(),
         description: `Play this card`,
         value: card.id
-      });
+      };
+      
+      // If we can extract the emoji, add it as the emoji property
+      if (emojiMatch) {
+        option.emoji = {
+          name: emojiMatch[1],
+          id: emojiMatch[2]
+        };
+      }
+      
+      options.push(option);
     });
     
     // Add draw option if no playable cards or if allowed
     if (playableCards.length === 0 || canDraw) {
       options.push({
-        label: '📥 Draw a card',
+        label: 'Draw a card',
         description: 'Draw a card from the deck',
-        value: 'draw_card'
+        value: 'draw_card',
+        emoji: '📥'
       });
     }
+    
+    // Debug: Log the options to see what we're creating
+    console.log('Creating dropdown with options:', options.map(opt => ({
+      label: opt.label,
+      emoji: opt.emoji,
+      hasEmoji: !!opt.emoji
+    })));
     
     const selectMenu = new StringSelectMenuBuilder()
       .setCustomId('uno_card_select')
@@ -394,7 +414,12 @@ class UnoUI {
    * @returns {string} Image URL
    */
   static getCardImageUrl(card) {
-    // For now, return a generic UNO card image
+    const cardEmoji = card.getDisplayString();
+    const emojiMatch = cardEmoji.match(/<:.*?:(\d+)>/);
+    if (emojiMatch) {
+      return `https://cdn.discordapp.com/emojis/${emojiMatch[1]}.png`;
+    }
+    // Fallback to generic UNO card image
     return 'https://cdn.discordapp.com/emojis/1434125464770838598.png';
   }
 
