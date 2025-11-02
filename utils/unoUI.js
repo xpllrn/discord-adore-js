@@ -81,7 +81,7 @@ class UnoUI {
   /**
    * Create active game embed
    * @param {UnoGameState} game - Game state
-   * @returns {EmbedBuilder} Game embed
+   * @returns {Object} Object with embed and content
    */
   static createGameEmbed(game) {
     const currentPlayer = game.getCurrentPlayer();
@@ -97,13 +97,7 @@ class UnoUI {
       return `${indicator} **${player.username}**${statusIcon}${unoIcon} - ${cardText}`;
     }).join('\n');
     
-    const currentCardDisplay = game.currentCard ? game.currentCard.getDisplayString() : 'None';
-    
-    let description = '';
-    if (currentPlayer) {
-      description = `<@${currentPlayer.userId}>, it's your turn!\n\n`;
-    }
-    description += `**Current Players**\n${playerList}`;
+    const description = `**Current Players**\n${playerList}`;
     
     // Get current card thumbnail URL
     const cardThumbnail = game.currentCard ? this.getCardImageUrl(game.currentCard) : 'https://cdn.discordapp.com/emojis/1434125464770838598.png';
@@ -134,9 +128,15 @@ class UnoUI {
     // Add game timer info
     const gameTime = game.startedAt ? Date.now() - game.startedAt.getTime() : 0;
     const gameTimeMinutes = Math.floor(gameTime / 60000);
-    embed.setFooter({ text: `Game time: ${gameTimeMinutes}m | Use buttons below to play` });
+    embed.setFooter({ text: `Game time: ${gameTimeMinutes}m` });
     
-    return embed;
+    // Create content with mention outside embed
+    let content = '';
+    if (currentPlayer) {
+      content = `<@${currentPlayer.userId}>, it's your turn!`;
+    }
+    
+    return { embed, content };
   }
 
   /**
@@ -448,13 +448,15 @@ class UnoUI {
    */
   static async sendGameMessage(channel, game, setupCollector = null, userId = null) {
     try {
-      let embed, components;
+      let embed, components, content = '';
       
       if (game.status === GAME_STATUS.LOBBY) {
         embed = this.createLobbyEmbed(game);
         components = [this.createLobbyButtons(game)];
       } else if (game.status === GAME_STATUS.ACTIVE) {
-        embed = this.createGameEmbed(game);
+        const gameData = this.createGameEmbed(game);
+        embed = gameData.embed;
+        content = gameData.content;
         components = this.createGameButtons(game, userId);
       } else {
         // Game ended
@@ -463,13 +465,20 @@ class UnoUI {
       }
       
       const message = await channel.send({
+        content: content,
         embeds: [embed],
         components: components
       });
       
       // Set up collectors if provided
-      if (setupCollector && game.status === GAME_STATUS.ACTIVE) {
-        setupCollector(message, game);
+      if (setupCollector) {
+        if (game.status === GAME_STATUS.LOBBY) {
+          // For lobby, we need a different collector setup function
+          // We'll pass this through the setupCollector function
+          setupCollector(message, game);
+        } else if (game.status === GAME_STATUS.ACTIVE) {
+          setupCollector(message, game);
+        }
       }
       
       return message;
