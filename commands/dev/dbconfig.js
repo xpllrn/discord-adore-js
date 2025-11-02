@@ -10,11 +10,13 @@ module.exports = {
   run: async(client, message, args) => {
     
     if (!args[0] || args[0].toLowerCase() !== 'update') {
-      const helpEmbed = {
-        color: 0x0099FF,
-        title: '🔧 Database Configuration Helper',
-        description: 'This command helps update your database configuration after migration.',
-        fields: [
+      const { EmbedBuilder } = require('discord.js');
+      
+      const helpEmbed = new EmbedBuilder()
+        .setColor('#0099FF')
+        .setTitle('🔧 Database Configuration Helper')
+        .setDescription('This command helps update your database configuration after migration.')
+        .addFields([
           {
             name: '📋 Current Configuration',
             value: `**Global DB:** \`${process.env.GLOBAL_CONNECTION ? process.env.GLOBAL_CONNECTION.replace(/\/\/.*@/, '//***:***@') : 'Not set'}\`\n**Local DB:** \`${process.env.LOCAL_CONNECTION ? process.env.LOCAL_CONNECTION.replace(/\/\/.*@/, '//***:***@') : 'Not set'}\`\n**New DB:** \`${process.env.New_DB ? process.env.New_DB.replace(/\/\/.*@/, '//***:***@') : 'Not set'}\``,
@@ -30,9 +32,8 @@ module.exports = {
             value: '`,dbconfig update` - Update configuration to use new databases',
             inline: false
           }
-        ],
-        footer: { text: 'Make sure you have run ,dbmove confirm first!' }
-      };
+        ])
+        .setFooter({ text: 'Make sure you have run ,dbmove confirm first!' });
       
       return message.channel.send({ embeds: [helpEmbed] });
     }
@@ -47,7 +48,7 @@ module.exports = {
       const newGlobalUrl = newDbUrl.replace('/adore', '/global');
       const newLocalUrl = newDbUrl.replace('/adore', '/local');
 
-      const statusMessage = await message.channel.send({ embeds: [embeds.loading('Updating database configuration...')] });
+      const statusMessage = await embeds.loading(message, 'Updating database configuration...');
 
       // Read current .env file
       const envPath = path.join(process.cwd(), '.env');
@@ -71,11 +72,13 @@ module.exports = {
       // Write updated .env file
       fs.writeFileSync(envPath, envContent);
 
-      const successEmbed = {
-        color: 0x00FF00,
-        title: '✅ Database Configuration Updated',
-        description: 'Successfully updated database configuration to use new MongoDB Atlas databases.',
-        fields: [
+      const { EmbedBuilder } = require('discord.js');
+      
+      const successEmbed = new EmbedBuilder()
+        .setColor('#00FF00')
+        .setTitle('✅ Database Configuration Updated')
+        .setDescription('Successfully updated database configuration to use new MongoDB Atlas databases.')
+        .addFields([
           {
             name: '🔄 Updated Configuration',
             value: `**Global DB:** \`${newGlobalUrl.replace(/\/\/.*@/, '//***:***@')}\`\n**Local DB:** \`${newLocalUrl.replace(/\/\/.*@/, '//***:***@')}\``,
@@ -91,21 +94,21 @@ module.exports = {
             value: '**IMPORTANT:** Restart the bot to apply the new database configuration.\n\nThe bot will now connect to your new MongoDB Atlas databases.',
             inline: false
           }
-        ],
-        timestamp: new Date().toISOString()
-      };
+        ])
+        .setTimestamp();
 
       await statusMessage.edit({ embeds: [successEmbed] });
 
     } catch (error) {
       console.error('Error updating database configuration:', error);
       
-      const errorEmbed = {
-        color: 0xFF0000,
-        title: '❌ Configuration Update Failed',
-        description: `An error occurred while updating the configuration: \`${error.message}\``,
-        footer: { text: 'Check console logs for detailed error information' }
-      };
+      const { EmbedBuilder } = require('discord.js');
+      
+      const errorEmbed = new EmbedBuilder()
+        .setColor('#FF0000')
+        .setTitle('❌ Configuration Update Failed')
+        .setDescription(`An error occurred while updating the configuration: \`${error.message}\``)
+        .setFooter({ text: 'Check console logs for detailed error information' });
       
       return message.channel.send({ embeds: [errorEmbed] });
     }

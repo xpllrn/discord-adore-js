@@ -11,17 +11,18 @@ module.exports = {
     
     // Confirm migration with user
     if (!args[0] || args[0].toLowerCase() !== 'confirm') {
-      const confirmEmbed = {
-        color: 0xFFFF00,
-        title: '⚠️ Database Migration Warning',
-        description: 'This command will migrate all data from the current database to the new MongoDB Atlas database.\n\n**What will happen:**\n• Connect to new MongoDB Atlas database\n• Create `global` and `local` databases\n• Copy all user data to `global` database\n• Copy all guild data to `local` database\n• Verify data integrity\n\n**To proceed, run:** `,dbmove confirm`',
-        footer: { text: 'This operation may take several minutes depending on data size' }
-      };
+      const { EmbedBuilder } = require('discord.js');
+      
+      const confirmEmbed = new EmbedBuilder()
+        .setColor('#FFFF00')
+        .setTitle('⚠️ Database Migration Warning')
+        .setDescription('This command will migrate all data from the current database to the new MongoDB Atlas database.\n\n**What will happen:**\n• Connect to new MongoDB Atlas database\n• Create `global` and `local` databases\n• Copy all user data to `global` database\n• Copy all guild data to `local` database\n• Verify data integrity\n\n**To proceed, run:** `,dbmove confirm`')
+        .setFooter({ text: 'This operation may take several minutes depending on data size' });
       
       return message.channel.send({ embeds: [confirmEmbed] });
     }
 
-    const statusMessage = await message.channel.send({ embeds: [embeds.loading('Starting database migration...')] });
+    const statusMessage = await embeds.loading(message, 'Starting database migration...');
 
     try {
       // Get current connections
@@ -292,11 +293,13 @@ module.exports = {
       await newGlobalConnection.close();
       await newLocalConnection.close();
 
-      const successEmbed = {
-        color: 0x00FF00,
-        title: '✅ Database Migration Complete',
-        description: `Successfully migrated **${totalMigrated}** documents to the new MongoDB Atlas database.`,
-        fields: [
+      const { EmbedBuilder } = require('discord.js');
+      
+      const successEmbed = new EmbedBuilder()
+        .setColor('#00FF00')
+        .setTitle('✅ Database Migration Complete')
+        .setDescription(`Successfully migrated **${totalMigrated}** documents to the new MongoDB Atlas database.`)
+        .addFields([
           {
             name: '📊 Migration Summary',
             value: `**Global Database:** ${newUserCount} users and related data\n**Local Database:** ${newGuildCount} guilds and related data`,
@@ -312,21 +315,21 @@ module.exports = {
             value: 'Update your connection configuration to use the new database URLs and restart the bot.',
             inline: false
           }
-        ],
-        timestamp: new Date().toISOString()
-      };
+        ])
+        .setTimestamp();
 
       await statusMessage.edit({ embeds: [successEmbed] });
 
     } catch (error) {
       console.error(chalk.red('Migration error:'), error);
       
-      const errorEmbed = {
-        color: 0xFF0000,
-        title: '❌ Migration Failed',
-        description: `An error occurred during migration: \`${error.message}\``,
-        footer: { text: 'Check console logs for detailed error information' }
-      };
+      const { EmbedBuilder } = require('discord.js');
+      
+      const errorEmbed = new EmbedBuilder()
+        .setColor('#FF0000')
+        .setTitle('❌ Migration Failed')
+        .setDescription(`An error occurred during migration: \`${error.message}\``)
+        .setFooter({ text: 'Check console logs for detailed error information' });
       
       await statusMessage.edit({ embeds: [errorEmbed] });
     }
@@ -335,12 +338,14 @@ module.exports = {
 
 async function updateStatus(message, status) {
   try {
-    const loadingEmbed = {
-      color: 0xFFFF00,
-      title: '🔄 Database Migration in Progress',
-      description: status,
-      footer: { text: 'Please wait, this may take several minutes...' }
-    };
+    const { EmbedBuilder } = require('discord.js');
+    const config = require('../../config/setup');
+    
+    const loadingEmbed = new EmbedBuilder()
+      .setColor('#7985cd')
+      .setTitle('🔄 Database Migration in Progress')
+      .setDescription(`${config.emojis.loading} ${status}`)
+      .setFooter({ text: 'Please wait, this may take several minutes...' });
     
     await message.edit({ embeds: [loadingEmbed] });
     console.log(chalk.yellow(`[Migration] ${status}`));
