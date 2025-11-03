@@ -1,0 +1,51 @@
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { embeds } = require('../../core/embeds');
+const { hasDiscordPermission } = require('../../utils/permissions');
+const { runHelpCommand } = require('../../utils/commandProcessor');
+
+module.exports = {
+  name: "role",
+  aliases: ['roles'],
+  description: `Manage reaction roles, button roles, and dropdown roles`,
+  permission: 'Manage Roles',
+  isGroupCommand: true,
+  run: async (client, message, args) => {
+    
+    // Check if user has manage roles permission
+    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) {
+      return;
+    }
+
+    // Check if bot has manage roles permission
+    if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
+      return embeds.deny(message, 'I need **Manage Roles** permission to use this command!');
+    }
+
+    if (!args[0]) {
+      return runHelpCommand(message, 'role');
+    }
+
+    const subcommand = args[0].toLowerCase();
+
+    // Route to appropriate subcommand
+    switch (subcommand) {
+      case 'reactionrole':
+      case 'rr':
+        const reactionRoleCommand = require('./roles/reactionrole');
+        return reactionRoleCommand.run(client, message, args.slice(1));
+      
+      case 'buttonrole':
+      case 'br':
+        const buttonRoleCommand = require('./roles/buttonrole');
+        return buttonRoleCommand.run(client, message, args.slice(1));
+      
+      case 'droprole':
+      case 'dr':
+        const dropRoleCommand = require('./roles/droprole');
+        return dropRoleCommand.run(client, message, args.slice(1));
+      
+      default:
+        return runHelpCommand(message, 'role');
+    }
+  }
+}

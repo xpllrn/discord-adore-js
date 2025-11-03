@@ -1038,7 +1038,102 @@ const guildSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     }
-  }
+  },
+
+  // Reaction Roles system
+  ReactionRoles: [{
+    messageId: {
+      type: String,
+      required: true
+    },
+    channelId: {
+      type: String,
+      required: true
+    },
+    reaction: {
+      type: String,
+      required: true
+    },
+    roleId: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+
+  // Button Roles system
+  ButtonRoles: [{
+    messageId: {
+      type: String,
+      required: true
+    },
+    channelId: {
+      type: String,
+      required: true
+    },
+    roleId: {
+      type: String,
+      required: true
+    },
+    buttonId: {
+      type: String,
+      required: true
+    },
+    label: {
+      type: String,
+      required: true,
+      maxlength: 80
+    },
+    style: {
+      type: String,
+      required: true,
+      enum: ['primary', 'secondary', 'success', 'danger']
+    },
+    emoji: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+
+  // Dropdown Roles system
+  DropRoles: [{
+    messageId: {
+      type: String,
+      required: true
+    },
+    channelId: {
+      type: String,
+      required: true
+    },
+    roleId: {
+      type: String,
+      required: true
+    },
+    optionValue: {
+      type: String,
+      required: true
+    },
+    label: {
+      type: String,
+      required: true,
+      maxlength: 100
+    },
+    emoji: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });
@@ -1192,6 +1287,24 @@ guildSchema.index({ 'BoosterRoles.createdAt': -1 }); // Recent booster roles fir
 guildSchema.index({ 'StickyMessages.channelId': 1 });
 guildSchema.index({ 'StickyMessages.lastActivity': 1 }); // For inactivity checks
 guildSchema.index({ 'StickyMessages.createdAt': -1 }); // Recent sticky messages first
+
+// Reaction Roles indexes
+guildSchema.index({ 'ReactionRoles.messageId': 1 });
+guildSchema.index({ 'ReactionRoles.channelId': 1 });
+guildSchema.index({ 'ReactionRoles.roleId': 1 });
+guildSchema.index({ 'ReactionRoles.messageId': 1, 'ReactionRoles.reaction': 1 }); // Compound for message+reaction lookup
+
+// Button Roles indexes
+guildSchema.index({ 'ButtonRoles.messageId': 1 });
+guildSchema.index({ 'ButtonRoles.channelId': 1 });
+guildSchema.index({ 'ButtonRoles.roleId': 1 });
+guildSchema.index({ 'ButtonRoles.buttonId': 1 }); // For button interaction lookup
+
+// Dropdown Roles indexes
+guildSchema.index({ 'DropRoles.messageId': 1 });
+guildSchema.index({ 'DropRoles.channelId': 1 });
+guildSchema.index({ 'DropRoles.roleId': 1 });
+guildSchema.index({ 'DropRoles.optionValue': 1 }); // For dropdown interaction lookup
 
 module.exports = {
   schema: guildSchema,

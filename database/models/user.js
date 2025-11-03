@@ -97,62 +97,7 @@ const userSchema = new mongoose.Schema({
       default: 0
     }
   },
-  // UNO game statistics
-  UnoStats: {
-    gamesPlayed: {
-      type: Number,
-      default: 0
-    },
-    gamesWon: {
-      type: Number,
-      default: 0
-    },
-    gamesLost: {
-      type: Number,
-      default: 0
-    },
-    totalCardsPlayed: {
-      type: Number,
-      default: 0
-    },
-    fastestWin: {
-      type: Number,
-      default: null // Time in milliseconds
-    },
-    longestGame: {
-      type: Number,
-      default: null // Time in milliseconds
-    },
-    specialCardsPlayed: {
-      skip: {
-        type: Number,
-        default: 0
-      },
-      reverse: {
-        type: Number,
-        default: 0
-      },
-      draw2: {
-        type: Number,
-        default: 0
-      },
-      wild: {
-        type: Number,
-        default: 0
-      },
-      wildDraw4: {
-        type: Number,
-        default: 0
-      }
-    },
-    achievements: [{
-      type: String
-    }],
-    lastPlayed: {
-      type: Date,
-      default: null
-    }
-  },
+
   // Gambling system
   Gambling: {
     wallet: {
@@ -452,12 +397,7 @@ userSchema.index({ 'TicTacToe.wins': -1 }); // Leaderboard by wins
 userSchema.index({ 'TicTacToe.losses': -1 }); // Leaderboard by losses
 userSchema.index({ 'TicTacToe.draws': -1 }); // Leaderboard by draws
 
-// UNO game indexes
-userSchema.index({ 'UnoStats.gamesPlayed': -1 }); // Most active players
-userSchema.index({ 'UnoStats.gamesWon': -1 }); // Leaderboard by wins
-userSchema.index({ 'UnoStats.totalCardsPlayed': -1 }); // Most cards played
-userSchema.index({ 'UnoStats.fastestWin': 1 }); // Fastest wins
-userSchema.index({ 'UnoStats.lastPlayed': -1 }); // Recent players
+
 
 // Afk system indexes
 userSchema.index({ 'Afk.isAfk': 1 }); // Find AFK users

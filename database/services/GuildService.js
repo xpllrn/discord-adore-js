@@ -193,7 +193,10 @@ class GuildService extends BaseService {
             channelId: null,
             currentNumber: 0,
             lastUserId: null
-          }
+          },
+          ReactionRoles: [],
+          ButtonRoles: [],
+          DropRoles: []
         };
 
         // Save to database and cache
@@ -1649,6 +1652,15 @@ class GuildService extends BaseService {
     } catch (error) {
       throw new DatabaseWriteError(`Failed to clear auto roles for guild ${guildId}`, error);
     }
+  }
+
+  /**
+   * Clear all auto roles (alias)
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllAutoRoles(guildId) {
+    return await this.clearAutoRoles(guildId);
   }
 
   // ===== COUNTING SYSTEM =====
@@ -7116,6 +7128,395 @@ class GuildService extends BaseService {
     } catch (error) {
       console.error(`Error finding auto responder for guild ${guildId}:`, error.message);
       return null;
+    }
+  }
+
+  // ===== REACTION ROLES =====
+
+  /**
+   * Get reaction roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of reaction roles
+   */
+  async getReactionRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.ReactionRoles || [];
+    } catch (error) {
+      console.error(`Error getting reaction roles for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add reaction role
+   * @param {string} guildId - Guild ID
+   * @param {Object} reactionRoleData - Reaction role data
+   * @returns {Promise<boolean>} Success status
+   */
+  async addReactionRole(guildId, reactionRoleData) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!reactionRoleData || typeof reactionRoleData !== 'object') {
+      throw new ValidationError('Reaction role data is required', 'reactionRoleData', reactionRoleData);
+    }
+
+    const { messageId, channelId, reaction, roleId } = reactionRoleData;
+
+    if (!messageId || !channelId || !reaction || !roleId) {
+      throw new ValidationError('All reaction role fields are required', 'reactionRoleData', reactionRoleData);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const reactionRoles = guildData.ReactionRoles || [];
+
+      reactionRoles.push({
+        messageId,
+        channelId,
+        reaction,
+        roleId,
+        createdAt: new Date()
+      });
+
+      guildData.ReactionRoles = reactionRoles;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add reaction role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove reaction role
+   * @param {string} guildId - Guild ID
+   * @param {string} messageId - Message ID
+   * @param {string} reaction - Reaction emoji
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeReactionRole(guildId, messageId, reaction) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    if (!reaction) {
+      throw new ValidationError('Reaction is required', 'reaction', reaction);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const reactionRoles = guildData.ReactionRoles || [];
+      const initialLength = reactionRoles.length;
+
+      guildData.ReactionRoles = reactionRoles.filter(rr => 
+        !(rr.messageId === messageId && rr.reaction === reaction)
+      );
+
+      if (guildData.ReactionRoles.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove reaction role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Clear all reaction roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllReactionRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.ReactionRoles = [];
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear all reaction roles for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== BUTTON ROLES =====
+
+  /**
+   * Get button roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of button roles
+   */
+  async getButtonRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.ButtonRoles || [];
+    } catch (error) {
+      console.error(`Error getting button roles for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add button role
+   * @param {string} guildId - Guild ID
+   * @param {Object} buttonRoleData - Button role data
+   * @returns {Promise<boolean>} Success status
+   */
+  async addButtonRole(guildId, buttonRoleData) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!buttonRoleData || typeof buttonRoleData !== 'object') {
+      throw new ValidationError('Button role data is required', 'buttonRoleData', buttonRoleData);
+    }
+
+    const { messageId, channelId, roleId, buttonId, label, style, emoji } = buttonRoleData;
+
+    if (!messageId || !channelId || !roleId || !buttonId || !label || !style || !emoji) {
+      throw new ValidationError('All button role fields are required', 'buttonRoleData', buttonRoleData);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const buttonRoles = guildData.ButtonRoles || [];
+
+      buttonRoles.push({
+        messageId,
+        channelId,
+        roleId,
+        buttonId,
+        label,
+        style,
+        emoji,
+        createdAt: new Date()
+      });
+
+      guildData.ButtonRoles = buttonRoles;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add button role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove button role
+   * @param {string} guildId - Guild ID
+   * @param {string} messageId - Message ID
+   * @param {string} roleId - Role ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeButtonRole(guildId, messageId, roleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    if (!roleId) {
+      throw new ValidationError('Role ID is required', 'roleId', roleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const buttonRoles = guildData.ButtonRoles || [];
+      const initialLength = buttonRoles.length;
+
+      guildData.ButtonRoles = buttonRoles.filter(br => 
+        !(br.messageId === messageId && br.roleId === roleId)
+      );
+
+      if (guildData.ButtonRoles.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove button role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Clear all button roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllButtonRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.ButtonRoles = [];
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear all button roles for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== DROPDOWN ROLES =====
+
+  /**
+   * Get dropdown roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of dropdown roles
+   */
+  async getDropRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.DropRoles || [];
+    } catch (error) {
+      console.error(`Error getting dropdown roles for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add dropdown role
+   * @param {string} guildId - Guild ID
+   * @param {Object} dropRoleData - Dropdown role data
+   * @returns {Promise<boolean>} Success status
+   */
+  async addDropRole(guildId, dropRoleData) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!dropRoleData || typeof dropRoleData !== 'object') {
+      throw new ValidationError('Dropdown role data is required', 'dropRoleData', dropRoleData);
+    }
+
+    const { messageId, channelId, roleId, optionValue, label, emoji } = dropRoleData;
+
+    if (!messageId || !channelId || !roleId || !optionValue || !label || !emoji) {
+      throw new ValidationError('All dropdown role fields are required', 'dropRoleData', dropRoleData);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const dropRoles = guildData.DropRoles || [];
+
+      dropRoles.push({
+        messageId,
+        channelId,
+        roleId,
+        optionValue,
+        label,
+        emoji,
+        createdAt: new Date()
+      });
+
+      guildData.DropRoles = dropRoles;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add dropdown role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove dropdown role
+   * @param {string} guildId - Guild ID
+   * @param {string} messageId - Message ID
+   * @param {string} roleId - Role ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeDropRole(guildId, messageId, roleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!messageId) {
+      throw new ValidationError('Message ID is required', 'messageId', messageId);
+    }
+
+    if (!roleId) {
+      throw new ValidationError('Role ID is required', 'roleId', roleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const dropRoles = guildData.DropRoles || [];
+      const initialLength = dropRoles.length;
+
+      guildData.DropRoles = dropRoles.filter(dr => 
+        !(dr.messageId === messageId && dr.roleId === roleId)
+      );
+
+      if (guildData.DropRoles.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove dropdown role for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Clear all dropdown roles
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllDropRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.DropRoles = [];
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear all dropdown roles for guild ${guildId}`, error);
     }
   }
 

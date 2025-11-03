@@ -15,6 +15,9 @@ module.exports = {
 
       // Process giveaway functionality
       await processGiveawayRemoval(reaction, user);
+
+      // Process reaction role functionality
+      await processReactionRoleRemoval(reaction, user);
     } catch (error) {
       console.error('Error in reaction remove event:', error);
     }
@@ -127,5 +130,59 @@ async function processGiveawayRemoval(reaction, user) {
 
   } catch (error) {
     console.error('Error in giveaway removal processing:', error);
+  }
+}
+async function processReactionRoleRemoval(reaction, user) {
+  try {
+    // Skip if user is a bot
+    if (user.bot) return;
+
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+    const message = reaction.message;
+    const guild = message.guild;
+
+    // Get reaction roles for this guild
+    const reactionRoles = await guildService.getReactionRoles(guild.id);
+    if (!reactionRoles || reactionRoles.length === 0) return;
+
+    // Get the reaction emoji string
+    const reactionEmoji = reaction.emoji.id
+      ? `<${reaction.emoji.animated ? 'a' : ''}:${reaction.emoji.name}:${reaction.emoji.id}>`
+      : reaction.emoji.name;
+
+    // Find matching reaction role
+    const reactionRole = reactionRoles.find(rr => 
+      rr.messageId === message.id && 
+      (rr.reaction === reactionEmoji || rr.reaction === reaction.emoji.name || rr.reaction === reaction.emoji.toString())
+    );
+
+    if (!reactionRole) return;
+
+    // Get the role
+    const role = guild.roles.cache.get(reactionRole.roleId);
+    if (!role) {
+      // Role doesn't exist anymore, remove from database
+      await guildService.removeReactionRole(guild.id, message.id, reactionRole.reaction);
+      return;
+    }
+
+    // Get the member
+    const member = guild.members.cache.get(user.id);
+    if (!member) return;
+
+    // Check if member has the role
+    if (!member.roles.cache.has(role.id)) return;
+
+    // Remove the role
+    try {
+      await member.roles.remove(role, 'Reaction role removal');
+    } catch (error) {
+      console.error('Error removing reaction role:', error);
+      // Could be due to role hierarchy or permissions
+    }
+
+  } catch (error) {
+    console.error('Error in reaction role removal processing:', error);
   }
 }

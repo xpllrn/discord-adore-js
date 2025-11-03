@@ -145,6 +145,19 @@ module.exports = {
         if (interaction.customId.startsWith('welcome_')) {
           return handleWelcomeButton(interaction);
         }
+
+        // Handle button role interactions
+        if (interaction.customId.startsWith('buttonrole_')) {
+          return handleButtonRole(interaction);
+        }
+      }
+
+      // Handle select menu interactions
+      if (interaction.isStringSelectMenu()) {
+        // Handle dropdown role interactions
+        if (interaction.customId.startsWith('droprole_menu_')) {
+          return handleDropdownRole(interaction);
+        }
       }
 
       // Handle modal interactions
@@ -1139,6 +1152,154 @@ async function handleWelcomeButton(interaction) {
       return await interaction.followUp({ embeds: [embed], ephemeral: true });
     } catch (replyError) {
       // Silent fail for reply error
+    }
+  }
+}
+
+// ===== ROLE INTERACTION HANDLERS =====
+
+/**
+ * Handle button role interactions
+ * @param {ButtonInteraction} interaction - The button interaction
+ */
+async function handleButtonRole(interaction) {
+  try {
+    await interaction.deferReply({ ephemeral: true });
+
+    const guildService = getService('guild');
+    const buttonRoles = await guildService.getButtonRoles(interaction.guild.id);
+
+    // Find the button role configuration
+    const buttonRole = buttonRoles.find(br => br.buttonId === interaction.customId);
+    if (!buttonRole) {
+      return await interaction.editReply({
+        content: '❌ This button role is no longer configured.',
+        ephemeral: true
+      });
+    }
+
+    const role = interaction.guild.roles.cache.get(buttonRole.roleId);
+    if (!role) {
+      return await interaction.editReply({
+        content: '❌ The role for this button no longer exists.',
+        ephemeral: true
+      });
+    }
+
+    const member = interaction.member;
+    const hasRole = member.roles.cache.has(role.id);
+
+    try {
+      if (hasRole) {
+        // Remove role
+        await member.roles.remove(role);
+        return await interaction.editReply({
+          content: `✅ Removed the **${role.name}** role from you.`,
+          ephemeral: true
+        });
+      } else {
+        // Add role
+        await member.roles.add(role);
+        return await interaction.editReply({
+          content: `✅ Added the **${role.name}** role to you.`,
+          ephemeral: true
+        });
+      }
+    } catch (roleError) {
+      console.error('Error managing role:', roleError);
+      return await interaction.editReply({
+        content: '❌ I don\'t have permission to manage this role.',
+        ephemeral: true
+      });
+    }
+
+  } catch (error) {
+    console.error('Error in button role handler:', error);
+    
+    try {
+      return await interaction.editReply({
+        content: '❌ An error occurred while processing the button role.',
+        ephemeral: true
+      });
+    } catch (replyError) {
+      // Silent fail
+    }
+  }
+}
+
+/**
+ * Handle dropdown role interactions
+ * @param {StringSelectMenuInteraction} interaction - The select menu interaction
+ */
+async function handleDropdownRole(interaction) {
+  try {
+    await interaction.deferReply({ ephemeral: true });
+
+    const guildService = getService('guild');
+    const dropRoles = await guildService.getDropRoles(interaction.guild.id);
+
+    const selectedValue = interaction.values[0];
+    if (!selectedValue) {
+      return await interaction.editReply({
+        content: '❌ No option selected.',
+        ephemeral: true
+      });
+    }
+
+    // Find the dropdown role configuration
+    const dropRole = dropRoles.find(dr => dr.optionValue === selectedValue);
+    if (!dropRole) {
+      return await interaction.editReply({
+        content: '❌ This dropdown option is no longer configured.',
+        ephemeral: true
+      });
+    }
+
+    const role = interaction.guild.roles.cache.get(dropRole.roleId);
+    if (!role) {
+      return await interaction.editReply({
+        content: '❌ The role for this option no longer exists.',
+        ephemeral: true
+      });
+    }
+
+    const member = interaction.member;
+    const hasRole = member.roles.cache.has(role.id);
+
+    try {
+      if (hasRole) {
+        // Remove role
+        await member.roles.remove(role);
+        return await interaction.editReply({
+          content: `✅ Removed the **${role.name}** role from you.`,
+          ephemeral: true
+        });
+      } else {
+        // Add role
+        await member.roles.add(role);
+        return await interaction.editReply({
+          content: `✅ Added the **${role.name}** role to you.`,
+          ephemeral: true
+        });
+      }
+    } catch (roleError) {
+      console.error('Error managing role:', roleError);
+      return await interaction.editReply({
+        content: '❌ I don\'t have permission to manage this role.',
+        ephemeral: true
+      });
+    }
+
+  } catch (error) {
+    console.error('Error in dropdown role handler:', error);
+    
+    try {
+      return await interaction.editReply({
+        content: '❌ An error occurred while processing the dropdown role.',
+        ephemeral: true
+      });
+    } catch (replyError) {
+      // Silent fail
     }
   }
 }

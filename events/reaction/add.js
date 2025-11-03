@@ -22,6 +22,9 @@ module.exports = {
 
       // Process giveaway functionality
       await processGiveaway(reaction, user);
+
+      // Process reaction role functionality
+      await processReactionRole(reaction, user);
     } catch (error) {
       console.error('Error in reaction add event:', error);
     }
@@ -214,5 +217,60 @@ async function processGiveaway(reaction, user) {
 
   } catch (error) {
     console.error('Error in giveaway processing:', error);
+  }
+}
+
+async function processReactionRole(reaction, user) {
+  try {
+    // Skip if user is a bot
+    if (user.bot) return;
+
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+    const message = reaction.message;
+    const guild = message.guild;
+
+    // Get reaction roles for this guild
+    const reactionRoles = await guildService.getReactionRoles(guild.id);
+    if (!reactionRoles || reactionRoles.length === 0) return;
+
+    // Get the reaction emoji string
+    const reactionEmoji = reaction.emoji.id
+      ? `<${reaction.emoji.animated ? 'a' : ''}:${reaction.emoji.name}:${reaction.emoji.id}>`
+      : reaction.emoji.name;
+
+    // Find matching reaction role
+    const reactionRole = reactionRoles.find(rr => 
+      rr.messageId === message.id && 
+      (rr.reaction === reactionEmoji || rr.reaction === reaction.emoji.name || rr.reaction === reaction.emoji.toString())
+    );
+
+    if (!reactionRole) return;
+
+    // Get the role
+    const role = guild.roles.cache.get(reactionRole.roleId);
+    if (!role) {
+      // Role doesn't exist anymore, remove from database
+      await guildService.removeReactionRole(guild.id, message.id, reactionRole.reaction);
+      return;
+    }
+
+    // Get the member
+    const member = guild.members.cache.get(user.id);
+    if (!member) return;
+
+    // Check if member already has the role
+    if (member.roles.cache.has(role.id)) return;
+
+    // Add the role
+    try {
+      await member.roles.add(role, 'Reaction role');
+    } catch (error) {
+      console.error('Error adding reaction role:', error);
+      // Could be due to role hierarchy or permissions
+    }
+
+  } catch (error) {
+    console.error('Error in reaction role processing:', error);
   }
 }
