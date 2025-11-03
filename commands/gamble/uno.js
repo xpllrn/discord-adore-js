@@ -298,8 +298,16 @@ async function handlePlayButton(interaction, message) {
   const newMessage = await UnoUI.sendGameMessage(interaction.channel, result.game);
   if (newMessage) {
     result.game.setCurrentMessage(newMessage);
+    
+    // Small delay to ensure message is fully processed
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Set up game collector on the new message
+    console.log('Setting up game collector for message:', newMessage.id);
     setupGameCollector(newMessage, result.game);
+    console.log('Game collector set up, collector stored:', !!result.game.currentCollector);
+  } else {
+    console.error('Failed to send new game message');
   }
 }
 
@@ -336,15 +344,22 @@ async function handleJoinButton(interaction, message) {
  * Set up game button collector
  */
 function setupGameCollector(message, game) {
+  console.log('Creating collector for message:', message.id, 'Game status:', game.status);
+  
   const collector = message.createMessageComponentCollector({
-    filter: (i) => i.message.id === message.id, // Only collect interactions from this message
+    filter: (i) => {
+      console.log('Collector filter check - interaction message:', i.message.id, 'expected:', message.id);
+      return i.message.id === message.id;
+    },
     time: 1800000 // 30 minutes
   });
   
   // Store collector in game state
   game.setCurrentCollector(collector);
+  console.log('Collector created and stored');
   
   collector.on('collect', async (interaction) => {
+    console.log('Collector received interaction:', interaction.customId, 'from user:', interaction.user.username);
     try {
       await handleGameInteraction(interaction, message);
     } catch (error) {
