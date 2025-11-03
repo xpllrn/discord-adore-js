@@ -3,15 +3,15 @@ const chalk = require('chalk');
 
 // Connection states
 let connections = {
-  global: null,  // Global user database connection
-  local: null    // Local guild database connection
+  user: null,   // User database connection
+  guild: null   // Guild database connection
 };
 
 /**
  * Connect to multiple MongoDB databases
  * @param {Object} connectionStrings - Object containing connection strings
- * @param {string} connectionStrings.global - Global user database connection string
- * @param {string} connectionStrings.local - Local guild database connection string
+ * @param {string} connectionStrings.user - User database connection string
+ * @param {string} connectionStrings.guild - Guild database connection string
  * @returns {Promise<boolean>} Connection success status
  */
 async function connect(connectionStrings) {
@@ -19,11 +19,11 @@ async function connect(connectionStrings) {
     // Configure mongoose
     mongoose.set('strictQuery', false);
 
-    // Connect to global user database
-    if (connectionStrings.global) {
-      if (!connections.global) {
+    // Connect to user database
+    if (connectionStrings.user) {
+      if (!connections.user) {
         try {
-          connections.global = mongoose.createConnection(connectionStrings.global, {
+          connections.user = mongoose.createConnection(connectionStrings.user, {
             serverSelectionTimeoutMS: 30000, // 30 second timeout
             socketTimeoutMS: 120000, // 2 minute socket timeout
             maxPoolSize: 10, // Maintain up to 10 socket connections
@@ -37,64 +37,64 @@ async function connect(connectionStrings) {
           // Wait for connection to be established
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
-              reject(new Error('Global database connection timeout'));
+              reject(new Error('User database connection timeout'));
             }, 30000); // 30 second timeout
 
-            connections.global.once('open', () => {
+            connections.user.once('open', () => {
               clearTimeout(timeout);
               resolve();
             });
-            connections.global.once('error', (error) => {
+            connections.user.once('error', (error) => {
               clearTimeout(timeout);
-              console.error(chalk.red('    > global database connection failed:'), error.message);
+              console.error(chalk.red('    > user database connection failed:'), error.message);
               reject(error);
             });
           });
 
           // Add comprehensive event handlers after connection is established
-          connections.global.on('error', (error) => {
-            console.error(chalk.red('    > global database connection error:'), error.message);
+          connections.user.on('error', (error) => {
+            console.error(chalk.red('    > user database connection error:'), error.message);
           });
 
-          connections.global.on('disconnected', () => {
-            console.log(chalk.yellow('    > global database disconnected'));
+          connections.user.on('disconnected', () => {
+            console.log(chalk.yellow('    > user database disconnected'));
           });
 
-          connections.global.on('reconnected', () => {
-            console.log(chalk.green('    > global database reconnected'));
+          connections.user.on('reconnected', () => {
+            console.log(chalk.green('    > user database reconnected'));
           });
 
-          connections.global.on('fullsetup', () => {
-            console.log(chalk.blue('    > global database replica set fully connected'));
+          connections.user.on('fullsetup', () => {
+            console.log(chalk.blue('    > user database replica set fully connected'));
           });
 
-          connections.global.on('all', () => {
-            console.log(chalk.blue('    > global database all servers connected'));
+          connections.user.on('all', () => {
+            console.log(chalk.blue('    > user database all servers connected'));
           });
 
           // Monitor connection pool
-          connections.global.on('connectionPoolCreated', () => {
-            console.log(chalk.blue('    > global database connection pool created'));
+          connections.user.on('connectionPoolCreated', () => {
+            console.log(chalk.blue('    > user database connection pool created'));
           });
 
-          connections.global.on('connectionPoolClosed', () => {
-            console.log(chalk.yellow('    > global database connection pool closed'));
+          connections.user.on('connectionPoolClosed', () => {
+            console.log(chalk.yellow('    > user database connection pool closed'));
           });
 
         } catch (error) {
-          console.error(chalk.red('    > failed to connect to global database:'), error.message);
-          connections.global = null;
+          console.error(chalk.red('    > failed to connect to user database:'), error.message);
+          connections.user = null;
         }
       } else {
-        console.log(chalk.yellow('    > already connected to global user database'));
+        console.log(chalk.yellow('    > already connected to user database'));
       }
     }
 
-    // Connect to local guild database
-    if (connectionStrings.local) {
-      if (!connections.local) {
+    // Connect to guild database
+    if (connectionStrings.guild) {
+      if (!connections.guild) {
         try {
-          connections.local = mongoose.createConnection(connectionStrings.local, {
+          connections.guild = mongoose.createConnection(connectionStrings.guild, {
             serverSelectionTimeoutMS: 30000, // 30 second timeout
             socketTimeoutMS: 120000, // 2 minute socket timeout
             maxPoolSize: 8, // Maintain up to 8 socket connections
@@ -108,61 +108,61 @@ async function connect(connectionStrings) {
           // Wait for connection to be established
           await new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
-              reject(new Error('Local database connection timeout'));
+              reject(new Error('Guild database connection timeout'));
             }, 30000); // 30 second timeout
 
-            connections.local.once('open', () => {
+            connections.guild.once('open', () => {
               clearTimeout(timeout);
               resolve();
             });
-            connections.local.once('error', (error) => {
+            connections.guild.once('error', (error) => {
               clearTimeout(timeout);
-              console.error(chalk.red('    > local database connection failed:'), error.message);
+              console.error(chalk.red('    > guild database connection failed:'), error.message);
               reject(error);
             });
           });
 
           // Add comprehensive event handlers after connection is established
-          connections.local.on('error', (error) => {
-            console.error(chalk.red('    > local database connection error:'), error.message);
+          connections.guild.on('error', (error) => {
+            console.error(chalk.red('    > guild database connection error:'), error.message);
           });
 
-          connections.local.on('disconnected', () => {
-            console.log(chalk.yellow('    > local database disconnected'));
+          connections.guild.on('disconnected', () => {
+            console.log(chalk.yellow('    > guild database disconnected'));
           });
 
-          connections.local.on('reconnected', () => {
-            console.log(chalk.green('    > local database reconnected'));
+          connections.guild.on('reconnected', () => {
+            console.log(chalk.green('    > guild database reconnected'));
           });
 
-          connections.local.on('fullsetup', () => {
-            console.log(chalk.blue('    > local database replica set fully connected'));
+          connections.guild.on('fullsetup', () => {
+            console.log(chalk.blue('    > guild database replica set fully connected'));
           });
 
-          connections.local.on('all', () => {
-            console.log(chalk.blue('    > local database all servers connected'));
+          connections.guild.on('all', () => {
+            console.log(chalk.blue('    > guild database all servers connected'));
           });
 
           // Monitor connection pool
-          connections.local.on('connectionPoolCreated', () => {
-            console.log(chalk.blue('    > local database connection pool created'));
+          connections.guild.on('connectionPoolCreated', () => {
+            console.log(chalk.blue('    > guild database connection pool created'));
           });
 
-          connections.local.on('connectionPoolClosed', () => {
-            console.log(chalk.yellow('    > local database connection pool closed'));
+          connections.guild.on('connectionPoolClosed', () => {
+            console.log(chalk.yellow('    > guild database connection pool closed'));
           });
 
         } catch (error) {
-          console.error(chalk.red('    > failed to connect to local database:'), error.message);
-          connections.local = null;
+          console.error(chalk.red('    > failed to connect to guild database:'), error.message);
+          connections.guild = null;
         }
       } else {
-        console.log(chalk.yellow('    > already connected to local guild database'));
+        console.log(chalk.yellow('    > already connected to guild database'));
       }
     }
 
     // Validate that we have at least one connection
-    if (!connections.global && !connections.local) {
+    if (!connections.user && !connections.guild) {
       console.log(chalk.red('    > no database connections established'));
       return false;
     }
@@ -185,18 +185,18 @@ async function disconnect(force = false) {
   try {
     const closeOptions = force ? { force: true } : {};
 
-    if (connections.global) {
-      console.log(chalk.blue('    > closing global database connection...'));
-      await connections.global.close(closeOptions);
-      connections.global = null;
-      console.log(chalk.yellow('    > disconnected from global user database'));
+    if (connections.user) {
+      console.log(chalk.blue('    > closing user database connection...'));
+      await connections.user.close(closeOptions);
+      connections.user = null;
+      console.log(chalk.yellow('    > disconnected from user database'));
     }
 
-    if (connections.local) {
-      console.log(chalk.blue('    > closing local database connection...'));
-      await connections.local.close(closeOptions);
-      connections.local = null;
-      console.log(chalk.yellow('    > disconnected from local guild database'));
+    if (connections.guild) {
+      console.log(chalk.blue('    > closing guild database connection...'));
+      await connections.guild.close(closeOptions);
+      connections.guild = null;
+      console.log(chalk.yellow('    > disconnected from guild database'));
     }
   } catch (error) {
     console.error(chalk.red('    > database disconnection error:'), error.message);
@@ -209,9 +209,12 @@ async function disconnect(force = false) {
  */
 function isReady() {
   return {
-    global: connections.global ? connections.global.readyState === 1 : false,
-    local: connections.local ? connections.local.readyState === 1 : false,
-    legacy: connections.local ? connections.local.readyState === 1 : false // For backward compatibility
+    user: connections.user ? connections.user.readyState === 1 : false,
+    guild: connections.guild ? connections.guild.readyState === 1 : false,
+    // Legacy compatibility
+    global: connections.user ? connections.user.readyState === 1 : false,
+    local: connections.guild ? connections.guild.readyState === 1 : false,
+    legacy: connections.guild ? connections.guild.readyState === 1 : false
   };
 }
 
@@ -229,32 +232,37 @@ function getConnections() {
  */
 async function healthCheck() {
   const health = {
+    user: false,
+    guild: false,
+    overall: false,
+    // Legacy compatibility
     global: false,
-    local: false,
-    overall: false
+    local: false
   };
 
   try {
-    // Check global connection
-    if (connections.global && connections.global.readyState === 1) {
-      await connections.global.db.admin().ping();
-      health.global = true;
+    // Check user connection
+    if (connections.user && connections.user.readyState === 1) {
+      await connections.user.db.admin().ping();
+      health.user = true;
+      health.global = true; // Legacy compatibility
     }
   } catch (error) {
-    console.warn(chalk.yellow('    > global database health check failed:'), error.message);
+    console.warn(chalk.yellow('    > user database health check failed:'), error.message);
   }
 
   try {
-    // Check local connection
-    if (connections.local && connections.local.readyState === 1) {
-      await connections.local.db.admin().ping();
-      health.local = true;
+    // Check guild connection
+    if (connections.guild && connections.guild.readyState === 1) {
+      await connections.guild.db.admin().ping();
+      health.guild = true;
+      health.local = true; // Legacy compatibility
     }
   } catch (error) {
-    console.warn(chalk.yellow('    > local database health check failed:'), error.message);
+    console.warn(chalk.yellow('    > guild database health check failed:'), error.message);
   }
 
-  health.overall = health.global || health.local;
+  health.overall = health.user || health.guild;
   return health;
 }
 
@@ -264,28 +272,33 @@ async function healthCheck() {
  */
 function getConnectionStats() {
   const stats = {
+    user: null,
+    guild: null,
+    // Legacy compatibility
     global: null,
     local: null
   };
 
-  if (connections.global) {
-    stats.global = {
-      readyState: connections.global.readyState,
-      name: connections.global.name,
-      host: connections.global.host,
-      port: connections.global.port,
-      collections: Object.keys(connections.global.collections).length
+  if (connections.user) {
+    stats.user = {
+      readyState: connections.user.readyState,
+      name: connections.user.name,
+      host: connections.user.host,
+      port: connections.user.port,
+      collections: Object.keys(connections.user.collections).length
     };
+    stats.global = stats.user; // Legacy compatibility
   }
 
-  if (connections.local) {
-    stats.local = {
-      readyState: connections.local.readyState,
-      name: connections.local.name,
-      host: connections.local.host,
-      port: connections.local.port,
-      collections: Object.keys(connections.local.collections).length
+  if (connections.guild) {
+    stats.guild = {
+      readyState: connections.guild.readyState,
+      name: connections.guild.name,
+      host: connections.guild.host,
+      port: connections.guild.port,
+      collections: Object.keys(connections.guild.collections).length
     };
+    stats.local = stats.guild; // Legacy compatibility
   }
 
   return stats;

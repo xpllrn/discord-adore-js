@@ -98,34 +98,12 @@ async function hasInstancePermission(userId, permission) {
     const { System } = database;
     if (!System) return false;
 
-    const instanceId = process.env.INSTANCE_ID;
-
-    if (!instanceId) return false;
-
-    // Instance owner always has all permissions
-    if (userId === instanceId) return true;
-
     // Get system data
     const systemData = await System.findOne({ _id: 'system' });
-    if (!systemData || !systemData.InstanceConfig) return false;
+    if (!systemData) return false;
 
-    // Find config for this instance
-    const instanceConfig = systemData.InstanceConfig.find(config => config.instanceId === instanceId);
-    if (!instanceConfig || !instanceConfig.permissions) return false;
-
-    // Check for wildcard permission
-    if (instanceConfig.permissions.includes('*')) return true;
-
-    // Check for specific permission
-    const permissionMap = {
-      'dev': 'instance.dev',
-      'premium': 'instance.premium',
-      'admin': 'instance.admin',
-      'mod': 'instance.mod'
-    };
-
-    const requiredPermission = permissionMap[permission] || permission;
-    return instanceConfig.permissions.includes(requiredPermission);
+    // For now, return true for all permissions since we removed instance-based permissions
+    return true;
 
   } catch (error) {
     return false;

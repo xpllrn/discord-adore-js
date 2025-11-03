@@ -32,7 +32,7 @@ module.exports = {
       const { getConnections } = require('../../database/connection');
       const currentConnections = getConnections();
 
-      if (!currentConnections.global && !currentConnections.local) {
+      if (!currentConnections.user && !currentConnections.guild) {
         const { EmbedBuilder } = require('discord.js');
         const config = require('../../config/setup');
         
@@ -102,14 +102,14 @@ module.exports = {
       const { schema: spotifyAuthSessionSchema } = require('../../database/models/spotifyAuthSession');
 
       // Create models for old connections
-      const oldUserModel = currentConnections.global ? currentConnections.global.model('User', userSchema) : null;
-      const oldGuildModel = currentConnections.local ? currentConnections.local.model('Guild', guildSchema) : null;
-      const oldSystemModel = currentConnections.global ? currentConnections.global.model('System', systemSchema) : null;
-      const oldWebhookModel = currentConnections.local ? currentConnections.local.model('Webhook', webhookSchema) : null;
-      const oldWelcomeButtonModel = currentConnections.local ? currentConnections.local.model('WelcomeButton', welcomeButtonSchema) : null;
-      const oldStoreItemModel = currentConnections.global ? currentConnections.global.model('StoreItem', storeItemSchema) : null;
-      const oldSprintModel = currentConnections.global ? currentConnections.global.model('Sprint', sprintSchema) : null;
-      const oldSpotifyAuthSessionModel = currentConnections.global ? currentConnections.global.model('SpotifyAuthSession', spotifyAuthSessionSchema) : null;
+      const oldUserModel = currentConnections.user ? currentConnections.user.model('User', userSchema) : null;
+      const oldGuildModel = currentConnections.guild ? currentConnections.guild.model('Guild', guildSchema) : null;
+      const oldSystemModel = currentConnections.user ? currentConnections.user.model('System', systemSchema) : null;
+      const oldWebhookModel = currentConnections.guild ? currentConnections.guild.model('Webhook', webhookSchema) : null;
+      const oldWelcomeButtonModel = currentConnections.guild ? currentConnections.guild.model('WelcomeButton', welcomeButtonSchema) : null;
+      const oldStoreItemModel = currentConnections.user ? currentConnections.user.model('StoreItem', storeItemSchema) : null;
+      const oldSprintModel = currentConnections.user ? currentConnections.user.model('Sprint', sprintSchema) : null;
+      const oldSpotifyAuthSessionModel = currentConnections.user ? currentConnections.user.model('SpotifyAuthSession', spotifyAuthSessionSchema) : null;
 
       // Create models for new connection with prefixed collection names
       const newUserModel = newConnection.model('GlobalUser', userSchema, 'global_users');
@@ -123,8 +123,8 @@ module.exports = {
 
       let totalMigrated = 0;
 
-      // Migrate global data (users, system, store items, sprints, spotify sessions)
-      if (currentConnections.global) {
+      // Migrate user data (users, system, store items, sprints, spotify sessions)
+      if (currentConnections.user) {
         await updateStatus(statusMessage, 'Migrating user data to global database...');
         
         if (oldUserModel) {
@@ -227,8 +227,8 @@ module.exports = {
         }
       }
 
-      // Migrate local data (guilds, webhooks, welcome buttons)
-      if (currentConnections.local) {
+      // Migrate guild data (guilds, webhooks, welcome buttons)
+      if (currentConnections.guild) {
         await updateStatus(statusMessage, 'Migrating guild data to local database...');
         
         if (oldGuildModel) {

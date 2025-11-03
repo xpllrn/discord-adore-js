@@ -10,8 +10,8 @@ const RetryManager = require('./RetryManager');
 class ConnectionManager {
   constructor() {
     this.connections = {
-      global: null,  // Global user database connection
-      local: null    // Local guild database connection
+      user: null,   // User database connection
+      guild: null   // Guild database connection
     };
     
     this.healthChecks = new Map();
@@ -20,14 +20,14 @@ class ConnectionManager {
     
     // Connection statistics
     this.stats = {
-      global: {
+      user: {
         connected: false,
         lastConnected: null,
         lastDisconnected: null,
         reconnectCount: 0,
         errorCount: 0
       },
-      local: {
+      guild: {
         connected: false,
         lastConnected: null,
         lastDisconnected: null,
@@ -40,8 +40,8 @@ class ConnectionManager {
   /**
    * Initialize database connections with retry logic
    * @param {Object} connectionStrings - Connection configuration
-   * @param {string} connectionStrings.global - Global database connection string
-   * @param {string} connectionStrings.local - Local database connection string
+   * @param {string} connectionStrings.user - User database connection string
+   * @param {string} connectionStrings.guild - Guild database connection string
    * @returns {Promise<boolean>} Success status
    */
   async initialize(connectionStrings) {
@@ -233,8 +233,8 @@ class ConnectionManager {
    * @returns {boolean} True if at least one connection is available
    */
   hasAnyConnection() {
-    return (this.connections.global && this.connections.global.readyState === 1) ||
-           (this.connections.local && this.connections.local.readyState === 1);
+    return (this.connections.user && this.connections.user.readyState === 1) ||
+           (this.connections.guild && this.connections.guild.readyState === 1);
   }
 
   /**
@@ -243,8 +243,11 @@ class ConnectionManager {
    */
   isReady() {
     return {
-      global: this.connections.global ? this.connections.global.readyState === 1 : false,
-      local: this.connections.local ? this.connections.local.readyState === 1 : false,
+      user: this.connections.user ? this.connections.user.readyState === 1 : false,
+      guild: this.connections.guild ? this.connections.guild.readyState === 1 : false,
+      // Legacy compatibility
+      global: this.connections.user ? this.connections.user.readyState === 1 : false,
+      local: this.connections.guild ? this.connections.guild.readyState === 1 : false,
       overall: this.hasAnyConnection()
     };
   }
@@ -282,29 +285,31 @@ class ConnectionManager {
       timestamp: new Date()
     };
 
-    // Check global connection
-    if (this.connections.global) {
+    // Check user connection
+    if (this.connections.user) {
       try {
-        if (this.connections.global.readyState === 1) {
-          await this.connections.global.db.admin().ping();
-          results.global = true;
+        if (this.connections.user.readyState === 1) {
+          await this.connections.user.db.admin().ping();
+          results.user = true;
+          results.global = true; // Legacy compatibility
         }
       } catch (error) {
-        console.warn(chalk.yellow('⚠️ Global database health check failed:'), error.message);
-        this.stats.global.errorCount++;
+        console.warn(chalk.yellow('⚠️ User database health check failed:'), error.message);
+        this.stats.user.errorCount++;
       }
     }
 
-    // Check local connection
-    if (this.connections.local) {
+    // Check guild connection
+    if (this.connections.guild) {
       try {
-        if (this.connections.local.readyState === 1) {
-          await this.connections.local.db.admin().ping();
-          results.local = true;
+        if (this.connections.guild.readyState === 1) {
+          await this.connections.guild.db.admin().ping();
+          results.guild = true;
+          results.local = true; // Legacy compatibility
         }
       } catch (error) {
-        console.warn(chalk.yellow('⚠️ Local database health check failed:'), error.message);
-        this.stats.local.errorCount++;
+        console.warn(chalk.yellow('⚠️ Guild database health check failed:'), error.message);
+        this.stats.guild.errorCount++;
       }
     }
 
@@ -384,30 +389,30 @@ class ConnectionManager {
     const closeOptions = force ? { force: true } : {};
     const promises = [];
 
-    // Close global connection
-    if (this.connections.global) {
+    // Close user connection
+    if (this.connections.user) {
       promises.push(
-        this.connections.global.close(closeOptions)
+        this.connections.user.close(closeOptions)
           .then(() => {
-            console.log(chalk.yellow('⚠️ Disconnected from global database'));
-            this.connections.global = null;
-            this.stats.global.connected = false;
-            this.stats.global.lastDisconnected = new Date();
+            console.log(chalk.yellow('⚠️ Disconnected from user database'));
+            this.connections.user = null;
+            this.stats.user.connected = false;
+            this.stats.user.lastDisconnected = new Date();
           })
           .catch(error => {
-            console.error(chalk.red('❌ Error closing global database:'), error.message);
+            console.error(chalk.red('❌ Error closing user database:'), error.message);
           })
       );
     }
 
-    // Close local connection
-    if (this.connections.local) {
+    // Close guild connection
+    if (this.connections.guild) {
       promises.push(
-        this.connections.local.close(closeOptions)
+        this.connections.guild.close(closeOptions)
           .then(() => {
-            console.log(chalk.yellow('⚠️ Disconnected from local database'));
-            this.connections.local = null;
-            this.stats.local.connected = false;
+            console.log(chalk.yellow('⚠️ Disconnected from guild database'));
+            this.connections.guild = null;
+            this.stats.guild.connected = false;
             this.stats.local.lastDisconnected = new Date();
           })
           .catch(error => {

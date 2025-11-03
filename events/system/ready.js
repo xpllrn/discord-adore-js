@@ -79,11 +79,11 @@ async function initializeDatabaseConnection(client) {
   const { initializeServices, getServiceHealth } = require('@services');
   
   // Get database connections from config
-  const globalConnection = config.database.globalConnection;
-  const localConnection = config.database.localConnection;
+  const userConnection = config.database.userConnection;
+  const guildConnection = config.database.guildConnection;
 
   // Determine if we should connect to database
-  const shouldConnect = globalConnection || localConnection;
+  const shouldConnect = userConnection || guildConnection;
 
   if (!shouldConnect) {
     console.log(chalk.yellow('    > database connection skipped - no connection strings provided'));
@@ -93,20 +93,20 @@ async function initializeDatabaseConnection(client) {
   console.log(chalk.white('>> Database Connection'));
   console.log(chalk.blue('   [~] Initializing multi-tenant database system...'));
 
-  // Multi-tenant setup with separate databases
+  // Database setup with separate databases
   const connectionConfig = {
-    global: globalConnection,
-    local: localConnection
+    user: userConnection,
+    guild: guildConnection
   };
 
-  if (!globalConnection && !localConnection) {
-    throw new Error('No database connection strings found - please set GLOBAL_CONNECTION and/or LOCAL_CONNECTION');
+  if (!userConnection && !guildConnection) {
+    throw new Error('No database connection strings found - please set USER_DATABASE and/or GUILD_DATABASE');
   }
 
   const dbSuccess = await initializeDatabase(connectionConfig);
   if (dbSuccess) {
-    console.log(chalk.green('   [+] Global database connected'));
-    console.log(chalk.green('   [+] Local database connected'));
+    console.log(chalk.green('   [+] User database connected'));
+    console.log(chalk.green('   [+] Guild database connected'));
     
     // Initialize new service layer
     console.log(chalk.blue('   [~] Initializing Data Service Layer...'));
@@ -168,83 +168,18 @@ async function initializeDatabaseConnection(client) {
 async function loadBotStatusFromDatabase(client) {
   try {
     const { getService } = require('@services');
-    const instanceId = process.env.INSTANCE_ID;
 
     // Display instance information
     const instanceName = 'Adore';
     console.log(chalk.white('>> Instance Configuration'));
     console.log(chalk.cyan(`   [i] Instance Name: ${instanceName}`));
-    console.log(chalk.cyan(`   [i] Instance ID: ${instanceId || 'Not Set'}`));
 
-    if (!instanceId) {
-      client.user.setPresence({
-        activities: [{ name: 'stalking you', type: ActivityType.Custom }],
-        status: 'dnd'
-      });
-      console.log(chalk.green('   [+] Status: stalking you'));
-      return;
-    }
-
-    // Try to use new service layer first
-    try {
-      const systemService = getService('system');
-      console.log(chalk.blue('   [~] System service retrieved, fetching system data...'));
-      const systemData = await systemService.ensureSystemData('system');
-      
-      if (!systemData || !systemData.InstanceConfig) {
-        throw new Error('No instance config found');
-      }
-
-      // Find instance configuration
-      const instanceConfig = systemData.InstanceConfig.find(config => config.instanceId === instanceId);
-      if (!instanceConfig || !instanceConfig.botStatus) {
-        throw new Error('No bot status config found');
-      }
-
-      // Set bot status from database
-      const { activity, type, status } = instanceConfig.botStatus;
-      if (activity) {
-        const activityType = ActivityType[type] || ActivityType.Watching;
-        client.user.setPresence({
-          activities: [{ name: activity, type: activityType }],
-          status: status || 'online'
-        });
-        console.log(chalk.green(`   [+] Status: ${type} ${activity}`));
-      } else {
-        client.user.setStatus(status || 'online');
-        console.log(chalk.green(`   [+] Status: ${status || 'online'}`));
-      }
-      return;
-    } catch (serviceError) {
-      // Fall back to direct database access
-      console.log(chalk.yellow('   [~] Service layer unavailable, using direct database access'));
-      console.log(chalk.yellow(`   [~] Error: ${serviceError.message}`));
-      
-      const { System } = require('../../database');
-      const systemData = await System.findOne({ _id: 'system' });
-      
-      if (!systemData || !systemData.InstanceConfig) {
-        throw new Error('No system data found');
-      }
-
-      const instanceConfig = systemData.InstanceConfig.find(config => config.instanceId === instanceId);
-      if (!instanceConfig || !instanceConfig.botStatus) {
-        throw new Error('No bot status config found');
-      }
-
-      const { activity, type, status } = instanceConfig.botStatus;
-      if (activity) {
-        const activityType = ActivityType[type] || ActivityType.Watching;
-        client.user.setPresence({
-          activities: [{ name: activity, type: activityType }],
-          status: status || 'online'
-        });
-        console.log(chalk.green(`   [+] Status: ${type} ${activity}`));
-      } else {
-        client.user.setStatus(status || 'online');
-        console.log(chalk.green(`   [+] Status: ${status || 'online'}`));
-      }
-    }
+    // Set default bot status
+    client.user.setPresence({
+      activities: [{ name: 'stalking you', type: ActivityType.Custom }],
+      status: 'dnd'
+    });
+    console.log(chalk.green('   [+] Status: stalking you'));
 
   } catch (error) {
     // Fallback to default

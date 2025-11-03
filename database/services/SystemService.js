@@ -125,46 +125,10 @@ class SystemService extends BaseService {
           }
         };
 
-        // Create default instance config if INSTANCE_ID is set
-        const instanceId = process.env.INSTANCE_ID;
-        if (instanceId) {
-          systemData.InstanceConfig = [{
-            instanceId,
-            botStatus: {
-              activity: 'stalking you',      // Change this to your desired activity
-              type: 'Custom',                 // Options: Playing, Watching, Listening, Streaming, Competing, Custom
-              status: 'dnd'                   // Options: online, idle, dnd, invisible
-            },
-            createdAt: new Date(),
-            lastUpdated: new Date()
-          }];
-        }
+        // No instance config needed anymore
 
         // Save to database and cache
         await this.set(key, systemData);
-      } else {
-        // Check if instance config exists for current instance
-        const instanceId = process.env.INSTANCE_ID;
-        if (instanceId) {
-          const instanceConfigs = systemData.InstanceConfig || [];
-          const hasInstanceConfig = instanceConfigs.some(c => c.instanceId === instanceId);
-
-          if (!hasInstanceConfig) {
-            // Add default instance config for this instance
-            instanceConfigs.push({
-              instanceId,
-              botStatus: {
-                activity: 'stalking you',      // Change this to your desired activity
-                type: 'Custom',                 // Options: Playing, Watching, Listening, Streaming, Competing, Custom
-                status: 'dnd'                   // Options: online, idle, dnd, invisible
-              },
-              createdAt: new Date(),
-              lastUpdated: new Date()
-            });
-            systemData.InstanceConfig = instanceConfigs;
-            await this.set(key, systemData);
-          }
-        }
       }
 
       return systemData;

@@ -467,20 +467,7 @@ const guildSchema = new mongoose.Schema({
   }],
 
   // Instance-specific permissions and settings
-  InstanceSettings: {
-    instanceId: {
-      type: String,
-      default: null // Bot instance ID (from INSTANCE_ID env var)
-    },
-    permissions: {
-      type: [String],
-      default: [] // Array of permission strings for this instance
-    },
-    settings: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {}
-    }
-  },
+  // Removed InstanceSettings as we no longer use instance-based configuration
 
   // Logging system configuration
   LoggingConfig: [{

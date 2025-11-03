@@ -28,8 +28,8 @@ let initializationPromise = null;
 /**
  * Initialize database connections
  * @param {Object|string} connectionStrings - Connection strings object or single string for backward compatibility
- * @param {string} connectionStrings.global - Global user database connection string
- * @param {string} connectionStrings.local - Local guild database connection string
+ * @param {string} connectionStrings.user - User database connection string
+ * @param {string} connectionStrings.guild - Guild database connection string
  * @returns {Promise<boolean>} Connection success status
  */
 async function initializeDatabase(connectionStrings) {
@@ -50,27 +50,27 @@ async function _performInitialization(connectionStrings) {
     const connections = connection.getConnections();
 
     // Create models on appropriate connections
-    if (connections.global) {
-      // User data goes to global database
-      User = connections.global.model('User', userSchema.schema);
-      System = connections.global.model('System', systemSchema.schema);
-      SpotifyAuthSession = connections.global.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
-      StoreItem = connections.global.model('StoreItem', storeItemSchema.schema);
+    if (connections.user) {
+      // User data goes to user database
+      User = connections.user.model('User', userSchema.schema);
+      System = connections.user.model('System', systemSchema.schema);
+      SpotifyAuthSession = connections.user.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
+      StoreItem = connections.user.model('StoreItem', storeItemSchema.schema);
     }
 
-    if (connections.local) {
-      // Guild data goes to local database
-      Guild = connections.local.model('Guild', guildSchema.schema);
-      Sprint = connections.local.model('Sprint', sprintSchema.schema);
-      Webhook = connections.local.model('Webhook', webhookSchema.schema);
-      WelcomeButton = connections.local.model('WelcomeButton', welcomeButtonSchema);
+    if (connections.guild) {
+      // Guild data goes to guild database
+      Guild = connections.guild.model('Guild', guildSchema.schema);
+      Sprint = connections.guild.model('Sprint', sprintSchema.schema);
+      Webhook = connections.guild.model('Webhook', webhookSchema.schema);
+      WelcomeButton = connections.guild.model('WelcomeButton', welcomeButtonSchema);
 
-      // If no global connection, put user data in local (backward compatibility)
-      if (!connections.global) {
-        User = connections.local.model('User', userSchema.schema);
-        System = connections.local.model('System', systemSchema.schema);
-        SpotifyAuthSession = connections.local.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
-        StoreItem = connections.local.model('StoreItem', storeItemSchema.schema);
+      // If no user connection, put user data in guild (backward compatibility)
+      if (!connections.user) {
+        User = connections.guild.model('User', userSchema.schema);
+        System = connections.guild.model('System', systemSchema.schema);
+        SpotifyAuthSession = connections.guild.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
+        StoreItem = connections.guild.model('StoreItem', storeItemSchema.schema);
       }
     }
 
@@ -108,11 +108,11 @@ async function _performInitialization(connectionStrings) {
         if (error.message.includes('connection') || error.message.includes('timeout')) {
           console.log('🔧 Attempting database reconnection...');
           const connections = connection.getConnections();
-          if (connections.global && connections.global.readyState !== 1) {
-            await connections.global.close();
+          if (connections.user && connections.user.readyState !== 1) {
+            await connections.user.close();
           }
-          if (connections.local && connections.local.readyState !== 1) {
-            await connections.local.close();
+          if (connections.guild && connections.guild.readyState !== 1) {
+            await connections.guild.close();
           }
           // Reconnection will be handled by mongoose automatically
         }

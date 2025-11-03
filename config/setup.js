@@ -5,8 +5,8 @@ const requiredEnvVars = [
   'BOT_TOKEN',
   'DEV_ID',
   'SERVER_ID',
-  'GLOBAL_CONNECTION',
-  'LOCAL_CONNECTION'
+  'USER_DATABASE',
+  'GUILD_DATABASE'
 ];
 
 const recommendedEnvVars = [
@@ -44,9 +44,9 @@ module.exports = {
   },
 
   database: {
-    // Multi-tenant database setup - using GLOBAL_CONNECTION and LOCAL_CONNECTION
-    globalConnection: process.env.GLOBAL_CONNECTION,
-    localConnection: process.env.LOCAL_CONNECTION
+    // Database setup - using USER_DATABASE and GUILD_DATABASE
+    userConnection: process.env.USER_DATABASE,
+    guildConnection: process.env.GUILD_DATABASE
   },
 
 
