@@ -19,6 +19,14 @@ module.exports = {
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Add a dropdown role option to a message',
+        usage: '{guildprefix}droprole add [message_link] [role] [emoji] [label]',
+        aliases: [],
+        parameters: ['message_link', 'role', 'emoji', 'label'],
+        example: '{guildprefix}droprole add https://discord.com/channels/.../... @Member 🌟 "Member Role"'
+      };
+
       const messageLink = args[1];
       const roleName = args[2];
       const emoji = args[3];
@@ -170,6 +178,14 @@ module.exports = {
       return embeds.success(message, `Added dropdown role: **${label}** → **${role.name}**`);
 
     } else if (args[0] === 'remove') {
+      const subcommandInfo = {
+        description: 'Remove a dropdown role option from a message',
+        usage: '{guildprefix}droprole remove [message_link] [role]',
+        aliases: [],
+        parameters: ['message_link', 'role'],
+        example: '{guildprefix}droprole remove https://discord.com/channels/.../... @Member'
+      };
+
       const messageLink = args[1];
       const roleName = args[2];
 
@@ -251,6 +267,14 @@ module.exports = {
       return embeds.success(message, `Removed dropdown role: **${dropRole.label}** → **${role.name}**`);
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'List all dropdown roles in the server',
+        usage: '{guildprefix}droprole list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}droprole list'
+      };
+
       const dropRoles = await guildService.getDropRoles(message.guild.id) || [];
 
       if (dropRoles.length === 0) {
@@ -307,6 +331,14 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Remove all dropdown roles from the server',
+        usage: '{guildprefix}droprole reset',
+        aliases: ['clear'],
+        parameters: [],
+        example: '{guildprefix}droprole reset'
+      };
+
       const dropRoles = await guildService.getDropRoles(message.guild.id) || [];
 
       if (dropRoles.length === 0) {
@@ -324,6 +356,14 @@ module.exports = {
       );
 
     } else if (args[0] === 'removeall') {
+      const subcommandInfo = {
+        description: 'Remove all dropdown roles from a specific message',
+        usage: '{guildprefix}droprole removeall [message_link]',
+        aliases: [],
+        parameters: ['message_link'],
+        example: '{guildprefix}droprole removeall https://discord.com/channels/.../...'
+      };
+
       const messageLink = args[1];
 
       if (!messageLink) {

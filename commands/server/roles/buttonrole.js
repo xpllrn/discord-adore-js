@@ -19,6 +19,14 @@ module.exports = {
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Add a button role to a message',
+        usage: '{guildprefix}buttonrole add [message_link] [role] [style] [emoji] [label]',
+        aliases: [],
+        parameters: ['message_link', 'role', 'style', 'emoji', 'label'],
+        example: '{guildprefix}buttonrole add https://discord.com/channels/.../... @Member primary 🌟 "Get Member Role"'
+      };
+
       const messageLink = args[1];
       const roleName = args[2];
       const style = args[3];
@@ -159,6 +167,14 @@ module.exports = {
       return embeds.success(message, `Added button role: **${label}** → **${role.name}**`);
 
     } else if (args[0] === 'remove') {
+      const subcommandInfo = {
+        description: 'Remove a button role from a message',
+        usage: '{guildprefix}buttonrole remove [message_link] [role]',
+        aliases: [],
+        parameters: ['message_link', 'role'],
+        example: '{guildprefix}buttonrole remove https://discord.com/channels/.../... @Member'
+      };
+
       const messageLink = args[1];
       const roleName = args[2];
 
@@ -228,6 +244,14 @@ module.exports = {
       return embeds.success(message, `Removed button role: **${buttonRole.label}** → **${role.name}**`);
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'List all button roles in the server',
+        usage: '{guildprefix}buttonrole list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}buttonrole list'
+      };
+
       const buttonRoles = await guildService.getButtonRoles(message.guild.id) || [];
 
       if (buttonRoles.length === 0) {
@@ -285,6 +309,14 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Remove all button roles from the server',
+        usage: '{guildprefix}buttonrole reset',
+        aliases: ['clear'],
+        parameters: [],
+        example: '{guildprefix}buttonrole reset'
+      };
+
       const buttonRoles = await guildService.getButtonRoles(message.guild.id) || [];
 
       if (buttonRoles.length === 0) {
@@ -302,6 +334,14 @@ module.exports = {
       );
 
     } else if (args[0] === 'removeall') {
+      const subcommandInfo = {
+        description: 'Remove all button roles from a specific message',
+        usage: '{guildprefix}buttonrole removeall [message_link]',
+        aliases: [],
+        parameters: ['message_link'],
+        example: '{guildprefix}buttonrole removeall https://discord.com/channels/.../...'
+      };
+
       const messageLink = args[1];
 
       if (!messageLink) {

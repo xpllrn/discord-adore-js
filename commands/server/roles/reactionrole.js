@@ -19,6 +19,14 @@ module.exports = {
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Add a reaction role to a message',
+        usage: '{guildprefix}reactionrole add [message_link] [reaction] [role]',
+        aliases: [],
+        parameters: ['message_link', 'reaction', 'role'],
+        example: '{guildprefix}reactionrole add https://discord.com/channels/.../... 🌟 @Member'
+      };
+
       const messageLink = args[1];
       const reaction = args[2];
       const roleName = args.slice(3).join(' ');
@@ -112,6 +120,14 @@ module.exports = {
       return embeds.success(message, `Added reaction role: ${reaction} → **${role.name}**`);
 
     } else if (args[0] === 'remove') {
+      const subcommandInfo = {
+        description: 'Remove a reaction role from a message',
+        usage: '{guildprefix}reactionrole remove [message_link] [reaction]',
+        aliases: [],
+        parameters: ['message_link', 'reaction'],
+        example: '{guildprefix}reactionrole remove https://discord.com/channels/.../... 🌟'
+      };
+
       const messageLink = args[1];
       const reaction = args[2];
 
@@ -166,6 +182,14 @@ module.exports = {
       return embeds.success(message, `Removed reaction role: ${reaction} → **${roleName}**`);
 
     } else if (args[0] === 'list') {
+      const subcommandInfo = {
+        description: 'List all reaction roles in the server',
+        usage: '{guildprefix}reactionrole list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}reactionrole list'
+      };
+
       const reactionRoles = await guildService.getReactionRoles(message.guild.id) || [];
 
       if (reactionRoles.length === 0) {
@@ -223,6 +247,14 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'reset') {
+      const subcommandInfo = {
+        description: 'Remove all reaction roles from the server',
+        usage: '{guildprefix}reactionrole reset',
+        aliases: ['clear'],
+        parameters: [],
+        example: '{guildprefix}reactionrole reset'
+      };
+
       const reactionRoles = await guildService.getReactionRoles(message.guild.id) || [];
 
       if (reactionRoles.length === 0) {
@@ -240,6 +272,14 @@ module.exports = {
       );
 
     } else if (args[0] === 'removeall') {
+      const subcommandInfo = {
+        description: 'Remove all reaction roles from a specific message',
+        usage: '{guildprefix}reactionrole removeall [message_link]',
+        aliases: [],
+        parameters: ['message_link'],
+        example: '{guildprefix}reactionrole removeall https://discord.com/channels/.../...'
+      };
+
       const messageLink = args[1];
 
       if (!messageLink) {
