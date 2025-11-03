@@ -435,13 +435,12 @@ class UnoUI {
   }
 
   /**
-   * Send new game message with current state and set up collectors
+   * Send new game message with current state
    * @param {Channel} channel - Discord channel to send to
    * @param {UnoGameState} game - Game state
-   * @param {Function} setupCollector - Function to set up collectors
    * @param {string} userId - Current user ID (optional)
    */
-  static async sendGameMessage(channel, game, setupCollector = null, userId = null) {
+  static async sendGameMessage(channel, game, userId = null) {
     try {
       // Stop old collector and delete old message if they exist
       if (game.currentCollector) {
@@ -478,16 +477,7 @@ class UnoUI {
         components: components
       });
       
-      // Set up collectors if provided
-      if (setupCollector) {
-        if (game.status === GAME_STATUS.LOBBY) {
-          // For lobby, we need a different collector setup function
-          // We'll pass this through the setupCollector function
-          setupCollector(message, game);
-        } else if (game.status === GAME_STATUS.ACTIVE) {
-          setupCollector(message, game);
-        }
-      }
+      // Collectors will be set up externally after this function returns
       
       return message;
     } catch (error) {

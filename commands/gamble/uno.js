@@ -295,9 +295,11 @@ async function handlePlayButton(interaction, message) {
   await interaction.deferUpdate();
   
   // Send new game message (this will delete the old lobby message and create a new one)
-  const newMessage = await UnoUI.sendGameMessage(interaction.channel, result.game, setupGameCollector);
+  const newMessage = await UnoUI.sendGameMessage(interaction.channel, result.game);
   if (newMessage) {
     result.game.setCurrentMessage(newMessage);
+    // Set up game collector on the new message
+    setupGameCollector(newMessage, result.game);
   }
 }
 
@@ -544,9 +546,10 @@ async function handleExitButton(interaction, message) {
             // Stop old collector first
             game.stopCurrentCollector();
             
-            const newMessage = await UnoUI.sendGameMessage(message.channel, game, setupGameCollector);
+            const newMessage = await UnoUI.sendGameMessage(message.channel, game);
             if (newMessage) {
               game.setCurrentMessage(newMessage);
+              setupGameCollector(newMessage, game);
             }
           }
         }
@@ -647,9 +650,10 @@ async function handleCardSelection(interaction, game) {
           // Stop old collector first
           updatedGame.stopCurrentCollector();
           
-          const newMessage = await UnoUI.sendGameMessage(colorInteraction.channel, updatedGame, setupGameCollector);
+          const newMessage = await UnoUI.sendGameMessage(colorInteraction.channel, updatedGame);
           if (newMessage) {
             updatedGame.setCurrentMessage(newMessage);
+            setupGameCollector(newMessage, updatedGame);
           }
         }
       } else {
@@ -696,9 +700,10 @@ async function handleCardSelection(interaction, game) {
       // Stop old collector first
       updatedGame.stopCurrentCollector();
       
-      const newMessage = await UnoUI.sendGameMessage(interaction.channel, updatedGame, setupGameCollector);
+      const newMessage = await UnoUI.sendGameMessage(interaction.channel, updatedGame);
       if (newMessage) {
         updatedGame.setCurrentMessage(newMessage);
+        setupGameCollector(newMessage, updatedGame);
       }
     }
   } else {
@@ -750,9 +755,10 @@ async function handleDrawFromDropdown(interaction, game) {
       // Stop old collector first
       updatedGame.stopCurrentCollector();
       
-      const newMessage = await UnoUI.sendGameMessage(interaction.channel, updatedGame, setupGameCollector);
+      const newMessage = await UnoUI.sendGameMessage(interaction.channel, updatedGame);
       if (newMessage) {
         updatedGame.setCurrentMessage(newMessage);
+        setupGameCollector(newMessage, updatedGame);
       }
     }
   } else {
