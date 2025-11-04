@@ -17,6 +17,8 @@ module.exports = {
 
     if (subcommand === 'invite' || subcommand === 'inv') {
       await handleInvite(client, message, args);
+    } else if (subcommand === 'addbal' || subcommand === 'addbalance') {
+      await handleAddBalance(client, message, args);
     } else {
       return runHelpCommand(message, 'admin');
     }
@@ -90,5 +92,80 @@ async function handleInvite(client, message, args) {
   } catch (error) {
     console.error('Error in admin invite command:', error);
     return embeds.deny(message, `An error occurred while processing the invite for server \`${serverId}\``);
+  }
+}
+
+async function handleAddBalance(client, message, args) {
+  if (!args[1]) {
+    return embeds.warn(message, 'Please mention a **user** to add balance to!\n\nUsage: `,admin addbal @user 10000`');
+  }
+
+  if (!args[2]) {
+    return embeds.warn(message, 'Please specify an **amount** to add!\n\nUsage: `,admin addbal @user 10000`');
+  }
+
+  // Parse user mention or ID
+  let targetUser;
+  const userMention = args[1];
+  
+  if (userMention.startsWith('<@') && userMention.endsWith('>')) {
+    const userId = userMention.slice(2, -1).replace('!', '');
+    targetUser = await client.users.fetch(userId).catch(() => null);
+  } else if (/^\d{17,19}$/.test(userMention)) {
+    targetUser = await client.users.fetch(userMention).catch(() => null);
+  }
+
+  if (!targetUser) {
+    return embeds.warn(message, 'Please provide a **valid user mention or ID**!\n\nUsage: `,admin addbal @user 10000`');
+  }
+
+  // Parse amount
+  const amount = parseInt(args[2]);
+  if (isNaN(amount)) {
+    return embeds.warn(message, 'Please provide a **valid number** for the amount!\n\nUsage: `,admin addbal @user 10000`');
+  }
+
+  if (amount <= 0) {
+    return embeds.warn(message, 'Amount must be **greater than 0**!');
+  }
+
+  if (amount > 1000000000) { // 1 billion limit
+    return embeds.warn(message, 'Amount cannot exceed **1,000,000,000**!');
+  }
+
+  try {
+    // Get database models
+    const { ensureUserData } = require('../../database');
+    const { User } = require('../../database');
+
+    if (!User) {
+      return embeds.deny(message, 'Database not ready. Please try again later.');
+    }
+
+    // Ensure user data exists
+    await ensureUserData(targetUser.id);
+
+    // Add balance to user's wallet
+    const updatedUser = await User.findOneAndUpdate(
+      { UserID: targetUser.id },
+      { 
+        $inc: { 'Gambling.wallet': amount }
+      },
+      { 
+        new: true,
+        upsert: true
+      }
+    );
+
+    const newBalance = updatedUser.Gambling.wallet;
+
+    return embeds.success(message, 
+      `Successfully added **${amount.toLocaleString()}** coins to ${targetUser.username}'s wallet!\n\n` +
+      `**New Balance:** ${newBalance.toLocaleString()} coins`
+    );
+
+  } catch (error) {
+    console.error('Error in admin addbal command:', error);
+    return embeds.deny(message, `An error occurred while adding balance to ${targetUser.username}'s wallet.`);
   }
 }
