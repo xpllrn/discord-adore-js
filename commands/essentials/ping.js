@@ -6,7 +6,7 @@ module.exports = {
   example: 'latency',
   run: async (client, message, args) => {
 
-    const targets = ['no one', 'everyone', 'ur mom', 'horny asian women', 'horny asian man', 'iPhone'];
+    const targets = ['no one', 'everyone', 'ur mom', 'horny asian women', 'horny asian man', 'vee', 'sin', '4 dick in jon'];
     const randomTarget = targets[Math.floor(Math.random() * targets.length)];
 
     try {
