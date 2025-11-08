@@ -93,7 +93,7 @@ module.exports = {
           }, 5 * 60 * 1000); // 5 minutes
 
         } catch (error) {
-          console.error('[Spotify Link] Error:', error);
+          logger.webhook.error(error, message);
           return embeds.warn(message, 'Failed to create **Spotify** authorization link. Please try again later.');
         }
         break;
@@ -137,7 +137,7 @@ module.exports = {
           );
 
         } catch (error) {
-          console.error('[Spotify Unlink] Error:', error);
+          logger.webhook.error(error, message);
           return embeds.warn(message, 'Failed to unlink **Spotify** account. Please try again later.');
         }
         break;

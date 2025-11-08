@@ -222,7 +222,7 @@ async function handleSetup(client, message, args) {
     return embeds.success(message, "Ticket system has been set up successfully! Users can now create tickets using the button above.");
 
   } catch (error) {
-    console.error('Error setting up ticket system:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while setting up the ticket system. Please try again.");
   }
 }
@@ -259,7 +259,7 @@ async function handleReset(client, message, args) {
     return embeds.success(message, "Ticket system has been reset successfully! The old setup message has been removed. Use `,ticket setup` to create a new one.");
 
   } catch (error) {
-    console.error('Error resetting ticket system:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while resetting the ticket system. Please try again.");
   }
 }
@@ -295,7 +295,7 @@ async function handleCategory(client, message, args) {
     return embeds.success(message, `Ticket category has been set to **${category.name}**. New tickets will be created in this category.`);
 
   } catch (error) {
-    console.error('Error handling ticket category:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while managing the ticket category. Please try again.");
   }
 }
@@ -342,7 +342,7 @@ async function handleAddUser(client, message, args) {
     return embeds.success(message, `**${user.displayName}** has been added to this ticket.`);
 
   } catch (error) {
-    console.error('Error adding user to ticket:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while adding the user to this ticket. Please try again.");
   }
 }
@@ -393,7 +393,7 @@ async function handleRemoveUser(client, message, args) {
     return embeds.success(message, `**${user.displayName}** has been removed from this ticket.`);
 
   } catch (error) {
-    console.error('Error removing user from ticket:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while removing the user from this ticket. Please try again.");
   }
 }
@@ -434,7 +434,7 @@ async function handleClose(client, message, args) {
     return embeds.success(message, `This ticket has been closed by ${message.author}. The ticket creator has been removed from the channel.`);
 
   } catch (error) {
-    console.error('Error closing ticket:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while closing the ticket. Please try again.");
   }
 }
@@ -474,7 +474,7 @@ async function handleOpen(client, message, args) {
     return embeds.success(message, `This ticket has been reopened by ${message.author}. The ticket creator has been added back to the channel.`);
 
   } catch (error) {
-    console.error('Error reopening ticket:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while reopening the ticket. Please try again.");
   }
 }
@@ -508,7 +508,7 @@ async function handleRename(client, message, args) {
     return embeds.success(message, `Ticket has been renamed to **${finalName}**.`);
 
   } catch (error) {
-    console.error('Error renaming ticket:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while renaming the ticket. Please try again.");
   }
 }
@@ -548,7 +548,7 @@ async function handleSupport(client, message, args) {
     return embeds.success(message, `**${role.name}** has been set as the support role for tickets. Members with this role will have access to all tickets.`);
 
   } catch (error) {
-    console.error('Error managing support role:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while managing the support role. Please try again.");
   }
 }
@@ -624,7 +624,7 @@ async function handleMessage(client, message, args) {
     return embeds.success(message, "Custom ticket message has been set successfully! The setup message has been updated.");
 
   } catch (error) {
-    console.error('Error setting custom ticket message:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while setting the custom ticket message. Please try again.");
   }
 }
@@ -696,7 +696,7 @@ async function updateTicketSetupMessage(client, guild, ticketSystem, customMessa
     await setupMessage.edit(messageOptions);
 
   } catch (error) {
-    console.error('Error updating ticket setup message:', error);
+    logger.webhook.error(error, message);
   }
 }
 
@@ -773,7 +773,7 @@ async function handleVariables(client, message, args) {
     return message.channel.send({ embeds: [embed] });
 
   } catch (error) {
-    console.error('Error showing ticket variables:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, "An error occurred while showing ticket variables. Please try again.");
   }
 }

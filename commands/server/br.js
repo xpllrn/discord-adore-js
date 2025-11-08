@@ -274,7 +274,7 @@ async function positionRoleBelowBase(guild, roleId, baseRoleId) {
     await guild.roles.edit(roleId, { position: targetPosition });
     return true;
   } catch (error) {
-    console.error('Error positioning role:', error);
+    logger.webhook.error(error, message);
     return false;
   }
 }
@@ -404,7 +404,7 @@ async function handleCreate(client, message, args) {
       try {
         await newRole.delete('Failed to save to database');
       } catch (cleanupError) {
-        console.error('Failed to cleanup role after database error:', cleanupError);
+        logger.webhook.error(error, message);
       }
       return embeds.deny(message, 'Failed to save booster role to database. Please try again.');
     }
@@ -420,7 +420,7 @@ async function handleCreate(client, message, args) {
     return embeds.success(message, `Created your booster role: ${newRole}!`);
 
   } catch (error) {
-    console.error('Error creating booster role:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to create booster role. Please check my permissions.');
   }
 }
@@ -476,7 +476,7 @@ async function handleRename(client, message, args) {
     return embeds.success(message, `Renamed your booster role to: **${newName}**`);
 
   } catch (error) {
-    console.error('Error renaming booster role:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to rename booster role. Please check my permissions.');
   }
 }
@@ -589,7 +589,7 @@ async function handleIcon(client, message, args) {
     return embeds.success(message, `Icon for your booster role ${iconText}!`);
 
   } catch (error) {
-    console.error('Error setting booster role icon:', error);
+    logger.webhook.error(error, message);
 
     // More specific error handling
     if (error.code === 50035) {
@@ -645,7 +645,7 @@ async function handleColor(client, message, args) {
 
       return embeds.success(message, 'Color removed from your booster role!');
     } catch (error) {
-      console.error('Error removing booster role color:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'Failed to remove booster role color. Please check my permissions.');
     }
   }
@@ -1019,14 +1019,14 @@ async function handleShare(client, message, args) {
         });
       } catch (error) {
         // Message might have been deleted or already handled
-        console.error('Error cleaning up pending share:', error);
+        logger.webhook.error(error, message);
       }
     }, 60000);
 
     // Don't send success message as requested
 
   } catch (error) {
-    console.error('Error sharing booster role:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to send share request. Please try again.');
   }
 }
@@ -1062,7 +1062,7 @@ async function handleCleanup(client, message, args) {
         await guildService.deleteBoosterRole(message.guild.id, boosterRole.userId || boosterRole.ownerId);
         deletedCount++;
       } catch (error) {
-        console.error(`Error deleting booster role ${boosterRole.id}:`, error);
+        logger.webhook.error(error, message);
         failedCount++;
       }
     }
@@ -1075,7 +1075,7 @@ async function handleCleanup(client, message, args) {
     return embeds.success(message, resultText);
 
   } catch (error) {
-    console.error('Error during booster role cleanup:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to perform cleanup. Please try again.');
   }
 }
@@ -1124,7 +1124,7 @@ async function handleRemove(client, message, args) {
         await interaction.editReply({ embeds: [successEmbed], components: [] });
 
       } catch (error) {
-        console.error('Error removing booster role:', error);
+        logger.webhook.error(error, message);
         const errorEmbed = embeds.createDeny(message, 'Failed to remove booster role. Please check my permissions or try again.');
         await interaction.editReply({ embeds: [errorEmbed], components: [] });
       }

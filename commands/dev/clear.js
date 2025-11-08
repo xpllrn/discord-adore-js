@@ -97,7 +97,7 @@ async function handleClearNames(client, message, args) {
       }
     );
   } catch (error) {
-    console.error('Error clearing name history:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to clear name history');
   }
 }
@@ -151,7 +151,7 @@ async function handleClearServerNames(client, message, args) {
       }
     );
   } catch (error) {
-    console.error('Error clearing guild name history:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to clear guild name history');
   }
 }

@@ -257,7 +257,7 @@ async function showStats(message, userService) {
 
     return message.channel.send({ embeds: [embed] });
   } catch (error) {
-    console.error(`❌ TTT Stats: Error retrieving stats for user ${message.author.id}:`, error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to retrieve your statistics. Please try again later.');
   }
 }
@@ -512,7 +512,7 @@ async function endGame(interaction, board, players, playerSymbols, winner, isDra
         await userService.updateGamblingStats(players[loserIndex].id, betAmount, 0, betAmount);
       }
     } catch (error) {
-      console.error('❌ TTT: Failed to handle betting payouts:', error.message);
+      logger.webhook.error(error, message);
     }
   }
 
@@ -530,7 +530,7 @@ async function endGame(interaction, board, players, playerSymbols, winner, isDra
     }
   } catch (error) {
     // Log the error for debugging but don't break game flow
-    console.error('❌ TTT: Failed to update stats:', error.message);
+    logger.webhook.error(error, message);
   }
 
   // Create final message and disabled buttons

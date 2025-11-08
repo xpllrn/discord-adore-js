@@ -25,7 +25,7 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      console.error('[Pause Command] Error:', error);
+      logger.webhook.error(error, message);
       return handleSpotifyError(message, error);
     }
   }

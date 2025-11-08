@@ -35,7 +35,7 @@ module.exports = {
       return MessageProcessor.process(message.channel, embedInput, variables);
 
     } catch (error) {
-      console.error('CreateEmbed error:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, `Invalid embed syntax: ${error.message || 'Please check your format.'}`);
     }
   }

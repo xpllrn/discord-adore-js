@@ -82,7 +82,7 @@ class InstagramScraper {
 
             return 'unknown';
         } catch (error) {
-            console.error('Error fetching URL:', error);
+            logger.webhook.error(error, message);
             return 'unknown';
         }
     }
@@ -269,7 +269,7 @@ class InstagramScraper {
 
             return profileInfo;
         } catch (error) {
-            console.error('Error extracting profile info:', error);
+            logger.webhook.error(error, message);
             return {
                 username: '',
                 fullName: '',

@@ -71,7 +71,7 @@ module.exports = {
       await message.channel.send({ files: [attachment] });
 
     } catch (error) {
-      console.error('Quote command error:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while generating the quote image.');
     }
   }
@@ -158,7 +158,7 @@ async function createQuoteImage(user, text) {
     return outputBuffer;
 
   } catch (error) {
-    console.error('Error creating quote image:', error);
+    logger.webhook.error(error, message);
 
     // Fallback: create a simple text-only image
     const fallbackSvg = Buffer.from(`

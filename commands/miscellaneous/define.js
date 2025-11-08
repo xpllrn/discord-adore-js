@@ -75,7 +75,7 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      console.error('Error in define command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while fetching the definition. Please try again.');
     }
   }

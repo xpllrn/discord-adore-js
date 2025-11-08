@@ -45,7 +45,7 @@ module.exports = {
       return await playBySearch(message, args, spotifyService, accessToken);
 
     } catch (error) {
-      console.error('[Play Command] Error:', error);
+      logger.webhook.error(error, message);
       return handleSpotifyError(message, error);
     }
   }

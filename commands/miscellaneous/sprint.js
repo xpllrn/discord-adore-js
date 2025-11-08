@@ -203,7 +203,7 @@ async function startSprint(client, message, args) {
     scheduleSprintTimers(client, sprint, durationMs);
 
   } catch (error) {
-    console.error('[Sprint Start] Error:', error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to start reading sprint. Please try again.');
   }
 }
@@ -260,7 +260,7 @@ async function endSprint(client, message) {
     );
 
   } catch (error) {
-    console.error('[Sprint End] Error:', error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to end reading sprint. Please try again.');
   }
 }
@@ -417,7 +417,7 @@ async function joinSprint(client, message, args) {
     return embeds.success(message, `You have joined the sprint! Reading **${bookName}** starting at tab **${startTab}**.`);
 
   } catch (error) {
-    console.error('[Sprint Join] Error:', error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to join sprint. Please try again.');
   }
 }
@@ -476,7 +476,7 @@ async function leaveSprint(client, message) {
     );
 
   } catch (error) {
-    console.error('[Sprint Leave] Error:', error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to leave sprint. Please try again.');
   }
 }
@@ -534,7 +534,7 @@ async function updateSprint(client, message, args) {
     await message.react('✅').catch(() => { });
 
   } catch (error) {
-    console.error('[Sprint Update] Error:', error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to update progress. Please try again.');
   }
 }
@@ -590,7 +590,7 @@ async function toggleFlow(client, message) {
     }
 
   } catch (error) {
-    console.error('[Sprint Flow] Error:', error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to toggle flow. Please try again.');
   }
 }
@@ -694,7 +694,7 @@ async function showLeaderboard(client, message) {
     return message.channel.send({ embeds: [embed] });
 
   } catch (error) {
-    console.error('[Sprint Leaderboard] Error:', error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to show leaderboard. Please try again.');
   }
 }
@@ -747,7 +747,7 @@ async function showHistory(client, message) {
     );
 
   } catch (error) {
-    console.error('[Sprint History] Error:', error);
+    logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to show history. Please try again.');
   }
 }
@@ -786,7 +786,7 @@ async function saveSprintHistory(sprint) {
       }
     }
   } catch (error) {
-    console.error('[Save Sprint History] Error:', error);
+    logger.webhook.error(error, message);
   }
 }
 
@@ -814,7 +814,7 @@ function scheduleSprintTimers(client, sprint, durationMs) {
       try {
         await sendSprintReminder(client, sprint.guildId, sprint.messageId);
       } catch (error) {
-        console.error('[Sprint Reminder] Error:', error);
+        logger.webhook.error(error, message);
       }
     }, reminderTime);
   }
@@ -825,7 +825,7 @@ function scheduleSprintTimers(client, sprint, durationMs) {
       try {
         await autoEndSprint(client, sprint.guildId, sprint.messageId);
       } catch (error) {
-        console.error('[Sprint Auto-End] Error:', error);
+        logger.webhook.error(error, message);
       }
     }, timeUntilEnd);
   }

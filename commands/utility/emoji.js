@@ -89,7 +89,7 @@ module.exports = {
           await downloadFile(emojiUrl, filePath);
           downloaded++;
         } catch (error) {
-          console.error(`Failed to download emoji ${emoji.name}:`, error.message);
+          logger.webhook.error(error, message);
           failed++;
         }
       }
@@ -132,7 +132,7 @@ module.exports = {
       fs.unlinkSync(zipPath);
 
     } catch (error) {
-      console.error('Error archiving emojis:', error);
+      logger.webhook.error(error, message);
 
       // Log detailed error information
       if (message.client?.errorLogger) {

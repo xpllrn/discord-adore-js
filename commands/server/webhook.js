@@ -144,7 +144,7 @@ async function handleCreate(client, message, args, webhookService) {
     return embeds.success(message, `Created webhook **\`${webhookData.shortId}\`** for ${message.channel}!`);
 
   } catch (error) {
-    console.error('Error creating webhook:', error);
+    logger.webhook.error(error, message);
     if (error.code === 50013) {
       return embeds.warn(message, 'I don\'t have permission to create webhooks in this channel');
     }
@@ -215,7 +215,7 @@ async function handleDelete(client, message, args, webhookService) {
           await interaction.editReply({ embeds: [successEmbed], components: [] });
 
         } catch (error) {
-          console.error('Error deleting webhook:', error);
+          logger.webhook.error(error, message);
           const errorEmbed = embeds.createDeny(message, 'Failed to delete webhook. Please try again.');
           await interaction.editReply({ embeds: [errorEmbed], components: [] });
         }
@@ -223,7 +223,7 @@ async function handleDelete(client, message, args, webhookService) {
     );
 
   } catch (error) {
-    console.error('Error finding webhook:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to find webhook. Please try again.');
   }
 }
@@ -269,7 +269,7 @@ async function handleSend(client, message, args, webhookService) {
     return embeds.success(message, `Message sent via webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 
   } catch (error) {
-    console.error('Error sending webhook message:', error);
+    logger.webhook.error(error, message);
     if (error.code === 10015) {
       return embeds.warn(message, 'No **webhooks** have been created');
     }
@@ -356,7 +356,7 @@ async function handleEdit(client, message, args, webhookService) {
     return embeds.success(message, `Message edited via webhook **\`${targetWebhook.shortId}\`** (${targetWebhook.name})!`);
 
   } catch (error) {
-    console.error('Error editing webhook message:', error);
+    logger.webhook.error(error, message);
     if (error.code === 10008) {
       return embeds.warn(message, 'Message not found or not sent by a webhook');
     }
@@ -402,7 +402,7 @@ async function handleList(client, message, args, webhookService) {
     return message.channel.send({ embeds: [embed] });
 
   } catch (error) {
-    console.error('Error listing webhooks:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to list webhooks. Please try again.');
   }
 }
@@ -448,7 +448,7 @@ async function handleRename(client, message, args, webhookService) {
     return embeds.success(message, `Renamed webhook **\`${webhook.shortId}\`** to **${newName}**!`);
 
   } catch (error) {
-    console.error('Error renaming webhook:', error);
+    logger.webhook.error(error, message);
     if (error.code === 10015) {
       return embeds.warn(message, 'Webhook not found or has been deleted');
     }
@@ -505,7 +505,7 @@ async function handleAvatar(client, message, args, webhookService) {
     return embeds.success(message, `Updated avatar for webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 
   } catch (error) {
-    console.error('Error setting webhook avatar:', error);
+    logger.webhook.error(error, message);
     if (error.code === 10015) {
       return embeds.warn(message, 'No **webhooks** have been created');
     }

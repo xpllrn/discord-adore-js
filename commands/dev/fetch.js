@@ -98,7 +98,7 @@ async function handleInvite(client, message, args) {
     return embeds.success(message, `Here's the [invite](${newInvite.url}) from **${guild.name}**`);
 
   } catch (error) {
-    console.error('Error in fetch invite command:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, `An error occurred while processing the invite for server \`${serverId}\``);
   }
 }

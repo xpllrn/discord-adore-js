@@ -104,7 +104,7 @@ module.exports = {
       }
 
     } catch (error) {
-      console.error('Error in slut command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while working');
     }
   }

@@ -63,7 +63,7 @@ module.exports = {
         const action = existingLeaveMessage ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **leave message** for ${leavechannel}`);
       } catch (error) {
-        console.error('Leave add error:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, `Failed to set leave message: ${error.message}`);
       }
 
@@ -102,7 +102,7 @@ module.exports = {
 
         return embeds.success(message, `Removed the **leave message** for ${leavechannel}`);
       } catch (error) {
-        console.error('Leave remove error:', error);
+        logger.webhook.error(error, message);
         return embeds.error(message, `Failed to remove leave message: ${error.message}`);
       }
 

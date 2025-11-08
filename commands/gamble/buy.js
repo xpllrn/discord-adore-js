@@ -85,7 +85,7 @@ module.exports = {
             await interaction.editReply({ embeds: [successEmbed], components: [] });
 
           } catch (error) {
-            console.error('Error in buy confirmation:', error);
+            logger.webhook.error(error, message);
             const errorEmbed = embeds.createDeny(message, 'An error occurred while processing your purchase.');
             await interaction.editReply({ embeds: [errorEmbed], components: [] });
           }
@@ -93,7 +93,7 @@ module.exports = {
       );
       
     } catch (error) {
-      console.error('Error in buy command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while purchasing the item');
     }
   }

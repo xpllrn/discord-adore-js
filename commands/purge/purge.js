@@ -72,7 +72,7 @@ module.exports = {
           return deletedCount;
 
         } catch (error) {
-          console.error('Purge error:', error);
+          logger.webhook.error(error, message);
           if (error.code === 50034) {
             embeds.deny(message, 'Cannot delete messages **older than 14 days** due to Discord limitations.');
           } else if (error.code === 50013) {
@@ -197,7 +197,7 @@ module.exports = {
         await performBulkDelete(messages);
       }
     } catch (error) {
-      console.error('Purge command error:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while executing the purge command');
     }
   }

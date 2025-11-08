@@ -328,7 +328,7 @@ async function handleSetupCommand(message, client) {
     return embeds.success(message, 'Finished setting up the VoiceMaster channels. A category and two channels have been created.');
 
   } catch (error) {
-    console.error('VM Setup Error:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to setup voice manager. Please check my permissions and try again.');
   }
 }
@@ -374,7 +374,7 @@ async function handleResetCommand(message) {
     return embeds.success(message, 'Voice manager has been reset. Use `,vm setup` to create a new voice manager system.');
 
   } catch (error) {
-    console.error('VM Reset Error:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to reset voice manager. Please check my permissions and try again.');
   }
 }
@@ -446,7 +446,7 @@ async function createVoiceManagerPanel(client, channel) {
     });
     console.log('Voice manager panel created successfully');
   } catch (error) {
-    console.error('Error creating voice manager panel:', error);
+    logger.webhook.error(error, message);
     // Fallback with labels if emojis fail
     const fallbackRow1 = new ActionRowBuilder()
       .addComponents(

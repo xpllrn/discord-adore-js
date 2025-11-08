@@ -67,7 +67,7 @@ module.exports = {
       }
 
     } catch (error) {
-      console.error('Error toggling NSFW status:', error);
+      logger.webhook.error(error, message);
 
       if (error.code === 50013) {
         return embeds.deny(message, 'Missing permissions to change NSFW status');

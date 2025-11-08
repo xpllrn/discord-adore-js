@@ -122,7 +122,7 @@ module.exports = {
 
         await createPagination(message, sortedSwears, formatPage, 10, 'Swear List');
       } catch (error) {
-        console.error('Error getting swear list:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to retrieve swear list');
       }
 
@@ -212,7 +212,7 @@ module.exports = {
 
         await createPagination(message, leaderboardWithUsernames, formatPage, 10, 'Swear Leaderboard');
       } catch (error) {
-        console.error('Error getting swear leaderboard:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to retrieve swear leaderboard');
       }
 
@@ -247,7 +247,7 @@ module.exports = {
           }
         );
       } catch (error) {
-        console.error('Error resetting swear data:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to reset swear data');
       }
 
@@ -280,7 +280,7 @@ module.exports = {
         const username = targetMember ? targetMember.displayName : targetUser.username;
         return embeds.info(message, `**${username}** has sweared **${calculatedTotal}** times`);
       } catch (error) {
-        console.error('Error getting user swear data:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to retrieve user swear data');
       }
 
@@ -302,7 +302,7 @@ module.exports = {
 
         return embeds.info(message, `You have sweared **${calculatedTotal}** times`);
       } catch (error) {
-        console.error('Error getting swear data:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to retrieve swear data');
       }
     }

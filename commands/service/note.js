@@ -46,7 +46,7 @@ module.exports = {
         const newNote = await userService.addNote(message.author.id, content);
         return embeds.success(message, `Created note **#${newNote.id}**: ${content.length > 50 ? content.substring(0, 50) + '...' : content}`);
       } catch (error) {
-        console.error('Error adding note:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to create note');
       }
 
@@ -74,7 +74,7 @@ module.exports = {
           return embeds.warn(message, `No note found with ID **#${noteId}**`);
         }
       } catch (error) {
-        console.error('Error removing note:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to remove note');
       }
 
@@ -121,7 +121,7 @@ module.exports = {
           return embeds.warn(message, 'You have no notes saved');
         }
       } catch (error) {
-        console.error('Error listing notes:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to retrieve notes');
       }
 
@@ -156,7 +156,7 @@ module.exports = {
           return embeds.warn(message, 'You have no notes to clear');
         }
       } catch (error) {
-        console.error('Error clearing notes:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to clear notes');
       }
 

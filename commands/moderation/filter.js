@@ -92,7 +92,7 @@ module.exports = {
           return runHelpCommand(message, 'automod');
       }
     } catch (error) {
-      console.error('Filter command error:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while managing the filter. Please try again.');
     }
   }
@@ -704,7 +704,7 @@ async function getOrCreateAutoModRule(guild) {
 
     return rule;
   } catch (error) {
-    console.error('Failed to get or create AutoMod rule:', error);
+    logger.webhook.error(error, message);
 
     // Check for specific AutoMod rule limit error
     if (error.code === 50035 && error.rawError?.errors?._errors?.some(e =>
@@ -744,7 +744,7 @@ async function createInviteAutoModRule(guild) {
     await guild.autoModerationRules.create(ruleData);
     return { success: true };
   } catch (error) {
-    console.error('Failed to create invite AutoMod rule:', error);
+    logger.webhook.error(error, message);
 
     // Check for specific AutoMod rule limit error
     if (error.code === 50035 && error.rawError?.errors?._errors?.some(e =>

@@ -37,7 +37,7 @@ module.exports = {
         await targetChannel.setLocked(false, 'Unlocked via command');
         return message.react('🔓');
       } catch (error) {
-        console.error('Error unlocking thread:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, "An error occurred while trying to **unlock** the thread");
       }
     }
@@ -91,7 +91,7 @@ module.exports = {
 
       return message.react('🔓');
     } catch (error) {
-      console.error('Error unlocking channel:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, "An error occurred while trying to **unlock** the channel");
     }
   }

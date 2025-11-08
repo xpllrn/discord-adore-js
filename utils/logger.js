@@ -176,7 +176,7 @@ class Logger {
       } catch (webhookError) {
         // Silent fail to avoid infinite loops
       }
-    }.bind(this),
+    },
 
     /**
      * Log warning to webhook (auto-extracts context)
@@ -225,7 +225,7 @@ class Logger {
       } catch (webhookError) {
         // Silent fail
       }
-    }.bind(this),
+    },
 
     /**
      * Log info to webhook (auto-extracts context)
@@ -274,7 +274,7 @@ class Logger {
       } catch (webhookError) {
         // Silent fail
       }
-    }.bind(this)
+    }
   };
 
   /**
@@ -288,7 +288,7 @@ class Logger {
       const command = this._extractCommandName();
       this.console.error(`[${command}]`, errorOrMessage);
       await this.webhook.error(errorOrMessage, message);
-    }.bind(this),
+    },
 
     /**
      * Log warning to both console and webhook (auto-extracts context)
@@ -297,7 +297,7 @@ class Logger {
       const command = this._extractCommandName();
       this.console.warn(`[${command}]`, warningMessage);
       await this.webhook.warn(warningMessage, message);
-    }.bind(this),
+    },
 
     /**
      * Log info to both console and webhook (auto-extracts context)
@@ -306,7 +306,7 @@ class Logger {
       const command = this._extractCommandName();
       this.console.info(`[${command}]`, infoMessage);
       await this.webhook.info(infoMessage, message);
-    }.bind(this),
+    },
 
     /**
      * Log to both console and webhook (auto-extracts context)
@@ -315,7 +315,7 @@ class Logger {
       const command = this._extractCommandName();
       this.console.log(`[${command}]`, logMessage);
       await this.webhook.info(logMessage, message);
-    }.bind(this)
+    }
   };
 }
 

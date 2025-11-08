@@ -34,7 +34,7 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      console.error('[Repeat Command] Error:', error);
+      logger.webhook.error(error, message);
       return handleSpotifyError(message, error);
     }
   }

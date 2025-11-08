@@ -42,7 +42,7 @@ module.exports = {
       }
 
     } catch (error) {
-      console.error('[Previous Command] Error:', error);
+      logger.webhook.error(error, message);
       return handleSpotifyError(message, error);
     }
   }

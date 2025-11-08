@@ -264,7 +264,7 @@ async function handleStart(client, message, args) {
     return embeds.success(message, `Giveaway **${title}** started in ${channel}!`);
 
   } catch (error) {
-    console.error('Error starting giveaway:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to start giveaway. Please check my permissions.');
   }
 }
@@ -353,7 +353,7 @@ async function handleEnd(client, message, args) {
     return embeds.success(message, `Giveaway **${giveaway.title}** has been ended!`);
 
   } catch (error) {
-    console.error('Error ending giveaway:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to end giveaway. Please check my permissions.');
   }
 }
@@ -443,7 +443,7 @@ async function handleCancel(client, message, args) {
     return embeds.success(message, `Giveaway **${giveaway.title}** has been cancelled!`);
 
   } catch (error) {
-    console.error('Error cancelling giveaway:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to cancel giveaway. Please check my permissions.');
   }
 }
@@ -533,7 +533,7 @@ async function handleReroll(client, message, args) {
     return embeds.success(message, `Giveaway **${giveaway.title}** has been rerolled!`);
 
   } catch (error) {
-    console.error('Error rerolling giveaway:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to reroll giveaway. Please check my permissions.');
   }
 }
@@ -603,7 +603,7 @@ async function updateGiveawayMessage(giveaway, linkData, guild) {
     await giveawayMessage.edit({ embeds: [updatedEmbed] });
     return true;
   } catch (error) {
-    console.error('Error updating giveaway message:', error);
+    logger.webhook.error(error, message);
     return false;
   }
 }
@@ -639,7 +639,7 @@ async function handleEditLevel(client, message, args, giveaway, linkData) {
     return embeds.success(message, `Level requirement for **${giveaway.title}** set to: ${levelText}`);
 
   } catch (error) {
-    console.error('Error editing giveaway level:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to update giveaway level requirement');
   }
 }
@@ -675,7 +675,7 @@ async function handleEditRole(client, message, args, giveaway, linkData) {
     return embeds.success(message, `Role requirement for **${giveaway.title}** set to: ${roleText}`);
 
   } catch (error) {
-    console.error('Error editing giveaway role:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to update giveaway role requirement');
   }
 }
@@ -706,7 +706,7 @@ async function handleEditHost(client, message, args, giveaway, linkData) {
     return embeds.success(message, `Host for **${giveaway.title}** changed to: <@${userResult.user.user.id}>`);
 
   } catch (error) {
-    console.error('Error editing giveaway host:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to update giveaway host');
   }
 }
@@ -737,7 +737,7 @@ async function handleEditDescription(client, message, args, giveaway, linkData) 
     return embeds.success(message, `Description for **${giveaway.title}** has been updated!`);
 
   } catch (error) {
-    console.error('Error editing giveaway description:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to update giveaway description');
   }
 }
@@ -786,7 +786,7 @@ async function handleEditImage(client, message, args, giveaway, linkData) {
     return embeds.success(message, `Image for **${giveaway.title}** has been ${imageText}!`);
 
   } catch (error) {
-    console.error('Error editing giveaway image:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to update giveaway image');
   }
 }

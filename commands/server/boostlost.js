@@ -161,7 +161,7 @@ async function handleBoostLost(client, message) {
           await interaction.update({ embeds: [updatedEmbed] });
         }
       } catch (error) {
-        console.error('Error handling boostlost refresh:', error);
+        logger.webhook.error(error, message);
         try {
           await interaction.reply({
             content: 'An error occurred while refreshing the list.',
@@ -193,7 +193,7 @@ async function handleBoostLost(client, message) {
     });
 
   } catch (error) {
-    console.error('Error in boosters lost command:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'An error occurred while fetching boost removal data');
   }
 }
@@ -291,7 +291,7 @@ async function handleBoostNew(client, message) {
           await interaction.update({ embeds: [updatedEmbed] });
         }
       } catch (error) {
-        console.error('Error handling boosters new refresh:', error);
+        logger.webhook.error(error, message);
         try {
           await interaction.reply({
             content: 'An error occurred while refreshing the list.',
@@ -323,7 +323,7 @@ async function handleBoostNew(client, message) {
     });
 
   } catch (error) {
-    console.error('Error in boosters new command:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'An error occurred while fetching boost addition data');
   }
 }

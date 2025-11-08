@@ -105,7 +105,7 @@ async function handleAddBalance(client, message, args) {
     );
 
   } catch (error) {
-    console.error('Error in eco addbal command:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, `An error occurred while adding balance to ${targetUser.username}'s wallet.`);
   }
 }
@@ -177,7 +177,7 @@ async function handleCleanBalance(client, message, args) {
     );
 
   } catch (error) {
-    console.error('Error in eco cleanbal command:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, `An error occurred while removing balance from ${targetUser.username}'s wallet.`);
   }
 }

@@ -144,7 +144,7 @@ module.exports = {
       try {
         await guildService.setJail(message.guild.id, jailRole.id, jailChannel.id);
       } catch (error) {
-        console.error('Error saving jail setup to database:', error);
+        logger.webhook.error(error, message);
         await loadingMessage.delete();
         return embeds.deny(message, `Jail system was created but failed to save to database. Please try running the command again.`);
       }
@@ -157,7 +157,7 @@ module.exports = {
 
     } catch (error) {
       // Update loading message with error
-      console.error('Error in jailsetup command:', error);
+      logger.webhook.error(error, message);
 
       // Log error to webhook if available
       if (message.client?.errorLogger) {

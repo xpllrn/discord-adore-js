@@ -712,7 +712,7 @@ class Library {
                     break;
             }
         } catch (error) {
-            console.error('Library', error);
+            logger.webhook.error(error, message);
         }
     }
 
@@ -764,7 +764,7 @@ class Library {
 
             return;
         } catch (error) {
-            console.error('Library', error);
+            logger.webhook.error(error, message);
         }
     }
 
@@ -1030,7 +1030,7 @@ class WhoKnows {
                 await message.channel.send({ embeds: [claimEmbed] });
             }
         } catch (error) {
-            console.error('Crown handling error:', error);
+            logger.webhook.error(error, message);
         }
     }
 }
@@ -1649,7 +1649,7 @@ class Chart {
             return message.channel.send({ embeds: [embed], files: [attachment] });
 
         } catch (error) {
-            console.error('Album collage error:', error);
+            logger.webhook.error(error, message);
             return embeds.warn(message, `Error creating album collage. Please try again.`);
         }
     }
@@ -2031,7 +2031,7 @@ class CrownsAll {
             return message.channel.send({ embeds: [embed] });
 
         } catch (error) {
-            console.error('CrownsAll error:', error);
+            logger.webhook.error(error, message);
             return embeds.warn(message, `Error fetching crown leaderboard. Please try again.`);
         }
     }
@@ -2111,7 +2111,7 @@ class Crowns {
             return message.channel.send({ embeds: [embeds_list[0]] });
 
         } catch (error) {
-            console.error('Crowns error:', error);
+            logger.webhook.error(error, message);
             return embeds.warn(message, `Error fetching crowns. Please try again.`);
         }
     }
@@ -2196,7 +2196,7 @@ class ServerIndex {
                             });
                         }
                     } catch (error) {
-                        console.error(`Error indexing library for ${user.username}:`, error);
+                        logger.webhook.error(error, message);
                         // Continue with other users
                     }
                 }
@@ -2271,7 +2271,7 @@ class ServerIndex {
                     guildData.LastFMCrowns = validCrowns;
                     await guildService.set(message.guild.id, guildData);
                 } catch (error) {
-                    console.error('Error cleaning up corrupted crown data:', error);
+                    logger.webhook.error(error, message);
                 }
             }
             
@@ -2280,7 +2280,7 @@ class ServerIndex {
                 try {
                     await guildService.removeLastFMCrown(message.guild.id, crown.artistName);
                 } catch (error) {
-                    console.error(`Error removing crown for ${crown.artistName}:`, error);
+                    logger.webhook.error(error, message);
                     // Continue with other crowns
                 }
             }
@@ -2306,7 +2306,7 @@ class ServerIndex {
                         );
                         newCrownsCount++;
                     } catch (error) {
-                        console.error(`Error setting crown for ${crownData.artistName}:`, error);
+                        logger.webhook.error(error, message);
                         // Continue with other crowns
                     }
                 }
@@ -2339,7 +2339,7 @@ class ServerIndex {
             return loadingMsg.edit({ embeds: [successEmbed] });
 
         } catch (error) {
-            console.error('ServerIndex error:', error);
+            logger.webhook.error(error, message);
             return embeds.warn(message, `Error indexing server Last.fm data. Please try again.`);
         }
     }

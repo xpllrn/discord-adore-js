@@ -148,7 +148,7 @@ module.exports = {
         const action = isUpdate ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **vanity message** for ${vanitychannel}`);
       } catch (error) {
-        console.error('Vanity add error:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, `Failed to set vanity message: ${error.message}`);
       }
 
@@ -189,7 +189,7 @@ module.exports = {
 
         return embeds.success(message, `Removed the **vanity message** for ${vanitychannel}`);
       } catch (error) {
-        console.error('Vanity remove error:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, `Failed to remove vanity message: ${error.message}`);
       }
 

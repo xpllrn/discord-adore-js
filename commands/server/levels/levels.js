@@ -618,7 +618,7 @@ async function handleLevelMessage(client, message, args) {
         });
 
       } catch (error) {
-        console.error('Error processing custom level message:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, `Error processing custom message: ${error.message}\n\nRaw message: \`\`\`${customMessage}\`\`\``);
       }
     } else {
@@ -673,7 +673,7 @@ async function handleLevelMessage(client, message, args) {
 
     return embeds.success(message, "Custom level message has been set successfully!");
   } catch (error) {
-    console.error('Level message error:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, `Failed to set level message: ${error.message}`);
   }
 }

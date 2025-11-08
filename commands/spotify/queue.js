@@ -38,7 +38,7 @@ module.exports = {
       return await queueBySearch(message, args, spotifyService, accessToken);
 
     } catch (error) {
-      console.error('[Queue Command] Error:', error);
+      logger.webhook.error(error, message);
       return handleSpotifyError(message, error);
     }
   }

@@ -37,7 +37,7 @@ module.exports = {
         await targetChannel.setLocked(true, 'Locked via command');
         return message.react('🔒');
       } catch (error) {
-        console.error('Error locking thread:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, "An error occurred while trying to **lock** the thread");
       }
     }
@@ -91,7 +91,7 @@ module.exports = {
 
       return message.react('🔒');
     } catch (error) {
-      console.error('Error locking channel:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, "An error occurred while trying to **lock** the channel");
     }
   }

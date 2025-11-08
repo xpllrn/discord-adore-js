@@ -41,7 +41,7 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      console.error('[Shuffle Command] Error:', error);
+      logger.webhook.error(error, message);
       return embeds.warn(message, 'Failed to set shuffle mode. Make sure **Spotify** is open on a device.');
     }
   }

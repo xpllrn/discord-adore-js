@@ -60,7 +60,7 @@ module.exports = {
         const action = existingBoostMessage ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **boost message** for ${boostchannel}`);
       } catch (error) {
-        console.error('Boost add error:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, `Failed to set boost message: ${error.message}`);
       }
 
@@ -97,7 +97,7 @@ module.exports = {
 
         return embeds.success(message, `Removed the **boost message** for ${boostchannel}`);
       } catch (error) {
-        console.error('Boost remove error:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, `Failed to remove boost message: ${error.message}`);
       }
 

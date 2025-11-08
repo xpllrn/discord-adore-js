@@ -61,7 +61,7 @@ module.exports = {
         const action = existingWelcomeMessage ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **welcome message** for ${welcomechannel}`);
       } catch (error) {
-        console.error('Welcome add error:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, `Failed to set welcome message: ${error.message}`);
       }
 

@@ -111,8 +111,8 @@ module.exports = {
 
           return embeds.success(message, 'Reset my **server avatar** to the global avatar');
         } catch (error) {
-          console.error('[CUSTOMIZE] Bot avatar reset error:', error);
-          console.error('[CUSTOMIZE] Error code:', error.code);
+          logger.webhook.error(error, message);
+          logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to reset avatar: ${error.message}`);
         }
       }
@@ -164,10 +164,10 @@ module.exports = {
         return embeds.success(message, 'Updated my **server avatar** successfully');
 
       } catch (error) {
-        console.error('[CUSTOMIZE] Bot avatar error:', error);
-        console.error('[CUSTOMIZE] Error code:', error.code);
-        console.error('[CUSTOMIZE] Error message:', error.message);
-        console.error('[CUSTOMIZE] Error stack:', error.stack);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
 
         if (error.code === 50035) {
           return embeds.deny(message, 'Invalid image format. Please use PNG, JPG, or GIF');
@@ -223,8 +223,8 @@ module.exports = {
 
           return embeds.success(message, 'Reset my **server banner** to the global banner');
         } catch (error) {
-          console.error('[CUSTOMIZE] Bot banner reset error:', error);
-          console.error('[CUSTOMIZE] Error code:', error.code);
+          logger.webhook.error(error, message);
+          logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to reset banner: ${error.message}`);
         }
       }
@@ -276,10 +276,10 @@ module.exports = {
         return embeds.success(message, 'Updated my **server banner** successfully');
 
       } catch (error) {
-        console.error('[CUSTOMIZE] Bot banner error:', error);
-        console.error('[CUSTOMIZE] Error code:', error.code);
-        console.error('[CUSTOMIZE] Error message:', error.message);
-        console.error('[CUSTOMIZE] Error stack:', error.stack);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
 
         if (error.code === 50035) {
           return embeds.deny(message, 'Invalid image format. Please use PNG, JPG, or GIF');
@@ -326,8 +326,8 @@ module.exports = {
 
           return embeds.success(message, 'Reset my **server bio** to the global bio');
         } catch (error) {
-          console.error('[CUSTOMIZE] Bot bio reset error:', error);
-          console.error('[CUSTOMIZE] Error code:', error.code);
+          logger.webhook.error(error, message);
+          logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to reset bio: ${error.message}`);
         }
       }
@@ -358,10 +358,10 @@ module.exports = {
         return embeds.success(message, `Updated my **server bio** to:\n\`\`\`${bioText}\`\`\``);
 
       } catch (error) {
-        console.error('[CUSTOMIZE] Bot bio error:', error);
-        console.error('[CUSTOMIZE] Error code:', error.code);
-        console.error('[CUSTOMIZE] Error message:', error.message);
-        console.error('[CUSTOMIZE] Error stack:', error.stack);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
+        logger.webhook.error(error, message);
 
         if (error.code === 50035) {
           return embeds.deny(message, 'Invalid bio text. Please check for special characters or length');

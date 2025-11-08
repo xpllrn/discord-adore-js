@@ -150,7 +150,7 @@ module.exports = {
       }
 
     } catch (error) {
-      console.error('Error in vote command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while processing your vote');
     }
   }

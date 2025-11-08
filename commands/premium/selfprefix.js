@@ -24,7 +24,7 @@ module.exports = {
 
         return embeds.info(message, description);
       } catch (error) {
-        console.error('Error getting user prefix:', error.message);
+        logger.webhook.error(error, message);
         return embeds.warn(message, 'Failed to retrieve your self prefix. Please try again.');
       }
     }
@@ -66,7 +66,7 @@ async function handleSetSelfPrefix(message, newPrefix) {
       return embeds.warn(message, "Failed to set self prefix. Please try again.");
     }
   } catch (error) {
-    console.error('Error setting user prefix:', error.message);
+    logger.webhook.error(error, message);
     return embeds.warn(message, "An error occurred while setting your prefix. Please try again.");
   }
 }
@@ -81,7 +81,7 @@ async function handleRemoveSelfPrefix(message) {
       return embeds.warn(message, "Failed to remove self prefix. Please try again.");
     }
   } catch (error) {
-    console.error('Error clearing user prefix:', error.message);
+    logger.webhook.error(error, message);
     return embeds.warn(message, "An error occurred while removing your prefix. Please try again.");
   }
 }

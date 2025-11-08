@@ -59,7 +59,7 @@ module.exports = {
 
         await createPagination(message, sortedReminders, formatPage, 10, 'Reminders');
       } catch (error) {
-        console.error('Error getting reminders:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to retrieve reminders');
       }
 
@@ -89,7 +89,7 @@ module.exports = {
           return embeds.warn(message, `No reminder found with ID **#${reminderId}**`);
         }
       } catch (error) {
-        console.error('Error removing reminder:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to remove reminder');
       }
 
@@ -122,7 +122,7 @@ module.exports = {
           }
         );
       } catch (error) {
-        console.error('Error clearing reminders:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to clear reminders');
       }
 
@@ -207,7 +207,7 @@ module.exports = {
           return message.channel.send(`ok ill remind u ${nextTrigger}`);
         }
       } catch (error) {
-        console.error('Error adding reminder:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to create reminder');
       }
     }

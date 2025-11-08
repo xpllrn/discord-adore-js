@@ -25,7 +25,7 @@ module.exports = {
       return await getLinkBySearch(message, args);
 
     } catch (error) {
-      console.error('[SP Command] Error:', error);
+      logger.webhook.error(error, message);
       return embeds.warn(message, 'An error occurred while searching for the track.');
     }
   }
