@@ -6,6 +6,7 @@ const { ensureGuildData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "servernames",
@@ -76,7 +77,7 @@ module.exports = {
       // Use pagination system with 10 items per page
       await createPagination(message, sortedHistory, formatPage, 5, 'Guild Name History');
     } catch (error) {
-      console.error('Error getting guild name history:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'Failed to retrieve guild name history');
     }
   }

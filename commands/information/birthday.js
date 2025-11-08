@@ -1,12 +1,12 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { hasPermissionLevel } = require('../../utils/permissions');
-
 const { findUser } = require('../../handlers/finder');
 const { ensureUserData } = require('../../database');
 const { createConfirmation, createPagination } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "bday",
@@ -91,7 +91,7 @@ module.exports = {
         const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
         return embeds.success(message, `Set your birthday to **${formattedBirthday}**`);
       } catch (error) {
-        console.error('Error setting birthday:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to set birthday');
       }
 
@@ -157,7 +157,7 @@ module.exports = {
           }
         );
       } catch (error) {
-        console.error('Error resetting birthday:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to reset birthday');
       }
 
@@ -255,7 +255,7 @@ module.exports = {
         await createPagination(message, birthdayData, formatPage, 10, 'Server Birthdays');
 
       } catch (error) {
-        console.error('Error listing birthdays:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to list birthdays');
       }
 
@@ -304,7 +304,7 @@ module.exports = {
           return embeds.info(message, birthdayText);
         }
       } catch (error) {
-        console.error('Error getting birthday:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to get birthday');
       }
 
@@ -337,7 +337,7 @@ module.exports = {
           return embeds.info(message, birthdayText);
         }
       } catch (error) {
-        console.error('Error getting birthday:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to get birthday');
       }
     }
