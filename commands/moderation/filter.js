@@ -4,6 +4,7 @@ const { hasDiscordPermission } = require('../../utils/permissions');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findRole, findUser } = require('../../handlers/finder');
 const { colors, emojis } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "automod",
@@ -710,7 +711,6 @@ async function getOrCreateAutoModRule(guild) {
     if (error.code === 50035 && error.rawError?.errors?._errors?.some(e =>
       e.code === 'AUTO_MODERATION_MAX_RULES_OF_TYPE_EXCEEDED'
     )) {
-      console.error('AutoMod rule limit exceeded for word filter');
     }
 
     return null;

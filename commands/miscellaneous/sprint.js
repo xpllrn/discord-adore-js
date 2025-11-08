@@ -4,6 +4,7 @@ const { createConfirmation } = require('../../core/buttons');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { autoEndSprint, sendSprintReminder } = require('../../utils/sprintManager');
+const logger = require('../../utils/logger');
 
 // Get Sprint model from database
 function getSprintModel() {
@@ -247,7 +248,6 @@ async function endSprint(client, message) {
           const endedEmbed = createSprintEndedEmbed(sprint);
           await sprintMessage.edit({ embeds: [endedEmbed], components: [] });
         } catch (err) {
-          console.error('[Sprint End] Could not update message:', err);
         }
 
         // Edit confirmation with success
@@ -411,7 +411,6 @@ async function joinSprint(client, message, args) {
       const updatedEmbed = createSprintEmbed(null, sprint.startTime, sprint.endTime, sprint.participants);
       await sprintMessage.edit({ embeds: [updatedEmbed] });
     } catch (err) {
-      console.error('[Sprint Join] Could not update message:', err);
     }
 
     return embeds.success(message, `You have joined the sprint! Reading **${bookName}** starting at tab **${startTab}**.`);
@@ -463,7 +462,6 @@ async function leaveSprint(client, message) {
           const updatedEmbed = createSprintEmbed(null, sprint.startTime, sprint.endTime, sprint.participants);
           await sprintMessage.edit({ embeds: [updatedEmbed] });
         } catch (err) {
-          console.error('[Sprint Leave] Could not update message:', err);
         }
 
         // Edit confirmation with success
@@ -527,7 +525,6 @@ async function updateSprint(client, message, args) {
       const updatedEmbed = createSprintEmbed(null, sprint.startTime, sprint.endTime, sprint.participants);
       await sprintMessage.edit({ embeds: [updatedEmbed] });
     } catch (err) {
-      console.error('[Sprint Update] Could not update message:', err);
     }
 
     // Just react to confirm the update

@@ -6,6 +6,7 @@ const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { colors } = require('../../../config/setup');
 const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "history",
@@ -208,7 +209,7 @@ module.exports = {
         return await createPagination(message, moderationHistory, formatPage, 3, `${actionFilter} History for ${user.user.username}`);
 
       } catch (error) {
-        console.error('Error retrieving moderation history (action filter):', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'An error occurred while retrieving moderation history.');
       }
     }
@@ -264,7 +265,7 @@ module.exports = {
       await createPagination(message, moderationHistory, formatPage, 3, `History for ${user.user.username}`);
 
     } catch (error) {
-      console.error('Error retrieving moderation history (general):', error);
+      logger.webhook.error(error, message);
       if (error.message.includes('Database connection timeout') || error.message.includes('buffering timed out')) {
         embeds.deny(message, 'Database is still connecting. Please wait a moment and try again.');
       } else {

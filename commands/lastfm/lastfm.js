@@ -7,6 +7,7 @@ const { findUser } = require('../../handlers/finder');
 const axios = require('axios');
 const { fetch } = require('undici');
 const { getModels } = require('../../database');
+const logger = require('../../utils/logger');
 
 // Error helper function
 const error = (member, author, type) => {
@@ -997,12 +998,10 @@ class WhoKnows {
         try {
             // Validate input parameters
             if (!artistName || typeof artistName !== 'string' || !artistName.trim()) {
-                console.error('Invalid artist name for crown:', artistName);
                 return;
             }
             
             if (!crownUserId || typeof crownPlays !== 'number' || crownPlays <= 0) {
-                console.error('Invalid crown data:', { crownUserId, crownPlays });
                 return;
             }
 

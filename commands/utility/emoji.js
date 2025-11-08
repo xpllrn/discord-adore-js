@@ -7,6 +7,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "emoji",
@@ -152,7 +153,6 @@ module.exports = {
           fs.rmSync(tempDir, { recursive: true, force: true });
         }
       } catch (cleanupError) {
-        console.error('Error cleaning up temp files:', cleanupError);
       }
 
       return embeds.deny(message, `An error occurred while archiving emojis: ${error.message}\n\nPlease check the logs for more details.`);

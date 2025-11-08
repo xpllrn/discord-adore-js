@@ -11,6 +11,7 @@ const { findRole, findUser } = require('../../handlers/finder');
 const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "br",
@@ -398,7 +399,6 @@ async function handleCreate(client, message, args) {
         roleName
       );
     } catch (dbError) {
-      console.error('Error saving booster role to database:', dbError);
       // Role was created but couldn't be saved to database
       // Try to clean up by deleting the role
       try {
@@ -413,7 +413,6 @@ async function handleCreate(client, message, args) {
       // Give the role to the user
       await message.member.roles.add(newRole);
     } catch (roleError) {
-      console.error('Error adding role to user:', roleError);
       return embeds.deny(message, 'Created booster role but failed to assign it to you. Please contact an admin.');
     }
 
@@ -1102,7 +1101,6 @@ async function handleRemove(client, message, args) {
             try {
               await member.roles.remove(discordRole, 'Booster role deleted by owner');
             } catch (roleError) {
-              console.error(`Failed to remove role from member ${memberId}:`, roleError);
             }
           }
 
