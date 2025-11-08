@@ -590,7 +590,7 @@ module.exports = {
                 };
 
                 if (!args[1]) {
-                    return embeds.warn(message, `Please specify a user to compare with. Usage: \`${guildprefix}lastfm compare [user]\``);
+                    return runHelpCommand(message, 'lastfm');
                 }
 
                 try {

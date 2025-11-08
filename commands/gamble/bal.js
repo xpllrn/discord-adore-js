@@ -4,6 +4,7 @@ const { getService } = require('@services');
 const { findUser } = require('../../handlers/finder');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
 const { colors } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 // Utility functions embedded within the command
 function formatCurrency(amount) {
@@ -73,7 +74,7 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
       
     } catch (error) {
-      console.error('Error in bal command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while checking the balance');
     }
   }

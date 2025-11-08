@@ -32,7 +32,7 @@ module.exports = {
       const roleName = args.slice(3).join(' ');
 
       if (!messageLink || !reaction || !roleName) {
-        return embeds.deny(message, 'Usage: `reactionrole add <message_link> <reaction> <role>`');
+        return runHelpCommand(message, 'reactionrole');
       }
 
       // Parse message link
@@ -132,7 +132,7 @@ module.exports = {
       const reaction = args[2];
 
       if (!messageLink || !reaction) {
-        return embeds.deny(message, 'Usage: `reactionrole remove <message_link> <reaction>`');
+        return runHelpCommand(message, 'reactionrole');
       }
 
       // Parse message link
@@ -283,7 +283,7 @@ module.exports = {
       const messageLink = args[1];
 
       if (!messageLink) {
-        return embeds.deny(message, 'Usage: `reactionrole removeall <message_link>`');
+        return runHelpCommand(message, 'reactionrole');
       }
 
       // Parse message link

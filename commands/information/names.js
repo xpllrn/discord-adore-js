@@ -6,6 +6,7 @@ const { ensureUserData } = require('../../database');
 const { createPagination } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "names",
@@ -74,7 +75,7 @@ module.exports = {
       // Use pagination system with 5 items per page
       await createPagination(message, sortedHistory, formatPage, 5, 'Name History');
     } catch (error) {
-      console.error('Error getting name history:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'Failed to retrieve name history');
     }
   }

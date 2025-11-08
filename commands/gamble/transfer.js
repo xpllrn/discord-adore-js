@@ -2,6 +2,7 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { findUser } = require('../../handlers/finder');
 const { runHelpCommand, getGuildPrefix } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 // Utility functions embedded within the command
 function formatCurrency(amount) {
@@ -127,7 +128,7 @@ module.exports = {
       return embeds.success(message, `Transferred **${formatCurrency(amount)}** coins to **${targetUser.displayName || targetUser.username || 'User'}**`);
       
     } catch (error) {
-      console.error('Error in give command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while transferring money');
     }
   }

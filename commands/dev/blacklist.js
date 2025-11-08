@@ -4,6 +4,7 @@ const { createPagination } = require('../../core/buttons');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const config = require('../../config/setup');
 const { findUser } = require('../../handlers/finder');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "blacklist",
@@ -107,7 +108,13 @@ async function handleUserBlacklist(client, message, args) {
     }
 
   } catch (error) {
-
+    logger.webhook.error(error, 'User Blacklist Command', {
+      user: message.author,
+      guild: message.guild,
+      channel: message.channel,
+      command: 'blacklist users',
+      args: `${targetUser?.username || userInput} - ${reason}`
+    });
     return embeds.deny(message, 'An error occurred while updating the **blacklist**.');
   }
 }
@@ -157,7 +164,13 @@ async function handleServerBlacklist(client, message, args) {
     }
 
   } catch (error) {
-
+    logger.webhook.error(error, 'Server Blacklist Command', {
+      user: message.author,
+      guild: message.guild,
+      channel: message.channel,
+      command: 'blacklist servers',
+      args: `${serverId} - ${reason}`
+    });
     return embeds.deny(message, 'An error occurred while updating the **blacklist**.');
   }
 }
@@ -218,6 +231,12 @@ async function listBlacklistedUsers(client, message) {
     return createPaginatedList(message, userList, 'Blacklisted Users');
 
   } catch (error) {
+    logger.webhook.error(error, 'List Blacklisted Users', {
+      user: message.author,
+      guild: message.guild,
+      channel: message.channel,
+      command: 'blacklist users'
+    });
     return embeds.deny(message, 'An error occurred while fetching **blacklisted users**.');
   }
 }
@@ -250,6 +269,12 @@ async function listBlacklistedServers(client, message) {
     return createPaginatedList(message, serverList, 'Blacklisted Servers');
 
   } catch (error) {
+    logger.webhook.error(error, 'List Blacklisted Servers', {
+      user: message.author,
+      guild: message.guild,
+      channel: message.channel,
+      command: 'blacklist servers'
+    });
     return embeds.deny(message, 'An error occurred while fetching **blacklisted servers**.');
   }
 }

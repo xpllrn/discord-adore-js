@@ -1,5 +1,6 @@
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
+const { runHelpCommand } = require('../../utils/commandProcessor');
 
 module.exports = {
   name: 'count',
@@ -41,14 +42,14 @@ module.exports = {
         await guildService.setCounting(message.guild.id, countingData);
         return embeds.success(message, 'Strict mode disabled. Wrong counts will be ignored but the game continues.');
       } else {
-        return embeds.deny(message, 'Usage: `count strict on/off`');
+        return runHelpCommand(message, 'count');
       }
     }
 
     // Handle channel setting
     if (args[0].toLowerCase() === 'channel') {
       if (!args[1]) {
-        return embeds.deny(message, 'Usage: `count channel #channel` or `count channel none`');
+        return runHelpCommand(message, 'count');
       }
 
       if (args[1].toLowerCase() === 'none' || args[1].toLowerCase() === 'off') {

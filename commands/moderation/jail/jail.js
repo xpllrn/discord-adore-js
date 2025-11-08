@@ -6,6 +6,7 @@ const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { colors } = require('../../../config/setup');
 const { findUser, findRole, findChannel } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
+const logger = require('../../../utils/logger');
 const { getService } = require('@services');
 
 module.exports = {
@@ -225,17 +226,13 @@ module.exports = {
       await jailChannel.send({ content: `${user}`, embeds: [jailEmbed] });
 
     } catch (error) {
-      console.error('Error in jail command:', error);
-      
-      // Log error to webhook if available
-      if (message.client?.errorLogger) {
-        message.client.errorLogger.log(error, 'Jail Command', {
-          command: 'jail',
-          args: args.join(' '),
-          user: message.author,
-          guild: message.guild
-        });
-      }
+      logger.webhook.error(error, 'Jail Command', {
+        user: message.author,
+        guild: message.guild,
+        channel: message.channel,
+        command: 'jail',
+        args: `${user.user.tag} - ${reason}`
+      });
       
       embeds.deny(message, `An error occurred while jailing **${user.user.username}**: ${error.message}`);
     }
@@ -254,14 +251,11 @@ async function logModerationAction(action, executor, target, reason, guild) {
 
     await webhookLogger.sendLog(guild.id, 'moderator', embed);
   } catch (error) {
-    // Send error to webhook instead of console
-    if (guild.client?.errorLogger) {
-      guild.client.errorLogger.log(error, 'Moderation Action Logging', {
-        command: `${action} logging`,
-        args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
-        user: executor,
-        guild: guild
-      });
-    }
+    logger.webhook.error(error, 'Moderation Action Logging', {
+      command: `${action} logging`,
+      args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
+      user: executor,
+      guild: guild
+    });
   }
 }

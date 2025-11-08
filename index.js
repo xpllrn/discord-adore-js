@@ -45,7 +45,7 @@ const client = new Client({
 global.discordClient = client;
 const config = require('./config/setup');
 const permissions = require('./utils/permissions');
-const WebhookErrorLogger = require('./events/dev/errorLogger');
+const logger = require('./utils/logger');
 
 client.commands = new Collection();
 client.aliases = new Collection();
@@ -53,8 +53,8 @@ client.aliases = new Collection();
 // Attach permissions utilities to client
 client.permissions = permissions;
 
-// Initialize error logger
-let errorLogger;
+// Attach logger to client for easy access
+client.logger = logger;
 
 // Load commands and events
 const { readdirSync, statSync } = require('fs');
@@ -86,7 +86,7 @@ function loadCommandsFromDirectory(dirPath, relativePath = '') {
         } else {
           // Command file exists but has no name property
           const errorMsg = `Command file ${relativePath}/${item} has no name property`;
-          console.log(`⚠️  ${errorMsg}`);
+          logger.console.warn(`⚠️  ${errorMsg}`);
           failedCommands.push(`${relativePath}/${item} - No name property`);
         }
 
@@ -95,16 +95,14 @@ function loadCommandsFromDirectory(dirPath, relativePath = '') {
         }
       } catch (error) {
         const errorMsg = `Failed to load command: ${relativePath}/${item} - ${error.message}`;
-        console.log(`❌ ${errorMsg}`);
+        logger.console.error(`❌ ${errorMsg}`);
         failedCommands.push(`${relativePath}/${item} - ${error.message}`);
 
-        if (errorLogger) {
-          errorLogger.log(error, `Command Loading: ${relativePath}/${item}`, {
-            command: `Loading ${item}`,
-            args: `File: ${fullPath}`,
-            error: error.message
-          });
-        }
+        logger.webhook.error(error, `Command Loading: ${relativePath}/${item}`, {
+          command: `Loading ${item}`,
+          args: `File: ${fullPath}`,
+          error: error.message
+        });
       }
     }
   }
@@ -120,14 +118,6 @@ client.failedCommands = failedCommands;
 
 require('./handlers/events')(client);
 
-
-
-// Initialize webhook error logger early (before ready event)
-errorLogger = new WebhookErrorLogger();
-client.errorLogger = errorLogger;
-
-
-
 // Load finder utilities and attach to client
 const { findRole, findUser, findChannel, findGuild } = require('./handlers/finder');
 client.findRole = findRole;
@@ -137,7 +127,7 @@ client.findGuild = findGuild;
 
 // Graceful shutdown handlers
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down bot...');
+  logger.console.log('\n🛑 Shutting down bot...');
 
   // Close Discord client
   client.destroy();
@@ -145,7 +135,7 @@ process.on('SIGINT', async () => {
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
+  logger.console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
 
   // Close Discord client
   client.destroy();
@@ -161,69 +151,32 @@ process.on('uncaughtException', (error) => {
     return;
   }
 
-  // Try to log to console, but wrap in try-catch in case streams are broken
-  try {
-    console.error('Uncaught Exception:', error);
-  } catch (consoleError) {
-    // Console is broken, can't log
-  }
-
-  if (errorLogger) {
-    errorLogger.log(error, 'Uncaught Exception', {
-      command: 'Process Error',
-      args: 'Main Process'
-    }).catch(() => {
-      // Webhook logging failed, nothing we can do
-    });
-  }
+  logger.both.error(error, 'Uncaught Exception', {
+    command: 'Process Error',
+    args: 'Main Process'
+  });
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  try {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  } catch (consoleError) {
-    // Console is broken, can't log
-  }
-
-  if (errorLogger) {
-    errorLogger.log(reason?.toString() || 'Unknown reason', 'Unhandled Promise Rejection', {
-      command: 'Process Error',
-      args: 'Main Process'
-    }).catch(() => {
-      // Webhook logging failed, nothing we can do
-    });
-  }
+  logger.both.error(reason?.toString() || 'Unknown reason', 'Unhandled Promise Rejection', {
+    command: 'Process Error',
+    args: 'Main Process'
+  });
 });
 
 // Discord.js error events
 client.on('error', (error) => {
-  try {
-    console.error('Discord.js Client Error:', error);
-  } catch (consoleError) {
-    // Console is broken, can't log
-  }
-
-  if (errorLogger) {
-    errorLogger.log(error, 'Discord.js Client Error', {
-      command: 'Discord.js Client',
-      args: `Status: ${client.readyAt ? 'Ready' : 'Not Ready'} | Guilds: ${client.guilds.cache.size}`
-    }).catch(() => {});
-  }
+  logger.both.error(error, 'Discord.js Client Error', {
+    command: 'Discord.js Client',
+    args: `Status: ${client.readyAt ? 'Ready' : 'Not Ready'} | Guilds: ${client.guilds.cache.size}`
+  });
 });
 
 client.on('warn', (warning) => {
-  try {
-    console.warn('Discord.js Client Warning:', warning);
-  } catch (consoleError) {
-    // Console is broken, can't log
-  }
-
-  if (errorLogger) {
-    errorLogger.log(warning, 'Discord.js Client Warning', {
-      command: 'Discord.js Client',
-      args: `Status: ${client.readyAt ? 'Ready' : 'Not Ready'}`
-    }).catch(() => {});
-  }
+  logger.both.warn(warning, 'Discord.js Client Warning', {
+    command: 'Discord.js Client',
+    args: `Status: ${client.readyAt ? 'Ready' : 'Not Ready'}`
+  });
 });
 
 client.login(config.bot.token)

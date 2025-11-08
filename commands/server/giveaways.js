@@ -166,8 +166,10 @@ function createGiveawayEmbed(giveaway, guild) {
 
 // Start giveaway subcommand
 async function handleStart(client, message, args) {
+  const { runHelpCommand } = require('../../utils/commandProcessor');
+  
   if (args.length < 3) {
-    return embeds.warn(message, 'Usage: `giveaways start [duration] [winners] [title]` or `giveaways start [channel] [duration] [winners] [title]`');
+    return runHelpCommand(message, 'giveaways');
   }
 
   let channel = message.channel;
@@ -538,8 +540,10 @@ async function handleReroll(client, message, args) {
 
 // Edit giveaway subcommand
 async function handleEdit(client, message, args) {
+  const { runHelpCommand } = require('../../utils/commandProcessor');
+  
   if (!args[0]) {
-    return embeds.warn(message, 'Usage: `giveaways edit [level/role/host/description/image] [message_link] [value]`');
+    return runHelpCommand(message, 'giveaways');
   }
 
   const editType = args[0].toLowerCase();

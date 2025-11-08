@@ -83,9 +83,10 @@ module.exports = {
 
 async function handleAdd(client, message, args) {
   const guildService = getService('guild');
+  const { runHelpCommand } = require('../../utils/commandProcessor');
   
   if (args.length < 1) {
-    return embeds.warn(message, 'Usage: `logs add <#channel> [type] [webhook_url]`\n\n**Log Types:** `moderator`, `message`, `events`, `members`\n**Note:** If no type is specified, all log types will be added.');
+    return runHelpCommand(message, 'logs');
   }
 
   const channelInput = args[0];
@@ -230,9 +231,10 @@ async function handleAdd(client, message, args) {
 
 async function handleRemove(client, message, args) {
   const guildService = getService('guild');
+  const { runHelpCommand } = require('../../utils/commandProcessor');
   
   if (args.length < 1) {
-    return embeds.warn(message, 'Usage: `logs remove <#channel> [type]`\n\nIf no type is specified, all logging will be removed from the channel.');
+    return runHelpCommand(message, 'logs');
   }
 
   const channelInput = args[0];

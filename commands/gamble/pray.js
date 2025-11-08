@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "pray",
@@ -13,10 +14,7 @@ module.exports = {
     try {
       const userService = getService('user');
       
-      // Debug logging
-      console.log('UserService instance:', !!userService);
-      console.log('UserService methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(userService)));
-      console.log('updateLuck method exists:', typeof userService.updateLuck);
+
 
       // Get user's gambling data (creates account if doesn't exist)
       const gambling = await userService.getGamblingData(message.author.id);
@@ -66,7 +64,7 @@ module.exports = {
 
       return embeds.success(message, resultMessage.replace(`🙏 <@${message.author.id}>: `, ''));
     } catch (error) {
-      console.error('Error in pray command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while praying');
     }
   }

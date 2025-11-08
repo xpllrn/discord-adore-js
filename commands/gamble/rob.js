@@ -4,6 +4,7 @@ const { getService } = require('@services');
 const { findUser } = require('../../handlers/finder');
 const { emojis } = require('../../config/setup');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 // Utility functions embedded within the command
 function formatCurrency(amount) {
@@ -155,7 +156,7 @@ module.exports = {
       }
       
     } catch (error) {
-      console.error('Error in rob command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while attempting to rob');
     }
   }

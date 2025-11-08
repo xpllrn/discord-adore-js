@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { colors, emojis } = require('../../config/setup');
 const { findUser } = require('../../handlers/finder');
+const logger = require('../../utils/logger');
 
 // Utility functions
 function formatCurrency(amount) {
@@ -94,7 +95,7 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
       
     } catch (error) {
-      console.error('Error in inventory command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while loading the inventory');
     }
   }

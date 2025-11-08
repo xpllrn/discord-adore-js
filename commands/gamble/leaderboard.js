@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { getQueryOptimizer } = require('../../database/utils/QueryOptimizer');
 const { colors } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 // Utility functions embedded within the command
 function formatCurrency(amount) {
@@ -31,7 +32,7 @@ module.exports = {
           userIds = allUsers.map(user => user.UserID);
           scopeTitle = 'Global Wealth Leaderboard';
         } catch (error) {
-          console.error('Error fetching global users:', error);
+          logger.webhook.error(error, message);
           return embeds.deny(message, 'An error occurred while fetching global leaderboard data');
         }
       } else {
@@ -138,7 +139,7 @@ module.exports = {
       await message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      console.error('Error in leaderboard command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while fetching the leaderboard from cache');
     }
   }

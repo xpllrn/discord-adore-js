@@ -1,6 +1,7 @@
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 // Utility functions embedded within the command
 function formatCurrency(amount) {
@@ -87,7 +88,7 @@ module.exports = {
       return embeds.success(message, `Withdrew **${formatCurrency(amount)}** coins from your **bank account**`);
       
     } catch (error) {
-      console.error('Error in withdraw command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while withdrawing money');
     }
   }

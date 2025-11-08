@@ -140,7 +140,7 @@ module.exports = {
       }
 
       if (!roleResult || !newName) {
-        return embeds.deny(message, 'Could not find the role to rename. Usage: `,role rename <old role name> <new role name>`');
+        return runHelpCommand(message, 'role');
       }
 
       const role = roleResult.role;
@@ -203,12 +203,12 @@ module.exports = {
         }
 
         if (!roleFound) {
-          return embeds.deny(message, `Could not find role. Usage: \`,role color <role name> <color> [color2]\``);
+          return runHelpCommand(message, 'role');
         }
       }
 
       if (!role || colorArgs.length === 0) {
-        return embeds.deny(message, `Could not find role or color. Usage: \`,role color <role name> <color> [color2]\``);
+        return runHelpCommand(message, 'role');
       }
 
       // Check role hierarchy using utils/permissions.js
@@ -282,12 +282,12 @@ module.exports = {
         }
 
         if (!roleFound) {
-          return embeds.deny(message, `Could not find role. Usage: \`,role gradient <role name> <color1> <color2>\``);
+          return runHelpCommand(message, 'role');
         }
       }
 
       if (!role || colorArgs.length < 2) {
-        return embeds.deny(message, `Please provide two colors. Usage: \`,role gradient <role name> <color1> <color2>\``);
+        return runHelpCommand(message, 'role');
       }
 
       // Check role hierarchy using utils/permissions.js
@@ -457,7 +457,7 @@ module.exports = {
       }
 
       if (!role) {
-        return embeds.deny(message, `Could not find role. Usage: \`,role icon <role name> <emoji>\``);
+        return runHelpCommand(message, 'role');
       }
 
       let emoji = emojiArg;

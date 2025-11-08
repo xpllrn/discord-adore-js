@@ -33,7 +33,7 @@ module.exports = {
       const label = args.slice(4).join(' ');
 
       if (!messageLink || !roleName || !emoji || !label) {
-        return embeds.deny(message, 'Usage: `droprole add <message_link> <role> <emoji> <label>`');
+        return runHelpCommand(message, 'droprole');
       }
 
       // Parse message link
@@ -190,7 +190,7 @@ module.exports = {
       const roleName = args[2];
 
       if (!messageLink || !roleName) {
-        return embeds.deny(message, 'Usage: `droprole remove <message_link> <role>`');
+        return runHelpCommand(message, 'droprole');
       }
 
       // Parse message link
@@ -367,7 +367,7 @@ module.exports = {
       const messageLink = args[1];
 
       if (!messageLink) {
-        return embeds.deny(message, 'Usage: `droprole removeall <message_link>`');
+        return runHelpCommand(message, 'droprole');
       }
 
       // Parse message link

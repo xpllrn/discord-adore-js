@@ -4,6 +4,7 @@ const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "warn",
@@ -75,7 +76,13 @@ module.exports = {
       await logModerationAction('warn', message.author, warnedMember.user, reason, message.guild, moderationCase.caseId);
 
     } catch (error) {
-      console.error('Error in warn command:', error);
+      logger.webhook.error(error, 'Warn Command', {
+        user: message.author,
+        guild: message.guild,
+        channel: message.channel,
+        command: 'warn',
+        args: `${warnedMember.user.tag} - ${reason}`
+      });
       if (error.message.includes('Database connection timeout') || error.message.includes('buffering timed out')) {
         embeds.deny(message, 'Database is still connecting. Please wait a moment and try again.');
       } else {
@@ -98,14 +105,11 @@ async function logModerationAction(action, executor, target, reason, guild, case
 
     await webhookLogger.sendLog(guild.id, 'moderator', embed);
   } catch (error) {
-    // Send error to webhook instead of console
-    if (guild.client?.errorLogger) {
-      guild.client.errorLogger.log(error, 'Moderation Action Logging', {
-        command: `${action} logging`,
-        args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
-        user: executor,
-        guild: guild
-      });
-    }
+    logger.webhook.error(error, 'Moderation Action Logging', {
+      command: `${action} logging`,
+      args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
+      user: executor,
+      guild: guild
+    });
   }
 }

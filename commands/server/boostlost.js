@@ -2,6 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { colors } = require('../../config/setup');
+const { runHelpCommand } = require('../../utils/commandProcessor');
 
 module.exports = {
   name: "boosters",
@@ -16,7 +17,7 @@ module.exports = {
     const subcommand = args[0]?.toLowerCase();
 
     if (!subcommand || !['lost', 'new'].includes(subcommand)) {
-      return embeds.warn(message, 'Usage: `,boosters lost` or `,boosters new`');
+      return runHelpCommand(message, 'boosters');
     }
 
     if (subcommand === 'lost') {

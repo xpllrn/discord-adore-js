@@ -1,6 +1,7 @@
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 // Utility functions embedded within the command
 function formatCurrency(amount) {
@@ -98,7 +99,7 @@ module.exports = {
       return embeds.success(message, `Deposited **${formatCurrency(amount)}** coins to your **bank account**`);
       
     } catch (error) {
-      console.error('Error in deposit command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while depositing money');
     }
   }

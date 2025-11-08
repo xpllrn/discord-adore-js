@@ -48,7 +48,7 @@ module.exports = {
       }
       
     } catch (error) {
-      console.error('Error in store command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while loading the store');
     }
   }

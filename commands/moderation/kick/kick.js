@@ -5,6 +5,7 @@ const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "kick",
@@ -76,7 +77,13 @@ module.exports = {
       // Log the kick action
       await logModerationAction('kick', message.author, user.user, reason, message.guild, caseNumber);
     } catch (error) {
-      console.error('Error in kick command:', error);
+      logger.webhook.error(error, 'Kick Command', {
+        user: message.author,
+        guild: message.guild,
+        channel: message.channel,
+        command: 'kick',
+        args: `${user.user.tag} - ${reason}`
+      });
       embeds.deny(message, 'An error occurred while trying to kick this user.');
     }
   }
@@ -95,14 +102,11 @@ async function logModerationAction(action, executor, target, reason, guild, case
 
     await webhookLogger.sendLog(guild.id, 'moderator', embed);
   } catch (error) {
-    // Send error to webhook instead of console
-    if (guild.client?.errorLogger) {
-      guild.client.errorLogger.log(error, 'Moderation Action Logging', {
-        command: `${action} logging`,
-        args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
-        user: executor,
-        guild: guild
-      });
-    }
+    logger.webhook.error(error, 'Moderation Action Logging', {
+      command: `${action} logging`,
+      args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
+      user: executor,
+      guild: guild
+    });
   }
 }

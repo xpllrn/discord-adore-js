@@ -1,6 +1,7 @@
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, PermissionFlagsBits } = require('../../../utils/permissions');
 const { findChannel } = require('../../../handlers/finder');
+const { runHelpCommand } = require('../../../utils/commandProcessor');
 
 module.exports = {
   name: "naughty",
@@ -36,7 +37,7 @@ module.exports = {
         return embeds.deny(message, "Please provide a **valid channel mention** (e.g., #general)");
       }
     } else if (args.length > 1) {
-      return embeds.warn(message, 'Usage: `naughty` or `naughty #channel`');
+      return runHelpCommand(message, 'naughty');
     }
 
     // Check if it's a text channel (NSFW can only be set on text channels)

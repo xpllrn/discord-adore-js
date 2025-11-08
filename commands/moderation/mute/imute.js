@@ -4,6 +4,7 @@ const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHi
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
+const logger = require('../../../utils/logger');
 const { getService } = require('../../../database/services');
 
 module.exports = {
@@ -98,14 +99,11 @@ async function logModerationAction(action, executor, target, reason, guild) {
 
     await webhookLogger.sendLog(guild.id, 'moderator', embed);
   } catch (error) {
-    // Send error to webhook instead of console
-    if (guild.client?.errorLogger) {
-      guild.client.errorLogger.log(error, 'Moderation Action Logging', {
-        command: `${action} logging`,
-        args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
-        user: executor,
-        guild: guild
-      });
-    }
+    logger.webhook.error(error, 'Moderation Action Logging', {
+      command: `${action} logging`,
+      args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
+      user: executor,
+      guild: guild
+    });
   }
 }

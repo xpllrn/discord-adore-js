@@ -309,7 +309,7 @@ async function handleAddUser(client, message, args) {
     }
 
     if (!args[1]) {
-      return embeds.deny(message, "Please specify a user to add to this ticket. Usage: `,ticket add @user`");
+      return runHelpCommand(message, 'ticket');
     }
 
     // Check permissions
@@ -356,7 +356,7 @@ async function handleRemoveUser(client, message, args) {
     }
 
     if (!args[1]) {
-      return embeds.deny(message, "Please specify a user to remove from this ticket. Usage: `,ticket remove @user`");
+      return runHelpCommand(message, 'ticket');
     }
 
     // Check permissions
@@ -488,7 +488,7 @@ async function handleRename(client, message, args) {
     }
 
     if (!args[1]) {
-      return embeds.deny(message, "Please provide a new name for the ticket. Usage: `,ticket rename [new name]`");
+      return runHelpCommand(message, 'ticket');
     }
 
     // Check permissions

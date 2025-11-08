@@ -379,7 +379,7 @@ async function joinSprint(client, message, args) {
     const parts = fullArgs.split(',').map(p => p.trim());
 
     if (parts.length < 2) {
-      return embeds.warn(message, 'Usage: `,sprint join [book name], [start page]`\nExample: `,sprint join Harry Potter, 22`');
+      return runHelpCommand(message, 'sprint');
     }
 
     const bookName = parts[0];
@@ -508,7 +508,7 @@ async function updateSprint(client, message, args) {
 
     let currentTab = parseInt(args[0]);
     if (isNaN(currentTab) || currentTab < 0) {
-      return embeds.warn(message, 'Usage: `,sprint update [page number]`\nExample: `,sprint update 45`');
+      return runHelpCommand(message, 'sprint');
     }
 
     // Cap at 9999

@@ -34,7 +34,7 @@ module.exports = {
       const label = args.slice(5).join(' ');
 
       if (!messageLink || !roleName || !style || !emoji || !label) {
-        return embeds.deny(message, 'Usage: `buttonrole add <message_link> <role> <style> <emoji> <label>`\nStyles: `primary`, `secondary`, `success`, `danger`');
+        return runHelpCommand(message, 'buttonrole');
       }
 
       // Parse message link
@@ -179,7 +179,7 @@ module.exports = {
       const roleName = args[2];
 
       if (!messageLink || !roleName) {
-        return embeds.deny(message, 'Usage: `buttonrole remove <message_link> <role>`');
+        return runHelpCommand(message, 'buttonrole');
       }
 
       // Parse message link
@@ -345,7 +345,7 @@ module.exports = {
       const messageLink = args[1];
 
       if (!messageLink) {
-        return embeds.deny(message, 'Usage: `buttonrole removeall <message_link>`');
+        return runHelpCommand(message, 'buttonrole');
       }
 
       // Parse message link

@@ -2,6 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { colors } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 // Cooldown map to track user cooldowns
 const cooldowns = new Map();
@@ -324,7 +325,7 @@ module.exports = {
       });
 
     } catch (error) {
-      console.error('Error in mine command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while playing minesweeper');
     }
   }

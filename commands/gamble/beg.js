@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 // Utility functions embedded within the command
 function formatCurrency(amount) {
@@ -67,7 +68,7 @@ module.exports = {
       return embeds.success(message, `${randomMessage} **${formatCurrency(begAmount)}** coins!`);
       
     } catch (error) {
-      console.error('Error in beg command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while begging');
     }
   }

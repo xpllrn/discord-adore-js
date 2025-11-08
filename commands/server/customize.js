@@ -2,12 +2,51 @@ const { PermissionFlagsBits, Routes } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const axios = require('axios');
 
+// Per-subcommand cooldown tracking
+const subcommandCooldowns = new Map();
+
+// Cooldown durations for each subcommand (in milliseconds)
+const COOLDOWN_DURATIONS = {
+  avatar: 300000, // 5 minutes
+  banner: 300000, // 5 minutes
+  bio: 300000     // 5 minutes
+};
+
+/**
+ * Check and apply cooldown for a specific subcommand
+ * @param {string} userId - User ID
+ * @param {string} subcommand - Subcommand name
+ * @returns {Object|null} - Returns {timeLeft, timeString} if on cooldown, null otherwise
+ */
+function checkSubcommandCooldown(userId, subcommand) {
+  const cooldownKey = `${userId}-${subcommand}`;
+  const now = Date.now();
+  const cooldownAmount = COOLDOWN_DURATIONS[subcommand] || 300000;
+
+  if (subcommandCooldowns.has(cooldownKey)) {
+    const expirationTime = subcommandCooldowns.get(cooldownKey) + cooldownAmount;
+
+    if (now < expirationTime) {
+      const timeLeft = (expirationTime - now) / 1000;
+      const timeString = timeLeft >= 60
+        ? `${Math.floor(timeLeft / 60)}m ${Math.floor(timeLeft % 60)}s`
+        : `${timeLeft.toFixed(1)}s`;
+      return { timeLeft, timeString };
+    }
+  }
+
+  // Set cooldown
+  subcommandCooldowns.set(cooldownKey, now);
+  setTimeout(() => subcommandCooldowns.delete(cooldownKey), cooldownAmount);
+
+  return null;
+}
+
 module.exports = {
   name: "customize",
   aliases: ['custom'],
   description: 'Customize the bot\'s server profile (avatar, banner, bio)',
   permission: "Server Owner",
-  cooldowns: 300, // 5 minutes in seconds
   isGroupCommand: true,
 
   run: async (client, message, args) => {
@@ -26,6 +65,12 @@ module.exports = {
 
     if (!subcommand || !['avatar', 'banner', 'bio'].includes(subcommand)) {
       return false;
+    }
+
+    // Check subcommand-specific cooldown
+    const cooldownCheck = checkSubcommandCooldown(message.author.id, subcommand);
+    if (cooldownCheck) {
+      return embeds.warn(message, `Please wait **${cooldownCheck.timeString}** before using \`customize ${subcommand}\` again.`);
     }
 
     // Handle avatar customization

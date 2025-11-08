@@ -4,6 +4,7 @@ const { hasDiscordPermission, checkSelfAction, checkBotAction } = require('../..
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { getService } = require('../../../database/services');
 const webhookLogger = require('../../../utils/webhookLogger');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "unban",
@@ -84,7 +85,13 @@ module.exports = {
       await logModerationAction('unban', message.author, targetBan.user, reason, message.guild);
 
     } catch (error) {
-      console.error('Error in unban command:', error);
+      logger.webhook.error(error, 'Unban Command', {
+        user: message.author,
+        guild: message.guild,
+        channel: message.channel,
+        command: 'unban',
+        args: `${targetBan?.user?.tag || args[0]} - ${reason}`
+      });
       embeds.deny(message, 'An error occurred while trying to unban this user.');
     }
   }
@@ -102,14 +109,11 @@ async function logModerationAction(action, executor, target, reason, guild) {
 
     await webhookLogger.sendLog(guild.id, 'moderator', embed);
   } catch (error) {
-    // Send error to webhook instead of console
-    if (guild.client?.errorLogger) {
-      guild.client.errorLogger.log(error, 'Moderation Action Logging', {
-        command: `${action} logging`,
-        args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
-        user: executor,
-        guild: guild
-      });
-    }
+    logger.webhook.error(error, 'Moderation Action Logging', {
+      command: `${action} logging`,
+      args: `Target: ${target?.tag || 'Unknown'}, Reason: ${reason}`,
+      user: executor,
+      guild: guild
+    });
   }
 }

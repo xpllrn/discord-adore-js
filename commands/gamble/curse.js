@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "curse",
@@ -61,7 +62,7 @@ module.exports = {
 
       return embeds.success(message, resultMessage.replace(`💀 <@${message.author.id}>: `, ''));
     } catch (error) {
-      console.error('Error in curse command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while cursing');
     }
   }

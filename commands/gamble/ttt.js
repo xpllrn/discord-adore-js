@@ -5,6 +5,7 @@ const { ensureGuildData } = require('../../database');
 const { colors, emojis } = require('../../config/setup');
 const { findUser } = require('../../handlers/finder');
 const { getService } = require('@services');
+const { runHelpCommand } = require('../../utils/commandProcessor');
 
 // Utility functions
 function formatCurrency(amount) {
@@ -64,7 +65,7 @@ module.exports = {
 
     // Must have an opponent
     if (!args[0]) {
-      return embeds.warn(message, 'You must specify an opponent to play against!\nUsage: `ttt @user (amount)`');
+      return runHelpCommand(message, 'ttt');
     }
 
     // Parse opponent

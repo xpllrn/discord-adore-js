@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { getGuildPrefix } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 // Cooldown map to track user cooldowns
 const cooldowns = new Map();
@@ -302,7 +303,7 @@ module.exports = {
       return slotMessage.edit({ embeds: [finalEmbed] });
 
     } catch (error) {
-      console.error('Error in slot command:', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while playing slots');
     }
   }

@@ -230,8 +230,10 @@ async function handleDelete(client, message, args, webhookService) {
 
 // Send message via webhook
 async function handleSend(client, message, args, webhookService) {
+  const { runHelpCommand } = require('../../utils/commandProcessor');
+  
   if (args.length < 2) {
-    return embeds.warn(message, 'Usage: `webhook send <webhook_id> <message_or_embed_code>`');
+    return runHelpCommand(message, 'webhook');
   }
 
   const webhookIdentifier = args[0];
@@ -277,8 +279,10 @@ async function handleSend(client, message, args, webhookService) {
 
 // Edit webhook message
 async function handleEdit(client, message, args, webhookService) {
+  const { runHelpCommand } = require('../../utils/commandProcessor');
+  
   if (args.length < 2) {
-    return embeds.warn(message, 'Usage: `webhook edit <message_link> <new_message> [--add <embed_code>]`');
+    return runHelpCommand(message, 'webhook');
   }
 
   const messageLink = args[0];
@@ -407,8 +411,10 @@ async function handleList(client, message, args, webhookService) {
 
 // Rename webhook
 async function handleRename(client, message, args, webhookService) {
+  const { runHelpCommand } = require('../../utils/commandProcessor');
+  
   if (args.length < 2) {
-    return embeds.warn(message, 'Usage: `webhook rename <webhook_id> <new_name>`');
+    return runHelpCommand(message, 'webhook');
   }
 
   const identifier = args[0];
@@ -455,8 +461,10 @@ async function handleRename(client, message, args, webhookService) {
 
 // Set webhook avatar
 async function handleAvatar(client, message, args, webhookService) {
+  const { runHelpCommand } = require('../../utils/commandProcessor');
+  
   if (args.length < 1) {
-    return embeds.warn(message, 'Usage: `webhook avatar <webhook_id> <image_url>` or attach an image');
+    return runHelpCommand(message, 'webhook');
   }
 
   const identifier = args[0];
