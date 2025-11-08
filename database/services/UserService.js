@@ -277,32 +277,13 @@ class UserService extends BaseService {
     }
 
     try {
-      // Use atomic MongoDB operation to prevent race conditions
-      const Model = this.getModel();
+      const userData = await this.ensureUserData(userId);
+      const gambling = userData.Gambling || this.getDefaultGamblingData();
       
-      // Ensure user exists first
-      await this.ensureUserData(userId);
+      gambling.wallet = Math.max(0, (gambling.wallet || 0) + amount);
+      userData.Gambling = gambling;
       
-      // Atomic update with $inc operator
-      const result = await Model.findOneAndUpdate(
-        { [this.keyField]: userId },
-        { 
-          $inc: { 'Gambling.wallet': amount },
-          $max: { 'Gambling.wallet': 0 } // Ensure wallet never goes below 0
-        },
-        { 
-          new: true,
-          upsert: false
-        }
-      );
-
-      if (!result) {
-        return false;
-      }
-
-      // Invalidate cache to force fresh read on next access
-      this.invalidateCache(userId);
-      
+      await this.set(userId, userData);
       return true;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -2366,131 +2347,6 @@ class UserService extends BaseService {
     } catch (error) {
       console.error(`Error adding item to inventory for user ${userId}:`, error.message);
       return false;
-    }
-  }
-
-  /**
-   * Atomic purchase transaction - deduct money and add item in one operation
-   * Prevents race conditions where money is deducted but item isn't added
-   * @param {string} userId - User ID
-   * @param {Object} item - Item to purchase
-   * @param {number} quantity - Quantity to purchase
-   * @param {number} totalCost - Total cost of purchase
-   * @returns {Promise<{success: boolean, message: string, newBalance?: number}>}
-   */
-  async atomicPurchase(userId, item, quantity, totalCost) {
-    if (!userId) {
-      throw new ValidationError('User ID is required', 'userId', userId);
-    }
-
-    if (!item || !item.id) {
-      throw new ValidationError('Valid item is required', 'item', item);
-    }
-
-    if (typeof quantity !== 'number' || quantity < 1) {
-      throw new ValidationError('Quantity must be a positive number', 'quantity', quantity);
-    }
-
-    if (typeof totalCost !== 'number' || totalCost < 0) {
-      throw new ValidationError('Total cost must be a non-negative number', 'totalCost', totalCost);
-    }
-
-    try {
-      const Model = this.getModel();
-      
-      // Ensure user exists
-      await this.ensureUserData(userId);
-
-      // Prepare the item to add
-      const itemToAdd = {
-        ...item,
-        quantity: quantity,
-        acquiredAt: new Date().toISOString()
-      };
-
-      // Build the update query based on whether item is stackable
-      let updateQuery;
-      
-      if (item.stackable) {
-        // For stackable items, try to increment existing quantity
-        updateQuery = {
-          $inc: { 'Gambling.wallet': -totalCost },
-          $max: { 'Gambling.wallet': 0 }
-        };
-        
-        // Check if item exists in inventory
-        const userData = await this.get(userId);
-        const existingItemIndex = userData.Inventory?.items?.findIndex(i => i.id === item.id);
-        
-        if (existingItemIndex !== -1) {
-          // Item exists, increment quantity
-          updateQuery.$inc[`Inventory.items.${existingItemIndex}.quantity`] = quantity;
-        } else {
-          // Item doesn't exist, add new item
-          updateQuery.$push = {
-            'Inventory.items': itemToAdd
-          };
-        }
-      } else {
-        // For non-stackable items, always add new item
-        updateQuery = {
-          $inc: { 'Gambling.wallet': -totalCost },
-          $max: { 'Gambling.wallet': 0 },
-          $push: {
-            'Inventory.items': itemToAdd
-          }
-        };
-      }
-
-      // Atomic operation: check balance, deduct money, and add item
-      const result = await Model.findOneAndUpdate(
-        { 
-          [this.keyField]: userId,
-          'Gambling.wallet': { $gte: totalCost } // Only update if user has enough money
-        },
-        updateQuery,
-        { 
-          new: true,
-          upsert: false
-        }
-      );
-
-      if (!result) {
-        // Transaction failed - either user doesn't exist or insufficient funds
-        const userData = await this.get(userId);
-        const currentBalance = userData?.Gambling?.wallet || 0;
-        
-        if (currentBalance < totalCost) {
-          return {
-            success: false,
-            message: `Insufficient funds. You need ${totalCost.toLocaleString()} coins but only have ${currentBalance.toLocaleString()} coins.`
-          };
-        }
-        
-        return {
-          success: false,
-          message: 'Transaction failed. Please try again.'
-        };
-      }
-
-      // Invalidate cache to force fresh read
-      this.invalidateCache(userId);
-
-      return {
-        success: true,
-        message: 'Purchase successful',
-        newBalance: result.Gambling.wallet
-      };
-
-    } catch (error) {
-      console.error(`Error in atomic purchase for user ${userId}:`, error.message);
-      if (error instanceof ValidationError) {
-        throw error;
-      }
-      return {
-        success: false,
-        message: 'An error occurred during the transaction. Please try again.'
-      };
     }
   }
 

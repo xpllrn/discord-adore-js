@@ -434,9 +434,8 @@ async function handleRename(client, message, args) {
     return embeds.warn(message, 'You need to be **boosting this server** to use booster role commands');
   }
 
-  // Debug logging
+  // Validate message author
   if (!message.author || !message.author.id) {
-    console.error('Message author is null or missing ID in handleRename:', { author: message.author, guild: message.guild?.id });
     return embeds.deny(message, 'Unable to identify user. Please try again.');
   }
 
@@ -862,13 +861,8 @@ async function handleShare(client, message, args) {
 
   // Validate booster role data
   if (!boosterRole.roleId) {
-    console.error('Booster role missing roleId:', boosterRole);
     return embeds.warn(message, 'Your booster role data is corrupted. Please contact an admin.');
   }
-
-  console.log(`Sharing booster role: roleId=${boosterRole.roleId}, ownerId=${boosterRole.ownerId || boosterRole.userId}, name="${boosterRole.name}"`);
-  console.log('Full booster role object keys:', Object.keys(boosterRole));
-  console.log('Booster role name field:', boosterRole.name, typeof boosterRole.name);
 
   if (!args[0]) {
     return embeds.warn(message, 'Please mention a **user** to share your booster role with');

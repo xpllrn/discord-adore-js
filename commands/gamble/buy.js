@@ -60,28 +60,39 @@ module.exports = {
         confirmationText,
         async (interaction) => {
           try {
-            // Use atomic transaction to prevent race conditions
-            const itemToAdd = {
-              ...item,
-              id: itemId,
-              stackable: item.stackable !== false
-            };
+            // Re-check balance in case it changed during confirmation
+            const updatedGambling = await userService.getGamblingData(message.author.id);
+            const currentBalance = updatedGambling.wallet || 0;
 
-            const result = await userService.atomicPurchase(
-              message.author.id,
-              itemToAdd,
-              quantity,
-              totalCost
-            );
-
-            if (!result.success) {
-              const errorEmbed = embeds.createDeny(message, result.message);
+            if (currentBalance < totalCost) {
+              const errorEmbed = embeds.createDeny(message, `You no longer have enough coins. You need **${formatCurrency(totalCost)}** but only have **${formatCurrency(currentBalance)}**.`);
               return await interaction.editReply({ embeds: [errorEmbed], components: [] });
             }
 
-            // Success message with new balance
-            const successMessage = `Successfully purchased **${item.name}**${quantityText} for **${formatCurrency(totalCost)}** coins!\n\n**New Balance:** ${formatCurrency(result.newBalance)} coins`;
-            const successEmbed = embeds.createSuccess(message, successMessage);
+            // Deduct money from wallet
+            const deductSuccess = await userService.updateWallet(message.author.id, -totalCost);
+            if (!deductSuccess) {
+              const errorEmbed = embeds.createDeny(message, 'Failed to process payment. Please try again.');
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            // Add item to inventory
+            const itemToAdd = {
+              ...item,
+              id: itemId, // Use the key name as ID for inventory
+              quantity: quantity
+            };
+            
+            const addSuccess = await userService.addInventoryItem(message.author.id, itemToAdd);
+            if (!addSuccess) {
+              // Refund the money if inventory addition failed
+              await userService.updateWallet(message.author.id, totalCost);
+              const errorEmbed = embeds.createDeny(message, 'Failed to add item to inventory. Payment refunded.');
+              return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+
+            // Success message
+            const successEmbed = embeds.createSuccess(message, `Successfully purchased **${item.name}**${quantityText} for **${formatCurrency(totalCost)}** coins!`);
             await interaction.editReply({ embeds: [successEmbed], components: [] });
 
           } catch (error) {

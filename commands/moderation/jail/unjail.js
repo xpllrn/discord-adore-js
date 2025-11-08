@@ -79,7 +79,6 @@ module.exports = {
       // Get saved roles using database helper (with timeout protection)
       const { getSavedUserRoles } = require('../../../database');
       const savedRoles = await getSavedUserRoles(message.guild.id, user.user.id);
-      console.log(`[UNJAIL DEBUG] User: ${user.user.tag}, Saved roles:`, savedRoles);
 
       // Remove jail role and restore saved roles
       try {
@@ -91,13 +90,10 @@ module.exports = {
             return role && !role.tags?.premiumSubscriberRole;
           });
 
-          console.log(`[UNJAIL DEBUG] Valid roles to restore:`, validRoles);
-
           // Keep booster role if user has it
           const boosterRole = user.roles.cache.find(role => role.tags?.premiumSubscriberRole);
           if (boosterRole) {
             validRoles.push(boosterRole.id);
-            console.log(`[UNJAIL DEBUG] Keeping booster role:`, boosterRole.id);
           }
 
           if (validRoles.length > 0) {
@@ -105,12 +101,10 @@ module.exports = {
             await user.roles.set(validRoles, `Unjailed by ${message.author.tag}: ${reason}`);
           } else {
             // If no valid roles remain, just remove the jail role
-            console.log(`[UNJAIL DEBUG] No valid roles found, just removing jail role`);
             await user.roles.remove(jailRole.id, `Unjailed by ${message.author.tag}: ${reason}`);
           }
         } else {
           // If no saved roles, just remove the jail role but keep booster role
-          console.log(`[UNJAIL DEBUG] No saved roles found in database, just removing jail role`);
           
           // Keep booster role if user has it
           const boosterRole = user.roles.cache.find(role => role.tags?.premiumSubscriberRole);
@@ -146,7 +140,6 @@ module.exports = {
         );
       } catch (historyError) {
         // Don't fail the command if history logging fails
-        console.log('Failed to log moderation case:', historyError.message);
       }
 
       // Clean up saved roles
@@ -154,7 +147,7 @@ module.exports = {
         const { removeSavedUserRoles } = require('../../../database');
         await removeSavedUserRoles(message.guild.id, user.user.id);
       } catch (cleanupError) {
-        console.log('Failed to clean up saved roles:', cleanupError.message);
+        // Silent cleanup failure
       }
 
       // Send success message

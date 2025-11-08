@@ -75,7 +75,7 @@ function loadCommandsFromDirectory(dirPath, relativePath = '') {
       if (result.failedCommands) {
         failedCommands = failedCommands.concat(result.failedCommands);
       }
-    } else if (item.endsWith('.js')) {
+    } else if (item.endsWith('.js') && !item.startsWith('_')) {
       try {
         const commandPath = path.resolve(fullPath);
         let pull = require(commandPath);
