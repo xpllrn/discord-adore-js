@@ -4,14 +4,14 @@ const { hasDiscordPermission } = require('../../utils/permissions');
 
 const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
-const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 
 module.exports = {
   name: "webhook",
   description: "Manage webhooks for the server",
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const webhookService = getService('webhook');
+    const guildService = getService('guild');
     const subcommand = args[0]?.toLowerCase();
 
     // If no subcommand provided, show help
@@ -32,7 +32,7 @@ module.exports = {
           parameters: ['name'],
           example: '{guildprefix}webhook create MyBot'
         };
-        return await handleCreate(client, message, args.slice(1), webhookService);
+        return await handleCreate(client, message, args.slice(1), guildService);
       }
       case 'delete':
       case 'remove': {
@@ -44,7 +44,7 @@ module.exports = {
           parameters: ['webhook_identifier'],
           example: '{guildprefix}webhook delete abc1'
         };
-        return await handleDelete(client, message, args.slice(1), webhookService);
+        return await handleDelete(client, message, args.slice(1), guildService);
       }
       case 'send': {
         const subcommandInfo = {
@@ -55,7 +55,7 @@ module.exports = {
           parameters: ['webhook_id', 'message'],
           example: '{guildprefix}webhook send abc1 Hello world!'
         };
-        return await handleSend(client, message, args.slice(1), webhookService);
+        return await handleSend(client, message, args.slice(1), guildService);
       }
       case 'edit': {
         const subcommandInfo = {
@@ -66,7 +66,7 @@ module.exports = {
           parameters: ['message_link', 'new_message'],
           example: '{guildprefix}webhook edit https://discord.com/... New content'
         };
-        return await handleEdit(client, message, args.slice(1), webhookService);
+        return await handleEdit(client, message, args.slice(1), guildService);
       }
       case 'rename': {
         const subcommandInfo = {
@@ -77,7 +77,7 @@ module.exports = {
           parameters: ['webhook_id', 'new_name'],
           example: '{guildprefix}webhook rename abc1 NewName'
         };
-        return await handleRename(client, message, args.slice(1), webhookService);
+        return await handleRename(client, message, args.slice(1), guildService);
       }
       case 'avatar': {
         const subcommandInfo = {
@@ -88,7 +88,7 @@ module.exports = {
           parameters: ['webhook_id', 'image_url'],
           example: '{guildprefix}webhook avatar abc1 https://example.com/image.png'
         };
-        return await handleAvatar(client, message, args.slice(1), webhookService);
+        return await handleAvatar(client, message, args.slice(1), guildService);
       }
       case 'list': {
         const subcommandInfo = {
@@ -99,7 +99,7 @@ module.exports = {
           parameters: [],
           example: '{guildprefix}webhook list'
         };
-        return await handleList(client, message, args.slice(1), webhookService);
+        return await handleList(client, message, args.slice(1), guildService);
       }
       default:
         return false;
@@ -108,7 +108,7 @@ module.exports = {
 };
 
 // Create webhook
-async function handleCreate(client, message, args, webhookService) {
+async function handleCreate(client, message, args, guildService) {
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **name** for the webhook');
   }
@@ -120,7 +120,7 @@ async function handleCreate(client, message, args, webhookService) {
 
   try {
     // Check if webhook name already exists
-    const existingWebhook = await webhookService.getWebhookByName(message.guild.id, webhookName);
+    const existingWebhook = await guildService.getWebhookByName(message.guild.id, webhookName);
     if (existingWebhook) {
       return embeds.warn(message, `A webhook with the name **${webhookName}** already exists`);
     }
@@ -132,7 +132,7 @@ async function handleCreate(client, message, args, webhookService) {
     });
 
     // Save to database
-    const webhookData = await webhookService.createWebhook(
+    const webhookData = await guildService.createWebhook(
       message.guild.id,
       webhookName,
       webhook.id,
@@ -153,22 +153,22 @@ async function handleCreate(client, message, args, webhookService) {
 }
 
 // Helper function to find webhook by identifier (short ID, name, or full ID)
-async function findWebhookByIdentifier(webhookService, guildId, identifier) {
+async function findWebhookByIdentifier(guildService, guildId, identifier) {
   let webhook = null;
 
   // Try short ID first (4 characters, alphanumeric)
   if (/^[a-z0-9]{4}$/i.test(identifier)) {
-    webhook = await webhookService.getWebhookByShortId(guildId, identifier.toLowerCase());
+    webhook = await guildService.getWebhookByShortId(guildId, identifier.toLowerCase());
   }
 
   // If not found, try by name
   if (!webhook) {
-    webhook = await webhookService.getWebhookByName(guildId, identifier);
+    webhook = await guildService.getWebhookByName(guildId, identifier);
   }
 
   // If still not found, try by full Discord ID
   if (!webhook && /^\d{17,19}$/.test(identifier)) {
-    webhook = await webhookService.getWebhook(identifier);
+    webhook = await guildService.getWebhook(identifier);
     if (webhook && webhook.guildId !== guildId) {
       webhook = null; // Security check - webhook exists but not in this guild
     }
@@ -178,7 +178,7 @@ async function findWebhookByIdentifier(webhookService, guildId, identifier) {
 }
 
 // Delete webhook
-async function handleDelete(client, message, args, webhookService) {
+async function handleDelete(client, message, args, guildService) {
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **webhook short ID**, **name**, or **webhook ID** to delete');
   }
@@ -186,7 +186,7 @@ async function handleDelete(client, message, args, webhookService) {
   const identifier = args.join(' ');
 
   try {
-    const webhook = await findWebhookByIdentifier(webhookService, message.guild.id, identifier);
+    const webhook = await findWebhookByIdentifier(guildService, message.guild.id, identifier);
 
     if (!webhook) {
       return embeds.warn(message, `Webhook **${identifier}** not found`);
@@ -208,7 +208,7 @@ async function handleDelete(client, message, args, webhookService) {
           }
 
           // Remove from database
-          await webhookService.deleteWebhook(webhook.webhookId);
+          await guildService.deleteWebhook(webhook.webhookId);
 
           // Edit the confirmation embed to show success message
           const successEmbed = embeds.createSuccess(message, `Deleted webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
@@ -229,7 +229,7 @@ async function handleDelete(client, message, args, webhookService) {
 }
 
 // Send message via webhook
-async function handleSend(client, message, args, webhookService) {
+async function handleSend(client, message, args, guildService) {
   const { runHelpCommand } = require('../../utils/commandProcessor');
   
   if (args.length < 2) {
@@ -244,7 +244,7 @@ async function handleSend(client, message, args, webhookService) {
   }
 
   try {
-    const webhook = await findWebhookByIdentifier(webhookService, message.guild.id, webhookIdentifier);
+    const webhook = await findWebhookByIdentifier(guildService, message.guild.id, webhookIdentifier);
     if (!webhook) {
       return embeds.warn(message, `Webhook **${webhookIdentifier}** not found`);
     }
@@ -264,7 +264,7 @@ async function handleSend(client, message, args, webhookService) {
       channel: message.channel
     });
 
-    await webhookService.updateLastUsed(webhook.webhookId);
+    await guildService.updateLastUsed(webhook.webhookId);
 
     return embeds.success(message, `Message sent via webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 
@@ -278,7 +278,7 @@ async function handleSend(client, message, args, webhookService) {
 }
 
 // Edit webhook message
-async function handleEdit(client, message, args, webhookService) {
+async function handleEdit(client, message, args, guildService) {
   const { runHelpCommand } = require('../../utils/commandProcessor');
   
   if (args.length < 2) {
@@ -315,7 +315,7 @@ async function handleEdit(client, message, args, webhookService) {
     }
 
     // Get all webhooks for the guild to find which one sent the message
-    const guildWebhooks = await webhookService.getGuildWebhooks(message.guild.id);
+    const guildWebhooks = await guildService.getGuildWebhooks(message.guild.id);
 
     let targetWebhook = null;
     for (const webhook of guildWebhooks) {
@@ -351,7 +351,7 @@ async function handleEdit(client, message, args, webhookService) {
     }
 
     await webhookClient.editMessage(messageId, payload);
-    await webhookService.updateLastUsed(targetWebhook.webhookId);
+    await guildService.updateLastUsed(targetWebhook.webhookId);
 
     return embeds.success(message, `Message edited via webhook **\`${targetWebhook.shortId}\`** (${targetWebhook.name})!`);
 
@@ -365,9 +365,9 @@ async function handleEdit(client, message, args, webhookService) {
 }
 
 // List webhooks
-async function handleList(client, message, args, webhookService) {
+async function handleList(client, message, args, guildService) {
   try {
-    const webhooks = await webhookService.getGuildWebhooks(message.guild.id);
+    const webhooks = await guildService.getGuildWebhooks(message.guild.id);
 
     if (webhooks.length === 0) {
       return embeds.info(message, 'No **webhooks** have been created');
@@ -410,7 +410,7 @@ async function handleList(client, message, args, webhookService) {
 
 
 // Rename webhook
-async function handleRename(client, message, args, webhookService) {
+async function handleRename(client, message, args, guildService) {
   const { runHelpCommand } = require('../../utils/commandProcessor');
   
   if (args.length < 2) {
@@ -425,14 +425,14 @@ async function handleRename(client, message, args, webhookService) {
   }
 
   try {
-    const webhook = await findWebhookByIdentifier(webhookService, message.guild.id, identifier);
+    const webhook = await findWebhookByIdentifier(guildService, message.guild.id, identifier);
 
     if (!webhook) {
       return embeds.warn(message, `Webhook **${identifier}** not found`);
     }
 
     // Check if new name already exists (excluding current webhook)
-    const nameExists = await webhookService.webhookNameExists(message.guild.id, newName, webhook.webhookId);
+    const nameExists = await guildService.webhookNameExists(message.guild.id, newName, webhook.webhookId);
     if (nameExists) {
       return embeds.warn(message, `A webhook with the name **${newName}** already exists`);
     }
@@ -443,7 +443,7 @@ async function handleRename(client, message, args, webhookService) {
 
     // Update in database
     webhook.name = newName;
-    await webhookService.set(webhook.webhookId, webhook);
+    await guildService.set(webhook.webhookId, webhook);
 
     return embeds.success(message, `Renamed webhook **\`${webhook.shortId}\`** to **${newName}**!`);
 
@@ -460,7 +460,7 @@ async function handleRename(client, message, args, webhookService) {
 }
 
 // Set webhook avatar
-async function handleAvatar(client, message, args, webhookService) {
+async function handleAvatar(client, message, args, guildService) {
   const { runHelpCommand } = require('../../utils/commandProcessor');
   
   if (args.length < 1) {
@@ -485,7 +485,7 @@ async function handleAvatar(client, message, args, webhookService) {
   }
 
   try {
-    const webhook = await findWebhookByIdentifier(webhookService, message.guild.id, identifier);
+    const webhook = await findWebhookByIdentifier(guildService, message.guild.id, identifier);
 
     if (!webhook) {
       return embeds.warn(message, `Webhook **${identifier}** not found`);
@@ -500,7 +500,7 @@ async function handleAvatar(client, message, args, webhookService) {
     const webhookClient = new WebhookClient({ id: webhook.webhookId, token: webhook.webhookToken });
     await webhookClient.edit({ avatar: avatarUrl });
 
-    await webhookService.updateLastUsed(webhook.webhookId);
+    await guildService.updateLastUsed(webhook.webhookId);
 
     return embeds.success(message, `Updated avatar for webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 

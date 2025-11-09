@@ -15,7 +15,7 @@ module.exports = {
   example: 'modhistory @vwsn warn',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
 
@@ -39,9 +39,9 @@ module.exports = {
       const actionTypes = ['warn', 'mute', 'kick', 'ban', 'jail', 'unmute', 'unban', 'unjail'];
 
       if (actionFilter && actionTypes.includes(actionFilter)) {
-        moderationHistory = await moderationService.getModerationHistoryByModerator(message.guild.id, moderator.user.id, actionFilter);
+        moderationHistory = await guildService.getModerationHistoryByModerator(message.guild.id, moderator.user.id, actionFilter);
       } else {
-        moderationHistory = await moderationService.getModerationHistoryByModerator(message.guild.id, moderator.user.id);
+        moderationHistory = await guildService.getModerationHistoryByModerator(message.guild.id, moderator.user.id);
       }
 
       if (moderationHistory.length === 0) {

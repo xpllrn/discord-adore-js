@@ -149,30 +149,7 @@ class NotFoundError extends ServiceError {
   }
 }
 
-/**
- * Permission Error (Permanent)
- * Used for access control violations
- */
-class PermissionError extends ServiceError {
-  constructor(message, action = null, resource = null, context = {}) {
-    super(message, 'PERMISSION_ERROR', false, { action, resource, ...context });
-    this.name = 'PermissionError';
-    this.action = action;
-    this.resource = resource;
-  }
-}
 
-/**
- * Rate Limit Error (Transient)
- * Used when rate limits are exceeded
- */
-class RateLimitError extends ServiceError {
-  constructor(message, retryAfter = null, context = {}) {
-    super(message, 'RATE_LIMIT_ERROR', true, { retryAfter, ...context });
-    this.name = 'RateLimitError';
-    this.retryAfter = retryAfter;
-  }
-}
 
 /**
  * Error Handler Utility
@@ -207,17 +184,6 @@ class ErrorHandler {
       return `${error.resource} not found. Please check the identifier and try again.`;
     }
 
-    if (error instanceof PermissionError) {
-      return 'You do not have permission to perform this action.';
-    }
-
-    if (error instanceof RateLimitError) {
-      const retryMessage = error.retryAfter 
-        ? ` Please try again in ${error.retryAfter} seconds.`
-        : ' Please try again later.';
-      return `Rate limit exceeded.${retryMessage}`;
-    }
-
     if (error instanceof DatabaseConnectionError) {
       return 'Database temporarily unavailable. Please try again in a moment.';
     }
@@ -250,10 +216,6 @@ class ErrorHandler {
    * @returns {number} Delay in milliseconds
    */
   static getRetryDelay(error, attempt) {
-    if (error instanceof RateLimitError && error.retryAfter) {
-      return error.retryAfter * 1000; // Convert to milliseconds
-    }
-
     // Exponential backoff: 1s, 2s, 4s, 8s...
     return Math.min(1000 * Math.pow(2, attempt - 1), 30000); // Max 30 seconds
   }
@@ -266,7 +228,5 @@ module.exports = {
   CacheError,
   DatabaseWriteError,
   NotFoundError,
-  PermissionError,
-  RateLimitError,
   ErrorHandler
 };

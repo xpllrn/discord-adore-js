@@ -15,7 +15,7 @@ module.exports = {
   example: 'unmute @vwsn appeal',
   permission: 'Moderate Members',
   run: async (client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return embeds.deny(message, 'I need **Moderate Members** permission to use this command');
@@ -62,7 +62,7 @@ module.exports = {
 
       // Add to moderation history and log action asynchronously (don't wait)
       Promise.allSettled([
-        moderationService.addModerationCase(
+        guildService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,

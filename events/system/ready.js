@@ -144,7 +144,7 @@ async function initializeDatabaseConnection(client) {
     // Resume active sprints
     console.log(chalk.blue('   [~] Resuming active sprints...'));
     try {
-      const { resumeActiveSprints } = require('../../utils/sprintManager');
+      const { resumeActiveSprints } = require('./backgroundTasks');
       await resumeActiveSprints(client);
       console.log(chalk.green('   [+] Sprint system initialized'));
     } catch (error) {

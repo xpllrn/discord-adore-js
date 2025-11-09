@@ -7539,6 +7539,592 @@ class GuildService extends BaseService {
     // Formula: 100 * level * (1 + level * 0.1)
     return Math.floor(100 * level * (1 + level * 0.1));
   }
+
+
+  // ===== WEBHOOK OPERATIONS =====
+
+  /**
+   * Create a new webhook
+   * @param {string} guildId - Guild ID
+   * @param {string} name - Webhook name
+   * @param {string} webhookId - Discord webhook ID
+   * @param {string} webhookToken - Discord webhook token
+   * @param {string} channelId - Channel ID
+   * @param {string} createdBy - User ID who created it
+   * @returns {Promise<Object>} Created webhook data
+   */
+  async createWebhook(guildId, name, webhookId, webhookToken, channelId, createdBy) {
+    if (!guildId || !name || !webhookId || !webhookToken || !channelId || !createdBy) {
+      throw new ValidationError('Missing required webhook data');
+    }
+
+    // Generate unique short ID for this guild
+    const shortId = await this.generateWebhookShortId(guildId);
+
+    const webhookData = {
+      shortId,
+      name,
+      webhookId,
+      webhookToken,
+      channelId,
+      createdBy,
+      createdAt: new Date(),
+      lastUsed: new Date()
+    };
+
+    try {
+      const Model = this.getModel();
+      await Model.updateOne(
+        { GuildID: guildId },
+        { $push: { Webhooks: webhookData } },
+        { upsert: true }
+      );
+
+      // Invalidate cache
+      await this.delete(guildId);
+
+      return webhookData;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to create webhook for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get webhook by ID
+   * @param {string} guildId - Guild ID
+   * @param {string} webhookId - Webhook ID
+   * @returns {Promise<Object|null>} Webhook data or null
+   */
+  async getWebhook(guildId, webhookId) {
+    try {
+      const guildData = await this.get(guildId);
+      if (!guildData || !guildData.Webhooks) {
+        return null;
+      }
+
+      return guildData.Webhooks.find(w => w.webhookId === webhookId) || null;
+    } catch (error) {
+      console.error(`Error getting webhook:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get webhook by guild and name
+   * @param {string} guildId - Guild ID
+   * @param {string} name - Webhook name
+   * @returns {Promise<Object|null>} Webhook data or null
+   */
+  async getWebhookByName(guildId, name) {
+    try {
+      const guildData = await this.get(guildId);
+      if (!guildData || !guildData.Webhooks) {
+        return null;
+      }
+
+      const nameLower = name.toLowerCase();
+      return guildData.Webhooks.find(w => w.name.toLowerCase() === nameLower) || null;
+    } catch (error) {
+      console.error(`Error finding webhook by name:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get all webhooks for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of webhooks
+   */
+  async getGuildWebhooks(guildId) {
+    try {
+      const guildData = await this.get(guildId);
+      return guildData?.Webhooks || [];
+    } catch (error) {
+      console.error(`Error getting guild webhooks:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Update webhook last used time
+   * @param {string} guildId - Guild ID
+   * @param {string} webhookId - Webhook ID
+   * @returns {Promise<void>}
+   */
+  async updateWebhookLastUsed(guildId, webhookId) {
+    try {
+      const Model = this.getModel();
+      await Model.updateOne(
+        { GuildID: guildId, 'Webhooks.webhookId': webhookId },
+        { $set: { 'Webhooks.$.lastUsed': new Date() } }
+      );
+
+      // Invalidate cache
+      await this.delete(guildId);
+    } catch (error) {
+      console.error(`Error updating webhook last used:`, error);
+    }
+  }
+
+  /**
+   * Delete webhook
+   * @param {string} guildId - Guild ID
+   * @param {string} webhookId - Webhook ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async deleteWebhook(guildId, webhookId) {
+    try {
+      const Model = this.getModel();
+      await Model.updateOne(
+        { GuildID: guildId },
+        { $pull: { Webhooks: { webhookId: webhookId } } }
+      );
+
+      // Invalidate cache
+      await this.delete(guildId);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting webhook:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get webhook by short ID
+   * @param {string} guildId - Guild ID
+   * @param {string} shortId - Short ID
+   * @returns {Promise<Object|null>} Webhook data or null
+   */
+  async getWebhookByShortId(guildId, shortId) {
+    try {
+      const guildData = await this.get(guildId);
+      if (!guildData || !guildData.Webhooks) {
+        return null;
+      }
+
+      const shortIdLower = shortId.toLowerCase();
+      return guildData.Webhooks.find(w => w.shortId === shortIdLower) || null;
+    } catch (error) {
+      console.error(`Error finding webhook by short ID:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate unique short ID for guild webhooks
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string>} Unique short ID
+   */
+  async generateWebhookShortId(guildId) {
+    const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    while (attempts < maxAttempts) {
+      let shortId = '';
+      for (let i = 0; i < 4; i++) {
+        shortId += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+
+      // Check if this short ID already exists in this guild
+      const existing = await this.getWebhookByShortId(guildId, shortId);
+      if (!existing) {
+        return shortId;
+      }
+
+      attempts++;
+    }
+
+    // Fallback to timestamp-based ID if we can't generate a unique one
+    return Date.now().toString().slice(-4);
+  }
+
+  /**
+   * Check if webhook name exists in guild
+   * @param {string} guildId - Guild ID
+   * @param {string} name - Webhook name
+   * @param {string} excludeId - Webhook ID to exclude from check
+   * @returns {Promise<boolean>} True if name exists
+   */
+  async webhookNameExists(guildId, name, excludeId = null) {
+    try {
+      const guildData = await this.get(guildId);
+      if (!guildData || !guildData.Webhooks) {
+        return false;
+      }
+
+      const nameLower = name.toLowerCase();
+      return guildData.Webhooks.some(w => 
+        w.name.toLowerCase() === nameLower && 
+        (!excludeId || w.webhookId !== excludeId)
+      );
+    } catch (error) {
+      console.error(`Error checking webhook name:`, error);
+      return false;
+    }
+  }
+
+
+  // ===== MODERATION OPERATIONS =====
+
+  /**
+   * Add a moderation case
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID being moderated
+   * @param {string} moderatorId - Moderator ID
+   * @param {string} action - Action type (warn, mute, kick, ban, etc.)
+   * @param {string} reason - Reason for action
+   * @param {string} duration - Duration (optional)
+   * @returns {Promise<Object>} Created case
+   */
+  async addModerationCase(guildId, userId, moderatorId, action, reason, duration = null) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+
+      // Get next case ID
+      const caseId = guildData.Moderation && guildData.Moderation.length > 0
+        ? Math.max(...guildData.Moderation.map(c => c.caseId)) + 1
+        : 1;
+
+      const moderationCase = {
+        caseId,
+        userId,
+        moderatorId,
+        action,
+        reason,
+        duration,
+        timestamp: new Date()
+      };
+
+      if (!guildData.Moderation) {
+        guildData.Moderation = [];
+      }
+
+      guildData.Moderation.push(moderationCase);
+      await this.set(guildId, guildData);
+
+      return moderationCase;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add moderation case for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get moderation cases for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @param {string} action - Filter by action type (optional)
+   * @returns {Promise<Array>} Array of cases
+   */
+  async getUserCases(guildId, userId, action = null) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return [];
+      }
+
+      let cases = guildData.Moderation.filter(c => c.userId === userId);
+
+      if (action) {
+        cases = cases.filter(c => c.action === action);
+      }
+
+      return cases.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } catch (error) {
+      console.error(`Error getting user cases for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get a specific case by ID
+   * @param {string} guildId - Guild ID
+   * @param {number} caseId - Case ID
+   * @returns {Promise<Object|null>} Case or null
+   */
+  async getCase(guildId, caseId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return null;
+      }
+
+      return guildData.Moderation.find(c => c.caseId === caseId) || null;
+    } catch (error) {
+      console.error(`Error getting case for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get all moderation cases for a guild
+   * @param {string} guildId - Guild ID
+   * @param {number} limit - Limit results (optional)
+   * @returns {Promise<Array>} Array of cases
+   */
+  async getAllCases(guildId, limit = null) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return [];
+      }
+
+      let cases = [...guildData.Moderation].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      if (limit) {
+        cases = cases.slice(0, limit);
+      }
+
+      return cases;
+    } catch (error) {
+      console.error(`Error getting all cases for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get cases by moderator
+   * @param {string} guildId - Guild ID
+   * @param {string} moderatorId - Moderator ID
+   * @param {string} action - Filter by action type (optional)
+   * @returns {Promise<Array>} Array of cases
+   */
+  async getModeratorCases(guildId, moderatorId, action = null) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return [];
+      }
+
+      let cases = guildData.Moderation.filter(c => c.moderatorId === moderatorId);
+
+      if (action) {
+        cases = cases.filter(c => c.action === action);
+      }
+
+      return cases.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } catch (error) {
+      console.error(`Error getting moderator cases for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Delete a moderation case
+   * @param {string} guildId - Guild ID
+   * @param {number} caseId - Case ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async deleteCase(guildId, caseId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return false;
+      }
+
+      const initialLength = guildData.Moderation.length;
+      guildData.Moderation = guildData.Moderation.filter(c => c.caseId !== caseId);
+
+      if (guildData.Moderation.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error(`Error deleting case for guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get warning count for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<number>} Warning count
+   */
+  async getWarningCount(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return 0;
+      }
+
+      return guildData.Moderation.filter(c =>
+        c.userId === userId && c.action === 'warn'
+      ).length;
+    } catch (error) {
+      console.error(`Error getting warning count for guild ${guildId}:`, error.message);
+      return 0;
+    }
+  }
+
+  /**
+   * Clear all warnings for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<number>} Number of warnings cleared
+   */
+  async clearWarnings(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return 0;
+      }
+
+      const initialLength = guildData.Moderation.filter(c =>
+        c.userId === userId && c.action === 'warn'
+      ).length;
+
+      guildData.Moderation = guildData.Moderation.filter(c =>
+        !(c.userId === userId && c.action === 'warn')
+      );
+
+      await this.set(guildId, guildData);
+      return initialLength;
+    } catch (error) {
+      console.error(`Error clearing warnings for guild ${guildId}:`, error.message);
+      return 0;
+    }
+  }
+
+  /**
+   * Get moderation statistics for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object>} Statistics
+   */
+  async getStats(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return {
+          total: 0,
+          byAction: {},
+          uniqueUsers: 0,
+          uniqueModerators: 0
+        };
+      }
+
+      const cases = guildData.Moderation;
+      const byAction = {};
+      const uniqueUsers = new Set();
+      const uniqueModerators = new Set();
+
+      cases.forEach(c => {
+        byAction[c.action] = (byAction[c.action] || 0) + 1;
+        uniqueUsers.add(c.userId);
+        uniqueModerators.add(c.moderatorId);
+      });
+
+      return {
+        total: cases.length,
+        byAction,
+        uniqueUsers: uniqueUsers.size,
+        uniqueModerators: uniqueModerators.size
+      };
+    } catch (error) {
+      console.error(`Error getting stats for guild ${guildId}:`, error.message);
+      return {
+        total: 0,
+        byAction: {},
+        uniqueUsers: 0,
+        uniqueModerators: 0
+      };
+    }
+  }
+
+  /**
+   * Remove all moderation cases for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} Result with deletedCount
+   */
+  async removeAllModerationCases(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return { deletedCount: 0 };
+      }
+
+      const initialLength = guildData.Moderation.filter(c => c.userId === userId).length;
+      guildData.Moderation = guildData.Moderation.filter(c => c.userId !== userId);
+
+      await this.set(guildId, guildData);
+      return { deletedCount: initialLength };
+    } catch (error) {
+      console.error(`Error removing all cases for guild ${guildId}:`, error.message);
+      return { deletedCount: 0 };
+    }
+  }
+
+  // Alias methods for backward compatibility
+  async getModerationCase(guildId, caseId) {
+    return this.getCase(guildId, caseId);
+  }
+
+  async getModerationHistory(guildId, userId, action = null) {
+    return this.getUserCases(guildId, userId, action);
+  }
+
+  async removeModerationCase(guildId, caseId) {
+    return this.deleteCase(guildId, caseId);
+  }
+
+  async getModerationHistoryByModerator(guildId, moderatorId, action = null) {
+    return this.getModeratorCases(guildId, moderatorId, action);
+  }
 }
 
 module.exports = GuildService;

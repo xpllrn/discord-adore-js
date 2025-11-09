@@ -1,25 +1,14 @@
-const connection = require('./connection');
-const { getShutdownManager } = require('./utils/GracefulShutdown');
+const { connection } = require('./services/core/connection');
 
 // Import model schemas
 const userSchema = require('./models/user');
 const guildSchema = require('./models/guild');
 const systemSchema = require('./models/system');
-const spotifyAuthSessionSchema = require('./models/spotifyAuthSession');
-const sprintSchema = require('./models/sprint');
-const webhookSchema = require('./models/webhook');
-const welcomeButtonSchema = require('./models/welcomeButton');
-const storeItemSchema = require('./models/storeItem');
 
 // Model instances (will be created after connection)
 let User = null;
 let Guild = null;
 let System = null;
-let SpotifyAuthSession = null;
-let Sprint = null;
-let Webhook = null;
-let WelcomeButton = null;
-let StoreItem = null;
 
 // Database readiness state
 let isDatabaseFullyReady = false;
@@ -43,9 +32,9 @@ async function initializeDatabase(connectionStrings) {
 }
 
 async function _performInitialization(connectionStrings) {
-  const success = await connection.connect(connectionStrings);
-
-  if (success) {
+  try {
+    await connection.connect(connectionStrings);
+    
     // Get connections
     const connections = connection.getConnections();
 
@@ -54,78 +43,34 @@ async function _performInitialization(connectionStrings) {
       // User data goes to user database
       User = connections.user.model('User', userSchema.schema);
       System = connections.user.model('System', systemSchema.schema);
-      SpotifyAuthSession = connections.user.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
-      StoreItem = connections.user.model('StoreItem', storeItemSchema.schema);
     }
 
     if (connections.guild) {
       // Guild data goes to guild database
       Guild = connections.guild.model('Guild', guildSchema.schema);
-      Sprint = connections.guild.model('Sprint', sprintSchema.schema);
-      Webhook = connections.guild.model('Webhook', webhookSchema.schema);
-      WelcomeButton = connections.guild.model('WelcomeButton', welcomeButtonSchema);
 
       // If no user connection, put user data in guild (backward compatibility)
       if (!connections.user) {
         User = connections.guild.model('User', userSchema.schema);
         System = connections.guild.model('System', systemSchema.schema);
-        SpotifyAuthSession = connections.guild.model('SpotifyAuthSession', spotifyAuthSessionSchema.schema);
-        StoreItem = connections.guild.model('StoreItem', storeItemSchema.schema);
       }
     }
 
     // Ensure we have the required models
     if (!User || !Guild || !System) {
+      isDatabaseFullyReady = false;
       return false;
     }
 
     // Mark database as fully ready
     isDatabaseFullyReady = true;
-
-    // Initialize graceful shutdown system
-    try {
-      const shutdownManager = getShutdownManager();
-      shutdownManager.initialize();
-
-      // Add database shutdown handlers
-      shutdownManager.addShutdownHandler('database', async () => {
-        console.log('🔄 Closing database connections...');
-        await connection.disconnect(false);
-      }, 10); // High priority
-
-
-
-      // Add health checks
-      shutdownManager.addHealthCheck('database', async () => {
-        const health = await connection.healthCheck();
-        return health.overall;
-      }, 60000);
-
-
-
-      // Add error recovery handlers
-      shutdownManager.addErrorRecoveryHandler('database-reconnect', async (type, error) => {
-        if (error.message.includes('connection') || error.message.includes('timeout')) {
-          console.log('🔧 Attempting database reconnection...');
-          const connections = connection.getConnections();
-          if (connections.user && connections.user.readyState !== 1) {
-            await connections.user.close();
-          }
-          if (connections.guild && connections.guild.readyState !== 1) {
-            await connections.guild.close();
-          }
-          // Reconnection will be handled by mongoose automatically
-        }
-      });
-
-    } catch (error) {
-      console.warn('⚠️ Failed to initialize graceful shutdown:', error.message);
-    }
-  } else {
+    return true;
+    
+  } catch (error) {
+    console.error('Failed to initialize database:', error.message);
     isDatabaseFullyReady = false;
+    return false;
   }
-
-  return success;
 }
 
 /**
@@ -308,391 +253,89 @@ async function ensureSystemData() {
   }
 }
 
-// ===== MODERATION FUNCTIONS =====
+// ===== MODERATION FUNCTIONS (Deprecated - Use ModerationService) =====
+// These functions are kept for backward compatibility only
+// New code should use: const { getService } = require('@services'); getService('moderation')
 
-/**
- * Add a new moderation case to the database
- * @param {string} guildId - Guild ID
- * @param {string} userId - User ID being moderated
- * @param {string} moderatorId - Moderator ID
- * @param {string} action - Moderation action (warn, mute, kick, ban, etc.)
- * @param {string} reason - Reason for the action
- * @param {string} duration - Duration (optional, for timed actions)
- * @returns {Promise<Object>} The created moderation case
- */
 async function addModerationCase(guildId, userId, moderatorId, action, reason, duration = null) {
-  try {
-    // Check if Guild model is available
-    if (!Guild) {
-      throw new Error('Database not ready');
-    }
-
-    // Ensure guild data exists
-    await ensureGuildData(guildId);
-
-    // Get the guild document
-    const guild = await Guild.findOne({ GuildID: guildId });
-
-    // Get the next case ID for this guild
-    const nextCaseId = guild.Moderation.length > 0
-      ? Math.max(...guild.Moderation.map(c => c.caseId)) + 1
-      : 1;
-
-    const moderationCase = {
-      caseId: nextCaseId,
-      userId,
-      moderatorId,
-      action,
-      reason,
-      duration,
-      timestamp: new Date()
-    };
-
-    // Add the moderation case to the guild's Moderation array
-    guild.Moderation.push(moderationCase);
-
-    // Clean invalid data before saving to avoid validation errors
-    if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
-      guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
-    }
-    if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
-      guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
-    }
-
-    await guild.save();
-
-    return moderationCase;
-  } catch (error) {
-    throw error;
-  }
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  return await moderationService.addModerationCase(guildId, userId, moderatorId, action, reason, duration);
 }
 
-/**
- * Get moderation history for a user
- * @param {string} guildId - Guild ID
- * @param {string} userId - User ID
- * @param {string} action - Optional action filter
- * @returns {Promise<Array>} Array of moderation cases
- */
 async function getModerationHistory(guildId, userId, action = null) {
-  try {
-    // Check if Guild model is available
-    if (!Guild) {
-      return [];
-    }
-
-    const guild = await Guild.findOne({ GuildID: guildId });
-    if (!guild) return [];
-
-    let moderationHistory = guild.Moderation.filter(mod => mod.userId === userId);
-
-    if (action) {
-      moderationHistory = moderationHistory.filter(mod => mod.action === action);
-    }
-
-    // Sort by timestamp descending (newest first)
-    return moderationHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  } catch (error) {
-    throw error;
-  }
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  return await moderationService.getUserCases(guildId, userId, action);
 }
 
-/**
- * Get a specific moderation case by case ID
- * @param {string} guildId - Guild ID
- * @param {number} caseId - Case ID
- * @returns {Promise<Object|null>} The moderation case or null if not found
- */
 async function getModerationCase(guildId, caseId) {
-  try {
-    // Check if Guild model is available
-    if (!Guild) {
-      return null;
-    }
-
-    const guild = await Guild.findOne({ GuildID: guildId });
-    if (!guild) return null;
-
-    return guild.Moderation.find(mod => mod.caseId === caseId) || null;
-  } catch (error) {
-    throw error;
-  }
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  return await moderationService.getCase(guildId, caseId);
 }
 
-/**
- * Get moderation history by action type
- * @param {string} guildId - Guild ID
- * @param {string} userId - User ID
- * @param {string} action - Action type
- * @returns {Promise<Array>} Array of moderation cases
- */
 async function getModerationHistoryByAction(guildId, userId, action) {
-  try {
-    return await getModerationHistory(guildId, userId, action);
-  } catch (error) {
-    throw error;
-  }
+  return await getModerationHistory(guildId, userId, action);
 }
 
-/**
- * Get moderation history by moderator
- * @param {string} guildId - Guild ID
- * @param {string} moderatorId - Moderator ID
- * @param {string} action - Optional action filter
- * @returns {Promise<Array>} Array of moderation cases
- */
 async function getModerationHistoryByModerator(guildId, moderatorId, action = null) {
-  try {
-    // Check if Guild model is available
-    if (!Guild) {
-      return [];
-    }
-
-    const guild = await Guild.findOne({ GuildID: guildId });
-    if (!guild) return [];
-
-    let moderationHistory = guild.Moderation.filter(mod => mod.moderatorId === moderatorId);
-
-    if (action) {
-      moderationHistory = moderationHistory.filter(mod => mod.action === action);
-    }
-
-    // Sort by timestamp descending (newest first)
-    return moderationHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  } catch (error) {
-    throw error;
-  }
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  return await moderationService.getModeratorCases(guildId, moderatorId, action);
 }
 
-/**
- * Remove a specific moderation case
- * @param {string} guildId - Guild ID
- * @param {number} caseId - Case ID
- * @returns {Promise<Object>} Deletion result
- */
 async function removeModerationCase(guildId, caseId) {
-  try {
-    // Check if Guild model is available
-    if (!Guild) {
-      return { deletedCount: 0 };
-    }
-
-    const guild = await Guild.findOne({ GuildID: guildId });
-    if (!guild) return { deletedCount: 0 };
-
-    const initialLength = guild.Moderation.length;
-    guild.Moderation = guild.Moderation.filter(mod => mod.caseId !== caseId);
-
-    if (guild.Moderation.length < initialLength) {
-      // Clean invalid data before saving
-      if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
-        guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
-      }
-      if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
-        guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
-      }
-
-      await guild.save();
-      return { deletedCount: 1 };
-    }
-
-    return { deletedCount: 0 };
-  } catch (error) {
-    throw error;
-  }
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  const success = await moderationService.deleteCase(guildId, caseId);
+  return { deletedCount: success ? 1 : 0 };
 }
 
-/**
- * Remove all moderation cases for a user
- * @param {string} guildId - Guild ID
- * @param {string} userId - User ID
- * @returns {Promise<Object>} Deletion result
- */
 async function removeAllModerationCases(guildId, userId) {
-  try {
-    // Check if Guild model is available
-    if (!Guild) {
-      return { deletedCount: 0 };
-    }
-
-    const guild = await Guild.findOne({ GuildID: guildId });
-    if (!guild) return { deletedCount: 0 };
-
-    const initialLength = guild.Moderation.length;
-    guild.Moderation = guild.Moderation.filter(mod => mod.userId !== userId);
-
-    const deletedCount = initialLength - guild.Moderation.length;
-
-    if (deletedCount > 0) {
-      // Clean invalid data before saving
-      if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
-        guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
-      }
-      if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
-        guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
-      }
-
-      await guild.save();
-    }
-
-    return { deletedCount };
-  } catch (error) {
-    throw error;
-  }
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  return await moderationService.removeAllModerationCases(guildId, userId);
 }
 
-/**
- * Save user roles (for jail system)
- * @param {string} guildId - Guild ID
- * @param {string} userId - User ID
- * @param {Array} roles - Array of role IDs
- * @returns {Promise<void>}
- */
+// ===== JAIL SYSTEM ROLE MANAGEMENT (Uses ModerationService) =====
+
 async function saveUserRoles(guildId, userId, roles) {
-  try {
-    console.log(`[saveUserRoles] Saving roles for user ${userId} in guild ${guildId}:`, roles);
-
-    // Use service layer (with caching)
-    const { getService } = require('@services');
-    const guildService = getService('guild');
-
-    const result = await guildService.addModerationCase(guildId, {
-      userId,
-      moderatorId: 'system',
-      action: 'role_save',
-      reason: JSON.stringify(roles),
-      duration: null
-    });
-
-    console.log(`[saveUserRoles] Saved successfully via service, case ID:`, result.caseId);
-  } catch (error) {
-    console.error(`[saveUserRoles] Error saving roles:`, error);
-    throw error;
-  }
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  return await moderationService.addModerationCase(guildId, userId, 'system', 'role_save', JSON.stringify(roles), null);
 }
 
-/**
- * Get saved user roles (for jail system)
- * @param {string} guildId - Guild ID
- * @param {string} userId - User ID
- * @returns {Promise<Array>} Array of role IDs
- */
 async function getSavedUserRoles(guildId, userId) {
-  try {
-    console.log(`[getSavedUserRoles] Looking for saved roles for user ${userId} in guild ${guildId}`);
-
-    // Check if we should use the service layer
-    const { getService } = require('@services');
-    const guildService = getService('guild');
-
-    console.log(`[getSavedUserRoles] guildService available:`, !!guildService);
-
-    let roleCases = [];
-
-    if (guildService) {
-      // Use service layer (with caching)
-      console.log(`[getSavedUserRoles] Using service layer`);
-      const allCases = await guildService.getModerationHistory(guildId, userId, 'role_save');
-      roleCases = allCases;
-      console.log(`[getSavedUserRoles] Found ${roleCases.length} role_save cases via service`);
-    } else {
-      // Fallback to direct database access
-      console.log(`[getSavedUserRoles] Using direct database access (service not available)`);
-
-      if (!Guild) {
-        console.log(`[getSavedUserRoles] Guild model not available`);
-        return [];
-      }
-
-      const guild = await Guild.findOne({ GuildID: guildId });
-      if (!guild) {
-        console.log(`[getSavedUserRoles] Guild not found in database`);
-        return [];
-      }
-
-      console.log(`[getSavedUserRoles] Total moderation cases:`, guild.Moderation.length);
-
-      // Find all role_save cases for this user
-      roleCases = guild.Moderation.filter(mod =>
-        mod.userId === userId && mod.action === 'role_save'
-      );
-
-      console.log(`[getSavedUserRoles] Found ${roleCases.length} role_save cases via direct DB`);
-    }
-
-    if (roleCases.length > 0) {
-      console.log(`[getSavedUserRoles] Role cases:`, roleCases.map(c => ({
-        caseId: c.caseId,
-        userId: c.userId,
-        action: c.action,
-        reason: c.reason,
-        timestamp: c.timestamp
-      })));
-    }
-
-    if (roleCases.length === 0) {
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  const roleCases = await moderationService.getUserCases(guildId, userId, 'role_save');
+  
+  if (roleCases.length === 0) return [];
+  
+  // Get most recent role save
+  const latestRoleCase = roleCases.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+  
+  if (latestRoleCase && latestRoleCase.reason) {
+    try {
+      return JSON.parse(latestRoleCase.reason);
+    } catch (error) {
+      console.error('[getSavedUserRoles] Error parsing saved roles:', error);
       return [];
     }
-
-    // Sort by timestamp descending and get the most recent
-    const latestRoleCase = roleCases.sort((a, b) =>
-      new Date(b.timestamp) - new Date(a.timestamp)
-    )[0];
-
-    console.log(`[getSavedUserRoles] Latest role case:`, {
-      caseId: latestRoleCase.caseId,
-      reason: latestRoleCase.reason
-    });
-
-    if (latestRoleCase && latestRoleCase.reason) {
-      try {
-        const parsedRoles = JSON.parse(latestRoleCase.reason);
-        console.log(`[getSavedUserRoles] Parsed roles:`, parsedRoles);
-        return parsedRoles;
-      } catch (parseError) {
-        console.error('[getSavedUserRoles] Error parsing saved roles:', parseError);
-        return [];
-      }
-    }
-
-    return [];
-  } catch (error) {
-    console.error('[getSavedUserRoles] Error:', error);
-    throw error;
   }
+  
+  return [];
 }
 
-/**
- * Remove saved user roles (for jail system)
- * @param {string} guildId - Guild ID
- * @param {string} userId - User ID
- * @returns {Promise<void>}
- */
 async function removeSavedUserRoles(guildId, userId) {
-  try {
-    // Check if Guild model is available
-    if (!Guild) {
-      return;
-    }
-
-    const guild = await Guild.findOne({ GuildID: guildId });
-    if (!guild) return;
-
-    guild.Moderation = guild.Moderation.filter(mod =>
-      !(mod.userId === userId && mod.action === 'role_save')
-    );
-
-    // Clean invalid data before saving
-    if (guild.MessageStats && Array.isArray(guild.MessageStats)) {
-      guild.MessageStats = guild.MessageStats.filter(stat => stat && stat.date);
-    }
-    if (guild.StarboardMessages && Array.isArray(guild.StarboardMessages)) {
-      guild.StarboardMessages = guild.StarboardMessages.filter(msg => msg && msg.originalMessageId);
-    }
-
-    await guild.save();
-  } catch (error) {
-    throw error;
+  const { getService } = require('@services');
+  const moderationService = getService('moderation');
+  
+  // Get all role_save cases and delete them
+  const roleCases = await moderationService.getUserCases(guildId, userId, 'role_save');
+  for (const roleCase of roleCases) {
+    await moderationService.deleteCase(guildId, roleCase.caseId);
   }
 }
 
@@ -726,18 +369,13 @@ module.exports = {
     if (!isDatabaseFullyReady) {
       return null;
     }
-    return { User, Guild, System, SpotifyAuthSession, Sprint, Webhook, WelcomeButton, StoreItem };
+    return { User, Guild, System };
   },
 
   // Model getters (since models are created dynamically)
   get User() { return User; },
   get Guild() { return Guild; },
   get System() { return System; },
-  get SpotifyAuthSession() { return SpotifyAuthSession; },
-  get Sprint() { return Sprint; },
-  get Webhook() { return Webhook; },
-  get WelcomeButton() { return WelcomeButton; },
-  get StoreItem() { return StoreItem; },
 
   // Deprecated model aliases for backward compatibility
   // These should be migrated to use cache system instead

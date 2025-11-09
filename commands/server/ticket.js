@@ -642,7 +642,7 @@ async function updateTicketSetupMessage(client, guild, ticketSystem, customMessa
 
     if (customMessage) {
       // Use EmbedVariableProcessor to handle custom message
-      const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+      const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
       
       // Check if it's an embed or text message
       if (customMessage.trim().startsWith('{embed}')) {
@@ -703,7 +703,7 @@ async function updateTicketSetupMessage(client, guild, ticketSystem, customMessa
 async function processCustomTicketMessage(customMessage, guild, client) {
   // This is a helper function to process custom embed messages
   // We'll simulate the EmbedVariableProcessor without actually sending a message
-  const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+  const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
   
   // Replace variables first
   const processedContent = EmbedVariableProcessor.replaceVariables(customMessage, {

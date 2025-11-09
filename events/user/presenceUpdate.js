@@ -1,5 +1,5 @@
 const { ensureGuildData } = require('../../database');
-const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 const { ActivityType } = require('discord.js');
 
 module.exports = {

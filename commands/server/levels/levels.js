@@ -607,7 +607,7 @@ async function handleLevelMessage(client, message, args) {
     if (customMessage) {
       try {
         // Use EmbedVariableProcessor to handle the custom message with variables
-        const { EmbedVariableProcessor } = require('../../../utils/embedbuilder');
+        const { EmbedVariableProcessor } = require('../../../utils/embeds/embedbuilder');
 
         // Use EmbedVariableProcessor to handle the custom message with variables
         EmbedVariableProcessor.process(message.channel, customMessage, {

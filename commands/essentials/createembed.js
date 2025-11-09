@@ -1,5 +1,5 @@
 const { ensureGuildData } = require('../../database')
-const { MessageProcessor } = require('../../utils/embedbuilder')
+const { MessageProcessor } = require('../../utils/embeds/embedbuilder')
 const { embeds } = require('../../core/embeds')
 const { runHelpCommand } = require('../../utils/commandProcessor')
 

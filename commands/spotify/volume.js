@@ -3,7 +3,7 @@ const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { getService } = require('@services');
 const { runHelpCommand } = require('../../utils/commandProcessor');
-const { checkSpotifyAccess, handleSpotifyError } = require('../../handlers/spotifyHelpers');
+const { checkSpotifyAccess, handleSpotifyError } = require('../../utils/helpers');
 
 module.exports = {
   name: "volume",

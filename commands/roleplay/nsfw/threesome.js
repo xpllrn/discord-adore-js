@@ -4,7 +4,7 @@ const { colors } = require('../../../config/setup');
 const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const { findUser } = require('../../../handlers/finder');
-const { isNSFWChannel, getOrdinal } = require('../../../utils/nsfwRoleplay');
+const { isNSFWChannel, getOrdinal } = require('../../../utils/helpers');
 
 module.exports = {
   name: "threesome",

@@ -2,7 +2,7 @@
 // Handles: boost detection, nickname tracking, forced nickname enforcement
 
 const { ensureGuildData, ensureUserData } = require('../../database');
-const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 const { getService } = require('@services');
 const webhookLogger = require('../../utils/webhookLogger');
 const { AuditLogEvent } = require('discord.js');

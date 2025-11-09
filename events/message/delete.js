@@ -1,4 +1,4 @@
-const snipeCache = require('../../utils/snipeCache');
+const snipeCache = require('../../database/cache/snipeCache');
 const webhookLogger = require('../../utils/webhookLogger');
 
 module.exports = {

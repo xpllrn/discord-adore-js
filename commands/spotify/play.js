@@ -4,7 +4,7 @@ const config = require('../../config/setup');
 const { getService } = require('@services');
 const { getGuildPrefix, runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
-const { handleSpotifyError, checkSpotifyAccess, checkActiveDevices } = require('../../handlers/spotifyHelpers');
+const { handleSpotifyError, checkSpotifyAccess, checkActiveDevices } = require('../../utils/helpers');
 
 module.exports = {
   name: "play",

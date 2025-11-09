@@ -2,7 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { getService } = require('@services');
-const { checkSpotifyAccess, handleSpotifyError } = require('../../handlers/spotifyHelpers');
+const { checkSpotifyAccess, handleSpotifyError } = require('../../utils/helpers');
 
 module.exports = {
   name: "repeat",

@@ -15,7 +15,7 @@ module.exports = {
   example: 'kick @vwsn spam',
   permission: 'Kick Members',
   run: async(client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.KickMembers, 'Kick Members')) return;
@@ -60,7 +60,7 @@ module.exports = {
       // Add to moderation history
       let caseNumber = null;
       try {
-        const moderationCase = await moderationService.addModerationCase(
+        const moderationCase = await guildService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,

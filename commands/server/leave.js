@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { ensureGuildData } = require('../../database');
-const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 const config = require('../../config/setup');
 const { findChannel } = require('../../handlers/finder');
 const { getService } = require('@services');

@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require("discord.js");
 const { hasDiscordPermission } = require('../../utils/permissions');
 const { embeds } = require('../../core/embeds');
 const { embeds: style } = require('../../config/setup');
-const snipeCache = require('../../utils/snipeCache');
+const snipeCache = require('../../database/cache/snipeCache');
 
 module.exports = {
   name: "clearsnipe",

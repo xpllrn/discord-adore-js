@@ -13,7 +13,7 @@ module.exports = {
   example: 'unban @vwsn appeal',
   permission: 'Ban Members',
   run: async(client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members')) return;
@@ -68,7 +68,7 @@ module.exports = {
 
       // Add to moderation history
       try {
-        await moderationService.addModerationCase(
+        await guildService.addModerationCase(
           message.guild.id,
           targetBan.user.id,
           message.author.id,

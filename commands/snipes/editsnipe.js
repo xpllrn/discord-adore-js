@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const config = require('./../../config/setup');
 const { embeds } = require('../../core/embeds');
-const snipeCache = require('../../utils/snipeCache');
+const snipeCache = require('../../database/cache/snipeCache');
 
 // Helper function to get relative time
 function getRelativeTime(timestamp) {

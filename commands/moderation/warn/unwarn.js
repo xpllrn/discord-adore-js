@@ -11,7 +11,7 @@ module.exports = {
   example: 'unwarn @vwsn 5 mistake',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     // Check if user provided input
     if (!args[0] || !args[1]) {
@@ -48,7 +48,7 @@ module.exports = {
 
     try {
       // Get the specific moderation case
-      const moderationCase = await moderationService.getModerationCase(message.guild.id, caseId);
+      const moderationCase = await guildService.getModerationCase(message.guild.id, caseId);
       
       if (!moderationCase) {
         return embeds.deny(message, `Case #${caseId} not found`);
@@ -65,10 +65,10 @@ module.exports = {
       }
 
       // Remove the warning case from the database
-      await moderationService.removeModerationCase(message.guild.id, caseId);
+      await guildService.removeModerationCase(message.guild.id, caseId);
 
       // Add an unwarn entry to the moderation history
-      await moderationService.addModerationCase(
+      await guildService.addModerationCase(
         message.guild.id,
         user.user.id,
         message.author.id,

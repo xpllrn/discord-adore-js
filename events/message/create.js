@@ -233,7 +233,7 @@ async function processAutoresponder(message) {
           // Check if response contains embed syntax
           if (autoresponder.response.trim().startsWith('{embed}')) {
             // Use EmbedVariableProcessor for embed responses
-            const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+            const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 
             const variables = {
               user: message.author,
@@ -524,7 +524,7 @@ async function handleLevelUp(message, newLevel, userData) {
     const guildService = getService('guild');
     const { EmbedBuilder } = require('discord.js');
     const { colors, emojis } = require('../../config/setup');
-    const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+    const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 
     // Get message mode using service layer
     const messageMode = await guildService.getLevelMessageMode(message.guild.id);

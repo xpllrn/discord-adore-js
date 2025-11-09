@@ -1,10 +1,189 @@
 const { EmbedBuilder } = require('discord.js')
 const path = require('path')
+const fs = require('fs')
 const config = require('./../../config/setup')
 const { embeds } = require('../../core/embeds')
-const { hasSubcommands, parseSubcommands, getCommandFilePath } = require('../../utils/subcommandParser')
-const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed } = require('../../utils/helpEmbedBuilder')
+const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed } = require('../../utils/embeds/helpEmbedBuilder')
 const { createPagination } = require('../../core/buttons')
+
+// ============================================================================
+// SUBCOMMAND PARSER - Integrated into help.js
+// ============================================================================
+
+/**
+ * Detects if a command has subcommands by checking isGroupCommand flag
+ */
+function hasSubcommands(command) {
+  return command.isGroupCommand === true;
+}
+
+/**
+ * Parses command file to extract all subcommandInfo objects
+ */
+function parseSubcommands(commandFilePath, commandName, guildPrefix) {
+  try {
+    const fileContent = fs.readFileSync(commandFilePath, 'utf8');
+    const subcommands = [];
+    
+    // Regex to find subcommand blocks with subcommandInfo
+    const subcommandBlockRegex = /if\s*\(\s*(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"]\s*(?:\|\|\s*(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"])*\s*\)\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+    
+    let match;
+    while ((match = subcommandBlockRegex.exec(fileContent)) !== null) {
+      const subcommandName = match[1];
+      const subcommandInfoContent = match[3];
+      
+      const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
+      const aliasesFromConditional = extractAliasesFromConditional(match[0]);
+      
+      if (aliasesFromConditional.length > 0) {
+        subcommandData.aliases = [...new Set([...subcommandData.aliases, ...aliasesFromConditional])];
+      }
+      
+      subcommands.push(subcommandData);
+    }
+    
+    // Also try to find switch case statements with subcommandInfo
+    const switchCaseRegex = /case\s+['"](\w+)['"]\s*:\s*(?:case\s+['"](\w+)['"]\s*:\s*)*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+    
+    while ((match = switchCaseRegex.exec(fileContent)) !== null) {
+      const subcommandName = match[1];
+      const subcommandInfoContent = match[3];
+      
+      const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
+      const aliasesFromCases = extractAliasesFromSwitchCases(match[0]);
+      
+      if (aliasesFromCases.length > 0) {
+        subcommandData.aliases = [...new Set([...subcommandData.aliases, ...aliasesFromCases])];
+      }
+      
+      subcommands.push(subcommandData);
+    }
+    
+    return subcommands;
+  } catch (error) {
+    console.error(`Error parsing subcommands from ${commandFilePath}:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Extracts aliases from conditional block
+ */
+function extractAliasesFromConditional(conditional) {
+  const aliases = [];
+  const aliasRegex = /(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"]/g;
+  let match;
+  
+  while ((match = aliasRegex.exec(conditional)) !== null) {
+    aliases.push(match[1]);
+  }
+  
+  return aliases.slice(1); // Remove first one (main subcommand name)
+}
+
+/**
+ * Extracts aliases from switch case statements
+ */
+function extractAliasesFromSwitchCases(caseBlock) {
+  const aliases = [];
+  const caseRegex = /case\s+['"](\w+)['"]\s*:/g;
+  let match;
+  
+  while ((match = caseRegex.exec(caseBlock)) !== null) {
+    aliases.push(match[1]);
+  }
+  
+  return aliases.slice(1); // Remove first one (main subcommand name)
+}
+
+/**
+ * Parses subcommandInfo object literal from code
+ */
+function parseSubcommandInfo(objectContent, subcommandName, commandName, guildPrefix) {
+  const subcommandData = {
+    name: subcommandName,
+    fullCommand: `${commandName} ${subcommandName}`,
+    description: '',
+    aliases: [],
+    parameters: [],
+    syntax: '',
+    example: ''
+  };
+  
+  // Extract description
+  const descMatch = objectContent.match(/description:\s*[`'"]([^`'"]*)[`'"]/);
+  if (descMatch) {
+    subcommandData.description = descMatch[1];
+  }
+  
+  // Extract usage/syntax
+  const usageMatch = objectContent.match(/usage:\s*[`'"]([^`'"]*)[`'"]/);
+  if (usageMatch) {
+    let usage = usageMatch[1].replace(/\{guildprefix\}/g, guildPrefix);
+    subcommandData.syntax = usage;
+  }
+  
+  // Extract aliases array
+  const aliasesMatch = objectContent.match(/aliases:\s*\[(.*?)\]/s);
+  if (aliasesMatch) {
+    const aliasesStr = aliasesMatch[1];
+    const aliases = aliasesStr.match(/['"](\w+)['"]/g);
+    if (aliases) {
+      subcommandData.aliases = aliases.map(a => a.replace(/['"]/g, ''));
+    }
+  }
+  
+  // Extract parameters array
+  const paramsMatch = objectContent.match(/parameters:\s*\[(.*?)\]/s);
+  if (paramsMatch) {
+    const paramsStr = paramsMatch[1];
+    const params = paramsStr.match(/['"]([^'"]+)['"]/g);
+    if (params) {
+      subcommandData.parameters = params.map(p => p.replace(/['"]/g, ''));
+    }
+  }
+  
+  // Extract example
+  const exampleMatch = objectContent.match(/example:\s*[`'"]([^`'"]*)[`'"]/);
+  if (exampleMatch) {
+    subcommandData.example = exampleMatch[1].replace(/\{guildprefix\}/g, guildPrefix);
+  }
+  
+  return subcommandData;
+}
+
+/**
+ * Gets the file path for a command
+ */
+function getCommandFilePath(commandName, commandsDir) {
+  try {
+    function searchDirectory(dir) {
+      const files = fs.readdirSync(dir);
+      
+      for (const file of files) {
+        const fullPath = path.join(dir, file);
+        const stat = fs.statSync(fullPath);
+        
+        if (stat.isDirectory()) {
+          const result = searchDirectory(fullPath);
+          if (result) return result;
+        } else if (file === `${commandName}.js`) {
+          return fullPath;
+        }
+      }
+      
+      return null;
+    }
+    
+    return searchDirectory(commandsDir);
+  } catch (error) {
+    console.error(`Error finding command file for ${commandName}:`, error.message);
+    return null;
+  }
+}
+
+// ============================================================================
 
 module.exports = {
   name: "help",

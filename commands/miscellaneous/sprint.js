@@ -3,7 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { createConfirmation } = require('../../core/buttons');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
-const { autoEndSprint, sendSprintReminder } = require('../../utils/sprintManager');
+const { autoEndSprint, sendSprintReminder } = require('../../events/system/backgroundTasks');
 const logger = require('../../utils/logger');
 
 // Get Sprint model from database

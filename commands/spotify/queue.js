@@ -3,7 +3,7 @@ const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { getService } = require('@services');
 const { runHelpCommand } = require('../../utils/commandProcessor');
-const { handleSpotifyError, checkSpotifyAccess, checkActiveDevices } = require('../../handlers/spotifyHelpers');
+const { handleSpotifyError, checkSpotifyAccess, checkActiveDevices } = require('../../utils/helpers');
 
 module.exports = {
   name: "queue",

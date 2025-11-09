@@ -135,7 +135,7 @@ module.exports = {
 
         // Delete auth session
         console.log(`[Spotify Modal] Deleting auth session`);
-        await spotifyService.deleteAuthSession(state);
+        await spotifyService.deleteAuthSession(userId);
         console.log(`[Spotify Modal] Auth session deleted`);
 
         // Dismiss the ephemeral modal reply

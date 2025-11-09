@@ -338,6 +338,21 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null // When the account was linked
   },
+  // Spotify OAuth session (temporary)
+  SpotifyAuthSession: {
+    stateToken: {
+      type: String,
+      default: null
+    },
+    guildId: {
+      type: String,
+      default: null
+    },
+    createdAt: {
+      type: Date,
+      default: null
+    }
+  },
 
   // Sprint/Reading history
   SprintHistory: [{

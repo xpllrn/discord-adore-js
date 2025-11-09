@@ -1,6 +1,5 @@
 const SmartCache = require('./SmartCache');
 const { ServiceError, DatabaseConnectionError, ValidationError } = require('./errors');
-const RetryManager = require('./RetryManager');
 
 /**
  * Base Service Class
@@ -69,17 +68,6 @@ class BaseService {
     } catch (error) {
       // Immediately invalidate cache key on write failure
       this.cache.invalidate(key);
-      
-      // Only retry transient errors, never permanent errors
-      if (RetryManager.isTransientError(error)) {
-        console.warn(`Transient error writing ${key}, will retry:`, error.message);
-        return await RetryManager.executeWithRetry(
-          () => this.set(key, data, customTTL),
-          2 // Max 2 retries for writes
-        );
-      }
-      
-      // For permanent errors, throw immediately without retry
       throw error;
     }
   }

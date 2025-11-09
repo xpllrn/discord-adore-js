@@ -1,5 +1,5 @@
 const { ensureGuildData } = require('../../database');
-const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 const { getService } = require('@services');
 const webhookLogger = require('../../utils/webhookLogger');
 

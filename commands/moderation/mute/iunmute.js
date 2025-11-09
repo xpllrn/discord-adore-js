@@ -15,7 +15,7 @@ module.exports = {
   example: 'iunmute @vwsn appeal',
   permission: 'Moderate Members',
   run: async(client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members')) return;
@@ -71,7 +71,7 @@ module.exports = {
 
       // Add to moderation history and log action asynchronously (don't wait)
       Promise.allSettled([
-        moderationService.addModerationCase(
+        guildService.addModerationCase(
           message.guild.id,
           user.user.id,
           message.author.id,

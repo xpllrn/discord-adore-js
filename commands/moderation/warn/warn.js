@@ -13,7 +13,7 @@ module.exports = {
   example: 'warn @vwsn spam',
   permission: 'Manage Messages',
   run: async(client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     if (!args[0]) {
       return runHelpCommand(message, 'warn');
@@ -61,7 +61,7 @@ module.exports = {
 
     try {
       // Add moderation case to database
-      const moderationCase = await moderationService.addModerationCase(
+      const moderationCase = await guildService.addModerationCase(
         message.guild.id,
         warnedMember.user.id,
         message.author.id,

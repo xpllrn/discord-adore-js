@@ -1,4 +1,4 @@
-const { createNSFWRoleplayCommand } = require('../../../utils/nsfwRoleplay');
+const { createNSFWRoleplayCommand } = require('../../../utils/helpers');
 
 module.exports = {
   name: "anal",

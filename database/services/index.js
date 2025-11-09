@@ -3,24 +3,20 @@
  * Provides centralized access to all data services
  */
 
-// Core services
-const GuildService = require('./GuildService');
-const UserService = require('./UserService');
-const PrefixService = require('./PrefixService');
-const SpotifyService = require('./SpotifyService');
-const StoreService = require('./StoreService');
-const ModerationService = require('./ModerationService');
-const WebhookService = require('./WebhookService');
-const WelcomeButtonService = require('./WelcomeButtonService');
-// const SystemService = require('./SystemService'); // Will be implemented in subsequent tasks
+// Data services (match collections)
+const GuildService = require('./data/GuildService');
+const UserService = require('./data/UserService');
+const SystemService = require('./data/SystemService');
+
+// Feature services
+const PrefixService = require('./features/PrefixService');
+const SpotifyService = require('./features/SpotifyService');
 
 // Core infrastructure
 const BaseService = require('./core/BaseService');
 const SmartCache = require('./core/SmartCache');
-const { ConnectionManager, getConnectionManager } = require('./core/ConnectionManager');
-const RetryManager = require('./core/RetryManager');
+const { ConnectionManager, getConnectionManager } = require('./core/connection');
 const cacheWarmer = require('./core/CacheWarmer');
-const performanceMonitor = require('./core/PerformanceMonitor');
 const {
   ServiceError,
   DatabaseConnectionError,
@@ -28,8 +24,6 @@ const {
   CacheError,
   DatabaseWriteError,
   NotFoundError,
-  PermissionError,
-  RateLimitError,
   ErrorHandler
 } = require('./core/errors');
 
@@ -39,11 +33,7 @@ let serviceInstances = {
   user: null,
   prefix: null,
   spotify: null,
-  store: null,
-  moderation: null,
-  webhook: null,
-  welcomeButton: null,
-  // system: null,
+  system: null,
   connectionManager: null
 };
 
@@ -63,16 +53,13 @@ async function initializeServices(config = {}) {
       await serviceInstances.connectionManager.initialize(config.connectionStrings);
     }
 
-    // Initialize services
+    // Initialize data services
     serviceInstances.guild = new GuildService();
     serviceInstances.user = new UserService();
-    serviceInstances.spotify = new SpotifyService();
-    serviceInstances.store = new StoreService();
-    serviceInstances.moderation = new ModerationService();
-    serviceInstances.webhook = new WebhookService();
-    serviceInstances.welcomeButton = new WelcomeButtonService();
-    const SystemService = require('./SystemService');
     serviceInstances.system = new SystemService();
+    
+    // Initialize feature services
+    serviceInstances.spotify = new SpotifyService();
     serviceInstances.prefix = new PrefixService(serviceInstances.guild, serviceInstances.user);
 
     // Start cache warmer for system-wide data (after startup delay)
@@ -162,9 +149,6 @@ function getServiceHealth() {
   health.user = serviceInstances.user?.initialized || false;
   health.prefix = serviceInstances.prefix?.initialized || false;
   health.spotify = serviceInstances.spotify?.initialized || false;
-  health.store = serviceInstances.store?.initialized || false;
-  health.moderation = serviceInstances.moderation?.initialized || false;
-  health.welcomeButton = serviceInstances.welcomeButton?.initialized || false;
   health.system = serviceInstances.system?.initialized || false;
 
   // Overall health is true if core services are healthy (connection manager is optional)
@@ -180,9 +164,6 @@ function getServiceHealth() {
 function getServiceStats() {
   const stats = {
     connectionManager: null,
-    // guild: null,
-    // user: null,
-    // system: null,
     timestamp: new Date()
   };
 
@@ -203,8 +184,6 @@ function getServiceStats() {
   if (serviceInstances.prefix) {
     stats.prefix = serviceInstances.prefix.getStats();
   }
-  
-  // TODO: Get other service stats when implemented
 
   return stats;
 }
@@ -221,18 +200,11 @@ module.exports = {
   // Health and monitoring
   getServiceHealth,
   getServiceStats,
-  getCacheWarmerStats: () => cacheWarmer.getStats(),
-  manualCacheWarm: () => cacheWarmer.manualWarm(serviceInstances),
-  getPerformanceMetrics: () => performanceMonitor.getMetrics(),
-  getPerformanceSummary: () => performanceMonitor.getSummary(),
-  printPerformanceReport: () => performanceMonitor.printReport(),
-  resetPerformanceMetrics: () => performanceMonitor.reset(),
   
   // Core classes (for direct instantiation if needed)
   BaseService,
   SmartCache,
   ConnectionManager,
-  RetryManager,
   cacheWarmer,
   performanceMonitor,
   
@@ -243,17 +215,12 @@ module.exports = {
   CacheError,
   DatabaseWriteError,
   NotFoundError,
-  PermissionError,
-  RateLimitError,
   ErrorHandler,
   
   // Service classes
   GuildService,
   UserService,
+  SystemService,
   PrefixService,
-  SpotifyService,
-  StoreService,
-  ModerationService,
-  WebhookService,
-  WelcomeButtonService
+  SpotifyService
 };

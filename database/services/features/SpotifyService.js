@@ -27,32 +27,6 @@ class SpotifyService extends BaseService {
     });
 
     this.initialized = true;
-    this.authSessionModel = null;
-  }
-
-  /**
-   * Get SpotifyAuthSession model
-   * @returns {Object} Mongoose model
-   */
-  getAuthSessionModel() {
-    if (!this.authSessionModel) {
-      const { getModels } = require('../../database');
-      const models = getModels();
-
-      if (!models) {
-        throw new ServiceError('Database models not available');
-      }
-
-      // Check if SpotifyAuthSession model exists, if not create it
-      if (!models.SpotifyAuthSession) {
-        const { schema } = require('../models/spotifyAuthSession');
-        const mongoose = require('mongoose');
-        this.authSessionModel = mongoose.model('SpotifyAuthSession', schema);
-      } else {
-        this.authSessionModel = models.SpotifyAuthSession;
-      }
-    }
-    return this.authSessionModel;
   }
 
   // ===== OAUTH MANAGEMENT =====
@@ -66,14 +40,35 @@ class SpotifyService extends BaseService {
   async createAuthSession(userId, guildId) {
     try {
       const stateToken = crypto.randomBytes(32).toString('hex');
-      const AuthSessionModel = this.getAuthSessionModel();
 
-      // Create auth session in database
-      await AuthSessionModel.create({
-        stateToken,
-        userId,
-        guildId
-      });
+      // Get or create user data
+      let userData = await this.get(userId);
+      if (!userData) {
+        // Create minimal user data if doesn't exist
+        const Model = this.getModel();
+        await Model.updateOne(
+          { UserID: userId },
+          {
+            $setOnInsert: {
+              UserID: userId,
+              SpotifyAuthSession: {
+                stateToken,
+                guildId,
+                createdAt: new Date()
+              }
+            }
+          },
+          { upsert: true }
+        );
+      } else {
+        // Update existing user with auth session
+        userData.SpotifyAuthSession = {
+          stateToken,
+          guildId,
+          createdAt: new Date()
+        };
+        await this.set(userId, userData);
+      }
 
       // Build Spotify OAuth URL
       const authUrl = this.buildAuthUrl(stateToken);
@@ -109,9 +104,22 @@ class SpotifyService extends BaseService {
    */
   async getAuthSession(stateToken) {
     try {
-      const AuthSessionModel = this.getAuthSessionModel();
-      const session = await AuthSessionModel.findOne({ stateToken }).lean();
-      return session;
+      const Model = this.getModel();
+      const user = await Model.findOne({
+        'SpotifyAuthSession.stateToken': stateToken
+      }).lean();
+
+      if (!user || !user.SpotifyAuthSession) {
+        return null;
+      }
+
+      // Return session with userId for compatibility
+      return {
+        stateToken: user.SpotifyAuthSession.stateToken,
+        userId: user.UserID,
+        guildId: user.SpotifyAuthSession.guildId,
+        createdAt: user.SpotifyAuthSession.createdAt
+      };
     } catch (error) {
       console.error('Error getting auth session:', error.message);
       return null;
@@ -120,13 +128,20 @@ class SpotifyService extends BaseService {
 
   /**
    * Delete an OAuth authentication session
-   * @param {string} stateToken - State token
+   * @param {string} userId - Discord user ID
    * @returns {Promise<void>}
    */
-  async deleteAuthSession(stateToken) {
+  async deleteAuthSession(userId) {
     try {
-      const AuthSessionModel = this.getAuthSessionModel();
-      await AuthSessionModel.deleteOne({ stateToken });
+      const userData = await this.get(userId);
+      if (userData && userData.SpotifyAuthSession) {
+        userData.SpotifyAuthSession = {
+          stateToken: null,
+          guildId: null,
+          createdAt: null
+        };
+        await this.set(userId, userData);
+      }
     } catch (error) {
       console.error('Error deleting auth session:', error.message);
     }

@@ -15,7 +15,7 @@ module.exports = {
   example: 'ban @vwsn spam',
   permission: 'Ban Members',
   run: async(client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members')) return;
 
@@ -49,7 +49,7 @@ module.exports = {
 
         let caseNumber = null;
         try {
-          const moderationCase = await moderationService.addModerationCase(
+          const moderationCase = await guildService.addModerationCase(
             message.guild.id,
             user.id,
             message.author.id,
@@ -88,7 +88,7 @@ module.exports = {
 
         let caseNumber = null;
         try {
-          const moderationCase = await moderationService.addModerationCase(
+          const moderationCase = await guildService.addModerationCase(
             message.guild.id,
             user.user.id,
             message.author.id,

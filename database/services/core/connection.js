@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const chalk = require('chalk');
 const { DatabaseConnectionError } = require('./errors');
-const RetryManager = require('./RetryManager');
 
 /**
  * Connection Manager
@@ -84,16 +83,18 @@ class ConnectionManager {
   }
 
   /**
-   * Connect to database with exponential backoff retry
+   * Connect to database with simple retry
    * @param {string} type - Connection type ('global' or 'local')
    * @param {string} connectionString - MongoDB connection string
    * @param {number} maxRetries - Maximum retry attempts
    * @returns {Promise<void>}
    */
   async connectWithRetry(type, connectionString, maxRetries = 3) {
-    const connectOperation = async () => {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(chalk.blue(`🔄 Connecting to ${type} database...`));
+        console.log(chalk.blue(`🔄 Connecting to ${type} database (attempt ${attempt}/${maxRetries})...`));
 
         const connection = await this.createConnection(connectionString, type);
         this.connections[type] = connection;
@@ -106,18 +107,23 @@ class ConnectionManager {
         this.setupConnectionHandlers(connection, type);
 
         console.log(chalk.green(`✅ Connected to ${type} database`));
+        return;
         
       } catch (error) {
+        lastError = error;
         this.stats[type].errorCount++;
-        throw new DatabaseConnectionError(`Failed to connect to ${type} database: ${error.message}`);
+        
+        if (attempt < maxRetries) {
+          // Retry delays: 2s, 5s, 10s
+          const delays = [2000, 5000, 10000];
+          const delay = delays[attempt - 1] || 10000;
+          console.warn(chalk.yellow(`⚠️ Connection attempt ${attempt} failed, retrying in ${delay}ms...`));
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-    };
-
-    await RetryManager.executeWithRetry(connectOperation, maxRetries, {
-      baseDelay: 2000, // Start with 2 second delay
-      maxDelay: 30000, // Max 30 second delay
-      backoffMultiplier: 2
-    });
+    }
+    
+    throw new DatabaseConnectionError(`Failed to connect to ${type} database after ${maxRetries} attempts: ${lastError.message}`);
   }
 
   /**
@@ -425,28 +431,7 @@ class ConnectionManager {
     console.log(chalk.green('✅ Database disconnection complete'));
   }
 
-  /**
-   * Setup graceful shutdown handlers
-   */
-  setupGracefulShutdown() {
-    const gracefulShutdown = async (signal) => {
-      console.log(chalk.blue(`\n🔄 Received ${signal}, shutting down database connections...`));
 
-      try {
-        await this.disconnect(false);
-        console.log(chalk.green('✅ Graceful database shutdown complete'));
-      } catch (error) {
-        console.error(chalk.red('❌ Error during graceful shutdown:'), error.message);
-        // Force close on error
-        await this.disconnect(true);
-      }
-    };
-
-    // Handle various shutdown signals
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-    process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // nodemon restart
-  }
 }
 
 // Global connection manager instance
@@ -463,7 +448,75 @@ function getConnectionManager() {
   return globalConnectionManager;
 }
 
+// Export singleton instance as 'connection' for cleaner API
+const connection = {
+  /**
+   * Initialize database connections
+   * @param {Object} connectionStrings - Connection configuration
+   * @returns {Promise<boolean>} Success status
+   */
+  async connect(connectionStrings) {
+    const manager = getConnectionManager();
+    return await manager.initialize(connectionStrings);
+  },
+
+  /**
+   * Disconnect from all databases
+   * @param {boolean} force - Force close connections
+   * @returns {Promise<void>}
+   */
+  async disconnect(force = false) {
+    const manager = getConnectionManager();
+    return await manager.disconnect(force);
+  },
+
+  /**
+   * Check if databases are ready
+   * @returns {Object} Connection status
+   */
+  isReady() {
+    const manager = getConnectionManager();
+    return manager.isReady();
+  },
+
+  /**
+   * Get database connections
+   * @returns {Object} Database connections
+   */
+  getConnections() {
+    const manager = getConnectionManager();
+    return manager.connections;
+  },
+
+  /**
+   * Get connection statistics
+   * @returns {Object} Connection statistics
+   */
+  getConnectionStats() {
+    const manager = getConnectionManager();
+    return manager.getConnectionStats();
+  },
+
+  /**
+   * Perform health checks
+   * @returns {Promise<Object>} Health check results
+   */
+  async healthCheck() {
+    const manager = getConnectionManager();
+    return await manager.performHealthChecks();
+  },
+
+  /**
+   * Get the connection manager instance
+   * @returns {ConnectionManager} Connection manager
+   */
+  getManager() {
+    return getConnectionManager();
+  }
+};
+
 module.exports = {
   ConnectionManager,
-  getConnectionManager
+  getConnectionManager,
+  connection
 };

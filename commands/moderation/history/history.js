@@ -14,7 +14,7 @@ module.exports = {
   permission: 'Manage Messages',
   isGroupCommand: true,
   run: async(client, message, args) => {
-    const moderationService = getService('moderation');
+    const guildService = getService('guild');
 
     if (!args[0]) {
       return runHelpCommand(message, 'history');
@@ -39,7 +39,7 @@ module.exports = {
       }
 
       try {
-        const moderationCase = await moderationService.getModerationCase(message.guild.id, caseId);
+        const moderationCase = await guildService.getModerationCase(message.guild.id, caseId);
 
         if (!moderationCase) {
           return embeds.deny(message, `Case #${caseId} not found`);
@@ -101,7 +101,7 @@ module.exports = {
       }
 
       try {
-        const moderationCase = await moderationService.getModerationCase(message.guild.id, caseId);
+        const moderationCase = await guildService.getModerationCase(message.guild.id, caseId);
 
         if (!moderationCase) {
           return embeds.deny(message, `Case #${caseId} not found`);
@@ -111,7 +111,7 @@ module.exports = {
           return embeds.deny(message, `Case #${caseId} does not belong to **${userResult.user.user.username}**`);
         }
 
-        await moderationService.removeModerationCase(message.guild.id, caseId);
+        await guildService.removeModerationCase(message.guild.id, caseId);
         return embeds.success(message, `Removed case #${caseId} for **${userResult.user.user.username}**`);
 
       } catch (error) {
@@ -144,7 +144,7 @@ module.exports = {
       }
 
       try {
-        const result = await moderationService.removeAllModerationCases(message.guild.id, userResult.user.user.id);
+        const result = await guildService.removeAllModerationCases(message.guild.id, userResult.user.user.id);
 
         if (result.deletedCount === 0) {
           return embeds.warn(message, `**${userResult.user.user.username}** has no moderation history to remove`);
@@ -178,7 +178,7 @@ module.exports = {
       const actionFilter = args[0].toLowerCase();
 
       try {
-        const moderationHistory = await moderationService.getModerationHistory(message.guild.id, user.user.id, actionFilter);
+        const moderationHistory = await guildService.getModerationHistory(message.guild.id, user.user.id, actionFilter);
 
         if (moderationHistory.length === 0) {
           return embeds.warn(message, `**${user.user.username}** has no ${actionFilter} moderation history`);
@@ -229,9 +229,9 @@ module.exports = {
       let moderationHistory;
 
       if (actionFilter && actionTypes.includes(actionFilter)) {
-        moderationHistory = await moderationService.getModerationHistory(message.guild.id, user.user.id, actionFilter);
+        moderationHistory = await guildService.getModerationHistory(message.guild.id, user.user.id, actionFilter);
       } else {
-        moderationHistory = await moderationService.getModerationHistory(message.guild.id, user.user.id);
+        moderationHistory = await guildService.getModerationHistory(message.guild.id, user.user.id);
       }
 
       if (moderationHistory.length === 0) {

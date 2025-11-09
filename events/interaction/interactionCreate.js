@@ -1046,7 +1046,7 @@ async function handleWelcomeButton(interaction) {
       });
 
       // Process variables in welcome message
-      const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+      const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
       const processedMessage = EmbedVariableProcessor.replaceVariables(welcomeMessage, {
         user: user,
         guild: guild,
@@ -1095,7 +1095,7 @@ async function handleWelcomeButton(interaction) {
             token: newWebhook.webhookToken
           });
 
-          const { EmbedVariableProcessor } = require('../../utils/embedbuilder');
+          const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
           const processedMessage = EmbedVariableProcessor.replaceVariables(welcomeMessage, {
             user: user,
             guild: guild,
