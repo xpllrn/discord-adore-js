@@ -6,11 +6,34 @@ const { runHelpCommand } = require('../../utils/commandProcessor');
 const { autoEndSprint, sendSprintReminder } = require('../../events/system/backgroundTasks');
 const logger = require('../../utils/logger');
 
-// Get Sprint model from database
-function getSprintModel() {
+// Helper functions to work with sprints in Guild model
+async function getGuildWithSprints(guildId) {
   const { getModels } = require('../../database');
   const models = getModels();
-  return models ? models.Sprint : null;
+  if (!models || !models.Guild) return null;
+  
+  return await models.Guild.findOne({ GuildID: guildId });
+}
+
+async function findActiveSprint(guildId) {
+  const guildData = await getGuildWithSprints(guildId);
+  if (!guildData) return null;
+  
+  return guildData.Sprints.find(s => s.isActive);
+}
+
+async function createSprint(guildId, sprintData) {
+  const { getModels } = require('../../database');
+  const models = getModels();
+  if (!models || !models.Guild) return null;
+  
+  const guildData = await models.Guild.findOne({ GuildID: guildId });
+  if (!guildData) return null;
+  
+  guildData.Sprints.push(sprintData);
+  await guildData.save();
+  
+  return guildData.Sprints[guildData.Sprints.length - 1];
 }
 
 module.exports = {
@@ -117,16 +140,8 @@ module.exports = {
  */
 async function startSprint(client, message, args) {
   try {
-    const Sprint = getSprintModel();
-    if (!Sprint) {
-      return embeds.warn(message, 'Database not ready. Please try again in a moment.');
-    }
-
     // Check if there's already an active sprint
-    const existingSprint = await Sprint.findOne({
-      guildId: message.guild.id,
-      isActive: true
-    });
+    const existingSprint = await findActiveSprint(message.guild.id);
 
     if (existingSprint) {
       return embeds.warn(message, 'There is already an active **reading sprint** in this server!');
@@ -187,8 +202,7 @@ async function startSprint(client, message, args) {
     const sentMessage = await message.channel.send(messageOptions);
 
     // Save sprint to database
-    const sprint = await Sprint.create({
-      guildId: message.guild.id,
+    const sprint = await createSprint(message.guild.id, {
       messageId: sentMessage.id,
       channelId: message.channel.id,
       roleId: roleId,
@@ -214,15 +228,12 @@ async function startSprint(client, message, args) {
  */
 async function endSprint(client, message) {
   try {
-    const Sprint = getSprintModel();
-    if (!Sprint) {
+    const guildData = await getGuildWithSprints(message.guild.id);
+    if (!guildData) {
       return embeds.warn(message, 'Database not ready. Please try again in a moment.');
     }
 
-    const sprint = await Sprint.findOne({
-      guildId: message.guild.id,
-      isActive: true
-    });
+    const sprint = guildData.Sprints.find(s => s.isActive);
 
     if (!sprint) {
       return embeds.warn(message, 'There is no active **reading sprint** in this server!');
@@ -235,7 +246,7 @@ async function endSprint(client, message) {
       async (interaction, confirmMessage) => {
         // End the sprint
         sprint.isActive = false;
-        await sprint.save();
+        await guildData.save();
 
         // Save to user history
         await saveSprintHistory(sprint);
@@ -355,15 +366,12 @@ function parseDuration(duration) {
  */
 async function joinSprint(client, message, args) {
   try {
-    const Sprint = getSprintModel();
-    if (!Sprint) {
+    const guildData = await getGuildWithSprints(message.guild.id);
+    if (!guildData) {
       return embeds.warn(message, 'Database not ready. Please try again in a moment.');
     }
 
-    const sprint = await Sprint.findOne({
-      guildId: message.guild.id,
-      isActive: true
-    });
+    const sprint = guildData.Sprints.find(s => s.isActive);
 
     if (!sprint) {
       return embeds.warn(message, 'There is no active **reading sprint** in this server!');
@@ -402,7 +410,7 @@ async function joinSprint(client, message, args) {
       lastPauseTime: null
     });
 
-    await sprint.save();
+    await guildData.save();
 
     // Update the sprint message
     try {
@@ -426,15 +434,12 @@ async function joinSprint(client, message, args) {
  */
 async function leaveSprint(client, message) {
   try {
-    const Sprint = getSprintModel();
-    if (!Sprint) {
+    const guildData = await getGuildWithSprints(message.guild.id);
+    if (!guildData) {
       return embeds.warn(message, 'Database not ready. Please try again in a moment.');
     }
 
-    const sprint = await Sprint.findOne({
-      guildId: message.guild.id,
-      isActive: true
-    });
+    const sprint = guildData.Sprints.find(s => s.isActive);
 
     if (!sprint) {
       return embeds.warn(message, 'There is no active **reading sprint** in this server!');
@@ -453,7 +458,7 @@ async function leaveSprint(client, message) {
       async (interaction, confirmMessage) => {
         // Remove participant
         sprint.participants.splice(participantIndex, 1);
-        await sprint.save();
+        await guildData.save();
 
         // Update the sprint message
         try {
@@ -484,15 +489,12 @@ async function leaveSprint(client, message) {
  */
 async function updateSprint(client, message, args) {
   try {
-    const Sprint = getSprintModel();
-    if (!Sprint) {
+    const guildData = await getGuildWithSprints(message.guild.id);
+    if (!guildData) {
       return embeds.warn(message, 'Database not ready. Please try again in a moment.');
     }
 
-    const sprint = await Sprint.findOne({
-      guildId: message.guild.id,
-      isActive: true
-    });
+    const sprint = guildData.Sprints.find(s => s.isActive);
 
     if (!sprint) {
       return embeds.warn(message, 'There is no active **reading sprint** in this server!');
@@ -516,7 +518,7 @@ async function updateSprint(client, message, args) {
 
     const oldTab = participant.currentTab;
     participant.currentTab = currentTab;
-    await sprint.save();
+    await guildData.save();
 
     // Update the sprint message
     try {
@@ -541,15 +543,12 @@ async function updateSprint(client, message, args) {
  */
 async function toggleFlow(client, message) {
   try {
-    const Sprint = getSprintModel();
-    if (!Sprint) {
+    const guildData = await getGuildWithSprints(message.guild.id);
+    if (!guildData) {
       return embeds.warn(message, 'Database not ready. Please try again in a moment.');
     }
 
-    const sprint = await Sprint.findOne({
-      guildId: message.guild.id,
-      isActive: true
-    });
+    const sprint = guildData.Sprints.find(s => s.isActive);
 
     if (!sprint) {
       return embeds.warn(message, 'There is no active **reading sprint** in this server!');
@@ -575,14 +574,14 @@ async function toggleFlow(client, message) {
       participant.isPaused = false;
       participant.lastPauseTime = null;
 
-      await sprint.save();
+      await guildData.save();
       return embeds.success(message, 'Time tracking **resumed**! Your timer is now running.');
     } else {
       // Pause - record pause start time
       participant.isPaused = true;
       participant.lastPauseTime = now;
 
-      await sprint.save();
+      await guildData.save();
       return embeds.success(message, 'Time tracking **paused**! Use `,sprint flow` again to resume.');
     }
 
@@ -632,15 +631,12 @@ function formatDuration(milliseconds) {
  */
 async function showLeaderboard(client, message) {
   try {
-    const Sprint = getSprintModel();
-    if (!Sprint) {
+    const guildData = await getGuildWithSprints(message.guild.id);
+    if (!guildData) {
       return embeds.warn(message, 'Database not ready. Please try again in a moment.');
     }
 
-    const sprint = await Sprint.findOne({
-      guildId: message.guild.id,
-      isActive: true
-    });
+    const sprint = guildData.Sprints.find(s => s.isActive);
 
     if (!sprint) {
       return embeds.warn(message, 'There is no active **reading sprint** in this server!');

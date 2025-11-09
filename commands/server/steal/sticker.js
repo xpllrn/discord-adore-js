@@ -17,7 +17,7 @@ function removeInviteLinks(text) {
     /discord\.com\/invite\/[\w-]+/gi,
     /dsc\.gg\/[\w-]+/gi,
     /invite\.gg\/[\w-]+/gi,
-    /\bgg\/[\w-]+/gi // Remove patterns like gg/bleed (word boundary)
+    /\bgg\/[\w-]+/gi // Remove patterns like gg/vleed (word boundary)
   ];
 
   let cleanText = text;
@@ -225,8 +225,8 @@ async function handleAdd(client, message, args) {
       const sticker = await message.guild.stickers.create({
         file: processedBuffer,
         name: cleanName,
-        description: 'Sticker added using Adore bot',
-        tags: 'adore'
+        description: 'Sticker added using vleed bot',
+        tags: 'vleed'
       });
 
       await statusMessage.edit({

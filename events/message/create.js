@@ -16,8 +16,8 @@ module.exports = {
       return; // Don't process any messages during startup
     }
 
-    // Process adore mentions first (highest priority)
-    await processAdoreMention(message);
+    // Process vleed mentions first (highest priority)
+    await processVleedMention(message);
 
     // Process bot mention with link
     await processBotMentionDownload(message);
@@ -284,7 +284,7 @@ async function processBotMentionDownload(message) {
     const messageContent = message.content.toLowerCase().trim();
 
     // Check if message starts with bot name variations
-    const botNames = ['adore', message.client.user.username.toLowerCase()];
+    const botNames = ['vleed', message.client.user.username.toLowerCase()];
     const startsWithBotName = botNames.some(name =>
       messageContent.startsWith(name + ' ') ||
       messageContent.startsWith(name + '\n') ||
@@ -438,17 +438,17 @@ async function processSwearTracking(message) {
   }
 }
 
-// Process adore mentions
-async function processAdoreMention(message) {
+// Process vleed mentions
+async function processVleedMention(message) {
   try {
-    // Check if message starts with "adore" (case insensitive)
+    // Check if message starts with "vleed" (case insensitive)
     const content = message.content.toLowerCase();
-    if (content.startsWith('adore ')) {
-      const { handleAdoreMention } = require('../../commands/utility/responder');
-      await handleAdoreMention(message.client, message);
+    if (content.startsWith('vleed ')) {
+      const { handleVleedMention } = require('../../commands/utility/responder');
+      await handleVleedMention(message.client, message);
     }
   } catch (error) {
-    // Silent fail for adore mention processing
+    // Silent fail for vleed mention processing
   }
 }
 

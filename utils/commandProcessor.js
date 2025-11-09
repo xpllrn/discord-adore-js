@@ -118,7 +118,7 @@ async function processCommand(message, isEdit = false) {
       });
     }
 
-    embeds.deny(message, 'There was an error **executing** that command, Please report this to **adore server** immediately.');
+    embeds.deny(message, 'There was an error **executing** that command, Please report this to [**here**](https://discord.gg/uW7ETHXu4k) immediately.');
   }
 }
 

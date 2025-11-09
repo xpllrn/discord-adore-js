@@ -1,7 +1,7 @@
 module.exports = {
   name: "latency",
   aliases: ['ms', 'ping'],
-  description: `Shows adore's latency response times`,
+  description: `Shows bot's latency response times`,
   syntax: 'latency',
   example: 'latency',
   run: async (client, message, args) => {

@@ -7,7 +7,7 @@ module.exports = {
     try {
       // Skip if not from our AutoMod rule
       const rule = autoModerationActionExecution.autoModerationRule;
-      if (!rule || rule.name !== 'Adore AutoMod') {
+      if (!rule || rule.name !== 'vleed AutoMod') {
         return;
       }
 

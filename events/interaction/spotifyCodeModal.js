@@ -158,7 +158,7 @@ module.exports = {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!`;
           } else {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`;
+              `**vleed** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`;
           }
 
           const successEmbed = new EmbedBuilder()
@@ -179,7 +179,7 @@ module.exports = {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!`;
           } else {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `**adore** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`;
+              `**vleed** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`;
           }
 
           const successEmbed = new EmbedBuilder()

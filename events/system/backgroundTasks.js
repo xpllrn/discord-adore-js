@@ -252,48 +252,60 @@ async function resumeActiveSprints(client) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
-    if (!models || !models.Sprint) {
+    if (!models || !models.Guild) {
       console.log('[Sprint Manager] Database not ready, skipping sprint resume');
       return;
     }
 
-    const Sprint = models.Sprint;
-    const activeSprints = await Sprint.find({ isActive: true });
-    console.log(`[Sprint Manager] Found ${activeSprints.length} active sprints to resume`);
+    const Guild = models.Guild;
+    
+    // Find all guilds with active sprints
+    const guildsWithSprints = await Guild.find({ 
+      'Sprints.isActive': true 
+    }).select('GuildID Sprints');
+    
+    let totalActiveSprints = 0;
+    
+    for (const guildData of guildsWithSprints) {
+      const activeSprints = guildData.Sprints.filter(s => s.isActive);
+      totalActiveSprints += activeSprints.length;
+      
+      for (const sprint of activeSprints) {
+        const now = Date.now();
+        const endTime = sprint.endTime.getTime();
 
-    for (const sprint of activeSprints) {
-      const now = Date.now();
-      const endTime = sprint.endTime.getTime();
+        // Check if sprint should have ended
+        if (now >= endTime) {
+          console.log(`[Sprint Manager] Auto-ending expired sprint ${sprint.messageId}`);
+          await autoEndSprint(client, guildData.GuildID, sprint.messageId);
+          continue;
+        }
 
-      // Check if sprint should have ended
-      if (now >= endTime) {
-        console.log(`[Sprint Manager] Auto-ending expired sprint ${sprint.messageId}`);
-        await autoEndSprint(client, sprint.guildId, sprint.messageId);
-        continue;
-      }
+        // Schedule remaining timers
+        const timeUntilEnd = endTime - now;
+        const thirtyMinutes = 30 * 60 * 1000;
 
-      // Schedule remaining timers
-      const timeUntilEnd = endTime - now;
-      const thirtyMinutes = 30 * 60 * 1000;
+        // Schedule reminder if not sent and within 30 minutes
+        if (!sprint.reminderSent && timeUntilEnd <= thirtyMinutes) {
+          console.log(`[Sprint Manager] Sending immediate reminder for sprint ${sprint.messageId}`);
+          await sendSprintReminder(client, guildData.GuildID, sprint.messageId);
+        }
 
-      // Schedule reminder if not sent and within 30 minutes
-      if (!sprint.reminderSent && timeUntilEnd <= thirtyMinutes) {
-        console.log(`[Sprint Manager] Sending immediate reminder for sprint ${sprint.messageId}`);
-        await sendSprintReminder(client, sprint.guildId, sprint.messageId);
-      }
-
-      // Schedule auto-end with better error handling
-      if (timeUntilEnd > 0) {
-        setTimeout(async () => {
-          try {
-            await autoEndSprint(client, sprint.guildId, sprint.messageId);
-          } catch (error) {
-            console.error('[Sprint Auto-End] Error:', error);
-          }
-        }, timeUntilEnd);
-        console.log(`[Sprint Manager] Scheduled auto-end for sprint ${sprint.messageId} in ${Math.round(timeUntilEnd / 1000 / 60)} minutes`);
+        // Schedule auto-end with better error handling
+        if (timeUntilEnd > 0) {
+          setTimeout(async () => {
+            try {
+              await autoEndSprint(client, guildData.GuildID, sprint.messageId);
+            } catch (error) {
+              console.error('[Sprint Auto-End] Error:', error);
+            }
+          }, timeUntilEnd);
+          console.log(`[Sprint Manager] Scheduled auto-end for sprint ${sprint.messageId} in ${Math.round(timeUntilEnd / 1000 / 60)} minutes`);
+        }
       }
     }
+    
+    console.log(`[Sprint Manager] Found ${totalActiveSprints} active sprints to resume`);
   } catch (error) {
     console.error('[Sprint Manager] Error resuming sprints:', error);
   }
@@ -303,19 +315,18 @@ async function autoEndSprint(client, guildId, messageId) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
-    if (!models || !models.Sprint) return;
+    if (!models || !models.Guild) return;
 
-    const Sprint = models.Sprint;
-    const sprint = await Sprint.findOne({
-      guildId,
-      messageId,
-      isActive: true
-    });
-
+    const Guild = models.Guild;
+    const guildData = await Guild.findOne({ GuildID: guildId });
+    
+    if (!guildData) return;
+    
+    const sprint = guildData.Sprints.find(s => s.messageId === messageId && s.isActive);
     if (!sprint) return;
 
     sprint.isActive = false;
-    await sprint.save();
+    await guildData.save();
 
     // Save to user history
     await saveSprintHistory(sprint);
@@ -368,21 +379,19 @@ async function sendSprintReminder(client, guildId, messageId) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
-    if (!models || !models.Sprint) return;
+    if (!models || !models.Guild) return;
 
-    const Sprint = models.Sprint;
-    const sprint = await Sprint.findOne({
-      guildId,
-      messageId,
-      isActive: true,
-      reminderSent: false
-    });
-
+    const Guild = models.Guild;
+    const guildData = await Guild.findOne({ GuildID: guildId });
+    
+    if (!guildData) return;
+    
+    const sprint = guildData.Sprints.find(s => s.messageId === messageId && s.isActive && !s.reminderSent);
     if (!sprint || sprint.participants.length === 0) return;
 
     // Mark reminder as sent
     sprint.reminderSent = true;
-    await sprint.save();
+    await guildData.save();
 
     // Get channel and message
     const channel = await client.channels.fetch(sprint.channelId);

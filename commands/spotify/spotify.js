@@ -50,8 +50,8 @@ module.exports = {
               iconURL: message.author.displayAvatarURL()
             })
             .setDescription(
-              `Authorize **adore** to use your Spotify account. You give us permission to control your active player and show your music statistics through commands.\n\n` +
-              `If you want to remove your account with adore, run \`${guildprefix}spotify logout\`.\n\n-# First time adore users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) first to use spotify commands.`
+              `Authorize **vleed** to use your Spotify account. You give us permission to control your active player and show your music statistics through commands.\n\n` +
+              `If you want to remove your account with vleed, run \`${guildprefix}spotify logout\`.\n\n-# First time vleed users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) first to use spotify commands.`
             );
 
           // Create buttons

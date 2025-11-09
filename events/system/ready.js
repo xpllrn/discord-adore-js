@@ -170,7 +170,7 @@ async function loadBotStatusFromDatabase(client) {
     const { getService } = require('@services');
 
     // Display instance information
-    const instanceName = 'Adore';
+    const instanceName = 'vleed';
     console.log(chalk.white('>> Instance Configuration'));
     console.log(chalk.cyan(`   [i] Instance Name: ${instanceName}`));
 

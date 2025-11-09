@@ -9,7 +9,7 @@ const PERMISSION_LEVELS = {
   premium: {
     roleId: config.permissions.premiumRoleId,
     name: 'Premium',
-    message: permsConfig.premium.customMessage || 'You need to buy **premium/boost** Adore app server for this feature!'
+    message: permsConfig.premium.customMessage || 'You need to buy **premium/boost** vleed app server for this feature!'
   },
   dev: {
     roleId: config.permissions.devRoleId,

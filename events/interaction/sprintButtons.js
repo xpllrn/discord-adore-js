@@ -2,11 +2,13 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedB
 const config = require('../../config/setup');
 const { embeds } = require('../../core/embeds');
 
-// Get Sprint model from database
-function getSprintModel() {
+// Helper to get guild with sprints
+async function getGuildWithSprints(guildId) {
   const { getModels } = require('../../database');
   const models = getModels();
-  return models ? models.Sprint : null;
+  if (!models || !models.Guild) return null;
+  
+  return await models.Guild.findOne({ GuildID: guildId });
 }
 
 module.exports = {
@@ -15,8 +17,8 @@ module.exports = {
     // Handle Join button
     if (interaction.isButton() && interaction.customId === 'sprint_join') {
       try {
-        const Sprint = getSprintModel();
-        if (!Sprint) {
+        const guildData = await getGuildWithSprints(interaction.guild.id);
+        if (!guildData) {
           const fakeMessage = {
             author: interaction.user,
             channel: interaction.channel
@@ -29,11 +31,7 @@ module.exports = {
         }
 
         // Find active sprint
-        const sprint = await Sprint.findOne({
-          guildId: interaction.guild.id,
-          messageId: interaction.message.id,
-          isActive: true
-        });
+        const sprint = guildData.Sprints.find(s => s.messageId === interaction.message.id && s.isActive);
 
         if (!sprint) {
           const fakeMessage = {
@@ -115,8 +113,8 @@ module.exports = {
     // Handle Update button
     if (interaction.isButton() && interaction.customId === 'sprint_update') {
       try {
-        const Sprint = getSprintModel();
-        if (!Sprint) {
+        const guildData = await getGuildWithSprints(interaction.guild.id);
+        if (!guildData) {
           const fakeMessage = {
             author: interaction.user,
             channel: interaction.channel
@@ -129,11 +127,7 @@ module.exports = {
         }
 
         // Find active sprint
-        const sprint = await Sprint.findOne({
-          guildId: interaction.guild.id,
-          messageId: interaction.message.id,
-          isActive: true
-        });
+        const sprint = guildData.Sprints.find(s => s.messageId === interaction.message.id && s.isActive);
 
         if (!sprint) {
           const fakeMessage = {
@@ -206,8 +200,8 @@ module.exports = {
     // Handle Join modal submission
     if (interaction.isModalSubmit() && interaction.customId.startsWith('sprint_join_modal_')) {
       try {
-        const Sprint = getSprintModel();
-        if (!Sprint) {
+        const guildData = await getGuildWithSprints(interaction.guild.id);
+        if (!guildData) {
           const fakeMessage = {
             author: interaction.user,
             channel: interaction.channel
@@ -237,11 +231,7 @@ module.exports = {
         }
 
         // Find sprint
-        const sprint = await Sprint.findOne({
-          guildId: interaction.guild.id,
-          messageId: messageId,
-          isActive: true
-        });
+        const sprint = guildData.Sprints.find(s => s.messageId === messageId && s.isActive);
 
         if (!sprint) {
           const fakeMessage = {
@@ -281,7 +271,7 @@ module.exports = {
           lastPauseTime: null
         });
 
-        await sprint.save();
+        await guildData.save();
 
         // Update the message
         const updatedEmbed = createSprintEmbed(sprint);
@@ -328,8 +318,8 @@ module.exports = {
     // Handle Update modal submission
     if (interaction.isModalSubmit() && interaction.customId.startsWith('sprint_update_modal_')) {
       try {
-        const Sprint = getSprintModel();
-        if (!Sprint) {
+        const guildData = await getGuildWithSprints(interaction.guild.id);
+        if (!guildData) {
           const fakeMessage = {
             author: interaction.user,
             channel: interaction.channel
@@ -363,11 +353,7 @@ module.exports = {
         }
 
         // Find sprint
-        const sprint = await Sprint.findOne({
-          guildId: interaction.guild.id,
-          messageId: messageId,
-          isActive: true
-        });
+        const sprint = guildData.Sprints.find(s => s.messageId === messageId && s.isActive);
 
         if (!sprint) {
           const fakeMessage = {
@@ -398,7 +384,7 @@ module.exports = {
         // Update progress
         const oldTab = participant.currentTab;
         participant.currentTab = currentTab;
-        await sprint.save();
+        await guildData.save();
 
         // Update the message
         const updatedEmbed = createSprintEmbed(sprint);
