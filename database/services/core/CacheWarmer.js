@@ -19,7 +19,6 @@ class CacheWarmer {
    */
   start(services) {
     if (this.intervalId) {
-      console.log('⚠️  Cache warmer already running');
       return;
     }
 
@@ -53,24 +52,15 @@ class CacheWarmer {
    * @param {Object} services - Service instances
    */
   async warmSystemCache(services) {
-    if (this.isWarming) {
-      console.log('⏭️  Cache warming already in progress, skipping');
-      return;
-    }
-
-    if (!this.startupComplete) {
-      console.log('⏭️  Startup not complete, skipping cache warming');
+    if (this.isWarming || !this.startupComplete) {
       return;
     }
 
     this.isWarming = true;
-    const startTime = Date.now();
 
     try {
       // Only warm system-wide data (blacklists, global settings)
       await this.warmSystemData(services.system);
-
-      const duration = Date.now() - startTime;
       this.lastWarmTime = new Date();
     } catch (error) {
       console.error('Cache warmer error:', error.message);
@@ -85,7 +75,6 @@ class CacheWarmer {
    */
   async warmSystemData(systemService) {
     if (!systemService) {
-      console.log('⏭️  System service not available');
       return;
     }
 
@@ -96,10 +85,8 @@ class CacheWarmer {
       
       // Get blacklist info to ensure it's cached
       await systemService.getBlacklistInfo();
-      
-      console.log('   ✓ System data warmed (blacklists, settings)');
     } catch (error) {
-      console.error('   ✗ Error warming system data:', error.message);
+      console.error('Error warming system data:', error.message);
     }
   }
 

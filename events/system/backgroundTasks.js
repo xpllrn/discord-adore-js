@@ -297,9 +297,7 @@ async function resumeActiveSprints(client) {
       }
     }
     
-    if (totalActiveSprints > 0) {
-      console.log(`Sprint system: Resumed ${totalActiveSprints} active sprints`);
-    }
+
   } catch (error) {
     console.error('Sprint manager error:', error);
   }

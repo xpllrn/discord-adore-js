@@ -47,7 +47,7 @@ module.exports = {
   const endTime = Date.now();
   const startupTime = endTime - startTime;
   console.log('');
-  console.log(chalk.green(`Ready in ${startupTime}ms`));
+  console.log(chalk.green(`vleed is active [${startupTime}ms]`));
   console.log('');
 
 
