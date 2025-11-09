@@ -1089,39 +1089,6 @@ const guildSchema = new mongoose.Schema({
     }
   }],
 
-  // Dropdown Roles system
-  DropRoles: [{
-    messageId: {
-      type: String,
-      required: true
-    },
-    channelId: {
-      type: String,
-      required: true
-    },
-    roleId: {
-      type: String,
-      required: true
-    },
-    optionValue: {
-      type: String,
-      required: true
-    },
-    label: {
-      type: String,
-      required: true,
-      maxlength: 100
-    },
-    emoji: {
-      type: String,
-      required: true
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-
   // Webhooks system
   Webhooks: [{
     shortId: {
@@ -1403,11 +1370,7 @@ guildSchema.index({ 'ButtonRoles.channelId': 1 });
 guildSchema.index({ 'ButtonRoles.roleId': 1 });
 guildSchema.index({ 'ButtonRoles.buttonId': 1 }); // For button interaction lookup
 
-// Dropdown Roles indexes
-guildSchema.index({ 'DropRoles.messageId': 1 });
-guildSchema.index({ 'DropRoles.channelId': 1 });
-guildSchema.index({ 'DropRoles.roleId': 1 });
-guildSchema.index({ 'DropRoles.optionValue': 1 }); // For dropdown interaction lookup
+
 
 // Webhooks indexes
 guildSchema.index({ 'Webhooks.shortId': 1 });

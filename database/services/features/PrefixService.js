@@ -1,4 +1,4 @@
-const { ValidationError } = require('./core/errors');
+const { ValidationError } = require('../core/errors');
 
 /**
  * Prefix Service

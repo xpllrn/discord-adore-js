@@ -1,5 +1,5 @@
-const BaseService = require('./core/BaseService');
-const { ValidationError, NotFoundError, DatabaseWriteError } = require('./core/errors');
+const BaseService = require('../core/BaseService');
+const { ValidationError, NotFoundError, DatabaseWriteError } = require('../core/errors');
 
 /**
  * User Service

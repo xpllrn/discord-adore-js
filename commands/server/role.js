@@ -6,7 +6,7 @@ const { runHelpCommand } = require('../../utils/commandProcessor');
 module.exports = {
   name: "role",
   aliases: ['roles'],
-  description: `Manage reaction roles, button roles, and dropdown roles`,
+  description: `Manage reaction roles and button roles`,
   permission: 'Manage Roles',
   isGroupCommand: true,
   run: async (client, message, args) => {
@@ -38,11 +38,6 @@ module.exports = {
       case 'br':
         const buttonRoleCommand = require('./roles/buttonrole');
         return buttonRoleCommand.run(client, message, args.slice(1));
-      
-      case 'droprole':
-      case 'dr':
-        const dropRoleCommand = require('./roles/droprole');
-        return dropRoleCommand.run(client, message, args.slice(1));
       
       default:
         return runHelpCommand(message, 'role');

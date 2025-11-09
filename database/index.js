@@ -33,26 +33,31 @@ async function initializeDatabase(connectionStrings) {
 
 async function _performInitialization(connectionStrings) {
   try {
+    // Initialize the connection manager with connection strings
     await connection.connect(connectionStrings);
     
     // Get connections
     const connections = connection.getConnections();
 
     // Create models on appropriate connections
-    if (connections.user) {
+    // Support both user/guild and global/local naming
+    const userConn = connections.user || connections.global;
+    const guildConn = connections.guild || connections.local;
+
+    if (userConn) {
       // User data goes to user database
-      User = connections.user.model('User', userSchema.schema);
-      System = connections.user.model('System', systemSchema.schema);
+      User = userConn.model('User', userSchema.schema);
+      System = userConn.model('System', systemSchema.schema);
     }
 
-    if (connections.guild) {
+    if (guildConn) {
       // Guild data goes to guild database
-      Guild = connections.guild.model('Guild', guildSchema.schema);
+      Guild = guildConn.model('Guild', guildSchema.schema);
 
       // If no user connection, put user data in guild (backward compatibility)
-      if (!connections.user) {
-        User = connections.guild.model('User', userSchema.schema);
-        System = connections.guild.model('System', systemSchema.schema);
+      if (!userConn) {
+        User = guildConn.model('User', userSchema.schema);
+        System = guildConn.model('System', systemSchema.schema);
       }
     }
 

@@ -1,5 +1,5 @@
-const BaseService = require('./core/BaseService');
-const { DatabaseWriteError, ServiceError } = require('./core/errors');
+const BaseService = require('../core/BaseService');
+const { DatabaseWriteError, ServiceError } = require('../core/errors');
 const crypto = require('crypto');
 const axios = require('axios');
 

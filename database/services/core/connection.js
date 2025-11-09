@@ -52,14 +52,18 @@ class ConnectionManager {
 
       const promises = [];
 
-      // Connect to global database if provided
-      if (connectionStrings.global) {
-        promises.push(this.connectWithRetry('global', connectionStrings.global));
+      // Support both naming conventions: user/guild and global/local
+      const userConnection = connectionStrings.user || connectionStrings.global;
+      const guildConnection = connectionStrings.guild || connectionStrings.local;
+
+      // Connect to user database if provided
+      if (userConnection) {
+        promises.push(this.connectWithRetry('user', userConnection));
       }
 
-      // Connect to local database if provided
-      if (connectionStrings.local) {
-        promises.push(this.connectWithRetry('local', connectionStrings.local));
+      // Connect to guild database if provided
+      if (guildConnection) {
+        promises.push(this.connectWithRetry('guild', guildConnection));
       }
 
       // Wait for all connections to establish

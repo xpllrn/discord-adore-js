@@ -154,10 +154,7 @@ module.exports = {
 
       // Handle select menu interactions
       if (interaction.isStringSelectMenu()) {
-        // Handle dropdown role interactions
-        if (interaction.customId.startsWith('droprole_menu_')) {
-          return handleDropdownRole(interaction);
-        }
+        // Add other select menu handlers here if needed
       }
 
       // Handle modal interactions
@@ -1227,79 +1224,3 @@ async function handleButtonRole(interaction) {
   }
 }
 
-/**
- * Handle dropdown role interactions
- * @param {StringSelectMenuInteraction} interaction - The select menu interaction
- */
-async function handleDropdownRole(interaction) {
-  try {
-    await interaction.deferReply({ ephemeral: true });
-
-    const guildService = getService('guild');
-    const dropRoles = await guildService.getDropRoles(interaction.guild.id);
-
-    const selectedValue = interaction.values[0];
-    if (!selectedValue) {
-      return await interaction.editReply({
-        content: '❌ No option selected.',
-        ephemeral: true
-      });
-    }
-
-    // Find the dropdown role configuration
-    const dropRole = dropRoles.find(dr => dr.optionValue === selectedValue);
-    if (!dropRole) {
-      return await interaction.editReply({
-        content: '❌ This dropdown option is no longer configured.',
-        ephemeral: true
-      });
-    }
-
-    const role = interaction.guild.roles.cache.get(dropRole.roleId);
-    if (!role) {
-      return await interaction.editReply({
-        content: '❌ The role for this option no longer exists.',
-        ephemeral: true
-      });
-    }
-
-    const member = interaction.member;
-    const hasRole = member.roles.cache.has(role.id);
-
-    try {
-      if (hasRole) {
-        // Remove role
-        await member.roles.remove(role);
-        return await interaction.editReply({
-          content: `✅ Removed the **${role.name}** role from you.`,
-          ephemeral: true
-        });
-      } else {
-        // Add role
-        await member.roles.add(role);
-        return await interaction.editReply({
-          content: `✅ Added the **${role.name}** role to you.`,
-          ephemeral: true
-        });
-      }
-    } catch (roleError) {
-      console.error('Error managing role:', roleError);
-      return await interaction.editReply({
-        content: '❌ I don\'t have permission to manage this role.',
-        ephemeral: true
-      });
-    }
-
-  } catch (error) {
-    console.error('Error in dropdown role handler:', error);
-    
-    try {
-      return await interaction.editReply({
-        content: '❌ An error occurred while processing the dropdown role.',
-        ephemeral: true
-      });
-    } catch (replyError) {
-      // Silent fail
-    }
-  }
-}

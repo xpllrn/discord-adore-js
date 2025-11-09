@@ -19,7 +19,6 @@ module.exports = {
   run: async(client, message, args) => {
 
     const guildService = getService('guild');
-    const guildService = getService('guild');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;

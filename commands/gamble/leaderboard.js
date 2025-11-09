@@ -1,7 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
-const { getQueryOptimizer } = require('../../database/utils/QueryOptimizer');
 const { colors } = require('../../config/setup');
 const logger = require('../../utils/logger');
 

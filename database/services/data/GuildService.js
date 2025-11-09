@@ -1,5 +1,5 @@
-const BaseService = require('./core/BaseService');
-const { ValidationError, NotFoundError, DatabaseWriteError } = require('./core/errors');
+const BaseService = require('../core/BaseService');
+const { ValidationError, NotFoundError, DatabaseWriteError } = require('../core/errors');
 
 /**
  * Guild Service
@@ -195,8 +195,7 @@ class GuildService extends BaseService {
             lastUserId: null
           },
           ReactionRoles: [],
-          ButtonRoles: [],
-          DropRoles: []
+          ButtonRoles: []
         };
 
         // Save to database and cache
@@ -7390,135 +7389,7 @@ class GuildService extends BaseService {
     }
   }
 
-  // ===== DROPDOWN ROLES =====
 
-  /**
-   * Get dropdown roles
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<Object[]>} Array of dropdown roles
-   */
-  async getDropRoles(guildId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      return guildData.DropRoles || [];
-    } catch (error) {
-      console.error(`Error getting dropdown roles for guild ${guildId}:`, error.message);
-      return [];
-    }
-  }
-
-  /**
-   * Add dropdown role
-   * @param {string} guildId - Guild ID
-   * @param {Object} dropRoleData - Dropdown role data
-   * @returns {Promise<boolean>} Success status
-   */
-  async addDropRole(guildId, dropRoleData) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    if (!dropRoleData || typeof dropRoleData !== 'object') {
-      throw new ValidationError('Dropdown role data is required', 'dropRoleData', dropRoleData);
-    }
-
-    const { messageId, channelId, roleId, optionValue, label, emoji } = dropRoleData;
-
-    if (!messageId || !channelId || !roleId || !optionValue || !label || !emoji) {
-      throw new ValidationError('All dropdown role fields are required', 'dropRoleData', dropRoleData);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      const dropRoles = guildData.DropRoles || [];
-
-      dropRoles.push({
-        messageId,
-        channelId,
-        roleId,
-        optionValue,
-        label,
-        emoji,
-        createdAt: new Date()
-      });
-
-      guildData.DropRoles = dropRoles;
-      await this.set(guildId, guildData);
-      return true;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw error;
-      }
-      throw new DatabaseWriteError(`Failed to add dropdown role for guild ${guildId}`, error);
-    }
-  }
-
-  /**
-   * Remove dropdown role
-   * @param {string} guildId - Guild ID
-   * @param {string} messageId - Message ID
-   * @param {string} roleId - Role ID
-   * @returns {Promise<boolean>} Success status
-   */
-  async removeDropRole(guildId, messageId, roleId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    if (!messageId) {
-      throw new ValidationError('Message ID is required', 'messageId', messageId);
-    }
-
-    if (!roleId) {
-      throw new ValidationError('Role ID is required', 'roleId', roleId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      const dropRoles = guildData.DropRoles || [];
-      const initialLength = dropRoles.length;
-
-      guildData.DropRoles = dropRoles.filter(dr => 
-        !(dr.messageId === messageId && dr.roleId === roleId)
-      );
-
-      if (guildData.DropRoles.length < initialLength) {
-        await this.set(guildId, guildData);
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw error;
-      }
-      throw new DatabaseWriteError(`Failed to remove dropdown role for guild ${guildId}`, error);
-    }
-  }
-
-  /**
-   * Clear all dropdown roles
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<boolean>} Success status
-   */
-  async clearAllDropRoles(guildId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      guildData.DropRoles = [];
-      await this.set(guildId, guildData);
-      return true;
-    } catch (error) {
-      throw new DatabaseWriteError(`Failed to clear all dropdown roles for guild ${guildId}`, error);
-    }
-  }
 
   // ===== REQUIRED EXPERIENCE HELPER =====
 

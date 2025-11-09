@@ -1,5 +1,5 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } = require('discord.js');
-const { colors, emojis } = require('../config/setup');
+const { colors, emojis } = require('../../config/setup');
 
 /**
  * Creates and manages paginated help display

@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const config = require('../config/setup');
+const config = require('../../config/setup');
 
 /**
  * Creates the parent command overview page (page 1)

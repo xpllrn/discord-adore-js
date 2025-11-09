@@ -1,6 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { colors, emojis } = require('../config/setup');
-const { embeds } = require('../core/embeds');
+const { colors, emojis } = require('../../config/setup');
+const { embeds } = require('../../core/embeds');
 
 
 

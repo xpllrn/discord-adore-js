@@ -17,6 +17,7 @@ const BaseService = require('./core/BaseService');
 const SmartCache = require('./core/SmartCache');
 const { ConnectionManager, getConnectionManager } = require('./core/connection');
 const cacheWarmer = require('./core/CacheWarmer');
+const performanceMonitor = require('./core/PerformanceMonitor');
 const {
   ServiceError,
   DatabaseConnectionError,
@@ -46,12 +47,8 @@ async function initializeServices(config = {}) {
   try {
     console.log('🚀 Initializing Data Service Layer...');
 
-    // Initialize connection manager
+    // Get existing connection manager (should already be initialized by database/index.js)
     serviceInstances.connectionManager = getConnectionManager();
-    
-    if (config.connectionStrings) {
-      await serviceInstances.connectionManager.initialize(config.connectionStrings);
-    }
 
     // Initialize data services
     serviceInstances.guild = new GuildService();
