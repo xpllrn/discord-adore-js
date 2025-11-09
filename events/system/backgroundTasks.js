@@ -13,14 +13,10 @@ module.exports = {
   name: 'cacheReadyComplete',
   once: true,
   async execute(client) {
-    console.log('🔄 Starting background tasks...');
-    
     // Set up all background checks
     setupReminderCheck(client);
     setupGiveawayCheck(client);
     setupSprintManager(client);
-    
-    console.log('✅ Background tasks initialized');
   }
 };
 
@@ -253,7 +249,6 @@ async function resumeActiveSprints(client) {
     const { getModels } = require('../../database');
     const models = getModels();
     if (!models || !models.Guild) {
-      console.log('[Sprint Manager] Database not ready, skipping sprint resume');
       return;
     }
 
@@ -276,7 +271,6 @@ async function resumeActiveSprints(client) {
 
         // Check if sprint should have ended
         if (now >= endTime) {
-          console.log(`[Sprint Manager] Auto-ending expired sprint ${sprint.messageId}`);
           await autoEndSprint(client, guildData.GuildID, sprint.messageId);
           continue;
         }
@@ -287,7 +281,6 @@ async function resumeActiveSprints(client) {
 
         // Schedule reminder if not sent and within 30 minutes
         if (!sprint.reminderSent && timeUntilEnd <= thirtyMinutes) {
-          console.log(`[Sprint Manager] Sending immediate reminder for sprint ${sprint.messageId}`);
           await sendSprintReminder(client, guildData.GuildID, sprint.messageId);
         }
 
@@ -297,17 +290,18 @@ async function resumeActiveSprints(client) {
             try {
               await autoEndSprint(client, guildData.GuildID, sprint.messageId);
             } catch (error) {
-              console.error('[Sprint Auto-End] Error:', error);
+              console.error('Sprint auto-end error:', error);
             }
           }, timeUntilEnd);
-          console.log(`[Sprint Manager] Scheduled auto-end for sprint ${sprint.messageId} in ${Math.round(timeUntilEnd / 1000 / 60)} minutes`);
         }
       }
     }
     
-    console.log(`[Sprint Manager] Found ${totalActiveSprints} active sprints to resume`);
+    if (totalActiveSprints > 0) {
+      console.log(`Sprint system: Resumed ${totalActiveSprints} active sprints`);
+    }
   } catch (error) {
-    console.error('[Sprint Manager] Error resuming sprints:', error);
+    console.error('Sprint manager error:', error);
   }
 }
 
@@ -368,10 +362,10 @@ async function autoEndSprint(client, guildId, messageId) {
         );
       await sprintMessage.edit({ components: [disabledRow] });
     } catch (err) {
-      console.error('[Sprint Auto-End] Could not update message:', err);
+      console.error('Sprint auto-end: Could not update message:', err);
     }
   } catch (error) {
-    console.error('[Sprint Auto-End] Error:', error);
+    console.error('Sprint auto-end error:', error);
   }
 }
 
@@ -407,7 +401,7 @@ async function sendSprintReminder(client, guildId, messageId) {
     });
 
   } catch (error) {
-    console.error('[Sprint Reminder] Error:', error);
+    console.error('Sprint reminder error:', error);
   }
 }
 
@@ -509,7 +503,7 @@ async function saveSprintHistory(sprint) {
       }
     }
   } catch (error) {
-    console.error('[Save Sprint History] Error:', error);
+    console.error('Save sprint history error:', error);
   }
 }
 

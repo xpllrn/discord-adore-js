@@ -45,8 +45,6 @@ let serviceInstances = {
  */
 async function initializeServices(config = {}) {
   try {
-    console.log('🚀 Initializing Data Service Layer...');
-
     // Get existing connection manager (should already be initialized by database/index.js)
     serviceInstances.connectionManager = getConnectionManager();
 
@@ -62,11 +60,10 @@ async function initializeServices(config = {}) {
     // Start cache warmer for system-wide data (after startup delay)
     cacheWarmer.start(serviceInstances);
 
-    console.log('✅ Data Service Layer initialized successfully');
     return true;
 
   } catch (error) {
-    console.error('❌ Failed to initialize Data Service Layer:', error.message);
+    console.error('Failed to initialize Data Service Layer:', error.message);
     throw error;
   }
 }
@@ -97,7 +94,7 @@ function getConnectionManagerInstance() {
  * @returns {Promise<void>}
  */
 async function shutdownServices() {
-  console.log('🔄 Shutting down Data Service Layer...');
+  console.log('Shutting down Data Service Layer...');
 
   const shutdownPromises = [];
 
@@ -117,7 +114,7 @@ async function shutdownServices() {
   // Clear service instances
   serviceInstances = {};
 
-  console.log('✅ Data Service Layer shutdown complete');
+  console.log('Data Service Layer shutdown complete');
 }
 
 /**

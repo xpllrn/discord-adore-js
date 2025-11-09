@@ -26,7 +26,6 @@ class CacheWarmer {
     // Wait for startup to complete before starting periodic updates
     setTimeout(() => {
       this.startupComplete = true;
-      console.log('🔥 Cache warmer: Startup complete, enabling periodic updates');
       
       // Start periodic warming
       this.intervalId = setInterval(() => {
@@ -36,8 +35,6 @@ class CacheWarmer {
       // Do initial warm
       this.warmSystemCache(services);
     }, 30000); // Wait 30 seconds after startup
-
-    console.log('🔥 Cache warmer: Scheduled to start after startup');
   }
 
   /**
@@ -47,7 +44,6 @@ class CacheWarmer {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      console.log('🔥 Cache warmer stopped');
     }
   }
 
@@ -71,17 +67,13 @@ class CacheWarmer {
     const startTime = Date.now();
 
     try {
-      console.log('🔥 Cache warmer: Starting system-wide data refresh');
-
       // Only warm system-wide data (blacklists, global settings)
       await this.warmSystemData(services.system);
 
       const duration = Date.now() - startTime;
       this.lastWarmTime = new Date();
-      
-      console.log(`✅ Cache warmer: Completed in ${duration}ms`);
     } catch (error) {
-      console.error('❌ Cache warmer error:', error.message);
+      console.error('Cache warmer error:', error.message);
     } finally {
       this.isWarming = false;
     }
@@ -130,7 +122,6 @@ class CacheWarmer {
    * @param {Object} services - Service instances
    */
   async manualWarm(services) {
-    console.log('🔥 Manual cache warm triggered');
     await this.warmSystemCache(services);
   }
 }

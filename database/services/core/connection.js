@@ -45,8 +45,6 @@ class ConnectionManager {
    */
   async initialize(connectionStrings) {
     try {
-      console.log(chalk.blue('🔄 Initializing database connections...'));
-
       // Configure mongoose settings
       mongoose.set('strictQuery', false);
 
@@ -77,11 +75,10 @@ class ConnectionManager {
       // Start health monitoring
       this.startHealthMonitoring();
 
-      console.log(chalk.green('✅ Database connections initialized successfully'));
       return true;
 
     } catch (error) {
-      console.error(chalk.red('❌ Failed to initialize database connections:'), error.message);
+      console.error(chalk.red('Failed to initialize database connections:'), error.message);
       throw error;
     }
   }
@@ -98,8 +95,6 @@ class ConnectionManager {
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(chalk.blue(`🔄 Connecting to ${type} database (attempt ${attempt}/${maxRetries})...`));
-
         const connection = await this.createConnection(connectionString, type);
         this.connections[type] = connection;
         
@@ -110,7 +105,6 @@ class ConnectionManager {
         // Set up connection event handlers
         this.setupConnectionHandlers(connection, type);
 
-        console.log(chalk.green(`✅ Connected to ${type} database`));
         return;
         
       } catch (error) {
@@ -121,7 +115,7 @@ class ConnectionManager {
           // Retry delays: 2s, 5s, 10s
           const delays = [2000, 5000, 10000];
           const delay = delays[attempt - 1] || 10000;
-          console.warn(chalk.yellow(`⚠️ Connection attempt ${attempt} failed, retrying in ${delay}ms...`));
+          console.warn(chalk.yellow(`${type} database connection attempt ${attempt} failed, retrying in ${delay}ms...`));
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -183,38 +177,21 @@ class ConnectionManager {
    */
   setupConnectionHandlers(connection, type) {
     connection.on('error', (error) => {
-      console.error(chalk.red(`❌ ${type} database connection error:`), error.message);
+      console.error(chalk.red(`${type} database error:`), error.message);
       this.stats[type].errorCount++;
     });
 
     connection.on('disconnected', () => {
-      console.log(chalk.yellow(`⚠️ ${type} database disconnected`));
+      console.log(chalk.yellow(`${type} database disconnected`));
       this.stats[type].connected = false;
       this.stats[type].lastDisconnected = new Date();
     });
 
     connection.on('reconnected', () => {
-      console.log(chalk.green(`✅ ${type} database reconnected`));
+      console.log(chalk.green(`${type} database reconnected`));
       this.stats[type].connected = true;
       this.stats[type].lastConnected = new Date();
       this.stats[type].reconnectCount++;
-    });
-
-    connection.on('fullsetup', () => {
-      console.log(chalk.blue(`🔄 ${type} database replica set fully connected`));
-    });
-
-    connection.on('all', () => {
-      console.log(chalk.blue(`🔄 ${type} database all servers connected`));
-    });
-
-    // Monitor connection pool events
-    connection.on('connectionPoolCreated', () => {
-      console.log(chalk.blue(`🔄 ${type} database connection pool created`));
-    });
-
-    connection.on('connectionPoolClosed', () => {
-      console.log(chalk.yellow(`⚠️ ${type} database connection pool closed`));
     });
   }
 
@@ -277,11 +254,9 @@ class ConnectionManager {
       try {
         await this.performHealthChecks();
       } catch (error) {
-        console.error(chalk.red('❌ Health check error:'), error.message);
+        console.error(chalk.red('Health check error:'), error.message);
       }
     }, interval);
-
-    console.log(chalk.blue(`🔄 Started health monitoring (interval: ${interval}ms)`));
   }
 
   /**
@@ -304,7 +279,6 @@ class ConnectionManager {
           results.global = true; // Legacy compatibility
         }
       } catch (error) {
-        console.warn(chalk.yellow('⚠️ User database health check failed:'), error.message);
         this.stats.user.errorCount++;
       }
     }
@@ -318,7 +292,6 @@ class ConnectionManager {
           results.local = true; // Legacy compatibility
         }
       } catch (error) {
-        console.warn(chalk.yellow('⚠️ Guild database health check failed:'), error.message);
         this.stats.guild.errorCount++;
       }
     }
@@ -394,7 +367,7 @@ class ConnectionManager {
       this.healthCheckInterval = null;
     }
 
-    console.log(chalk.blue('🔄 Disconnecting from databases...'));
+    console.log(chalk.blue('Disconnecting from databases...'));
 
     const closeOptions = force ? { force: true } : {};
     const promises = [];
@@ -404,13 +377,13 @@ class ConnectionManager {
       promises.push(
         this.connections.user.close(closeOptions)
           .then(() => {
-            console.log(chalk.yellow('⚠️ Disconnected from user database'));
+            console.log(chalk.yellow('Disconnected from user database'));
             this.connections.user = null;
             this.stats.user.connected = false;
             this.stats.user.lastDisconnected = new Date();
           })
           .catch(error => {
-            console.error(chalk.red('❌ Error closing user database:'), error.message);
+            console.error(chalk.red('Error closing user database:'), error.message);
           })
       );
     }
@@ -420,19 +393,19 @@ class ConnectionManager {
       promises.push(
         this.connections.guild.close(closeOptions)
           .then(() => {
-            console.log(chalk.yellow('⚠️ Disconnected from guild database'));
+            console.log(chalk.yellow('Disconnected from guild database'));
             this.connections.guild = null;
             this.stats.guild.connected = false;
             this.stats.local.lastDisconnected = new Date();
           })
           .catch(error => {
-            console.error(chalk.red('❌ Error closing local database:'), error.message);
+            console.error(chalk.red('Error closing local database:'), error.message);
           })
       );
     }
 
     await Promise.all(promises);
-    console.log(chalk.green('✅ Database disconnection complete'));
+    console.log(chalk.green('Database disconnection complete'));
   }
 
 

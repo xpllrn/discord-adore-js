@@ -9,20 +9,18 @@ module.exports = {
     const startTime = Date.now();
 
   console.log('');
-  console.log(chalk.cyan('▄▀█ █▀▄ █▀█ █▀█ █▀▀   ░   █▀▀ ▀▄▀ █▀▀'));
-  console.log(chalk.cyan('█▀█ █▄▀ █▄█ █▀▄ ██▄   ▄   ██▄ █░█ ██▄'));
-  console.log('');
-  console.log(chalk.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
+  console.log(chalk.cyan('██╗   ██╗██╗     ███████╗███████╗██████╗     ██████╗  ██████╗ ████████╗'));
+  console.log(chalk.cyan('██║   ██║██║     ██╔════╝██╔════╝██╔══██╗    ██╔══██╗██╔═══██╗╚══██╔══╝'));
+  console.log(chalk.cyan('██║   ██║██║     █████╗  █████╗  ██║  ██║    ██████╔╝██║   ██║   ██║   '));
+  console.log(chalk.cyan('╚██╗ ██╔╝██║     ██╔══╝  ██╔══╝  ██║  ██║    ██╔══██╗██║   ██║   ██║   '));
+  console.log(chalk.cyan(' ╚████╔╝ ███████╗███████╗███████╗██████╔╝    ██████╔╝╚██████╔╝   ██║   '));
+  console.log(chalk.cyan('  ╚═══╝  ╚══════╝╚══════╝╚══════╝╚═════╝     ╚═════╝  ╚═════╝    ╚═╝   '));
   console.log('');
 
   // System initialization
-  console.log(chalk.white('>> System Initialization'));
   const guildCount = client.guilds.cache.size;
   const userCount = client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0);
-  console.log(chalk.green(`   [+] Connected to ${guildCount} servers`));
-  console.log(chalk.green(`   [+] Monitoring ${userCount.toLocaleString()} users`));
-  console.log(chalk.green(`   [+] Loaded ${client.commands.size} commands`));
-  console.log(chalk.green(`   [+] Registered ${client.eventCount} event handlers`));
+  console.log(chalk.white(`System: ${guildCount} servers, ${userCount.toLocaleString()} users, ${client.commands.size} commands, ${client.eventCount} events`));
   console.log('');
 
   // Set loading status while cache initializes
@@ -49,13 +47,7 @@ module.exports = {
   const endTime = Date.now();
   const startupTime = endTime - startTime;
   console.log('');
-  console.log(chalk.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-  console.log('');
-  console.log(chalk.green(`>> System Online - Ready in ${startupTime}ms`));
-  console.log('');
-  console.log(chalk.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-  console.log('');
-  console.log('');
+  console.log(chalk.green(`Ready in ${startupTime}ms`));
   console.log('');
 
 
@@ -90,8 +82,7 @@ async function initializeDatabaseConnection(client) {
     return;
   }
 
-  console.log(chalk.white('>> Database Connection'));
-  console.log(chalk.blue('   [~] Initializing multi-tenant database system...'));
+  console.log(chalk.white('Database: Connecting...'));
 
   // Database setup with separate databases
   const connectionConfig = {
@@ -105,32 +96,22 @@ async function initializeDatabaseConnection(client) {
 
   const dbSuccess = await initializeDatabase(connectionConfig);
   if (dbSuccess) {
-    console.log(chalk.green('   [+] User database connected'));
-    console.log(chalk.green('   [+] Guild database connected'));
-    
     // Initialize new service layer
-    console.log(chalk.blue('   [~] Initializing Data Service Layer...'));
     try {
       await initializeServices();
-      console.log(chalk.green('   [+] Service layer initialized'));
       
       // Check service health
       const health = getServiceHealth();
       if (health.overall) {
-        console.log(chalk.green('   [+] All services healthy'));
-        console.log(chalk.cyan(`   [i] Guild Service: ${health.guild ? 'Ready' : 'Not Ready'}`));
-        console.log(chalk.cyan(`   [i] User Service: ${health.user ? 'Ready' : 'Not Ready'}`));
-        console.log(chalk.cyan(`   [i] System Service: ${health.system ? 'Ready' : 'Not Ready'}`));
-        console.log(chalk.cyan(`   [i] Prefix Service: ${health.prefix ? 'Ready' : 'Not Ready'}`));
+        console.log(chalk.green('Database: Connected (user, guild, services)'));
       } else {
-        console.log(chalk.yellow('   [~] Some services not fully initialized'));
+        console.log(chalk.yellow('Database: Connected with warnings'));
       }
     } catch (error) {
-      console.log(chalk.yellow('   [~] Service layer initialization warning:', error.message));
-      console.log(chalk.yellow('   [~] Some services not fully initialized'));
+      console.log(chalk.yellow('Database: Connected with warnings -', error.message));
     }
     
-    console.log('\n');
+    console.log('');
 
     // Load and set bot status from database
     await loadBotStatusFromDatabase(client);
@@ -142,17 +123,14 @@ async function initializeDatabaseConnection(client) {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Resume active sprints
-    console.log(chalk.blue('   [~] Resuming active sprints...'));
     try {
       const { resumeActiveSprints } = require('./backgroundTasks');
       await resumeActiveSprints(client);
-      console.log(chalk.green('   [+] Sprint system initialized'));
     } catch (error) {
-      console.log(chalk.yellow('   [~] Sprint initialization warning:', error.message));
+      console.log(chalk.yellow('Sprint system warning:', error.message));
     }
     
     // Emit ready events
-    console.log(chalk.blue('   [~] Triggering delayed ready events...'));
     client.emit('databaseReady');
     client.emit('cacheReady');
     client.emit('cacheReadyComplete');
@@ -166,29 +144,13 @@ async function initializeDatabaseConnection(client) {
  * @param {Client} client - Discord client instance
  */
 async function loadBotStatusFromDatabase(client) {
-  try {
-    const { getService } = require('@services');
 
-    // Display instance information
-    const instanceName = 'vleed';
-    console.log(chalk.white('>> Instance Configuration'));
-    console.log(chalk.cyan(`   [i] Instance Name: ${instanceName}`));
-
-    // Set default bot status
-    client.user.setPresence({
-      activities: [{ name: 'stalking you', type: ActivityType.Custom }],
-      status: 'dnd'
-    });
-    console.log(chalk.green('   [+] Status: stalking you'));
-
-  } catch (error) {
-    // Fallback to default
-    client.user.setPresence({
-      activities: [{ name: 'stalking you', type: ActivityType.Custom }],
-      status: 'dnd'
-    });
-    console.log(chalk.green('   [+] Status: stalking you (default)'));
-  }
+  // Set bot status
+  client.user.setPresence({
+    activities: [{ name: 'save 31$', type: ActivityType.Custom }],
+    status: 'dnd'
+  });
+  console.log(chalk.white('Instance: vleed | Status: save 31$'));
 }
 
 /**
@@ -205,21 +167,14 @@ function showEnvironmentValidation() {
     console.log(''); // Add spacing before validation messages
 
     if (validation.hasErrors) {
-      console.log(chalk.red('>> Environment Configuration Issues'));
-      console.log(chalk.red(`   [!] Missing required variables: ${validation.missingRequired.join(', ')}`));
-      console.log(chalk.red('   [!] Please check your .env file and ensure all required variables are set.'));
+      console.log(chalk.red(`Environment: Missing required variables - ${validation.missingRequired.join(', ')}`));
       console.log('');
     }
 
     if (validation.hasWarnings) {
-      console.log(chalk.yellow('>> Webhok connection'));
-      console.log(chalk.yellow(`   [~] Missing recommended variables: ${validation.missingRecommended.join(', ')}`));
-      console.log(chalk.yellow('   [~] Some features may not work properly without these variables.'));
+      console.log(chalk.yellow(`Environment: Missing recommended variables - ${validation.missingRecommended.join(', ')}`));
       console.log('');
     }
-
-    console.log(chalk.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-    console.log('');
   }
   // If no validation issues, function does nothing (completely silent)
 }
