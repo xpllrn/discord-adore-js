@@ -16,6 +16,7 @@ module.exports = {
   console.log(chalk.cyan(' ╚████╔╝ ███████╗███████╗███████╗██████╔╝    ██████╔╝╚██████╔╝   ██║   '));
   console.log(chalk.cyan('  ╚═══╝  ╚══════╝╚══════╝╚══════╝╚═════╝     ╚═════╝  ╚═════╝    ╚═╝   '));
   console.log('');
+  console.log('');
 
   // System initialization
   const guildCount = client.guilds.cache.size;
@@ -48,6 +49,7 @@ module.exports = {
   const startupTime = endTime - startTime;
   console.log('');
   console.log(chalk.green(`vleed is active [${startupTime}ms]`));
+  console.log('');
   console.log('');
 
 
