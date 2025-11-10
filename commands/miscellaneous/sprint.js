@@ -23,17 +23,29 @@ async function findActiveSprint(guildId) {
 }
 
 async function createSprint(guildId, sprintData) {
-  const { getModels } = require('../../database');
-  const models = getModels();
-  if (!models || !models.Guild) return null;
-  
-  const guildData = await models.Guild.findOne({ GuildID: guildId });
-  if (!guildData) return null;
-  
-  guildData.Sprints.push(sprintData);
-  await guildData.save();
-  
-  return guildData.Sprints[guildData.Sprints.length - 1];
+  try {
+    const { getModels } = require('../../database');
+    const models = getModels();
+    if (!models || !models.Guild) {
+      console.error('[createSprint] Models not available');
+      return null;
+    }
+    
+    const guildData = await models.Guild.findOne({ GuildID: guildId });
+    if (!guildData) {
+      console.error('[createSprint] Guild data not found for:', guildId);
+      return null;
+    }
+    
+    guildData.Sprints.push(sprintData);
+    await guildData.save();
+    
+    console.log('[createSprint] Sprint created successfully:', sprintData.messageId);
+    return guildData.Sprints[guildData.Sprints.length - 1];
+  } catch (error) {
+    console.error('[createSprint] Error creating sprint:', error);
+    throw error;
+  }
 }
 
 module.exports = {
@@ -215,13 +227,17 @@ async function startSprint(client, message, args) {
     });
 
     if (!sprint) {
+      console.error('[startSprint] createSprint returned null');
       return embeds.warn(message, 'Failed to create sprint. Please try again.');
     }
 
     // Schedule reminder and auto-end (pass guildId separately)
     scheduleSprintTimers(client, message.guild.id, sprint, durationMs);
+    
+    console.log('[startSprint] Sprint started successfully:', sprint.messageId);
 
   } catch (error) {
+    console.error('[startSprint] Error:', error);
     logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to start reading sprint. Please try again.');
   }
