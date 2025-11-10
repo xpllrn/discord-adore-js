@@ -1249,6 +1249,20 @@ guildSchema.pre('validate', function () {
       return true;
     });
   }
+
+  // Clean up LastFMCrowns entries without required fields
+  if (this.LastFMCrowns && this.LastFMCrowns.length > 0) {
+    const originalLength = this.LastFMCrowns.length;
+    this.LastFMCrowns = this.LastFMCrowns.filter((crown) => {
+      if (!crown.artist || !crown.userId || !crown.plays) {
+        return false;
+      }
+      return true;
+    });
+    if (this.LastFMCrowns.length < originalLength) {
+      console.log(`Removed ${originalLength - this.LastFMCrowns.length} corrupted LastFMCrowns entries`);
+    }
+  }
 });
 
 // Create indexes for better performance
