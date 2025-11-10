@@ -1238,6 +1238,17 @@ guildSchema.pre('validate', function () {
       return true;
     });
   }
+
+  // Clean up MessageStats entries without required date field
+  if (this.MessageStats && this.MessageStats.length > 0) {
+    this.MessageStats = this.MessageStats.filter((stat, index) => {
+      if (!stat.date || !stat.userId) {
+        console.log(`Removing corrupted MessageStats at index ${index}:`, stat);
+        return false;
+      }
+      return true;
+    });
+  }
 });
 
 // Create indexes for better performance
