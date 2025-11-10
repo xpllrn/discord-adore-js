@@ -14,49 +14,67 @@ class StoreService extends BaseService {
       // Banknotes
       {
         id: 1,
-        name: 'Basic Banknote',
-        description: 'Increases your bank limit by 10,000 coins',
-        price: 5000,
+        name: 'Dirt Banknote',
+        description: 'Increases your bank limit by 20,000 coins',
+        price: 20000,
         category: 'banknotes',
         emoji: '💵',
-        bankLimitIncrease: 10000
+        bankLimitIncrease: 20000
       },
       {
         id: 2,
-        name: 'Premium Banknote',
+        name: 'Commoner Banknote',
         description: 'Increases your bank limit by 50,000 coins',
-        price: 20000,
+        price: 45000,
         category: 'banknotes',
         emoji: '💴',
         bankLimitIncrease: 50000
       },
       {
         id: 3,
-        name: 'Elite Banknote',
+        name: 'Regular Banknote',
         description: 'Increases your bank limit by 100,000 coins',
-        price: 50000,
+        price: 90000,
         category: 'banknotes',
         emoji: '💶',
         bankLimitIncrease: 100000
       },
-      // Items
       {
         id: 4,
+        name: 'Noble Banknote',
+        description: 'Increases your bank limit by 500,000 coins',
+        price: 400000,
+        category: 'banknotes',
+        emoji: '💷',
+        bankLimitIncrease: 500000
+      },
+      {
+        id: 5,
+        name: 'Royal Banknote',
+        description: 'Increases your bank limit by 1,000,000 coins',
+        price: 800000,
+        category: 'banknotes',
+        emoji: '💸',
+        bankLimitIncrease: 1000000
+      },
+      {
+        id: 6,
+        name: 'Mythical Banknote',
+        description: 'Increases your bank limit by 10,000,000 coins',
+        price: 8000000,
+        category: 'banknotes',
+        emoji: '💰',
+        bankLimitIncrease: 10000000
+      },
+      // Items
+      {
+        id: 7,
         name: 'Padlock',
         description: 'Protects you from being robbed',
         price: 1000,
         category: 'items',
         emoji: '🔒',
         type: 'protection'
-      },
-      {
-        id: 5,
-        name: 'Fishing Rod',
-        description: 'Allows you to fish for coins',
-        price: 2500,
-        category: 'items',
-        emoji: '🎣',
-        type: 'tool'
       }
     ];
     

@@ -110,6 +110,20 @@ module.exports = {
       if (targetWallet < 500) {
         return embeds.deny(message, `**${targetUser.displayName || targetUser.username || 'User'}** is too **poor** to rob`);
       }
+
+      // Check if target has a padlock (item ID 7)
+      const targetInventory = await userService.getInventory(targetUser.id);
+      const padlock = targetInventory.find(item => item.id === 7 && item.quantity > 0);
+      
+      if (padlock) {
+        // Remove one padlock from inventory
+        await userService.removeInventoryItem(targetUser.id, 7, 1);
+        
+        // Update rob cooldown (they still used their rob attempt)
+        await userService.setUserField(message.author.id, 'Gambling.robCooldown', new Date());
+        
+        return embeds.deny(message, `🔒 **${targetUser.displayName || targetUser.username || 'User'}** was protected by a **Padlock**! The padlock broke in the process.`);
+      }
       
       // Update rob cooldown using service layer
       await userService.setUserField(message.author.id, 'Gambling.robCooldown', new Date());
