@@ -15,15 +15,20 @@ const COLLECTIONS_TO_REMOVE = [
 
 async function removeExtraCollections() {
   try {
-    console.log('Connecting to database...');
+    console.log('Connecting to databases...');
     
-    // Connect to the database
-    await mongoose.connect(process.env.MONGO_URI, {
+    // Connect to both databases
+    const userDb = await mongoose.createConnection(process.env.USER_DATABASE, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
     
-    console.log('Connected to database');
+    const guildDb = await mongoose.createConnection(process.env.GUILD_DATABASE, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    
+    console.log('Connected to databases');
     
     // Get all collections
     const collections = await mongoose.connection.db.listCollections().toArray();
