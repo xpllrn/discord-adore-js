@@ -12,7 +12,7 @@ function formatCurrency(amount) {
 
 module.exports = {
   name: "inventory",
-  aliases: ['inv', 'items'],
+  aliases: ['inv', 'items', 'bagpack'],
   description: 'View your or someone else\'s inventory',
   syntax: 'inventory [user]',
   example: 'inventory @vwsn',

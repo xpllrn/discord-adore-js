@@ -214,8 +214,12 @@ async function startSprint(client, message, args) {
       createdBy: message.author.id
     });
 
-    // Schedule reminder and auto-end
-    scheduleSprintTimers(client, sprint, durationMs);
+    if (!sprint) {
+      return embeds.warn(message, 'Failed to create sprint. Please try again.');
+    }
+
+    // Schedule reminder and auto-end (pass guildId separately)
+    scheduleSprintTimers(client, message.guild.id, sprint, durationMs);
 
   } catch (error) {
     logger.webhook.error(error, message);
@@ -779,14 +783,14 @@ async function saveSprintHistory(sprint) {
       }
     }
   } catch (error) {
-    logger.webhook.error(error, message);
+    logger.webhook.error(error);
   }
 }
 
 /**
  * Schedule sprint timers (reminder and auto-end)
  */
-function scheduleSprintTimers(client, sprint, durationMs) {
+function scheduleSprintTimers(client, guildId, sprint, durationMs) {
   const timeUntilEnd = sprint.endTime.getTime() - Date.now();
 
   // Calculate reminder time (30 min before end, or 20% of duration if less than 30 min)
@@ -805,9 +809,9 @@ function scheduleSprintTimers(client, sprint, durationMs) {
   if (reminderTime > 0) {
     setTimeout(async () => {
       try {
-        await sendSprintReminder(client, sprint.guildId, sprint.messageId);
+        await sendSprintReminder(client, guildId, sprint.messageId);
       } catch (error) {
-        logger.webhook.error(error, message);
+        logger.webhook.error(error);
       }
     }, reminderTime);
   }
@@ -816,9 +820,9 @@ function scheduleSprintTimers(client, sprint, durationMs) {
   if (timeUntilEnd > 0) {
     setTimeout(async () => {
       try {
-        await autoEndSprint(client, sprint.guildId, sprint.messageId);
+        await autoEndSprint(client, guildId, sprint.messageId);
       } catch (error) {
-        logger.webhook.error(error, message);
+        logger.webhook.error(error);
       }
     }, timeUntilEnd);
   }
