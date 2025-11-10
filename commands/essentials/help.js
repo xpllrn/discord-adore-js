@@ -300,6 +300,6 @@ module.exports = {
 
     } else {
 
-      return message.channel.send(`https://vleed.vly.site/, check out discord @ https://vleed.vly.site/server`)
+      return message.channel.send(`https://adore.vly.site/, check out discord @ https://adore.vly.site/server`)
     }
   }}

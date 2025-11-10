@@ -39,26 +39,28 @@ async function _performInitialization(connectionStrings) {
     // Get connections
     const connections = connection.getConnections();
 
-    // Create models on appropriate connections
     // Support both user/guild and global/local naming
     const userConn = connections.user || connections.global;
     const guildConn = connections.guild || connections.local;
 
-    if (userConn) {
-      // User data goes to user database
+    // Determine which connection to use
+    // If both connections point to the same database, use only one
+    let primaryConn = userConn || guildConn;
+    
+    // Check if they're actually different databases
+    const isDifferentDatabases = userConn && guildConn && 
+      userConn.name !== guildConn.name;
+
+    if (isDifferentDatabases) {
+      // Separate databases: User and System in user DB, Guild in guild DB
       User = userConn.model('User', userSchema.schema);
       System = userConn.model('System', systemSchema.schema);
-    }
-
-    if (guildConn) {
-      // Guild data goes to guild database
       Guild = guildConn.model('Guild', guildSchema.schema);
-
-      // If no user connection, put user data in guild (backward compatibility)
-      if (!userConn) {
-        User = guildConn.model('User', userSchema.schema);
-        System = guildConn.model('System', systemSchema.schema);
-      }
+    } else {
+      // Same database or single connection: All models in one place
+      User = primaryConn.model('User', userSchema.schema);
+      Guild = primaryConn.model('Guild', guildSchema.schema);
+      System = primaryConn.model('System', systemSchema.schema);
     }
 
     // Ensure we have the required models

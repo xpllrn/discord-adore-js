@@ -8,9 +8,12 @@ require('dotenv').config();
 
 const COLLECTIONS_TO_REMOVE = [
   'welcomebuttons',
+  'welcomeButtons',
   'webhooks', 
   'spotifysessions',
-  'storeitems'
+  'spotifyauthsessions',
+  'storeitems',
+  'sprints'  // This should also be removed as it's not in the models
 ];
 
 async function removeExtraCollections() {
@@ -18,52 +21,68 @@ async function removeExtraCollections() {
     console.log('Connecting to databases...');
     
     // Connect to both databases
-    const userDb = await mongoose.createConnection(process.env.USER_DATABASE, {
+    const userDb = mongoose.createConnection(process.env.USER_DATABASE, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
     
-    const guildDb = await mongoose.createConnection(process.env.GUILD_DATABASE, {
+    const guildDb = mongoose.createConnection(process.env.GUILD_DATABASE, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
+    
+    // Wait for connections to be ready
+    await Promise.all([
+      new Promise((resolve) => userDb.once('open', resolve)),
+      new Promise((resolve) => guildDb.once('open', resolve))
+    ]);
     
     console.log('Connected to databases');
     
-    // Get all collections
-    const collections = await mongoose.connection.db.listCollections().toArray();
-    const collectionNames = collections.map(c => c.name);
+    // Check and clean USER database
+    console.log('\n=== USER DATABASE ===');
+    const userCollections = await userDb.db.listCollections().toArray();
+    const userCollectionNames = userCollections.map(c => c.name);
+    console.log('Existing collections:', userCollectionNames);
     
-    console.log('\nExisting collections:', collectionNames);
-    
-    // Remove extra collections
     for (const collectionName of COLLECTIONS_TO_REMOVE) {
-      if (collectionNames.includes(collectionName)) {
-        console.log(`\nDropping collection: ${collectionName}`);
-        await mongoose.connection.db.dropCollection(collectionName);
+      if (userCollectionNames.includes(collectionName)) {
+        console.log(`Dropping collection: ${collectionName}`);
+        await userDb.db.dropCollection(collectionName);
         console.log(`✓ Dropped ${collectionName}`);
-      } else {
-        console.log(`\n✓ Collection ${collectionName} does not exist (already clean)`);
+      }
+    }
+    
+    // Check and clean GUILD database
+    console.log('\n=== GUILD DATABASE ===');
+    const guildCollections = await guildDb.db.listCollections().toArray();
+    const guildCollectionNames = guildCollections.map(c => c.name);
+    console.log('Existing collections:', guildCollectionNames);
+    
+    for (const collectionName of COLLECTIONS_TO_REMOVE) {
+      if (guildCollectionNames.includes(collectionName)) {
+        console.log(`Dropping collection: ${collectionName}`);
+        await guildDb.db.dropCollection(collectionName);
+        console.log(`✓ Dropped ${collectionName}`);
       }
     }
     
     // Show final collections
-    const finalCollections = await mongoose.connection.db.listCollections().toArray();
-    const finalCollectionNames = finalCollections.map(c => c.name);
+    console.log('\n=== FINAL STATE ===');
+    const finalUserCollections = await userDb.db.listCollections().toArray();
+    console.log('User DB collections:', finalUserCollections.map(c => c.name));
     
-    console.log('\n=== Final collections ===');
-    finalCollectionNames.forEach(name => {
-      console.log(`  - ${name}`);
-    });
+    const finalGuildCollections = await guildDb.db.listCollections().toArray();
+    console.log('Guild DB collections:', finalGuildCollections.map(c => c.name));
     
     console.log('\n✓ Cleanup complete!');
     
+    await userDb.close();
+    await guildDb.close();
+    
   } catch (error) {
     console.error('Error removing collections:', error);
-  } finally {
-    await mongoose.connection.close();
-    console.log('\nDatabase connection closed');
-    process.exit(0);
+    process.exit(1);
   }
 }
 
