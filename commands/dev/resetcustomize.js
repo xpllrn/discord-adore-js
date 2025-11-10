@@ -18,10 +18,10 @@ module.exports = {
     await createConfirmation(
       message,
       'Are you sure you want to **reset** the bot\'s profile (avatar, banner, bio) to default in **all servers**?',
-      async (interaction) => {
+      async (interaction, sentMessage) => {
         // On approve: reset profiles in all servers
         const statusEmbed = embeds.createNormal(message, '⏳ Resetting server profiles...');
-        await interaction.editReply({ embeds: [statusEmbed], components: [] });
+        await sentMessage.edit({ embeds: [statusEmbed], components: [] });
 
         const guilds = client.guilds.cache;
         let successCount = 0;
@@ -76,7 +76,7 @@ module.exports = {
         }
 
         const successEmbed = embeds.createSuccess(message, resultMessage);
-        await interaction.editReply({ embeds: [successEmbed], components: [] });
+        await sentMessage.edit({ embeds: [successEmbed], components: [] });
       }
     );
   }
