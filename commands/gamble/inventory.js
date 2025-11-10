@@ -65,26 +65,22 @@ module.exports = {
         totalValue += itemValue * (item.quantity || 1);
       });
 
-      let description = `${emojis.success} ${userMention}: ${possessive} inventory:\n\n`;
+      let description = '';
 
       // Display items
       Object.values(itemGroups).forEach(item => {
+        const itemNumber = String(item.id).padStart(2, '0');
         const quantityText = item.totalQuantity > 1 ? ` x${item.totalQuantity}` : '';
-        const valueText = item.sellPrice ? ` (${formatCurrency(item.sellPrice)} each)` : '';
         
-        description += `${item.emoji || '📦'} **${item.name}**${quantityText}${valueText}\n`;
+        description += `**${itemNumber}** ${item.emoji || '📦'} **${item.name}**${quantityText}\n`;
         if (item.description) {
-          description += `   ${item.description}\n`;
+          description += `-# ${item.description}\n`;
         }
         description += '\n';
       });
 
-      if (totalValue > 0) {
-        description += `💰 **Total inventory value:** ${formatCurrency(totalValue)} coins`;
-      }
-
       if (isOwnInventory) {
-        description += `\n\nUse \`use <item_id>\` to use items or \`sell <item_id> [quantity]\` to sell them.`;
+        description += `Use \`use <number>\` to use items or \`sell <number> [quantity]\` to sell them.`;
       }
 
       const embed = new EmbedBuilder()

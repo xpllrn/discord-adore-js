@@ -142,6 +142,81 @@ class StoreService extends BaseService {
   async getAllItems() {
     return this.items;
   }
+
+  /**
+   * Use an item (handles item-specific logic)
+   * @param {string} userId - User ID
+   * @param {Object} item - Item to use
+   * @param {number} quantity - Quantity to use
+   * @param {Object} userService - UserService instance
+   * @returns {Promise<Object>} Result object with success and message
+   */
+  async useItem(userId, item, quantity, userService) {
+    try {
+      // Handle banknotes
+      if (item.category === 'banknotes' && item.bankLimitIncrease) {
+        const gambling = await userService.getGamblingData(userId);
+        const oldLimit = gambling.bankLimit || 0;
+        const totalIncrease = item.bankLimitIncrease * quantity;
+        const newLimit = oldLimit + totalIncrease;
+        
+        await userService.updateBankLimit(userId, newLimit);
+        
+        const quantityText = quantity > 1 ? ` x${quantity}` : '';
+        return {
+          success: true,
+          message: `Successfully used **${item.name}**${quantityText}! Your bank limit increased from **${this.formatCurrency(oldLimit)}** to **${this.formatCurrency(newLimit)}** coins.`,
+          oldLimit,
+          newLimit
+        };
+      }
+      
+      // Handle padlock - activates protection
+      if (item.id === 7 && item.type === 'protection') {
+        const gambling = await userService.getGamblingData(userId);
+        const currentProtection = gambling.padlockProtection || 0;
+        const newProtection = currentProtection + quantity;
+        
+        await userService.setUserField(userId, 'Gambling.padlockProtection', newProtection);
+        
+        const quantityText = quantity > 1 ? ` x${quantity}` : '';
+        return {
+          success: true,
+          message: `🔒 Successfully activated **${item.name}**${quantityText}! You are now protected from the next ${newProtection} robbery attempt${newProtection > 1 ? 's' : ''}.`
+        };
+      }
+      
+      // Handle other items
+      if (item.category === 'items') {
+        return {
+          success: false,
+          message: `**${item.name}** cannot be used yet. This item's functionality is coming soon!`
+        };
+      }
+      
+      // Unknown item type
+      return {
+        success: false,
+        message: `**${item.name}** cannot be used.`
+      };
+      
+    } catch (error) {
+      console.error('Error using item:', error);
+      return {
+        success: false,
+        message: 'Failed to use item. Please try again.'
+      };
+    }
+  }
+
+  /**
+   * Format currency helper
+   * @param {number} amount - Amount to format
+   * @returns {string} Formatted currency
+   */
+  formatCurrency(amount) {
+    return Math.floor(amount).toLocaleString();
+  }
 }
 
 module.exports = StoreService;
