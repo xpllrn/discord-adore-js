@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { emojis, colors } = require('../../config/setup');
 const axios = require('axios');
+const logger = require('../../utils/logger');
 
 
 

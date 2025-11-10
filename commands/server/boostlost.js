@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { colors } = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "boosters",

@@ -5,6 +5,7 @@ const { hasDiscordPermission } = require('../../utils/permissions');
 const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "webhook",

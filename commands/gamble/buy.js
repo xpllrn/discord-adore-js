@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const { colors, emojis } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 // Utility function to format currency
 function formatCurrency(amount) {

@@ -6,6 +6,7 @@ const { ensureGuildData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 const SWEAR_WORDS = [
   // General profanity

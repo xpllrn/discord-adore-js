@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { getService } = require('@services');
 const { checkSpotifyAccess, handleSpotifyError } = require('../../utils/helpers');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "repeat",

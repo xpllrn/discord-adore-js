@@ -5,6 +5,7 @@ const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 const config = require('../../config/setup');
 const { findChannel, findRole } = require('../../handlers/finder');
 const { getService } = require('@services');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "boost",

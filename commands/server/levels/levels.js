@@ -7,6 +7,7 @@ const { findUser, findRole } = require('../../../handlers/finder');
 const { createConfirmation, createPagination } = require('../../../core/buttons');
 const { getService } = require('@services');
 const { colors, emojis } = require('../../../config/setup');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "levels",

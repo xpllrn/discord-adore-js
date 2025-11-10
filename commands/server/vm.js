@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const { hasDiscordPermission, isGlobalDev } = require('../../utils/permissions');
 const { getService } = require('@services');
 const { colors, emojis } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 // Command execution tracker to prevent multiple executions
 const executionTracker = new Map();

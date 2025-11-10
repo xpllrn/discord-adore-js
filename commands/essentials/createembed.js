@@ -2,6 +2,7 @@ const { ensureGuildData } = require('../../database')
 const { MessageProcessor } = require('../../utils/embeds/embedbuilder')
 const { embeds } = require('../../core/embeds')
 const { runHelpCommand } = require('../../utils/commandProcessor')
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "createembed",

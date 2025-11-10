@@ -1,6 +1,7 @@
 const { PermissionFlagsBits, Routes } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const axios = require('axios');
+const logger = require('../../utils/logger');
 
 // Per-subcommand cooldown tracking
 const subcommandCooldowns = new Map();

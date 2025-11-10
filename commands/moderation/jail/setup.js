@@ -3,6 +3,7 @@ const { hasDiscordPermission } = require('../../../utils/permissions');
 const { embeds } = require('../../../core/embeds');
 const { colors, emojis } = require('../../../config/setup');
 const { findRole, findChannel } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "setup",

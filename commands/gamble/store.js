@@ -2,6 +2,7 @@ const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('
 const { embeds } = require('../../core/embeds');
 const { colors, emojis } = require('../../config/setup');
 const { getService } = require('@services');
+const logger = require('../../utils/logger');
 
 // Note: Specific store categories are now in ./store/ folder:
 // - ./store/banknotes.js - For banknote items

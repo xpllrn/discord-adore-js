@@ -2,6 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const config = require('../../config/setup');
 const { getService } = require('@services');
 const { checkSpotifyAccess, handleSpotifyError } = require('../../utils/helpers');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "skip",

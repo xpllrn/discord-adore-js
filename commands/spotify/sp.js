@@ -1,6 +1,7 @@
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { findUser } = require('../../handlers/finder');
 const { embeds } = require('../../core/embeds');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "sp",

@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { emojis } = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 // Utility functions embedded within the command
 function formatCurrency(amount) {

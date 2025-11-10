@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
+const logger = require('../../../utils/logger');
 
 // Utility function to format currency
 function formatCurrency(amount) {

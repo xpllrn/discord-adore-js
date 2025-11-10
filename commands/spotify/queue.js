@@ -4,6 +4,7 @@ const config = require('../../config/setup');
 const { getService } = require('@services');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { handleSpotifyError, checkSpotifyAccess, checkActiveDevices } = require('../../utils/helpers');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "queue",

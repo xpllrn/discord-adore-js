@@ -3,6 +3,7 @@ const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findRole, findChannel } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "unlock",

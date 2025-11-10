@@ -7,6 +7,7 @@ const { findChannel, findUser, findRole } = require('../../handlers/finder');
 const { getService } = require('@services');
 const config = require('../../config/setup');
 const ms = require('ms');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "giveaways",

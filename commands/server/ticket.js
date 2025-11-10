@@ -6,6 +6,7 @@ const { runHelpCommand } = require('../../utils/commandProcessor');
 const { hasDiscordPermission } = require('../../utils/permissions');
 const { findChannel, findRole } = require('../../handlers/finder');
 const { getService } = require('@services');
+const logger = require('../../utils/logger');
 
 // Cooldown map for ticket message command (1 minute)
 const ticketMessageCooldowns = new Map();

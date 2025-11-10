@@ -6,6 +6,7 @@ const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { colors } = require('../../../config/setup');
 const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "modhistory",

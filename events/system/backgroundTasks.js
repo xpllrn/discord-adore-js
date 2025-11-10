@@ -89,7 +89,9 @@ async function checkReminders(client) {
                 await user.send({ embeds: [embed], components });
 
                 if (reminder.isDaily) {
-                  const nextTrigger = new Date(now.getTime() + reminder.duration);
+                  // For daily reminders, add 24 hours from now, not the original duration
+                  const oneDayInMs = 24 * 60 * 60 * 1000;
+                  const nextTrigger = new Date(now.getTime() + oneDayInMs);
                   await userService.updateReminderNextTrigger(userId, reminder.id, nextTrigger);
                 } else {
                   await userService.removeReminder(userId, reminder.id);

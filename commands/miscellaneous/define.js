@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { colors } = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "define",

@@ -1,6 +1,7 @@
 const { PermissionFlagsBits } = require("discord.js");
 const { embeds } = require('../../core/embeds');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "purge",

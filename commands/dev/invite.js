@@ -1,4 +1,5 @@
 const { embeds } = require('../../core/embeds');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "invite",

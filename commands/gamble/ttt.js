@@ -6,6 +6,7 @@ const { colors, emojis } = require('../../config/setup');
 const { findUser } = require('../../handlers/finder');
 const { getService } = require('@services');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 
 // Utility functions
 function formatCurrency(amount) {

@@ -2,6 +2,7 @@ const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, PermissionFlagsBits } = require('../../../utils/permissions');
 const { findChannel } = require('../../../handlers/finder');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "naughty",

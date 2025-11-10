@@ -5,6 +5,7 @@ const { ensureUserData } = require('../../database');
 const { createPagination, createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "note",

@@ -6,6 +6,7 @@ const { createPagination, createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
 const ms = require('ms');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "remind",

@@ -3,6 +3,7 @@ const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "unwarn",

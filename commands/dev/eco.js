@@ -1,6 +1,7 @@
 const { embeds } = require('../../core/embeds');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { hasPermissionLevel } = require('../../utils/permissions');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "eco",

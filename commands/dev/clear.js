@@ -5,6 +5,7 @@ const { findUser } = require('../../handlers/finder');
 const { ensureUserData, ensureGuildData } = require('../../database');
 const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "clear",

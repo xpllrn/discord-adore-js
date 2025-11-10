@@ -1,5 +1,6 @@
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "selfprefix",

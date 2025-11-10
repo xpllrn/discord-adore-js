@@ -2,6 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { getService } = require('@services');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "shuffle",

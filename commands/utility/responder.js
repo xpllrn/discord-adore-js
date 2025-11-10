@@ -3,6 +3,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { Buffer } = require('buffer');
 const FileType = require('file-type');
+const logger = require('../../utils/logger');
 
 // Instagram Scraper Module
 class InstagramScraper {
