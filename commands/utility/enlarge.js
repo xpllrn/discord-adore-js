@@ -6,9 +6,9 @@ const http = require('http');
 module.exports = {
   name: "enlarge",
   aliases: ['jumbo', 'e'],
-  description: "Enlarge an emoji or emote and send it as a file. Automatically mixes 2 emojis with Google Kitchen!",
+  description: "Enlarge an emoji or emote and send it as a file.",
   syntax: 'enlarge (emoji/emote)',
-  example: 'enlarge 🥹 😗',
+  example: 'enlarge 🥹',
   run: async (client, message, args) => {
     
     let content = args.join(' ');
