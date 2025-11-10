@@ -5,7 +5,7 @@ const http = require('http');
 
 module.exports = {
   name: "enlarge",
-  aliases: ['jumbo', 'bigemoji'],
+  aliases: ['jumbo', 'e'],
   description: "Enlarge an emoji or emote and send it as a file. Automatically mixes 2 emojis with Google Kitchen!",
   syntax: 'enlarge (emoji/emote)',
   example: 'enlarge 🥹 😗',
@@ -37,7 +37,8 @@ module.exports = {
       const emoteId = customEmoteMatch[2];
       const isAnimated = content.match(/<a:/);
       const extension = isAnimated ? 'gif' : 'png';
-      const emoteUrl = `https://cdn.discordapp.com/emojis/${emoteId}.${extension}`;
+      // Add size parameter to get larger emotes (max 4096 for Discord)
+      const emoteUrl = `https://cdn.discordapp.com/emojis/${emoteId}.${extension}?size=512&quality=lossless`;
       
       try {
         const buffer = await downloadFile(emoteUrl);
