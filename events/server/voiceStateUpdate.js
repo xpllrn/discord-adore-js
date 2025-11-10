@@ -48,7 +48,6 @@ module.exports = {
 async function handleJoinToCreate(guild, member, voiceManager) {
   try {
     const guildService = getService('guild');
-    console.log(`User ${member.displayName} joined hub channel ${voiceManager.joinChannelId}. Attempting to create temporary channel.`);
     // Check if user already has a temporary channel
     const existingChannel = voiceManager.tempChannels.find(ch => ch.ownerId === member.id);
     if (existingChannel) {
@@ -118,15 +117,12 @@ async function handleJoinToCreate(guild, member, voiceManager) {
         }
       ]
     });
-    console.log(`Created temp channel ${tempChannel.name} (${tempChannel.id})`);
 
     // Add to database
     await guildService.addTempVoiceChannel(guild.id, tempChannel.id, member.id);
 
     // Move user to their new channel
-    console.log(`Moving user ${member.displayName} to new temp channel ${tempChannel.id}`);
     await member.voice.setChannel(tempChannel);
-    console.log(`Successfully moved user ${member.displayName} to temp channel`);
 
   } catch (error) {
     console.error('Join to Create Error:', error);
@@ -142,17 +138,13 @@ async function handleTempChannelLeave(guild, channel, voiceManager) {
     const tempChannel = voiceManager.tempChannels.find(ch => ch.channelId === channel.id);
     if (!tempChannel) return;
 
-    console.log(`User left temp channel ${channel.name} (${channel.id}). Members remaining: ${channel.members.size}`);
-
     // Check if channel is now empty
     if (channel.members.size === 0) {
-      console.log(`Temp channel ${channel.name} is empty, deleting...`);
       // Delete the channel
       await channel.delete('Temporary voice channel auto-cleanup');
       
       // Remove from database
       await guildService.removeTempVoiceChannel(guild.id, channel.id);
-      console.log(`Successfully deleted temp channel ${channel.id}`);
     }
 
   } catch (error) {

@@ -6,9 +6,9 @@ const http = require('http');
 module.exports = {
   name: "enlarge",
   aliases: ['jumbo', 'bigemoji'],
-  description: "Enlarge an emoji or emote and send it as a file",
-  syntax: 'enlarge (emoji/emote) or reply to a message',
-  example: 'enlarge :emoji:',
+  description: "Enlarge an emoji or emote and send it as a file. Automatically mixes 2 emojis with Google Kitchen!",
+  syntax: 'enlarge (emoji/emote)',
+  example: 'enlarge 🥹 😗',
   run: async (client, message, args) => {
     
     let content = args.join(' ');
@@ -51,22 +51,53 @@ module.exports = {
       }
     }
 
-    // Extract Unicode emoji
-    const emojiMatch = content.match(/(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u);
+    // Extract all Unicode emojis
+    const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji})/gu;
+    const emojiMatches = content.match(emojiRegex);
     
-    if (emojiMatch) {
-      const emoji = emojiMatch[0];
-      const codePoints = [...emoji].map(char => 
-        char.codePointAt(0).toString(16)
-      ).join('_');
+    if (emojiMatches && emojiMatches.length > 0) {
+      // If 2+ emojis, try kitchen mix first
+      if (emojiMatches.length >= 2) {
+        const emoji1 = emojiMatches[0];
+        const emoji2 = emojiMatches[1];
+        const mixedEmojis = `${emoji1}_${emoji2}`;
+        
+        // Try emojik kitchen API to mix emojis (max size 512)
+        const kitchenUrl = `https://emojik.vercel.app/s/${encodeURIComponent(mixedEmojis)}?size=512`;
+        
+        try {
+          const buffer = await downloadFile(kitchenUrl);
+          const attachment = new AttachmentBuilder(buffer, {
+            name: `emoji_kitchen_mix.png`
+          });
+          
+          return await message.channel.send({ files: [attachment] });
+        } catch (error) {
+          // Kitchen failed, fall through to enlarge first emoji
+        }
+      }
       
-      // Use emojik API for high-quality Unicode emojis (Google style, 256px)
-      const emojiUrl = `https://emojik.vercel.app/s/${codePoints}?size=256`;
+      // Single emoji or kitchen not available - enlarge first emoji
+      const emoji = emojiMatches[0];
+      
+      // Convert emoji to codepoints properly
+      const codePoints = [];
+      for (const char of emoji) {
+        const codePoint = char.codePointAt(0);
+        if (codePoint) {
+          codePoints.push(codePoint.toString(16));
+        }
+      }
+      
+      const codePointStr = codePoints.join('_');
+      
+      // Use emojik API for high-quality Unicode emojis (max size 512)
+      const emojiUrl = `https://emojik.vercel.app/s/${encodeURIComponent(emoji)}?size=512`;
       
       try {
         const buffer = await downloadFile(emojiUrl);
         const attachment = new AttachmentBuilder(buffer, {
-          name: `emoji_${codePoints}.png`
+          name: `emoji_${codePointStr}.png`
         });
         
         return await message.channel.send({ files: [attachment] });
