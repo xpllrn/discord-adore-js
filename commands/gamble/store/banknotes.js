@@ -45,7 +45,7 @@ module.exports = {
       
     } catch (error) {
       logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while loading banknotes');
+      return embeds.deny(message, 'There was an error executing that command. Please report this to here immediately.');
     }
   }
 };
