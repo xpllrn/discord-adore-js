@@ -7,7 +7,7 @@ const logger = require('../../utils/logger');
 module.exports = {
   name: "resetcustomize",
   aliases: ['resetcustom', 'resetprofile'],
-  description: 'Reset the bot\'s server profile (avatar, banner, bio) to default in all servers',
+  description: 'Reset the bot\'s server profile (nickname, avatar, banner, bio) to default in all servers',
   permission: 'dev',
   
   run: async (client, message, args) => {
@@ -17,7 +17,7 @@ module.exports = {
     // Show confirmation dialog
     await createConfirmation(
       message,
-      'Are you sure you want to **reset** the bot\'s profile (avatar, banner, bio) to default in **all servers**?',
+      'Are you sure you want to **reset** the bot\'s profile (nickname, avatar, banner, bio) to default in **all servers**?',
       async (interaction, sentMessage) => {
         // On approve: reset profiles in all servers
         const statusEmbed = embeds.createLoading(message, 'Resetting server profiles...');
@@ -32,11 +32,12 @@ module.exports = {
           try {
             console.log(`[RESET CUSTOMIZE] Processing guild: ${guild.name} (${guildId})`);
             
-            // Reset avatar, banner, and bio to null (default)
+            // Reset nickname, avatar, banner, and bio to null (default)
             await client.rest.patch(
               Routes.guildMember(guildId, '@me'),
               {
                 body: {
+                  nick: null,
                   avatar: null,
                   banner: null,
                   bio: null

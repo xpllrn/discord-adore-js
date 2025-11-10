@@ -973,33 +973,13 @@ async function handleWelcomeButton(interaction) {
       welcomeMessage = 'Welcome to our server!';
     }
 
-    // Check if user has already used this welcome button
+    // Get guild service for webhook management
     const { getService } = require('@services');
-    const welcomeButtonService = getService('welcomeButton');
-
-    const hasInteracted = await welcomeButtonService.hasUserInteracted(
-      guild.id,
-      interaction.message.id,
-      user.id
-    );
-
-    if (hasInteracted) {
-      const embed = embeds.createWarn(
-        { author: { id: user.id } },
-        'You already **welcomed them once**, don\'t be over excited.'
-      );
-      return await interaction.followUp({ embeds: [embed], ephemeral: true });
-    }
-
-    // Track this interaction to prevent spam
-    await welcomeButtonService.trackInteraction(guild.id, interaction.message.id, user.id);
-
-    // Create or get webhook for this user in this channel
-    const webhookService = getService('webhook');
+    const guildService = getService('guild');
     let webhook = null;
 
     // First, try to find an existing webhook for this user in this channel
-    const existingWebhooks = await webhookService.getGuildWebhooks(guild.id);
+    const existingWebhooks = await guildService.getGuildWebhooks(guild.id);
     webhook = existingWebhooks.find(wh =>
       wh.createdBy === user.id &&
       wh.channelId === interaction.channel.id &&
@@ -1017,7 +997,7 @@ async function handleWelcomeButton(interaction) {
           reason: `Welcome button webhook created by ${user.tag}`
         });
 
-        webhook = await webhookService.createWebhook(
+        webhook = await guildService.createWebhook(
           guild.id,
           user.username,
           discordWebhook.id,
@@ -1057,7 +1037,7 @@ async function handleWelcomeButton(interaction) {
       });
 
       // Update webhook last used time
-      await webhookService.updateLastUsed(webhook.webhookId);
+      await guildService.updateWebhookLastUsed(guild.id, webhook.webhookId);
 
       // Silent success - interaction is already acknowledged with deferUpdate
       return;
@@ -1067,7 +1047,7 @@ async function handleWelcomeButton(interaction) {
       if (error.code === 10015 || error.message.includes('Unknown Webhook')) {
         try {
           // Remove the invalid webhook from database
-          await webhookService.deleteWebhook(webhook.webhookId);
+          await guildService.deleteWebhook(guild.id, webhook.webhookId);
 
           // Create a new webhook
           const discordWebhook = await interaction.channel.createWebhook({
@@ -1076,7 +1056,7 @@ async function handleWelcomeButton(interaction) {
             reason: `Welcome button webhook recreated by ${user.tag}`
           });
 
-          const newWebhook = await webhookService.createWebhook(
+          const newWebhook = await guildService.createWebhook(
             guild.id,
             user.username,
             discordWebhook.id,
@@ -1106,7 +1086,7 @@ async function handleWelcomeButton(interaction) {
           });
 
           // Update webhook last used time
-          await webhookService.updateLastUsed(newWebhook.webhookId);
+          await guildService.updateWebhookLastUsed(guild.id, newWebhook.webhookId);
 
           // Silent success
           return;
