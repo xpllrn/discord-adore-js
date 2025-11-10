@@ -1,7 +1,6 @@
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { checkUserRoleHierarchy, checkBotRoleHierarchy } = require('../../../utils/permissions');
-const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { ensureGuildData } = require('../../../database');
 const { createConfirmation } = require('../../../core/buttons');
 const { getService } = require('@services');
@@ -34,7 +33,7 @@ module.exports = {
       const label = args.slice(5).join(' ');
 
       if (!messageLink || !roleName || !style || !emoji || !label) {
-        return runHelpCommand(message, 'buttonrole');
+        return false;
       }
 
       // Parse message link
@@ -179,7 +178,7 @@ module.exports = {
       const roleName = args[2];
 
       if (!messageLink || !roleName) {
-        return runHelpCommand(message, 'buttonrole');
+        return false;
       }
 
       // Parse message link
@@ -345,7 +344,7 @@ module.exports = {
       const messageLink = args[1];
 
       if (!messageLink) {
-        return runHelpCommand(message, 'buttonrole');
+        return false;
       }
 
       // Parse message link
@@ -394,7 +393,7 @@ module.exports = {
       );
 
     } else {
-      return runHelpCommand(message, 'buttonrole');
+      return false;
     }
   }
 }

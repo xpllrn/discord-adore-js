@@ -2,7 +2,6 @@ const { ensureGuildData } = require('../../../database');
 const { embeds } = require('../../../core/embeds');
 const { createConfirmation } = require('../../../core/buttons');
 const { hasDiscordPermission, checkUserRoleHierarchy, checkBotRoleHierarchy, checkUserMemberHierarchy, checkSelfAction, checkBotAction, checkDiscordActionable } = require('../../../utils/permissions');
-const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findRole, findUser } = require('../../../handlers/finder');
 const { PermissionFlagsBits } = require('discord.js');
 const colorLib = require('color');
@@ -41,7 +40,7 @@ module.exports = {
       const roleName = args.slice(1).join(' ');
 
       if (!roleName) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       try {
@@ -68,7 +67,7 @@ module.exports = {
       };
 
       if (!args[1]) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       const roleResult = findRole(message.guild, args.slice(1).join(' '));
@@ -121,7 +120,7 @@ module.exports = {
       };
 
       if (!args[1] || !args[2]) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       let roleResult = null;
@@ -140,7 +139,7 @@ module.exports = {
       }
 
       if (!roleResult || !newName) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       const role = roleResult.role;
@@ -169,7 +168,7 @@ module.exports = {
       };
 
       if (!args[1] || !args[2]) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       // For color command, try different parsing approaches
@@ -203,12 +202,12 @@ module.exports = {
         }
 
         if (!roleFound) {
-          return runHelpCommand(message, 'role');
+          return false;
         }
       }
 
       if (!role || colorArgs.length === 0) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       // Check role hierarchy using utils/permissions.js
@@ -251,7 +250,7 @@ module.exports = {
       };
 
       if (!args[1] || !args[2] || !args[3]) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       // For gradient command, try different parsing approaches
@@ -282,12 +281,12 @@ module.exports = {
         }
 
         if (!roleFound) {
-          return runHelpCommand(message, 'role');
+          return false;
         }
       }
 
       if (!role || colorArgs.length < 2) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       // Check role hierarchy using utils/permissions.js
@@ -361,7 +360,7 @@ module.exports = {
       };
 
       if (!args[1]) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       const roleResult = findRole(message.guild, args.slice(1).join(' '));
@@ -421,7 +420,7 @@ module.exports = {
       };
 
       if (!args[1] || !args[2]) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       // Check if server has boost level 2+ for role icons
@@ -457,7 +456,7 @@ module.exports = {
       }
 
       if (!role) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       let emoji = emojiArg;
@@ -537,7 +536,7 @@ module.exports = {
       }
 
       if (!args[1]) {
-        return runHelpCommand(message, 'role');
+        return false;
       }
 
       const roleResult = findRole(message.guild, args.slice(1).join(' '));
@@ -628,7 +627,7 @@ module.exports = {
 
     // DEFAULT ROLE TOGGLE (no subcommand)
     if (!args[0]) {
-      return runHelpCommand(message, 'role');
+      return false;
     }
 
     // Main role toggle functionality: ,role (member) <role name>

@@ -1,7 +1,6 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { hasDiscordPermission } = require('../../utils/permissions');
-const { runHelpCommand } = require('../../utils/commandProcessor');
 
 module.exports = {
   name: "role",
@@ -22,7 +21,7 @@ module.exports = {
     }
 
     if (!args[0]) {
-      return runHelpCommand(message, 'role');
+      return false;
     }
 
     const subcommand = args[0].toLowerCase();
@@ -40,7 +39,7 @@ module.exports = {
         return buttonRoleCommand.run(client, message, args.slice(1));
       
       default:
-        return runHelpCommand(message, 'role');
+        return false;
     }
   }
 }

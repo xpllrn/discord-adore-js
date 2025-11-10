@@ -36,9 +36,20 @@ module.exports = {
         }
       } else {
         // Get users from current guild only
-        const guildMembers = await message.guild.members.fetch();
-        userIds = Array.from(guildMembers.keys());
-        scopeTitle = `Wealth Leaderboard in ${message.guild.name}`;
+        try {
+          const guildMembers = await message.guild.members.fetch({ time: 10000 });
+          userIds = Array.from(guildMembers.keys());
+          scopeTitle = `Wealth Leaderboard in ${message.guild.name}`;
+        } catch (error) {
+          // If fetching all members fails, fall back to cached members
+          logger.webhook.error(error, message);
+          const cachedMembers = message.guild.members.cache;
+          if (cachedMembers.size === 0) {
+            return embeds.deny(message, 'Unable to fetch server members. Please try again later.');
+          }
+          userIds = Array.from(cachedMembers.keys());
+          scopeTitle = `Wealth Leaderboard in ${message.guild.name}`;
+        }
       }
 
       if (userIds.length === 0) {

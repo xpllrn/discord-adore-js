@@ -2123,7 +2123,7 @@ class Crowns {
                     const artistUrl = `https://www.last.fm/music/${encodeURIComponent(crown.artistName)}`;
                     const claimedDate = new Date(crown.claimedAt).toLocaleDateString();
                     
-                    return `\`${globalIndex}\` [**${crown.artistName}**](${artistUrl}) - **${crown.plays.toLocaleString()}** ${crown.plays === 1 ? 'play' : 'plays'} (${claimedDate})`;
+                    return `\`${globalIndex}\` [**${crown.artistName}**](${artistUrl}) - **${crown.plays.toLocaleString()}** ${crown.plays === 1 ? 'play' : 'plays'} (\`${claimedDate}\`)`;
                 }).join('\n');
 
                 const fmUsername = await userService.getLastFMUsername(targetUserId);
