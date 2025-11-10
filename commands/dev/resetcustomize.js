@@ -20,7 +20,7 @@ module.exports = {
       'Are you sure you want to **reset** the bot\'s profile (avatar, banner, bio) to default in **all servers**?',
       async (interaction, sentMessage) => {
         // On approve: reset profiles in all servers
-        const statusEmbed = embeds.createNormal(message, '⏳ Resetting server profiles...');
+        const statusEmbed = embeds.createLoading(message, 'Resetting server profiles...');
         await sentMessage.edit({ embeds: [statusEmbed], components: [] });
 
         const guilds = client.guilds.cache;
