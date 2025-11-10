@@ -40,7 +40,6 @@ async function createSprint(guildId, sprintData) {
     guildData.Sprints.push(sprintData);
     await guildData.save();
     
-    console.log('[createSprint] Sprint created successfully:', sprintData.messageId);
     return guildData.Sprints[guildData.Sprints.length - 1];
   } catch (error) {
     console.error('[createSprint] Error creating sprint:', error);
@@ -233,8 +232,6 @@ async function startSprint(client, message, args) {
 
     // Schedule reminder and auto-end (pass guildId separately)
     scheduleSprintTimers(client, message.guild.id, sprint, durationMs);
-    
-    console.log('[startSprint] Sprint started successfully:', sprint.messageId);
 
   } catch (error) {
     console.error('[startSprint] Error:', error);

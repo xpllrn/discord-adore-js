@@ -218,11 +218,9 @@ function handleCooldown(message, command) {
  * @returns {Promise<string>} Guild prefix
  */
 async function getGuildPrefix(guildId) {
-  console.log(`🔍 [PREFIX-PROCESSOR-GET] Getting prefix for guild: "${guildId}" (type: ${typeof guildId})`);
   try {
     const prefixService = getService('prefix');
     const result = await prefixService.getGuildPrefix(guildId);
-    console.log(`📊 [PREFIX-PROCESSOR-GET] Returning prefix: "${result}" (type: ${typeof result})`);
     return result;
   } catch (error) {
     console.error('Error getting guild prefix:', error.message);

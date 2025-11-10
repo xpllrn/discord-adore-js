@@ -84,6 +84,32 @@ module.exports = {
             if (!fmUsername) {
                 return embeds.warn(message, error(message.author, message.author, 'notConnected'));
             }
+
+            // Auto-refresh library if stale (older than 24 hours)
+            try {
+                const library = await userService.getLastFMLibrary(message.author.id);
+                const shouldRefresh = !library || 
+                                     !library.lastIndexed || 
+                                     (Date.now() - new Date(library.lastIndexed).getTime()) > 24 * 60 * 60 * 1000;
+
+                if (shouldRefresh) {
+                    console.log(`[LastFM Auto-Refresh] Refreshing library for ${message.author.tag} (${message.author.id})`);
+                    // Silently refresh library in background (don't block the command)
+                    setImmediate(async () => {
+                        try {
+                            const libraryIndexer = new Library(message.author.id, fmUsername, message, null);
+                            await libraryIndexer.index();
+                            console.log(`[LastFM Auto-Refresh] Completed for ${message.author.tag}`);
+                        } catch (error) {
+                            // Silent fail - don't interrupt user's command
+                            console.error('[LastFM Auto-Refresh] Error:', error.message);
+                        }
+                    });
+                }
+            } catch (error) {
+                // Silent fail - don't interrupt user's command
+                console.error('[LastFM Auto-Refresh Check] Error:', error.message);
+            }
         }
 
         switch (command) {
@@ -720,8 +746,10 @@ class Library {
     async index() {
         try {
             // Index artists
-            const loadingEmbed1 = embeds.createLoading(this.message, `Indexing your **Last.fm** artist library..`);
-            await this.msg.edit({ embeds: [loadingEmbed1] });
+            if (this.msg) {
+                const loadingEmbed1 = embeds.createLoading(this.message, `Indexing your **Last.fm** artist library..`);
+                await this.msg.edit({ embeds: [loadingEmbed1] });
+            }
 
             await this.query('artist', this.artistPage);
 
@@ -731,13 +759,18 @@ class Library {
             }
 
             if (this.totalArtists === 0) {
-                const warnEmbed = embeds.createWarn(this.message, `Aborted indexing your **Last.fm** artist library - No plays available!`);
-                return this.msg.edit({ embeds: [warnEmbed] });
+                if (this.msg) {
+                    const warnEmbed = embeds.createWarn(this.message, `Aborted indexing your **Last.fm** artist library - No plays available!`);
+                    return this.msg.edit({ embeds: [warnEmbed] });
+                }
+                return;
             }
 
             // Index albums
-            const loadingEmbed2 = embeds.createLoading(this.message, `Indexing your **Last.fm** album library..`);
-            await this.msg.edit({ embeds: [loadingEmbed2] });
+            if (this.msg) {
+                const loadingEmbed2 = embeds.createLoading(this.message, `Indexing your **Last.fm** album library..`);
+                await this.msg.edit({ embeds: [loadingEmbed2] });
+            }
 
             await this.query('album', this.albumPage);
 
@@ -747,8 +780,10 @@ class Library {
             }
 
             // Index tracks
-            const loadingEmbed3 = embeds.createLoading(this.message, `Indexing your **Last.fm** track library..`);
-            await this.msg.edit({ embeds: [loadingEmbed3] });
+            if (this.msg) {
+                const loadingEmbed3 = embeds.createLoading(this.message, `Indexing your **Last.fm** track library..`);
+                await this.msg.edit({ embeds: [loadingEmbed3] });
+            }
 
             await this.query('track', this.trackPage);
 
@@ -758,8 +793,10 @@ class Library {
             }
 
             // Save to database
-            const loadingEmbed4 = embeds.createLoading(this.message, `Saving your **Last.fm** artists, albums, and tracks..`);
-            await this.msg.edit({ embeds: [loadingEmbed4] });
+            if (this.msg) {
+                const loadingEmbed4 = embeds.createLoading(this.message, `Saving your **Last.fm** artists, albums, and tracks..`);
+                await this.msg.edit({ embeds: [loadingEmbed4] });
+            }
 
             await this.saveUserLibrary();
 
@@ -789,7 +826,8 @@ class Library {
                 artist: artist.name,
                 plays: parseInt(playcount)
             })),
-            lastUpdated: new Date()
+            lastIndexed: new Date(),
+            lastUpdated: new Date() // Keep for backward compatibility
         };
 
         await userService.setLastFMLibrary(this.userId, libraryData);
