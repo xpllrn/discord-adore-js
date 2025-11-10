@@ -32,6 +32,9 @@ module.exports = {
 
   try {
     await initializeDatabaseConnection(client);
+    
+    // Run one-time data reset
+    await resetLastFMAndSprintData();
   } catch (error) {
     console.log(chalk.red('Database initialization failed:', error.message));
 
@@ -179,4 +182,108 @@ function showEnvironmentValidation() {
     }
   }
   // If no validation issues, function does nothing (completely silent)
+}
+
+/**
+ * Reset all LastFM and Sprint data on startup
+ */
+async function resetLastFMAndSprintData() {
+  try {
+    console.log(chalk.yellow('🔧 Resetting LastFM and Sprint data...'));
+    
+    const { getModels } = require('../../database');
+    const models = getModels();
+    
+    if (!models || !models.Guild || !models.User) {
+      console.log(chalk.yellow('   Skipped - Models not available'));
+      return;
+    }
+
+    const Guild = models.Guild;
+    const User = models.User;
+    
+    // Reset Guild data
+    const guilds = await Guild.find({});
+    let guildsUpdated = 0;
+    let totalLastFMCrownsRemoved = 0;
+    let totalMessageStatsRemoved = 0;
+    let totalSprintsRemoved = 0;
+
+    for (const guild of guilds) {
+      let needsUpdate = false;
+
+      // Remove all LastFM Crowns
+      if (guild.LastFMCrowns && guild.LastFMCrowns.length > 0) {
+        totalLastFMCrownsRemoved += guild.LastFMCrowns.length;
+        guild.LastFMCrowns = [];
+        needsUpdate = true;
+      }
+
+      // Clean MessageStats (remove corrupted ones)
+      if (guild.MessageStats && guild.MessageStats.length > 0) {
+        const originalLength = guild.MessageStats.length;
+        guild.MessageStats = guild.MessageStats.filter(stat => 
+          stat.date && stat.userId
+        );
+        const removed = originalLength - guild.MessageStats.length;
+        if (removed > 0) {
+          totalMessageStatsRemoved += removed;
+          needsUpdate = true;
+        }
+      }
+
+      // Remove all Sprints
+      if (guild.Sprints && guild.Sprints.length > 0) {
+        totalSprintsRemoved += guild.Sprints.length;
+        guild.Sprints = [];
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        await guild.save();
+        guildsUpdated++;
+      }
+    }
+
+    // Reset User data
+    const users = await User.find({});
+    let usersUpdated = 0;
+    let totalLibrariesRemoved = 0;
+    let totalSprintHistoryRemoved = 0;
+
+    for (const user of users) {
+      let needsUpdate = false;
+
+      // Remove LastFM username
+      if (user.LastFMUsername) {
+        user.LastFMUsername = null;
+        needsUpdate = true;
+      }
+
+      // Remove LastFM library
+      if (user.LastFMLibrary) {
+        user.LastFMLibrary = null;
+        totalLibrariesRemoved++;
+        needsUpdate = true;
+      }
+
+      // Remove Sprint history
+      if (user.SprintHistory && user.SprintHistory.length > 0) {
+        totalSprintHistoryRemoved += user.SprintHistory.length;
+        user.SprintHistory = [];
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        await user.save();
+        usersUpdated++;
+      }
+    }
+
+    console.log(chalk.green(`✅ Reset complete: ${guildsUpdated} guilds, ${usersUpdated} users updated`));
+    console.log(chalk.gray(`   Removed: ${totalLastFMCrownsRemoved} crowns, ${totalMessageStatsRemoved} corrupted stats, ${totalSprintsRemoved} sprints, ${totalLibrariesRemoved} libraries`));
+    
+  } catch (error) {
+    console.log(chalk.red('❌ Reset failed:', error.message));
+  }
 }

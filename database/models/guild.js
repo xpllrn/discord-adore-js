@@ -1241,26 +1241,23 @@ guildSchema.pre('validate', function () {
 
   // Clean up MessageStats entries without required date field
   if (this.MessageStats && this.MessageStats.length > 0) {
-    this.MessageStats = this.MessageStats.filter((stat, index) => {
-      if (!stat.date || !stat.userId) {
-        console.log(`Removing corrupted MessageStats at index ${index}:`, stat);
-        return false;
-      }
-      return true;
+    const originalLength = this.MessageStats.length;
+    this.MessageStats = this.MessageStats.filter((stat) => {
+      return stat.date && stat.userId;
     });
+    if (this.MessageStats.length < originalLength) {
+      console.log(`[Guild ${this.GuildID}] Removed ${originalLength - this.MessageStats.length} corrupted MessageStats entries`);
+    }
   }
 
   // Clean up LastFMCrowns entries without required fields
   if (this.LastFMCrowns && this.LastFMCrowns.length > 0) {
     const originalLength = this.LastFMCrowns.length;
     this.LastFMCrowns = this.LastFMCrowns.filter((crown) => {
-      if (!crown.artist || !crown.userId || !crown.plays) {
-        return false;
-      }
-      return true;
+      return crown.artist && crown.userId && crown.plays;
     });
     if (this.LastFMCrowns.length < originalLength) {
-      console.log(`Removed ${originalLength - this.LastFMCrowns.length} corrupted LastFMCrowns entries`);
+      console.log(`[Guild ${this.GuildID}] Removed ${originalLength - this.LastFMCrowns.length} corrupted LastFMCrowns entries`);
     }
   }
 });
