@@ -3,6 +3,34 @@
  * Provides centralized access to all data services
  */
 
+// Service instances (singletons) - defined early to avoid circular dependency warnings
+let serviceInstances = {
+  guild: null,
+  user: null,
+  prefix: null,
+  spotify: null,
+  store: null,
+  system: null,
+  antinuke: null,
+  connectionManager: null
+};
+
+/**
+ * Get service instance by name
+ * @param {string} serviceName - Name of the service
+ * @returns {Object} Service instance
+ */
+function getService(serviceName) {
+  const service = serviceInstances[serviceName];
+  if (!service) {
+    throw new Error(`Service '${serviceName}' not initialized or not found`);
+  }
+  return service;
+}
+
+// Export getService immediately to prevent circular dependency warnings
+exports.getService = getService;
+
 // Data services (match collections)
 const GuildService = require('./data/GuildService');
 const UserService = require('./data/UserService');
@@ -29,18 +57,6 @@ const {
   NotFoundError,
   ErrorHandler
 } = require('./core/errors');
-
-// Service instances (singletons)
-let serviceInstances = {
-  guild: null,
-  user: null,
-  prefix: null,
-  spotify: null,
-  store: null,
-  system: null,
-  antinuke: null,
-  connectionManager: null
-};
 
 /**
  * Initialize all services
@@ -74,18 +90,7 @@ async function initializeServices(config = {}) {
   }
 }
 
-/**
- * Get service instance by name
- * @param {string} serviceName - Name of the service
- * @returns {Object} Service instance
- */
-function getService(serviceName) {
-  const service = serviceInstances[serviceName];
-  if (!service) {
-    throw new Error(`Service '${serviceName}' not initialized or not found`);
-  }
-  return service;
-}
+
 
 /**
  * Get connection manager instance
