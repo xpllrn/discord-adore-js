@@ -83,9 +83,9 @@ module.exports = {
 
         // Show next day's potential reward
         const nextReward = calculateDailyReward(newStreak + 1);
-        description += `,Next daily: **${formatCurrency(nextReward)}** coins`;
+        description += `, next daily: **${formatCurrency(nextReward)}** coins`;
       } else {
-        description += `,Keep your streak for better rewards!`;
+        description += `, keep your streak for better rewards!`;
       }
 
       return embeds.success(message, description.replace(`${emojis.success} <@${message.author.id}>: `, ''));
