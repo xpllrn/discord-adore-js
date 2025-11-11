@@ -3059,12 +3059,12 @@ class GuildService extends BaseService {
 
       if (userIndex !== -1) {
         messageStats[userIndex].count = (messageStats[userIndex].count || 0) + 1;
-        messageStats[userIndex].lastMessage = new Date();
+        messageStats[userIndex].date = new Date();
       } else {
         messageStats.push({
           userId,
           count: 1,
-          lastMessage: new Date()
+          date: new Date()
         });
       }
 
