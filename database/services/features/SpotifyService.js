@@ -720,7 +720,20 @@ class SpotifyService extends BaseService {
           }
           throw new ServiceError('PLAYBACK_ERROR', 'Failed to control playback');
         case 404:
-          if (error.config.url.includes('/player')) {
+          // Only treat as NO_ACTIVE_DEVICE for actual playback control endpoints
+          // Exclude data endpoints like recently-played, top tracks, etc.
+          const url = error.config.url || '';
+          const isPlaybackControl = url.includes('/player/play') || 
+                                   url.includes('/player/pause') || 
+                                   url.includes('/player/next') || 
+                                   url.includes('/player/previous') || 
+                                   url.includes('/player/volume') || 
+                                   url.includes('/player/repeat') || 
+                                   url.includes('/player/shuffle') ||
+                                   url.includes('/player/queue') ||
+                                   url.includes('/player/currently-playing');
+          
+          if (isPlaybackControl) {
             throw new ServiceError('NO_ACTIVE_DEVICE', 'No active Spotify device found');
           }
           throw new ServiceError('NOT_FOUND', 'Resource not found');

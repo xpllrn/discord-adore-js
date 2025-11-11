@@ -1,5 +1,6 @@
 const webhookLogger = require('../../utils/webhookLogger');
-const { AuditLogEvent } = require('discord.js');
+const { AuditLogEvent, PermissionFlagsBits } = require('discord.js');
+const { getService } = require('@services');
 
 module.exports = {
   name: 'channelDelete',
@@ -23,6 +24,36 @@ module.exports = {
         }
       } catch (auditError) {
         // Silent fail if can't access audit logs
+      }
+
+      // Antinuke check
+      if (executor && !executor.bot) {
+        try {
+          const antinukeService = getService('antinuke');
+          const check = await antinukeService.checkAction(channel.guild.id, executor.id, 'channel');
+          
+          if (check.blocked) {
+            const settings = await antinukeService.getSettings(channel.guild.id);
+            const punishment = settings.modules.channel.punishment || 'strip';
+
+            await antinukeService.applyPunishment(
+              channel.guild,
+              executor.id,
+              punishment,
+              'Antinuke: Mass channel deletion detected',
+              [PermissionFlagsBits.ManageChannels]
+            );
+
+            await antinukeService.logAction(
+              channel.guild.id,
+              'channel_delete_blocked',
+              executor.id,
+              `Blocked mass channel deletion - ${check.reason} - Punishment: ${punishment}`
+            );
+          }
+        } catch (antinukeError) {
+          // Silent fail for antinuke
+        }
       }
 
       const embed = webhookLogger.createServerEventLog({

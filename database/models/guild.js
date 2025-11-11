@@ -1203,6 +1203,218 @@ const guildSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
+  }],
+
+  // Antinuke system
+  Antinuke: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    whitelist: [{
+      id: {
+        type: String,
+        required: true
+      },
+      type: {
+        type: String,
+        enum: ['user', 'bot'],
+        required: true
+      },
+      addedBy: {
+        type: String,
+        required: true
+      },
+      addedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    admins: [{
+      userId: {
+        type: String,
+        required: true
+      },
+      addedBy: {
+        type: String,
+        required: true
+      },
+      addedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    modules: {
+      role: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        limit: {
+          type: Number,
+          default: 3,
+          min: 1,
+          max: 10
+        },
+        timeframe: {
+          type: Number,
+          default: 10000 // 10 seconds
+        },
+        punishment: {
+          type: String,
+          enum: ['strip', 'kick', 'ban'],
+          default: 'strip'
+        }
+      },
+      kick: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        limit: {
+          type: Number,
+          default: 3,
+          min: 1,
+          max: 10
+        },
+        timeframe: {
+          type: Number,
+          default: 10000
+        },
+        punishment: {
+          type: String,
+          enum: ['strip', 'kick', 'ban'],
+          default: 'strip'
+        }
+      },
+      ban: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        limit: {
+          type: Number,
+          default: 3,
+          min: 1,
+          max: 10
+        },
+        timeframe: {
+          type: Number,
+          default: 10000
+        },
+        punishment: {
+          type: String,
+          enum: ['strip', 'kick', 'ban'],
+          default: 'strip'
+        }
+      },
+      channel: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        limit: {
+          type: Number,
+          default: 3,
+          min: 1,
+          max: 10
+        },
+        timeframe: {
+          type: Number,
+          default: 10000
+        },
+        punishment: {
+          type: String,
+          enum: ['strip', 'kick', 'ban'],
+          default: 'strip'
+        }
+      },
+      webhook: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        limit: {
+          type: Number,
+          default: 3,
+          min: 1,
+          max: 10
+        },
+        timeframe: {
+          type: Number,
+          default: 10000
+        },
+        punishment: {
+          type: String,
+          enum: ['strip', 'kick', 'ban'],
+          default: 'strip'
+        }
+      },
+      botadd: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        punishment: {
+          type: String,
+          enum: ['strip', 'kick', 'ban'],
+          default: 'kick'
+        }
+      },
+      permissions: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        punishment: {
+          type: String,
+          enum: ['strip', 'kick', 'ban'],
+          default: 'strip'
+        },
+        watched: [{
+          type: String,
+          enum: ['Administrator', 'BanMembers', 'KickMembers', 'ModerateMembers', 'MentionEveryone', 'ManageGuild', 'ManageChannels', 'ManageRoles', 'ManageWebhooks']
+        }]
+      }
+    },
+    logs: [{
+      action: {
+        type: String,
+        required: true
+      },
+      userId: {
+        type: String,
+        required: true
+      },
+      details: {
+        type: String,
+        default: null
+      },
+      timestamp: {
+        type: Date,
+        default: Date.now
+      }
+    }]
+  },
+
+  // Command Aliases - guild-wide shortcuts for commands
+  Aliases: [{
+    shortcut: {
+      type: String,
+      required: true
+    },
+    command: {
+      type: String,
+      required: true
+    },
+    createdBy: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
   }]
 }, {
   timestamps: true
@@ -1423,6 +1635,15 @@ guildSchema.index({ 'Sprints.isActive': 1 });
 guildSchema.index({ 'Sprints.endTime': 1 }); // For finding sprints that need to end
 guildSchema.index({ 'Sprints.participants.userId': 1 });
 guildSchema.index({ 'Sprints.createdAt': -1 }); // Recent sprints first
+
+// Antinuke indexes
+guildSchema.index({ 'Antinuke.enabled': 1 });
+guildSchema.index({ 'Antinuke.whitelist.id': 1 });
+guildSchema.index({ 'Antinuke.admins.userId': 1 });
+guildSchema.index({ 'Antinuke.logs.timestamp': -1 }); // Recent logs first
+
+// Aliases indexes
+guildSchema.index({ 'Aliases.shortcut': 1 }); // Alias lookups
 
 module.exports = {
   schema: guildSchema,

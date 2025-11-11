@@ -4,7 +4,7 @@ const logger = require('../../utils/logger');
 
 module.exports = {
   name: "selfprefix",
-  aliases: ['sp'],
+  aliases: ['selfp'],
   description: `Manage your personal prefix`,
   isGroupCommand: true,
 

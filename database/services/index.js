@@ -12,6 +12,7 @@ const SystemService = require('./data/SystemService');
 const PrefixService = require('./features/PrefixService');
 const SpotifyService = require('./features/SpotifyService');
 const StoreService = require('./features/StoreService');
+const AntinukeService = require('./features/AntinukeService');
 
 // Core infrastructure
 const BaseService = require('./core/BaseService');
@@ -37,6 +38,7 @@ let serviceInstances = {
   spotify: null,
   store: null,
   system: null,
+  antinuke: null,
   connectionManager: null
 };
 
@@ -58,6 +60,7 @@ async function initializeServices(config = {}) {
     // Initialize feature services
     serviceInstances.spotify = new SpotifyService();
     serviceInstances.store = new StoreService();
+    serviceInstances.antinuke = new AntinukeService();
     serviceInstances.prefix = new PrefixService(serviceInstances.guild, serviceInstances.user);
 
     // Start cache warmer for system-wide data (after startup delay)
@@ -221,5 +224,6 @@ module.exports = {
   SystemService,
   PrefixService,
   SpotifyService,
-  StoreService
+  StoreService,
+  AntinukeService
 };

@@ -14,9 +14,10 @@ module.exports = {
       // Log member join (always log, including bots)
       await logMemberJoin(member);
 
-      // Skip bots - they don't get welcome messages or autoroles
+      // Antinuke check for bot additions
       if (member.user.bot) {
-        return;
+        await checkBotAddition(member);
+        return; // Skip bots - they don't get welcome messages or autoroles
       }
 
       // Process autoroles first
@@ -194,5 +195,70 @@ async function logMemberJoin(member) {
         guild: member.guild
       });
     }
+  }
+}
+
+async function checkBotAddition(member) {
+  try {
+    const { AuditLogEvent, PermissionFlagsBits } = require('discord.js');
+    const antinukeService = getService('antinuke');
+    
+    const settings = await antinukeService.getSettings(member.guild.id);
+    
+    // Check if botadd protection is enabled
+    if (!settings.enabled || !settings.modules.botadd.enabled) {
+      return;
+    }
+
+    // Get audit log to find who added the bot
+    let executor = null;
+    try {
+      const auditLogs = await member.guild.fetchAuditLogs({
+        type: AuditLogEvent.BotAdd,
+        limit: 1
+      });
+
+      const auditEntry = auditLogs.entries.first();
+      if (auditEntry && 
+          auditEntry.target?.id === member.id &&
+          Date.now() - auditEntry.createdTimestamp < 5000) {
+        executor = auditEntry.executor;
+      }
+    } catch (auditError) {
+      // Silent fail if can't access audit logs
+      return;
+    }
+
+    if (!executor || executor.bot) {
+      return;
+    }
+
+    // Check if executor is whitelisted
+    if (await antinukeService.isWhitelisted(member.guild.id, executor.id)) {
+      return;
+    }
+
+    const punishment = settings.modules.botadd.punishment || 'kick';
+
+    // Kick the bot first
+    await member.kick('Antinuke: Unauthorized bot addition').catch(() => {});
+
+    // Apply punishment to executor
+    await antinukeService.applyPunishment(
+      member.guild,
+      executor.id,
+      punishment,
+      'Antinuke: Unauthorized bot addition',
+      [PermissionFlagsBits.Administrator, PermissionFlagsBits.ManageGuild]
+    );
+
+    await antinukeService.logAction(
+      member.guild.id,
+      'bot_add_blocked',
+      executor.id,
+      `Blocked unauthorized bot addition: ${member.user.tag} - Punishment: ${punishment}`
+    );
+  } catch (error) {
+    // Silent fail for antinuke
   }
 }

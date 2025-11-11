@@ -59,7 +59,6 @@ module.exports = {
       case 'q':
         return await handleQueue(message, args.slice(1), spotifyService);
       
-      case 'link':
       case 'search':
         return await handleGetLink(client, message, args.slice(1));
       

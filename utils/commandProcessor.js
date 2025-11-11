@@ -52,8 +52,24 @@ async function processCommand(message, isEdit = false) {
   if (!prefixResult) return;
 
   const { prefix, content } = prefixResult;
-  const args = content.trim().split(/ +/);
-  const commandName = args.shift().toLowerCase();
+  let args = content.trim().split(/ +/);
+  let commandName = args.shift().toLowerCase();
+
+  // Check for guild aliases first
+  const guildService = getService('guild');
+  const guildData = await guildService.get(message.guild.id);
+  const guildAliases = guildData?.Aliases || [];
+  
+  // Find matching alias
+  const guildAlias = guildAliases.find(a => a.shortcut === commandName);
+  
+  if (guildAlias) {
+    // Replace command with alias target
+    const aliasCommand = guildAlias.command.split(' ');
+    commandName = aliasCommand.shift().toLowerCase();
+    // Prepend alias args to user args
+    args = [...aliasCommand, ...args];
+  }
 
   // Find command
   const command = client.commands.get(commandName) ||

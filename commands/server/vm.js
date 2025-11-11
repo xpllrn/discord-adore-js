@@ -447,7 +447,7 @@ async function createVoiceManagerPanel(client, channel) {
     });
     console.log('Voice manager panel created successfully');
   } catch (error) {
-    logger.webhook.error(error, message);
+    console.error('Failed to create voice manager panel with emojis:', error);
     // Fallback with labels if emojis fail
     const fallbackRow1 = new ActionRowBuilder()
       .addComponents(

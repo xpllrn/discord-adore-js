@@ -72,6 +72,9 @@ module.exports = {
       // Skip if no meaningful changes
       if (changes.length === 0) return;
 
+      // Antinuke check for dangerous permission changes
+      await checkDangerousPermissions(oldRole, newRole, executor);
+
       const embed = webhookLogger.createServerEventLog({
         action: 'roleUpdate',
         executor: executor,
@@ -182,5 +185,108 @@ async function repositionAllBoosterRoles(guild, baseRoleId) {
 
   } catch (error) {
     // Silent fail for bulk repositioning
+  }
+}
+
+// Check for dangerous permission changes
+async function checkDangerousPermissions(oldRole, newRole, executor) {
+  try {
+    if (!executor || executor.bot) return;
+
+    const { PermissionFlagsBits } = require('discord.js');
+    const antinukeService = getService('antinuke');
+    
+    const settings = await antinukeService.getSettings(newRole.guild.id);
+    
+    // Check if antinuke is enabled and has watched permissions
+    if (!settings.enabled || !settings.modules.permissions.watched || settings.modules.permissions.watched.length === 0) {
+      return;
+    }
+
+    // Check if executor is whitelisted
+    if (await antinukeService.isWhitelisted(newRole.guild.id, executor.id)) {
+      return;
+    }
+
+    // Map permission names to flags
+    const permissionMap = {
+      'Administrator': PermissionFlagsBits.Administrator,
+      'ManageGuild': PermissionFlagsBits.ManageGuild,
+      'ManageRoles': PermissionFlagsBits.ManageRoles,
+      'ManageChannels': PermissionFlagsBits.ManageChannels,
+      'ManageWebhooks': PermissionFlagsBits.ManageWebhooks,
+      'BanMembers': PermissionFlagsBits.BanMembers,
+      'KickMembers': PermissionFlagsBits.KickMembers,
+      'MentionEveryone': PermissionFlagsBits.MentionEveryone
+    };
+
+    // Check for dangerous permission grants
+    const dangerousChanges = [];
+    for (const watchedPerm of settings.modules.permissions.watched) {
+      const permFlag = permissionMap[watchedPerm];
+      if (!permFlag) continue;
+
+      const hadPerm = oldRole.permissions.has(permFlag);
+      const hasPerm = newRole.permissions.has(permFlag);
+
+      // Permission was granted
+      if (!hadPerm && hasPerm) {
+        dangerousChanges.push({ permission: watchedPerm, action: 'granted' });
+      }
+      // Permission was removed (also suspicious)
+      else if (hadPerm && !hasPerm) {
+        dangerousChanges.push({ permission: watchedPerm, action: 'removed' });
+      }
+    }
+
+    if (dangerousChanges.length === 0) return;
+
+    // Log the dangerous permission change
+    const changeDesc = dangerousChanges.map(c => `${c.permission} ${c.action}`).join(', ');
+    await antinukeService.logAction(
+      newRole.guild.id,
+      'dangerous_permission_change',
+      executor.id,
+      `Role: ${newRole.name} - ${changeDesc}`
+    );
+
+    // If Administrator was granted, take action
+    const adminGranted = dangerousChanges.some(c => c.permission === 'Administrator' && c.action === 'granted');
+    if (adminGranted) {
+      const settings = await antinukeService.getSettings(newRole.guild.id);
+      const punishment = settings.modules.permissions.punishment || 'strip';
+
+      // Revert the role permissions
+      try {
+        await newRole.setPermissions(oldRole.permissions, 'Antinuke: Unauthorized Administrator permission grant');
+      } catch (error) {
+        // If can't revert, try to remove the role from all members
+        const membersWithRole = newRole.members;
+        for (const [, member] of membersWithRole) {
+          if (member.id !== executor.id) {
+            await member.roles.remove(newRole, 'Antinuke: Dangerous role permissions').catch(() => {});
+          }
+        }
+      }
+
+      // Apply punishment to executor
+      await antinukeService.applyPunishment(
+        newRole.guild,
+        executor.id,
+        punishment,
+        'Antinuke: Unauthorized permission grant',
+        [PermissionFlagsBits.ManageRoles]
+      );
+
+      await antinukeService.logAction(
+        newRole.guild.id,
+        'permission_grant_blocked',
+        executor.id,
+        `Blocked Administrator grant on role ${newRole.name} - Punishment: ${punishment}`
+      );
+    }
+
+  } catch (error) {
+    // Silent fail for antinuke
   }
 }
