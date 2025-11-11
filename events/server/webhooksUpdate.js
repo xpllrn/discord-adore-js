@@ -2,7 +2,7 @@ const { AuditLogEvent, PermissionFlagsBits } = require('discord.js');
 const { getService } = require('@services');
 
 module.exports = {
-  name: 'webhookUpdate',
+  name: 'webhooksUpdate',
   async execute(channel) {
     try {
       if (!channel.guild) return;

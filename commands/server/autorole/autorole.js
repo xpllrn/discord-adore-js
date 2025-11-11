@@ -1,12 +1,12 @@
 const { EmbedBuilder } = require('discord.js');
-const { embeds } = require('../../core/embeds');
-const { checkUserRoleHierarchy, checkBotRoleHierarchy } = require('../../utils/permissions');
-const { runHelpCommand } = require('../../utils/commandProcessor');
-const { ensureGuildData } = require('../../database');
-const { createConfirmation } = require('../../core/buttons');
+const { embeds } = require('../../../core/embeds');
+const { checkUserRoleHierarchy, checkBotRoleHierarchy } = require('../../../utils/permissions');
+const { runHelpCommand } = require('../../../utils/commandProcessor');
+const { ensureGuildData } = require('../../../database');
+const { createConfirmation } = require('../../../core/buttons');
 const { getService } = require('@services');
-const config = require('../../config/setup');
-const { findRole } = require('../../handlers/finder');
+const config = require('../../../config/setup');
+const { findRole } = require('../../../handlers/finder');
 
 module.exports = {
   name: "autorole",

@@ -93,17 +93,17 @@ async function handleAdd(client, message, args) {
   const logTypeInput = args[1]?.toLowerCase();
   const webhookUrl = args[2];
 
-  // If no log type specified, add all types
+  // If no log type specified or "all" is specified, add all types
   const validTypes = ['moderator', 'message', 'events', 'members'];
   let logTypesToAdd = [];
 
-  if (!logTypeInput) {
+  if (!logTypeInput || logTypeInput === 'all') {
     // Add all log types
     logTypesToAdd = [...validTypes];
   } else {
     // Validate single log type
     if (!validTypes.includes(logTypeInput)) {
-      return embeds.warn(message, `Invalid log type! Valid types: \`${validTypes.join('`, `')}\``);
+      return embeds.warn(message, `Invalid log type! Valid types: \`${validTypes.join('`, `')}\`, \`all\``);
     }
     logTypesToAdd = [logTypeInput];
   }
@@ -262,10 +262,17 @@ async function handleRemove(client, message, args) {
     }
 
     if (logType) {
-      // Remove specific log type
+      // Remove specific log type or all types
       const validTypes = ['moderator', 'message', 'events', 'members'];
+      
+      if (logType === 'all') {
+        // Remove entire config (all log types)
+        await guildService.removeLoggingChannel(message.guild.id, channel.id);
+        return embeds.success(message, `Removed all logging from <#${channel.id}>`);
+      }
+      
       if (!validTypes.includes(logType)) {
-        return embeds.warn(message, `Invalid log type! Valid types: \`${validTypes.join('`, `')}\``);
+        return embeds.warn(message, `Invalid log type! Valid types: \`${validTypes.join('`, `')}\`, \`all\``);
       }
 
       if (!config.logTypes.includes(logType)) {
