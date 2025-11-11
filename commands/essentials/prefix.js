@@ -10,10 +10,7 @@ module.exports = {
   isGroupCommand: true,
 
   run: async (_, message, args) => {
-    const subcommand = args[0]?.toLowerCase();
-    const newPrefix = args[1];
-
-    if (!subcommand) {
+    if (!args[0]) {
       const subcommandInfo = {
         description: 'Shows the current server prefix',
         usage: '{guildprefix}prefix',
@@ -33,17 +30,18 @@ module.exports = {
     }
 
     // Handle subcommands
-    if (subcommand === 'set') {
+    if (args[0] === 'set') {
       const subcommandInfo = {
         description: 'Sets a new prefix for the server',
         usage: '{guildprefix}prefix set [prefix]',
         aliases: [],
         parameters: ['prefix'],
-        example: '{guildprefix}prefix set $'
+        example: '{guildprefix}prefix set !'
       };
 
-      return handleSetGuildPrefix(message, newPrefix);
-    } else if (subcommand === 'remove') {
+      return handleSetGuildPrefix(message, args[1]);
+      
+    } else if (args[0] === 'remove' || args[0] === 'reset' || args[0] === 'default') {
       const subcommandInfo = {
         description: 'Removes the custom prefix and resets to default',
         usage: '{guildprefix}prefix remove',
@@ -53,12 +51,9 @@ module.exports = {
       };
 
       return handleRemoveGuildPrefix(message);
+      
     } else {
-      const { processCommand } = require('../../utils/commandProcessor');
-      return processCommand({
-        ...message,
-        content: `,h prefix`
-      });
+      return false;
     }
   }
 };

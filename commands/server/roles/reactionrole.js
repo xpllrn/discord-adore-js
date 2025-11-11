@@ -116,7 +116,7 @@ module.exports = {
         roleId: role.id
       });
 
-      return embeds.success(message, `Added reaction role: ${reaction} → **${role.name}**`);
+      return embeds.success(message, `Added reaction role: ${reaction} → ${role}`);
 
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
@@ -176,9 +176,9 @@ module.exports = {
       }
 
       const role = message.guild.roles.cache.get(reactionRole.roleId);
-      const roleName = role ? role.name : 'Unknown Role';
+      const roleMention = role ? `${role}` : '**Unknown Role**';
 
-      return embeds.success(message, `Removed reaction role: ${reaction} → **${roleName}**`);
+      return embeds.success(message, `Removed reaction role: ${reaction} → ${roleMention}`);
 
     } else if (args[0] === 'list') {
       const subcommandInfo = {
@@ -232,7 +232,7 @@ module.exports = {
         
         for (const roleData of roles) {
           count++;
-          description += `${roleData.reaction} → **${roleData.role.name}**\n`;
+          description += `${roleData.reaction} → ${roleData.role}\n`;
         }
         description += '\n';
       }

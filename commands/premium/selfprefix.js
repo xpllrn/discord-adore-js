@@ -6,15 +6,18 @@ module.exports = {
   name: "selfprefix",
   aliases: ['sp'],
   description: `Manage your personal prefix`,
-  syntax: 'selfprefix (set/remove) (prefix)',
-  example: 'selfprefix set !',
-
+  isGroupCommand: true,
 
   run: async (_, message, args) => {
-    const subcommand = args[0]?.toLowerCase();
-    const newPrefix = args[1];
+    if (!args[0]) {
+      const subcommandInfo = {
+        description: 'Shows your current personal prefix',
+        usage: '{guildprefix}selfprefix',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}selfprefix'
+      };
 
-    if (!subcommand) {
       try {
         const prefixService = getService('prefix');
         const userPrefix = await prefixService.getUserPrefix(message.author.id);
@@ -31,16 +34,30 @@ module.exports = {
     }
 
     // Handle subcommands
-    if (subcommand === 'set') {
-      return handleSetSelfPrefix(message, newPrefix);
-    } else if (subcommand === 'remove' || subcommand === 'clear') {
+    if (args[0] === 'set') {
+      const subcommandInfo = {
+        description: 'Set your personal prefix',
+        usage: '{guildprefix}selfprefix set [prefix]',
+        aliases: [],
+        parameters: ['prefix'],
+        example: '{guildprefix}selfprefix set !'
+      };
+
+      return handleSetSelfPrefix(message, args[1]);
+      
+    } else if (args[0] === 'remove' || args[0] === 'clear') {
+      const subcommandInfo = {
+        description: 'Remove your personal prefix',
+        usage: '{guildprefix}selfprefix remove',
+        aliases: ['clear'],
+        parameters: [],
+        example: '{guildprefix}selfprefix remove'
+      };
+
       return handleRemoveSelfPrefix(message);
+      
     } else {
-      const { processCommand } = require('../../utils/commandProcessor');
-      return processCommand({
-        ...message,
-        content: `,h selfprefix`
-      });
+      return false;
     }
   }
 };

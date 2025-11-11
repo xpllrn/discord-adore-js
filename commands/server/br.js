@@ -25,15 +25,13 @@ module.exports = {
     // Ensure guild data exists in the database
     await ensureGuildData(message.guild.id);
 
-    const subcommand = args[0]?.toLowerCase();
-
     // If no subcommand provided, show help
-    if (!subcommand) {
+    if (!args[0]) {
       return runHelpCommand(message, 'br');
     }
 
     // Base role management requires Manage Guild permission
-    if (subcommand === 'baserole') {
+    if (args[0] === 'baserole') {
       const subcommandInfo = {
         description: 'Set the base role for booster role positioning',
         usage: '{guildprefix}br baserole [@role]',
@@ -47,7 +45,7 @@ module.exports = {
     }
 
     // Cleanup requires Manage Guild permission
-    if (subcommand === 'cleanup') {
+    if (args[0] === 'cleanup') {
       const subcommandInfo = {
         description: 'Remove unused booster roles',
         usage: '{guildprefix}br cleanup [days]',
@@ -61,7 +59,7 @@ module.exports = {
     }
 
     // Create booster role
-    if (subcommand === 'create') {
+    if (args[0] === 'create') {
       const subcommandInfo = {
         description: 'Create your personal booster role',
         usage: '{guildprefix}br create [name]',

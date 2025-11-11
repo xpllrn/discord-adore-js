@@ -263,7 +263,7 @@ async function checkSpotifyAccess(message) {
   const accessToken = await spotifyService.getAccessToken(message.author.id);
 
   if (!accessToken) {
-    embeds.warn(message, 'Failed to get **Spotify** access token.');
+    embeds.warn(message, 'Failed to get **Spotify** access token. Please try linking your account again with `,spotify login`.');
     return { isLinked: true, accessToken: null };
   }
 
@@ -310,6 +310,21 @@ function handleSpotifyError(message, error) {
 
   if (errorCode === 'PLAYBACK_ERROR') {
     return embeds.warn(message, '**Player command failed**: No `active device` found!');
+  }
+
+  // Check if it's an authorization error (user not in beta list)
+  if (errorCode.includes('403') || errorCode.includes('Forbidden') || errorCode.includes('unauthorized')) {
+    const { EmbedBuilder } = require('discord.js');
+    const config = require('../config/setup');
+    
+    const errorEmbed = new EmbedBuilder()
+      .setColor(config.colors.error)
+      .setDescription(
+        `❌ ${message.author}: Your **Spotify account** is not approved for **vleed** yet.\n\n` +
+        `**Create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) and provide your **Spotify email** to get added to the beta list.`
+      );
+    
+    return message.channel.send({ embeds: [errorEmbed] });
   }
 
   return embeds.warn(message, error.message || 'An error occurred with **Spotify**.');

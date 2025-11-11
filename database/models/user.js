@@ -372,6 +372,21 @@ const userSchema = new mongoose.Schema({
       type: String,
       required: true
     }
+  }],
+
+  // Jail system - stores roles per guild when user is jailed
+  JailedRoles: [{
+    guildId: {
+      type: String,
+      required: true
+    },
+    roles: [{
+      type: String
+    }],
+    savedAt: {
+      type: Date,
+      default: Date.now
+    }
   }]
 
 }, {

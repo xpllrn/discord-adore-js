@@ -118,7 +118,7 @@ module.exports = {
         );
         console.log(`[Spotify Modal] Tokens stored successfully`);
 
-        // Get Spotify user profile (optional - not critical for linking)
+        // Get Spotify user profile
         console.log(`[Spotify Modal] Fetching Spotify user profile...`);
         let profileName = 'your Spotify account';
         try {
@@ -153,12 +153,13 @@ module.exports = {
 
           let successMessage;
           
-          // If we got the profile name, show it. Otherwise show ticket message
+          // Show connection success with approval requirement
           if (profileName !== 'your Spotify account') {
-            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!`;
+            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!\n\n` +
+              `-# First time **vleed** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
           } else {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `**vleed** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`;
+              `-# First time **vleed** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
           }
 
           const successEmbed = new EmbedBuilder()
@@ -176,10 +177,11 @@ module.exports = {
           
           let successMessage;
           if (profileName !== 'your Spotify account') {
-            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!`;
+            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!\n\n` +
+              `-# First time **vleed** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
           } else {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `**vleed** user's have to **create a ticket** in [\`support server\`](https://discord.gg/qsJMaTURqf) first to use **spotify commands**.`;
+              `-# First time **vleed** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
           }
 
           const successEmbed = new EmbedBuilder()
@@ -193,19 +195,33 @@ module.exports = {
         console.error('[Spotify Code Submit] Error:', error);
 
         let errorMessage = 'Failed to link Spotify account. ';
+        let showTicketMessage = false;
 
         if (error.message.includes('invalid_grant') || error.message.includes('Invalid authorization code')) {
           errorMessage += 'The authorization code is invalid or has expired. Please try again.';
         } else if (error.message.includes('redirect_uri')) {
           errorMessage += 'Redirect URI mismatch. Please contact the bot administrator.';
         } else {
-          errorMessage += 'Please try again later.';
+          // Most likely the user is not in the Spotify Developer beta list
+          errorMessage = 'Your **Spotify account** is not approved for **vleed** yet.';
+          showTicketMessage = true;
         }
 
-        await interaction.editReply({
-          content: `❌ ${errorMessage}`,
-          ephemeral: true
-        });
+        // Delete auth session on error
+        await spotifyService.deleteAuthSession(userId).catch(() => {});
+
+        await interaction.deleteReply().catch(() => {});
+
+        const errorEmbed = new EmbedBuilder()
+          .setColor(config.colors.error)
+          .setDescription(
+            showTicketMessage 
+              ? `❌ <@${userId}>: ${errorMessage}\n\n` +
+                `**Create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) and provide your **Spotify email** to get added to the beta list.`
+              : `❌ ${errorMessage}`
+          );
+
+        await interaction.channel.send({ embeds: [errorEmbed] });
       }
     }
   }

@@ -163,7 +163,7 @@ module.exports = {
         emoji: emoji
       });
 
-      return embeds.success(message, `Added button role: **${label}** → **${role.name}**`);
+      return embeds.success(message, `Added button role: **${label}** → ${role}`);
 
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
@@ -240,7 +240,7 @@ module.exports = {
       // Remove from database
       await guildService.removeButtonRole(message.guild.id, messageId, role.id);
 
-      return embeds.success(message, `Removed button role: **${buttonRole.label}** → **${role.name}**`);
+      return embeds.success(message, `Removed button role: **${buttonRole.label}** → ${role}`);
 
     } else if (args[0] === 'list') {
       const subcommandInfo = {
@@ -294,7 +294,7 @@ module.exports = {
         description += `**Message:** [Jump to Message](https://discord.com/channels/${message.guild.id}/${roles[0].channelId}/${messageId}) in ${channelMention}\n`;
         
         for (const roleData of roles) {
-          description += `${roleData.emoji} **${roleData.label}** (${roleData.style}) → **${roleData.role.name}**\n`;
+          description += `${roleData.emoji} **${roleData.label}** (${roleData.style}) → ${roleData.role}\n`;
         }
         description += '\n';
       }

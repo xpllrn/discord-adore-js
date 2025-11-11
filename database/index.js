@@ -260,26 +260,26 @@ async function ensureSystemData() {
   }
 }
 
-// ===== MODERATION FUNCTIONS (Deprecated - Use ModerationService) =====
+// ===== MODERATION FUNCTIONS (Deprecated - Use GuildService) =====
 // These functions are kept for backward compatibility only
-// New code should use: const { getService } = require('@services'); getService('moderation')
+// New code should use: const { getService } = require('@services'); getService('guild')
 
 async function addModerationCase(guildId, userId, moderatorId, action, reason, duration = null) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  return await moderationService.addModerationCase(guildId, userId, moderatorId, action, reason, duration);
+  const guildService = getService('guild');
+  return await guildService.addModerationCase(guildId, userId, moderatorId, action, reason, duration);
 }
 
 async function getModerationHistory(guildId, userId, action = null) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  return await moderationService.getUserCases(guildId, userId, action);
+  const guildService = getService('guild');
+  return await guildService.getUserCases(guildId, userId, action);
 }
 
 async function getModerationCase(guildId, caseId) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  return await moderationService.getCase(guildId, caseId);
+  const guildService = getService('guild');
+  return await guildService.getCase(guildId, caseId);
 }
 
 async function getModerationHistoryByAction(guildId, userId, action) {
@@ -288,62 +288,41 @@ async function getModerationHistoryByAction(guildId, userId, action) {
 
 async function getModerationHistoryByModerator(guildId, moderatorId, action = null) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  return await moderationService.getModeratorCases(guildId, moderatorId, action);
+  const guildService = getService('guild');
+  return await guildService.getModeratorCases(guildId, moderatorId, action);
 }
 
 async function removeModerationCase(guildId, caseId) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  const success = await moderationService.deleteCase(guildId, caseId);
+  const guildService = getService('guild');
+  const success = await guildService.deleteCase(guildId, caseId);
   return { deletedCount: success ? 1 : 0 };
 }
 
 async function removeAllModerationCases(guildId, userId) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  return await moderationService.removeAllModerationCases(guildId, userId);
+  const guildService = getService('guild');
+  return await guildService.removeAllModerationCases(guildId, userId);
 }
 
-// ===== JAIL SYSTEM ROLE MANAGEMENT (Uses ModerationService) =====
+// ===== JAIL SYSTEM ROLE MANAGEMENT (Uses UserService) =====
 
 async function saveUserRoles(guildId, userId, roles) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  return await moderationService.addModerationCase(guildId, userId, 'system', 'role_save', JSON.stringify(roles), null);
+  const userService = getService('user');
+  return await userService.saveJailedRoles(userId, guildId, roles);
 }
 
 async function getSavedUserRoles(guildId, userId) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  const roleCases = await moderationService.getUserCases(guildId, userId, 'role_save');
-  
-  if (roleCases.length === 0) return [];
-  
-  // Get most recent role save
-  const latestRoleCase = roleCases.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-  
-  if (latestRoleCase && latestRoleCase.reason) {
-    try {
-      return JSON.parse(latestRoleCase.reason);
-    } catch (error) {
-      console.error('[getSavedUserRoles] Error parsing saved roles:', error);
-      return [];
-    }
-  }
-  
-  return [];
+  const userService = getService('user');
+  return await userService.getJailedRoles(userId, guildId);
 }
 
 async function removeSavedUserRoles(guildId, userId) {
   const { getService } = require('@services');
-  const moderationService = getService('moderation');
-  
-  // Get all role_save cases and delete them
-  const roleCases = await moderationService.getUserCases(guildId, userId, 'role_save');
-  for (const roleCase of roleCases) {
-    await moderationService.deleteCase(guildId, roleCase.caseId);
-  }
+  const userService = getService('user');
+  return await userService.removeJailedRoles(userId, guildId);
 }
 
 module.exports = {

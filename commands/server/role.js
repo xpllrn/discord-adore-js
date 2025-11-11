@@ -24,22 +24,33 @@ module.exports = {
       return false;
     }
 
-    const subcommand = args[0].toLowerCase();
-
     // Route to appropriate subcommand
-    switch (subcommand) {
-      case 'reactionrole':
-      case 'rr':
-        const reactionRoleCommand = require('./roles/reactionrole');
-        return reactionRoleCommand.run(client, message, args.slice(1));
+    if (args[0] === 'reactionrole' || args[0] === 'rr') {
+      const subcommandInfo = {
+        description: 'Manage reaction roles',
+        usage: '{guildprefix}role reactionrole [subcommand]',
+        aliases: ['rr'],
+        parameters: ['subcommand'],
+        example: '{guildprefix}role reactionrole add'
+      };
+
+      const reactionRoleCommand = require('./roles/reactionrole');
+      return reactionRoleCommand.run(client, message, args.slice(1));
       
-      case 'buttonrole':
-      case 'br':
-        const buttonRoleCommand = require('./roles/buttonrole');
-        return buttonRoleCommand.run(client, message, args.slice(1));
+    } else if (args[0] === 'buttonrole' || args[0] === 'br') {
+      const subcommandInfo = {
+        description: 'Manage button roles',
+        usage: '{guildprefix}role buttonrole [subcommand]',
+        aliases: ['br'],
+        parameters: ['subcommand'],
+        example: '{guildprefix}role buttonrole add'
+      };
+
+      const buttonRoleCommand = require('./roles/buttonrole');
+      return buttonRoleCommand.run(client, message, args.slice(1));
       
-      default:
-        return false;
+    } else {
+      return false;
     }
   }
 }

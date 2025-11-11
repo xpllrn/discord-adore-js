@@ -253,6 +253,15 @@ module.exports = {
       }
 
     } else if (args[0]) {
+      const subcommandInfo = {
+        name: 'view',
+        description: 'View swear statistics for a specific user',
+        usage: '{guildprefix}swear [user]',
+        aliases: [],
+        parameters: ['user'],
+        example: '{guildprefix}swear @vwsn'
+      };
+
       const userResult = await findUser(message.guild, args[0], client);
 
       if (!userResult.found) {

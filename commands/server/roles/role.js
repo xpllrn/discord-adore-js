@@ -50,7 +50,7 @@ module.exports = {
           reason: `Role created by ${message.author.tag}`
         });
 
-        return embeds.success(message, `Created role **${newRole.name}**`);
+        return embeds.success(message, `Created role ${newRole}`);
       } catch (error) {
         return embeds.deny(message, 'Failed to **create role**. Please check my permissions.');
       }
@@ -151,7 +151,7 @@ module.exports = {
       try {
         const oldName = role.name;
         await role.setName(newName, `Role renamed by ${message.author.tag}`);
-        return embeds.success(message, `Renamed **${oldName}** to **${newName}**`);
+        return embeds.success(message, `Renamed **${oldName}** to ${role}`);
       } catch (error) {
         return embeds.deny(message, 'Failed to **rename role**. Please check my permissions.');
       }
@@ -233,7 +233,7 @@ module.exports = {
       try {
         const primaryColor = parseColor(colorArgs[0]);
         await role.setColor(primaryColor, `Role color changed by ${message.author.tag}`);
-        return embeds.success(message, `Changed **${role.name}** color to **${colorArgs[0]}** (${primaryColor})`);
+        return embeds.success(message, `Changed ${role} color to **${colorArgs[0]}** (${primaryColor})`);
       } catch (error) {
         return embeds.deny(message, `Could not parse color **${colorArgs[0]}**. Try:\n• Color names: \`red\`, \`blue\`, \`brown\`, \`pink\`, etc.\n• Hex codes: \`#FF0000\` or \`FF0000\`\n• RGB: \`rgb(255,0,0)\``);
       }
@@ -337,7 +337,7 @@ module.exports = {
             }
           );
 
-          return embeds.success(message, `Changed **${role.name}** to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${color1} → ${color2})`);
+          return embeds.success(message, `Changed ${role} to gradient colors **${colorArgs[0]}** → **${colorArgs[1]}** (${color1} → ${color2})`);
         } catch (gradientError) {
           if (gradientError.code === 50035 || gradientError.message?.includes('ENHANCED_ROLES') || gradientError.message?.includes('guild feature')) {
             return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use gradient colors.`);
@@ -400,7 +400,7 @@ module.exports = {
           }
         );
 
-        return embeds.success(message, `Changed **${role.name}** to holographic colors! ✨`);
+        return embeds.success(message, `Changed ${role} to holographic colors! ✨`);
       } catch (error) {
         if (error.code === 50035 || error.message?.includes('ENHANCED_ROLES') || error.message?.includes('guild feature')) {
           return embeds.warn(message, `This server needs **Enhanced Roles** unlocked to use holographic colors.`);
@@ -509,7 +509,7 @@ module.exports = {
 
       try {
         await role.setIcon(iconUrl, `Role icon changed by ${message.author.tag}`);
-        return embeds.success(message, `Changed **${role.name}** icon to ${emojiArg}`);
+        return embeds.success(message, `Changed ${role} icon to ${emojiArg}`);
       } catch (error) {
         if (error.code === 50035) {
           return embeds.deny(message, 'Invalid emoji format. Please use:\n• Full format: `<:name:id>`\n• Emoji name: `:name:`\n• Direct image URL\n• Unicode emoji');
@@ -614,7 +614,7 @@ module.exports = {
 
         // Delete loading message and send success message
         await loadingMessage.delete();
-        return embeds.success(message, `Added **${role.name}** to **${successCount}** members`);
+        return embeds.success(message, `Added ${role} to **${successCount}** members`);
 
       } catch (error) {
         return embeds.deny(message, `Failed to add **${role.name}** to ${args[0]}. Please check my permissions.`);
@@ -675,11 +675,11 @@ module.exports = {
       if (user.roles.cache.has(role.id)) {
         // Remove role
         await user.roles.remove(role.id, `Role removed by ${message.author.tag}`);
-        return embeds.success(message, `Removed **${role.name}** from **${targetUser.username}**`);
+        return embeds.success(message, `Removed ${role} from ${targetUser}`);
       } else {
         // Add role
         await user.roles.add(role.id, `Role added by ${message.author.tag}`);
-        return embeds.success(message, `Added **${role.name}** to **${targetUser.username}**`);
+        return embeds.success(message, `Added ${role} to ${targetUser}`);
       }
     } catch (error) {
       if (error.code === 50013) {

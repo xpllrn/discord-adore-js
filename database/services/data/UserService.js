@@ -2471,6 +2471,120 @@ class UserService extends BaseService {
       return new Map();
     }
   }
+
+  // ===== JAIL SYSTEM ROLE MANAGEMENT =====
+
+  /**
+   * Save user roles when jailed
+   * @param {string} userId - User ID
+   * @param {string} guildId - Guild ID
+   * @param {Array<string>} roles - Array of role IDs to save
+   * @returns {Promise<boolean>} Success status
+   */
+  async saveJailedRoles(userId, guildId, roles) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!Array.isArray(roles)) {
+      throw new ValidationError('Roles must be an array', 'roles', roles);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      
+      if (!userData.JailedRoles) {
+        userData.JailedRoles = [];
+      }
+
+      // Remove any existing jail role data for this guild
+      userData.JailedRoles = userData.JailedRoles.filter(jr => jr.guildId !== guildId);
+
+      // Add new jail role data
+      userData.JailedRoles.push({
+        guildId: guildId,
+        roles: roles,
+        savedAt: new Date()
+      });
+
+      await this.set(userId, userData);
+      
+      return true;
+    } catch (error) {
+      console.error(`Error saving jailed roles for user ${userId} in guild ${guildId}:`, error.message);
+      throw new DatabaseWriteError(`Failed to save jailed roles for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Get saved roles for a jailed user
+   * @param {string} userId - User ID
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array<string>>} Array of role IDs
+   */
+  async getJailedRoles(userId, guildId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      
+      if (!userData.JailedRoles || userData.JailedRoles.length === 0) {
+        return [];
+      }
+
+      // Find jail role data for this guild
+      const jailData = userData.JailedRoles.find(jr => jr.guildId === guildId);
+      
+      return jailData ? jailData.roles : [];
+    } catch (error) {
+      console.error(`Error getting jailed roles for user ${userId} in guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Remove saved roles for a jailed user
+   * @param {string} userId - User ID
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeJailedRoles(userId, guildId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      
+      if (!userData.JailedRoles) {
+        return true;
+      }
+
+      // Remove jail role data for this guild
+      userData.JailedRoles = userData.JailedRoles.filter(jr => jr.guildId !== guildId);
+
+      await this.set(userId, userData);
+      
+      return true;
+    } catch (error) {
+      console.error(`Error removing jailed roles for user ${userId} in guild ${guildId}:`, error.message);
+      throw new DatabaseWriteError(`Failed to remove jailed roles for user ${userId}`, error);
+    }
+  }
 }
 
 module.exports = UserService;

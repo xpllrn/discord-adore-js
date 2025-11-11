@@ -60,6 +60,57 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
       subcommands.push(subcommandData);
     }
     
+    // NEW: Handle catch-all else-if blocks with subcommandInfo (e.g., "} else if (args[0]) {")
+    // These blocks have a 'name' field in subcommandInfo that we can extract
+    const catchAllRegex = /\}\s*else\s+if\s*\(\s*args\[0\]\s*\)\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+    
+    while ((match = catchAllRegex.exec(fileContent)) !== null) {
+      const subcommandInfoContent = match[1];
+      
+      // Extract the name from subcommandInfo
+      const nameMatch = subcommandInfoContent.match(/name:\s*[`'"]([^`'"]*)[`'"]/);
+      if (nameMatch) {
+        const subcommandName = nameMatch[1];
+        const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
+        subcommands.push(subcommandData);
+      }
+    }
+    
+    // NEW: Handle final else blocks with subcommandInfo (e.g., "} else {")
+    const finalElseRegex = /\}\s*else\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+    
+    while ((match = finalElseRegex.exec(fileContent)) !== null) {
+      const subcommandInfoContent = match[1];
+      
+      // Extract the name from subcommandInfo
+      const nameMatch = subcommandInfoContent.match(/name:\s*[`'"]([^`'"]*)[`'"]/);
+      if (nameMatch) {
+        const subcommandName = nameMatch[1];
+        const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, guildPrefix);
+        subcommands.push(subcommandData);
+      }
+    }
+    
+    // NEW: Handle delegated commands (e.g., role command that delegates to reactionrole/buttonrole)
+    // Look for patterns like: const xxxCommand = require('./path/to/file');
+    //                         return xxxCommand.run(client, message, args.slice(1));
+    const delegationRegex = /const\s+(\w+Command)\s*=\s*require\(['"](\.\/[^'"]+)['"]\);[\s\S]*?return\s+\1\.run\(/g;
+    
+    while ((match = delegationRegex.exec(fileContent)) !== null) {
+      const delegatedPath = match[2];
+      
+      // Resolve the delegated file path relative to the current command file
+      const commandDir = path.dirname(commandFilePath);
+      const delegatedFilePath = path.resolve(commandDir, delegatedPath + '.js');
+      
+      // Check if the delegated file exists
+      if (fs.existsSync(delegatedFilePath)) {
+        // Recursively parse the delegated file
+        const delegatedSubcommands = parseSubcommands(delegatedFilePath, commandName, guildPrefix);
+        subcommands.push(...delegatedSubcommands);
+      }
+    }
+    
     return subcommands;
   } catch (error) {
     console.error(`Error parsing subcommands from ${commandFilePath}:`, error.message);

@@ -32,7 +32,7 @@ module.exports = {
       return member.user;
     })
 
-    if (members.length < 1) return embeds.warn(message, `**${role.name}** has no members in the role`);
+    if (members.length < 1) return embeds.warn(message, `${role} has no members in the role`);
 
     // Format page function for pagination
     const formatPage = (pageMembers, currentPage, totalPages) => {
@@ -40,7 +40,7 @@ module.exports = {
 
       const memberList = pageMembers.map((member, index) => {
         const memberNumber = (startIndex + index + 1).toString().padStart(2, '0');
-        return `\`${memberNumber}\` **${member.username}** (\`${member.id}\`)`;
+        return `\`${memberNumber}\` ${member} (\`${member.id}\`)`;
       }).join('\n');
 
       return new EmbedBuilder()
