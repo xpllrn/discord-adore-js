@@ -66,8 +66,28 @@ module.exports = {
           for (let i = 0; i < messageArray.length; i += 100) {
             const batch = messageArray.slice(i, i + 100);
             
-            await message.channel.bulkDelete(batch, true);
-            deletedCount += batch.length;
+            try {
+              // bulkDelete returns a collection of deleted messages
+              const deleted = await message.channel.bulkDelete(batch, true);
+              deletedCount += deleted.size;
+            } catch (batchError) {
+              // If a batch fails with Unknown Message error, try deleting individually
+              if (batchError.code === 10008) {
+                for (const msg of batch) {
+                  try {
+                    await msg.delete();
+                    deletedCount++;
+                  } catch (individualError) {
+                    // Skip messages that can't be deleted
+                    if (individualError.code !== 10008) {
+                      throw individualError;
+                    }
+                  }
+                }
+              } else {
+                throw batchError;
+              }
+            }
           }
 
           return deletedCount;
