@@ -9,7 +9,9 @@ const SPOTIFY_SCOPES = [
   'user-read-playback-state',
   'user-modify-playback-state',
   'user-read-currently-playing',
-  'user-read-private'
+  'user-read-private',
+  'user-read-recently-played',
+  'user-top-read'
 ].join(' ');
 
 /**
@@ -619,6 +621,79 @@ class SpotifyService extends BaseService {
       });
 
       return response.data;
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Get user's recently played tracks
+   * @param {string} accessToken - Valid access token
+   * @param {number} limit - Number of tracks to return (max 50)
+   * @returns {Promise<Array>} Array of recently played tracks
+   */
+  async getRecentlyPlayed(accessToken, limit = 20) {
+    try {
+      const response = await axios.get(`${SPOTIFY_API_BASE}/me/player/recently-played`, {
+        params: {
+          limit: Math.min(limit, 50)
+        },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      return response.data.items || [];
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Get user's top tracks
+   * @param {string} accessToken - Valid access token
+   * @param {string} timeRange - Time range: 'short_term' (4 weeks), 'medium_term' (6 months), 'long_term' (years)
+   * @param {number} limit - Number of tracks to return (max 50)
+   * @returns {Promise<Array>} Array of top tracks
+   */
+  async getTopTracks(accessToken, timeRange = 'medium_term', limit = 10) {
+    try {
+      const response = await axios.get(`${SPOTIFY_API_BASE}/me/top/tracks`, {
+        params: {
+          time_range: timeRange,
+          limit: Math.min(limit, 50)
+        },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      return response.data.items || [];
+    } catch (error) {
+      this.handleSpotifyApiError(error);
+    }
+  }
+
+  /**
+   * Get user's top artists
+   * @param {string} accessToken - Valid access token
+   * @param {string} timeRange - Time range: 'short_term' (4 weeks), 'medium_term' (6 months), 'long_term' (years)
+   * @param {number} limit - Number of artists to return (max 50)
+   * @returns {Promise<Array>} Array of top artists
+   */
+  async getTopArtists(accessToken, timeRange = 'medium_term', limit = 10) {
+    try {
+      const response = await axios.get(`${SPOTIFY_API_BASE}/me/top/artists`, {
+        params: {
+          time_range: timeRange,
+          limit: Math.min(limit, 50)
+        },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      return response.data.items || [];
     } catch (error) {
       this.handleSpotifyApiError(error);
     }

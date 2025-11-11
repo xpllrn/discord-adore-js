@@ -58,6 +58,46 @@ module.exports = {
           };
           return await handleLock(client, message, args);
         }
+        case 'setrate': {
+          const subcommandInfo = {
+            description: 'Set XP gain multiplier',
+            usage: '{guildprefix}levels setrate [multiplier]',
+            aliases: [],
+            parameters: ['multiplier'],
+            example: '{guildprefix}levels setrate 2'
+          };
+          return await handleSetRate(client, message, args);
+        }
+        case 'roles': {
+          const subcommandInfo = {
+            description: 'Show all level roles',
+            usage: '{guildprefix}levels roles',
+            aliases: [],
+            parameters: [],
+            example: '{guildprefix}levels roles'
+          };
+          return await handleRoles(client, message, args);
+        }
+        case 'stackroles': {
+          const subcommandInfo = {
+            description: 'Toggle role stacking',
+            usage: '{guildprefix}levels stackroles [on/off]',
+            aliases: [],
+            parameters: ['on/off'],
+            example: '{guildprefix}levels stackroles on'
+          };
+          return await handleStackRoles(client, message, args);
+        }
+        case 'update': {
+          const subcommandInfo = {
+            description: 'Update a level role',
+            usage: '{guildprefix}levels update [@role] [level]',
+            aliases: [],
+            parameters: ['role', 'level'],
+            example: '{guildprefix}levels update @VIP 15'
+          };
+          return await handleUpdateRole(client, message, args);
+        }
         case 'reset': {
           const subcommandInfo = {
             description: 'Reset all level data',
@@ -505,6 +545,7 @@ async function handleSync(client, message, args) {
     return embeds.warn(message, 'No level roles configured');
   }
 
+  const stackRoles = await guildService.getStackRoles(message.guild.id);
   const userLevels = await guildService.getUserLeaderboard(message.guild.id, 1000);
   let syncedCount = 0;
 
@@ -513,14 +554,43 @@ async function handleSync(client, message, args) {
       const member = await message.guild.members.fetch(userData.userId);
       if (!member) continue;
 
-      // Find roles user should have based on their level
-      const eligibleRoles = levelRoles.filter(lr => lr.level <= userData.level);
+      if (stackRoles) {
+        // Stack mode: Add all eligible roles
+        const eligibleRoles = levelRoles.filter(lr => lr.level <= userData.level);
 
-      for (const levelRole of eligibleRoles) {
-        const role = message.guild.roles.cache.get(levelRole.roleId);
-        if (role && !member.roles.cache.has(role.id)) {
-          await member.roles.add(role);
-          syncedCount++;
+        for (const levelRole of eligibleRoles) {
+          const role = message.guild.roles.cache.get(levelRole.roleId);
+          if (role && !member.roles.cache.has(role.id)) {
+            await member.roles.add(role);
+            syncedCount++;
+          }
+        }
+      } else {
+        // No stack mode: Only keep highest level role
+        const eligibleRoles = levelRoles.filter(lr => lr.level <= userData.level);
+        
+        if (eligibleRoles.length > 0) {
+          const sortedRoles = eligibleRoles.sort((a, b) => b.level - a.level);
+          const highestLevelRole = sortedRoles[0];
+          const highestRole = message.guild.roles.cache.get(highestLevelRole.roleId);
+
+          if (highestRole) {
+            // Remove all other level roles
+            for (const levelRole of levelRoles) {
+              if (levelRole.roleId !== highestLevelRole.roleId) {
+                const role = message.guild.roles.cache.get(levelRole.roleId);
+                if (role && member.roles.cache.has(role.id)) {
+                  await member.roles.remove(role);
+                }
+              }
+            }
+
+            // Add the highest level role
+            if (!member.roles.cache.has(highestRole.id)) {
+              await member.roles.add(highestRole);
+              syncedCount++;
+            }
+          }
         }
       }
     } catch (error) {
@@ -680,3 +750,133 @@ async function handleLevelMessage(client, message, args) {
 }
 
 
+
+// Set rate subcommand
+async function handleSetRate(client, message, args) {
+  const guildService = getService('guild');
+  
+  if (!args[1]) {
+    const currentRate = await guildService.getXPRate(message.guild.id);
+    return embeds.info(message, `Current XP rate multiplier: **${currentRate}x**`);
+  }
+
+  const rate = parseFloat(args[1]);
+
+  if (isNaN(rate) || rate <= 0 || rate > 10) {
+    return embeds.deny(message, 'XP rate must be a number between **0.1** and **10**');
+  }
+
+  await guildService.setXPRate(message.guild.id, rate);
+  return embeds.success(message, `XP rate multiplier set to **${rate}x**`);
+}
+
+// Roles subcommand
+async function handleRoles(client, message, args) {
+  const guildService = getService('guild');
+  const levelRoles = await guildService.getLevelRoles(message.guild.id);
+
+  if (levelRoles.length === 0) {
+    return embeds.warn(message, 'No level roles configured');
+  }
+
+  // Sort by level
+  const sortedRoles = levelRoles.sort((a, b) => a.level - b.level);
+
+  const rolesList = sortedRoles.map(lr => {
+    const role = message.guild.roles.cache.get(lr.roleId);
+    const roleName = role ? role.name : 'Deleted Role';
+    return `**Level ${lr.level}** — ${role ? role : roleName}`;
+  }).join('\n');
+
+  const stackRoles = await guildService.getStackRoles(message.guild.id);
+  const stackText = stackRoles ? 'Roles **stack** (users keep lower level roles)' : 'Roles **don\'t stack** (only highest role is kept)';
+
+  const embed = new EmbedBuilder()
+    .setColor(colors.embed)
+    .setTitle('Level Roles')
+    .setDescription(rolesList)
+    .setFooter({ text: stackText });
+
+  return message.channel.send({ embeds: [embed] });
+}
+
+// Stack roles subcommand
+async function handleStackRoles(client, message, args) {
+  const guildService = getService('guild');
+
+  if (!args[1]) {
+    const currentStack = await guildService.getStackRoles(message.guild.id);
+    const status = currentStack ? 'on' : 'off';
+    return embeds.info(message, `Role stacking is currently **${status}**`);
+  }
+
+  const setting = args[1].toLowerCase();
+
+  if (!['on', 'off', 'true', 'false', 'enable', 'disable'].includes(setting)) {
+    return embeds.deny(message, 'Please use **on** or **off**');
+  }
+
+  const stack = ['on', 'true', 'enable'].includes(setting);
+
+  await guildService.setStackRoles(message.guild.id, stack);
+
+  const description = stack
+    ? 'Role stacking is now **on** — users will keep all level roles they\'ve earned'
+    : 'Role stacking is now **off** — users will only have their highest level role';
+
+  return embeds.success(message, description);
+}
+
+// Update role subcommand
+async function handleUpdateRole(client, message, args) {
+  const guildService = getService('guild');
+  
+  if (!args[1] || !args[2]) {
+    return runHelpCommand(message, 'levels');
+  }
+
+  const roleResult = message.mentions.roles.first() ?
+    { found: true, role: message.mentions.roles.first() } :
+    findRole(message.guild, args[1]);
+
+  if (!roleResult.found) {
+    return embeds.deny(message, roleResult.error);
+  }
+
+  const role = roleResult.role;
+  const newLevel = parseInt(args[2]);
+
+  if (isNaN(newLevel) || newLevel < 1 || newLevel > 1000) {
+    return embeds.deny(message, 'Level must be a number between **1** and **1000**');
+  }
+
+  // Check role hierarchy
+  if (role.position >= message.guild.members.me.roles.highest.position) {
+    return embeds.deny(message, 'I cannot manage this role due to role hierarchy');
+  }
+
+  if (role.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId) {
+    return embeds.deny(message, 'You cannot manage this role due to role hierarchy');
+  }
+
+  // Find the current level for this role
+  const levelRoles = await guildService.getLevelRoles(message.guild.id);
+  const existingRole = levelRoles.find(lr => lr.roleId === role.id);
+
+  if (!existingRole) {
+    return embeds.deny(message, `**${role.name}** is not configured as a level role. Use \`levels add\` to add it.`);
+  }
+
+  const oldLevel = existingRole.level;
+
+  // Check if new level already has a different role
+  const conflictRole = levelRoles.find(lr => lr.level === newLevel && lr.roleId !== role.id);
+  if (conflictRole) {
+    const conflictRoleObj = message.guild.roles.cache.get(conflictRole.roleId);
+    const conflictRoleName = conflictRoleObj ? conflictRoleObj.name : 'Unknown Role';
+    return embeds.deny(message, `Level **${newLevel}** already has a role assigned (**${conflictRoleName}**). Remove it first or choose a different level.`);
+  }
+
+  await guildService.updateLevelRole(message.guild.id, oldLevel, newLevel, role.id);
+  return embeds.success(message, `Updated **${role.name}** from level **${oldLevel}** to level **${newLevel}**`);
+}

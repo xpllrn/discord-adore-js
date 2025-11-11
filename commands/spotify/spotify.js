@@ -63,6 +63,18 @@ module.exports = {
       case 'search':
         return await handleGetLink(client, message, args.slice(1));
       
+      case 'recents':
+      case 'recent':
+        return await handleRecents(message, spotifyService);
+      
+      case 'toptracks':
+      case 'tracks':
+        return await handleTopTracks(message, args.slice(1), spotifyService);
+      
+      case 'topartists':
+      case 'artists':
+        return await handleTopArtists(message, args.slice(1), spotifyService);
+      
       default:
         return runHelpCommand(message, 'spotify');
     }
@@ -670,4 +682,146 @@ async function getLinkFromUser(client, message, args) {
   const trackUrl = `https://open.spotify.com/track/${trackId}`;
   
   return message.channel.send(trackUrl);
+}
+
+// ===== STATS COMMANDS =====
+
+async function handleRecents(message, spotifyService) {
+  try {
+    const { accessToken } = await checkSpotifyAccess(message);
+    if (!accessToken) return;
+
+    await message.channel.sendTyping();
+
+    const recentTracks = await spotifyService.getRecentlyPlayed(accessToken, 10);
+
+    if (!recentTracks || recentTracks.length === 0) {
+      return embeds.warn(message, 'No recently played tracks found.');
+    }
+
+    const trackList = recentTracks.map((item, index) => {
+      const track = item.track;
+      const trackName = track.name;
+      const artistName = track.artists.map(a => a.name).join(', ');
+      const trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
+      return `**${index + 1}.** [\`${trackName}\`](${trackUrl}) by \`${artistName}\``;
+    }).join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(config.colors.spotify)
+      .setAuthor({
+        name: `${message.author.username}'s Recently Played`,
+        iconURL: message.author.displayAvatarURL()
+      })
+      .setDescription(trackList)
+      .setFooter({ text: 'Powered by Spotify' });
+
+    return message.channel.send({ embeds: [embed] });
+
+  } catch (error) {
+    logger.webhook.error(error, message);
+    return handleSpotifyError(message, error);
+  }
+}
+
+async function handleTopTracks(message, args, spotifyService) {
+  try {
+    const { accessToken } = await checkSpotifyAccess(message);
+    if (!accessToken) return;
+
+    // Parse time range from args
+    let timeRange = 'medium_term'; // default: 6 months
+    let timeLabel = 'Last 6 Months';
+    
+    const timeArg = args[0] ? args[0].toLowerCase() : '';
+    if (timeArg === 'short' || timeArg === 'month' || timeArg === '4weeks') {
+      timeRange = 'short_term';
+      timeLabel = 'Last 4 Weeks';
+    } else if (timeArg === 'long' || timeArg === 'alltime' || timeArg === 'all') {
+      timeRange = 'long_term';
+      timeLabel = 'All Time';
+    }
+
+    await message.channel.sendTyping();
+
+    const topTracks = await spotifyService.getTopTracks(accessToken, timeRange, 10);
+
+    if (!topTracks || topTracks.length === 0) {
+      return embeds.warn(message, 'No top tracks found for this time period.');
+    }
+
+    const trackList = topTracks.map((track, index) => {
+      const trackName = track.name;
+      const artistName = track.artists.map(a => a.name).join(', ');
+      const trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
+      return `**${index + 1}.** [\`${trackName}\`](${trackUrl}) by \`${artistName}\``;
+    }).join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(config.colors.spotify)
+      .setAuthor({
+        name: `${message.author.username}'s Top Tracks`,
+        iconURL: message.author.displayAvatarURL()
+      })
+      .setDescription(trackList)
+      .setFooter({ text: `${timeLabel} • Powered by Spotify` });
+
+    return message.channel.send({ embeds: [embed] });
+
+  } catch (error) {
+    logger.webhook.error(error, message);
+    return handleSpotifyError(message, error);
+  }
+}
+
+async function handleTopArtists(message, args, spotifyService) {
+  try {
+    const { accessToken } = await checkSpotifyAccess(message);
+    if (!accessToken) return;
+
+    // Parse time range from args
+    let timeRange = 'medium_term'; // default: 6 months
+    let timeLabel = 'Last 6 Months';
+    
+    const timeArg = args[0] ? args[0].toLowerCase() : '';
+    if (timeArg === 'short' || timeArg === 'month' || timeArg === '4weeks') {
+      timeRange = 'short_term';
+      timeLabel = 'Last 4 Weeks';
+    } else if (timeArg === 'long' || timeArg === 'alltime' || timeArg === 'all') {
+      timeRange = 'long_term';
+      timeLabel = 'All Time';
+    }
+
+    await message.channel.sendTyping();
+
+    const topArtists = await spotifyService.getTopArtists(accessToken, timeRange, 10);
+
+    if (!topArtists || topArtists.length === 0) {
+      return embeds.warn(message, 'No top artists found for this time period.');
+    }
+
+    const artistList = topArtists.map((artist, index) => {
+      const artistName = artist.name;
+      const artistUrl = artist.external_urls?.spotify || `https://open.spotify.com/artist/${artist.id}`;
+      const genres = artist.genres && artist.genres.length > 0 
+        ? ` • ${artist.genres.slice(0, 2).join(', ')}` 
+        : '';
+      return `**${index + 1}.** [\`${artistName}\`](${artistUrl})${genres}`;
+    }).join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(config.colors.spotify)
+      .setAuthor({
+        name: `${message.author.username}'s Top Artists`,
+        iconURL: message.author.displayAvatarURL()
+      })
+      .setDescription(artistList)
+      .setFooter({ text: `${timeLabel} • Powered by Spotify` });
+
+    return message.channel.send({ embeds: [embed] });
+
+  } catch (error) {
+    logger.webhook.error(error, message);
+    return handleSpotifyError(message, error);
+  }
 }

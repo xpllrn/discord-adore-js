@@ -10,7 +10,7 @@ const executionTracker = new Map();
 
 module.exports = {
   name: "vm",
-  aliases: ['voicemanager', 'voice'],
+  aliases: ['voicemaster', 'voice'],
   description: 'Voice channel management system',
   isGroupCommand: true,
   run: async (client, message, args) => {

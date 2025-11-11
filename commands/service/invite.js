@@ -12,7 +12,7 @@ module.exports = {
     const embed = new EmbedBuilder()
 
     .setColor(colors.embed)
-    .setDescription(`> Contact **[iPhone](https://discord.com/users/1243888419403206660)** if you have any questions..`)
+    .setDescription(`> Contact **[vee](https://discord.com/users/1243888419403206660)** if you have any questions..`)
 
     // Create button
     const row = new ActionRowBuilder()

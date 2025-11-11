@@ -329,7 +329,7 @@ module.exports = {
         const isBirthdayToday = await userService.isBirthday(message.author.id);
 
         if (isBirthdayToday) {
-          const birthdayText = `🎂 Your birthday is **${formattedBirthday}** (Today!)`;
+          const birthdayText = `🎂 Your birthday is today! Happy birthday!`;
           return embeds.info(message, birthdayText);
         } else {
           const nextBirthdayTimestamp = await getNextBirthdayTimestamp(message.author.id);

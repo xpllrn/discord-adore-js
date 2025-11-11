@@ -171,7 +171,9 @@ class GuildService extends BaseService {
             messageMode: 'context',
             levelUpChannel: null,
             levelRoles: [],
-            lastSyncTime: null
+            lastSyncTime: null,
+            xpRate: 1,
+            stackRoles: true
           },
           UserLevels: [],
           StickyMessages: [],
@@ -2058,6 +2060,10 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       let userLevels = guildData.UserLevels || [];
 
+      // Apply XP rate multiplier
+      const xpRate = guildData.LevelSystem?.xpRate || 1;
+      const adjustedExpGain = Math.floor(expGain * xpRate);
+
       let userIndex = userLevels.findIndex(ul => ul.userId === userId);
       let userData;
 
@@ -2074,7 +2080,7 @@ class GuildService extends BaseService {
         userIndex = userLevels.length - 1;
       }
 
-      userData.experience += expGain;
+      userData.experience += adjustedExpGain;
       userData.lastMessageTime = new Date();
 
       // Check for level up
@@ -3443,6 +3449,168 @@ class GuildService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to set level up channel for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get XP rate multiplier
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<number>} XP rate multiplier (default: 1)
+   */
+  async getXPRate(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelSystem = guildData.LevelSystem || {};
+      return levelSystem.xpRate || 1;
+    } catch (error) {
+      console.error(`Error getting XP rate for guild ${guildId}:`, error.message);
+      return 1;
+    }
+  }
+
+  /**
+   * Set XP rate multiplier
+   * @param {string} guildId - Guild ID
+   * @param {number} rate - XP rate multiplier
+   * @returns {Promise<boolean>} Success status
+   */
+  async setXPRate(guildId, rate) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof rate !== 'number' || rate <= 0 || rate > 10) {
+      throw new ValidationError('XP rate must be between 0.1 and 10', 'rate', rate);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      if (!guildData.LevelSystem) {
+        guildData.LevelSystem = {};
+      }
+
+      guildData.LevelSystem.xpRate = rate;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set XP rate for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Get stack roles setting
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} True if roles should stack
+   */
+  async getStackRoles(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const levelSystem = guildData.LevelSystem || {};
+      return levelSystem.stackRoles !== undefined ? levelSystem.stackRoles : true;
+    } catch (error) {
+      console.error(`Error getting stack roles setting for guild ${guildId}:`, error.message);
+      return true;
+    }
+  }
+
+  /**
+   * Set stack roles setting
+   * @param {string} guildId - Guild ID
+   * @param {boolean} stack - Whether to stack roles
+   * @returns {Promise<boolean>} Success status
+   */
+  async setStackRoles(guildId, stack) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof stack !== 'boolean') {
+      throw new ValidationError('Stack must be a boolean', 'stack', stack);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      if (!guildData.LevelSystem) {
+        guildData.LevelSystem = {};
+      }
+
+      guildData.LevelSystem.stackRoles = stack;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set stack roles for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Update level role
+   * @param {string} guildId - Guild ID
+   * @param {number} oldLevel - Old level requirement
+   * @param {number} newLevel - New level requirement
+   * @param {string} roleId - Role ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateLevelRole(guildId, oldLevel, newLevel, roleId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof oldLevel !== 'number' || oldLevel < 1) {
+      throw new ValidationError('Old level must be a positive number', 'oldLevel', oldLevel);
+    }
+
+    if (typeof newLevel !== 'number' || newLevel < 1) {
+      throw new ValidationError('New level must be a positive number', 'newLevel', newLevel);
+    }
+
+    if (!roleId) {
+      throw new ValidationError('Role ID is required', 'roleId', roleId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      if (!guildData.LevelSystem) {
+        guildData.LevelSystem = {};
+      }
+
+      const levelRoles = guildData.LevelSystem.levelRoles || [];
+
+      // Remove old level entry
+      const filteredRoles = levelRoles.filter(lr => lr.level !== oldLevel);
+
+      // Check if new level already has a role
+      const existingIndex = filteredRoles.findIndex(lr => lr.level === newLevel);
+      if (existingIndex !== -1) {
+        filteredRoles[existingIndex].roleId = roleId;
+      } else {
+        filteredRoles.push({ level: newLevel, roleId });
+      }
+
+      guildData.LevelSystem.levelRoles = filteredRoles;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update level role for guild ${guildId}`, error);
     }
   }
 

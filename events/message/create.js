@@ -591,16 +591,56 @@ async function assignLevelRoles(message, newLevel) {
     const levelRoles = await guildService.getLevelRoles(message.guild.id);
     if (!levelRoles || levelRoles.length === 0) return;
 
-    // Find roles user should have based on their new level
-    const eligibleRoles = levelRoles.filter(lr => lr.level <= newLevel);
+    // Check if roles should stack
+    const stackRoles = await guildService.getStackRoles(message.guild.id);
 
-    for (const levelRole of eligibleRoles) {
-      const role = message.guild.roles.cache.get(levelRole.roleId);
-      if (role && !message.member.roles.cache.has(role.id)) {
+    if (stackRoles) {
+      // Stack mode: Add all eligible roles
+      const eligibleRoles = levelRoles.filter(lr => lr.level <= newLevel);
+
+      for (const levelRole of eligibleRoles) {
+        const role = message.guild.roles.cache.get(levelRole.roleId);
+        if (role && !message.member.roles.cache.has(role.id)) {
+          try {
+            await message.member.roles.add(role);
+          } catch (error) {
+            // Silent fail if can't add role (permissions, hierarchy, etc.)
+          }
+        }
+      }
+    } else {
+      // No stack mode: Only keep the highest level role
+      const eligibleRoles = levelRoles.filter(lr => lr.level <= newLevel);
+      
+      if (eligibleRoles.length === 0) return;
+
+      // Sort by level descending to get highest role first
+      const sortedRoles = eligibleRoles.sort((a, b) => b.level - a.level);
+      const highestLevelRole = sortedRoles[0];
+      const highestRole = message.guild.roles.cache.get(highestLevelRole.roleId);
+
+      if (!highestRole) return;
+
+      // Remove all other level roles
+      for (const levelRole of levelRoles) {
+        if (levelRole.roleId !== highestLevelRole.roleId) {
+          const role = message.guild.roles.cache.get(levelRole.roleId);
+          if (role && message.member.roles.cache.has(role.id)) {
+            try {
+              await message.member.roles.remove(role);
+            } catch (error) {
+              // Silent fail
+            }
+          }
+        }
+      }
+
+      // Add the highest level role
+      if (!message.member.roles.cache.has(highestRole.id)) {
         try {
-          await message.member.roles.add(role);
+          await message.member.roles.add(highestRole);
         } catch (error) {
-          // Silent fail if can't add role (permissions, hierarchy, etc.)
+          // Silent fail
         }
       }
     }

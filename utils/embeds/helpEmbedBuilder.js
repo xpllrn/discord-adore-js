@@ -114,22 +114,9 @@ function createTraditionalEmbed(command, guildPrefix) {
     : 'n/a';
   fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
-  // Parameters field - extract from syntax if available
-  let parametersValue = 'n/a';
-  if (command.syntax) {
-    // Try to extract parameters from syntax string
-    // Look for patterns like (user), (member), etc.
-    const paramMatches = command.syntax.match(/\(([^)]+)\)/g);
-    if (paramMatches && paramMatches.length > 0) {
-      // Clean up the parentheses and join
-      parametersValue = paramMatches.map(p => p.replace(/[()]/g, '')).join(', ');
-    }
-  }
-  fields.push({ name: '**Parameters**', value: parametersValue, inline: true });
-
-  // Information field (Permission)
+  // Permission field
   const permissionValue = command.permission || 'n/a';
-  fields.push({ name: '**Information**', value: permissionValue, inline: true });
+  fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
   // Usage field with syntax and example
   if (command.syntax || command.example) {
