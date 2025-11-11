@@ -400,23 +400,24 @@ async function createVoiceManagerPanel(client, channel) {
     .setThumbnail(client.user.displayAvatarURL());
 
   // Create button rows - 4 buttons per row (8 total)
+  // Using standard Unicode emojis for better compatibility
   const row1 = new ActionRowBuilder()
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_lock')
-        .setEmoji('1430503055752953887')
+        .setEmoji('🔒')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_unlock')
-        .setEmoji('1430503064808198184')
+        .setEmoji('🔓')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_hide')
-        .setEmoji('1430503073565900961')
+        .setEmoji('👻')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_unhide')
-        .setEmoji('1430503081925279754')
+        .setEmoji('👁️')
         .setStyle(ButtonStyle.Secondary)
     );
 
@@ -424,19 +425,19 @@ async function createVoiceManagerPanel(client, channel) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_increase')
-        .setEmoji('1430503123159482544')
+        .setEmoji('➕')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_decrease')
-        .setEmoji('1430503131346895001')
+        .setEmoji('➖')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_rename')
-        .setEmoji('1431402284386091121')
+        .setEmoji('📝')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_info')
-        .setEmoji('1430503114879799356')
+        .setEmoji('ℹ️')
         .setStyle(ButtonStyle.Secondary)
     );
 
@@ -447,25 +448,25 @@ async function createVoiceManagerPanel(client, channel) {
     });
     console.log('Voice manager panel created successfully');
   } catch (error) {
-    console.error('Failed to create voice manager panel with emojis:', error);
-    // Fallback with labels if emojis fail
+    console.error('Failed to create voice manager panel:', error);
+    // Fallback with labels only if emojis still fail
     const fallbackRow1 = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
           .setCustomId('vm_lock')
-          .setLabel('🔒')
+          .setLabel('Lock')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_unlock')
-          .setLabel('🔓')
+          .setLabel('Unlock')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_hide')
-          .setLabel('👻')
+          .setLabel('Hide')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_unhide')
-          .setLabel('👁️')
+          .setLabel('Unhide')
           .setStyle(ButtonStyle.Secondary)
       );
 
@@ -473,19 +474,19 @@ async function createVoiceManagerPanel(client, channel) {
       .addComponents(
         new ButtonBuilder()
           .setCustomId('vm_increase')
-          .setLabel('➕')
+          .setLabel('Increase')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_decrease')
-          .setLabel('➖')
+          .setLabel('Decrease')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_rename')
-          .setLabel('📝')
+          .setLabel('Rename')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('vm_info')
-          .setLabel('ℹ️')
+          .setLabel('Info')
           .setStyle(ButtonStyle.Secondary)
       );
 

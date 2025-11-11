@@ -239,11 +239,12 @@ async function handleModuleToggle(message, args, antinukeService, moduleName) {
 }
 
 async function handleConfig(message, antinukeService) {
+  const { emojis } = require('../../config/setup');
   const settings = await antinukeService.getSettings(message.guild.id);
 
   const formatModule = (module) => {
-    if (!module.enabled) return '❌';
-    const parts = ['✅'];
+    if (!module.enabled) return emojis.error;
+    const parts = [emojis.success];
     if (module.limit !== undefined) parts.push(`Limit: ${module.limit}`);
     if (module.punishment) parts.push(`Do: ${module.punishment}`);
     return parts.join(' | ');
@@ -251,8 +252,12 @@ async function handleConfig(message, antinukeService) {
 
   const embed = new EmbedBuilder()
     .setColor(colors.embed)
-    .setTitle('Antinuke Configuration')
-    .setDescription(`**Status:** ${settings.enabled ? '✅ Enabled' : '❌ Disabled'}`)
+    .setAuthor({ 
+      name: `${message.guild.name} Antinuke Configuration`,
+      iconURL: message.guild.iconURL({ dynamic: true })
+    })
+    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+    .setDescription(`**Status:** ${settings.enabled ? `${emojis.success} Enabled` : `${emojis.error} Disabled`}`)
     .addFields([
       {
         name: '**Protection Modules**',
@@ -262,8 +267,8 @@ async function handleConfig(message, antinukeService) {
           `**Member Ban:** ${formatModule(settings.modules.ban)}`,
           `**Channel Actions:** ${formatModule(settings.modules.channel)}`,
           `**Webhook Creation:** ${formatModule(settings.modules.webhook)}`,
-          `**Bot Addition:** ${settings.modules.botadd.enabled ? `✅ | Do: ${settings.modules.botadd.punishment}` : '❌'}`,
-          `**Permissions:** ${settings.modules.permissions.enabled ? `✅ | Do: ${settings.modules.permissions.punishment}` : '❌'}`
+          `**Bot Addition:** ${settings.modules.botadd.enabled ? `${emojis.success} | Do: ${settings.modules.botadd.punishment}` : emojis.error}`,
+          `**Permissions:** ${settings.modules.permissions.enabled ? `${emojis.success} | Do: ${settings.modules.permissions.punishment}` : emojis.error}`
         ].join('\n'),
         inline: false
       },
@@ -277,12 +282,17 @@ async function handleConfig(message, antinukeService) {
       {
         name: '**Statistics**',
         value: [
-          `Whitelisted: ${settings.whitelist.length}`,
-          `Admins: ${settings.admins.length}`
+          `Whitelisted: **${settings.whitelist.length}**`,
+          `Admins: **${settings.admins.length}**`
         ].join('\n'),
         inline: false
       }
-    ]);
+    ])
+    .setFooter({ 
+      text: `Requested by ${message.author.tag}`,
+      iconURL: message.author.displayAvatarURL({ dynamic: true })
+    })
+    .setTimestamp();
 
   return message.channel.send({ embeds: [embed] });
 }
@@ -305,13 +315,22 @@ async function handlePermissions(message, args, antinukeService) {
 
     const embed = new EmbedBuilder()
       .setColor(colors.embed)
-      .setTitle('Watched Permissions')
+      .setAuthor({ 
+        name: `${message.guild.name} Watched Permissions`,
+        iconURL: message.guild.iconURL({ dynamic: true })
+      })
+      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
       .setDescription(watched.map(p => `\`${p}\``).join(', '))
       .addFields({
-        name: 'Punishment',
+        name: '**Punishment**',
         value: settings.modules.permissions.punishment,
         inline: true
-      });
+      })
+      .setFooter({ 
+        text: `Requested by ${message.author.tag}`,
+        iconURL: message.author.displayAvatarURL({ dynamic: true })
+      })
+      .setTimestamp();
 
     return message.channel.send({ embeds: [embed] });
   }
@@ -450,8 +469,12 @@ async function handleList(message, antinukeService) {
 
   const embed = new EmbedBuilder()
     .setColor(colors.embed)
-    .setTitle('Antinuke Whitelist')
-    .setDescription(`Total: ${whitelist.length} (${users.length} users, ${bots.length} bots)`);
+    .setAuthor({ 
+      name: `${message.guild.name} Antinuke Whitelist`,
+      iconURL: message.guild.iconURL({ dynamic: true })
+    })
+    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+    .setDescription(`**Total:** ${whitelist.length} (${users.length} users, ${bots.length} bots)`);
 
   if (users.length > 0) {
     embed.addFields({
@@ -468,6 +491,12 @@ async function handleList(message, antinukeService) {
       inline: false
     });
   }
+
+  embed.setFooter({ 
+    text: `Requested by ${message.author.tag}`,
+    iconURL: message.author.displayAvatarURL({ dynamic: true })
+  })
+  .setTimestamp();
 
   return message.channel.send({ embeds: [embed] });
 }
@@ -515,13 +544,22 @@ async function handleAdmins(message, antinukeService) {
 
   const embed = new EmbedBuilder()
     .setColor(colors.embed)
-    .setTitle('Antinuke Admins')
-    .setDescription(`Total: ${admins.length}`)
+    .setAuthor({ 
+      name: `${message.guild.name} Antinuke Admins`,
+      iconURL: message.guild.iconURL({ dynamic: true })
+    })
+    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+    .setDescription(`**Total:** ${admins.length}`)
     .addFields({
       name: '**Admins**',
       value: admins.map(a => `<@${a.userId}>`).join(', '),
       inline: false
-    });
+    })
+    .setFooter({ 
+      text: `Requested by ${message.author.tag}`,
+      iconURL: message.author.displayAvatarURL({ dynamic: true })
+    })
+    .setTimestamp();
 
   return message.channel.send({ embeds: [embed] });
 }
