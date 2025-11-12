@@ -9,12 +9,12 @@ const { getService } = require('@services');
 const logger = require('../../utils/logger');
 
 module.exports = {
-  name: "vanity",
+  name: 'vanity',
   aliases: ['rep'],
-  description: `add vanity role to someone for reppin your server in their custom status`,
-  permission: "Manage Guild",
+  description: 'add vanity role to someone for reppin your server in their custom status',
+  permission: 'Manage Guild',
   isGroupCommand: true,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     const guildService = getService('guild');
 
     // Show help if no subcommand provided
