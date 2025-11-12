@@ -9,7 +9,7 @@ const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "unmute",
-  aliases: ['untimeout'],
+  aliases: ['untimeout', 'uto'],
   description: `remove timeout from a user using Discord's built-in timeout feature`,
   syntax: 'unmute (user) (reason)',
   example: 'unmute @vwsn appeal',

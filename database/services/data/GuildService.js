@@ -3058,25 +3058,45 @@ class GuildService extends BaseService {
     }
 
     try {
-      const guildData = await this.ensureGuildData(guildId);
-      const messageStats = guildData.MessageStats || [];
+      const { getModels } = require('../../index');
+      const models = getModels();
+      const Guild = models.Guild;
 
-      const userIndex = messageStats.findIndex(ms => ms.userId === userId);
+      const now = new Date();
 
-      if (userIndex !== -1) {
-        messageStats[userIndex].count = (messageStats[userIndex].count || 0) + 1;
-        messageStats[userIndex].date = new Date();
-      } else {
-        messageStats.push({
-          userId,
-          count: 1,
-          date: new Date()
-        });
+      // Use atomic operation to prevent race conditions
+      // Try to update existing entry first
+      const updateResult = await Guild.updateOne(
+        {
+          GuildID: guildId,
+          'MessageStats.userId': userId
+        },
+        {
+          $inc: { 'MessageStats.$.count': 1 },
+          $set: { 'MessageStats.$.date': now }
+        }
+      );
+
+      // If no existing entry was updated, add a new one
+      if (updateResult.matchedCount === 0) {
+        await Guild.updateOne(
+          { GuildID: guildId },
+          {
+            $push: {
+              MessageStats: {
+                userId,
+                count: 1,
+                date: now
+              }
+            }
+          },
+          { upsert: true }
+        );
       }
 
-      guildData.MessageStats = messageStats;
+      // Invalidate cache to ensure fresh data on next read
+      this.cache.invalidate(guildId);
 
-      await this.set(guildId, guildData);
       return true;
     } catch (error) {
       if (error instanceof ValidationError) {

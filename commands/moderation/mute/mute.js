@@ -10,7 +10,7 @@ const ms = require('ms');
 
 module.exports = {
   name: "mute",
-  aliases: ['shh', 'timeout'],
+  aliases: ['shh', 'timeout', 'tu'],
   description: `timeout a user using Discord's built-in timeout feature`,
   syntax: 'mute (user) (duration) (reason)',
   example: 'mute @vwsn 10m spam',
