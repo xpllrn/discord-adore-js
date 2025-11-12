@@ -64,11 +64,26 @@ async function processCommand(message, isEdit = false) {
   const guildAlias = guildAliases.find(a => a.shortcut === commandName);
   
   if (guildAlias) {
-    // Replace command with alias target
-    const aliasCommand = guildAlias.command.split(' ');
-    commandName = aliasCommand.shift().toLowerCase();
-    // Prepend alias args to user args
-    args = [...aliasCommand, ...args];
+    // Check if alias contains {0} placeholder
+    if (guildAlias.command.includes('{0}')) {
+      // Get the first argument to replace {0}
+      const placeholderValue = args.shift() || '';
+      
+      // Replace {0} with the first argument
+      const expandedCommand = guildAlias.command.replace(/\{0\}/g, placeholderValue);
+      
+      // Parse the expanded command
+      const aliasCommand = expandedCommand.split(' ');
+      commandName = aliasCommand.shift().toLowerCase();
+      // Prepend expanded alias args to remaining user args
+      args = [...aliasCommand, ...args];
+    } else {
+      // Original behavior for aliases without placeholders
+      const aliasCommand = guildAlias.command.split(' ');
+      commandName = aliasCommand.shift().toLowerCase();
+      // Prepend alias args to user args
+      args = [...aliasCommand, ...args];
+    }
   }
 
   // Find command

@@ -76,6 +76,26 @@ module.exports = {
 node scripts/standardize-commands.js
 ```
 
+## 🔗 Alias System
+
+### Placeholder Syntax
+Use `{0}` in aliases to insert the first argument:
+```
+alias add pic role {0} @PicPerms
+alias add shh timeout {0} 5m
+```
+
+Usage: `,pic @user` → `,role @user @PicPerms`
+
+### Role Operations
+Use `+` and `-` prefixes with role IDs:
+```
+alias add name role {0} +ROLEID, +ROLEID, -ROLEID
+```
+
+- `+ROLEID` - Add role (toggle if exists)
+- `-ROLEID` - Force remove role
+
 ## 📖 Full Docs
 
 See `docs/COMMAND_STANDARDS.md` for complete guide.

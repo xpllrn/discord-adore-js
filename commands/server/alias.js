@@ -22,10 +22,10 @@ module.exports = {
       case 'add':
       case 'create': {
         const subcommandInfo = {
-          description: 'Create an alias for a command',
+          description: 'Create an alias for a command with optional {0} placeholder',
           usage: '{guildprefix}alias add [shortcut] [command]',
           aliases: ['create'],
-          example: '{guildprefix}alias add bal balance'
+          example: '{guildprefix}alias add bal balance\n{guildprefix}alias add pic role {0} @PicPerms\n{guildprefix}alias add shh timeout {0} 5m\n{guildprefix}alias add mod role {0} +123456, -789012'
         };
         return await handleAddAlias(message, args);
       }
@@ -84,11 +84,11 @@ module.exports = {
 // Add alias handler
 async function handleAddAlias(message, args) {
   if (args.length < 3) {
-    return embeds.warn(message, 'Please provide a shortcut and command: `alias add [shortcut] [command]`\nExample: `alias add bal balance`');
+    return embeds.warn(message, 'Please provide a shortcut and command: `alias add [shortcut] [command]`\nExample: `alias add bal balance`\nWith placeholder: `alias add pic role {0} @PicPerms`');
   }
 
   const shortcut = args[1].toLowerCase();
-  const command = args.slice(2).join(' ').toLowerCase();
+  const command = args.slice(2).join(' ');
 
   // Validate shortcut
   if (shortcut.length > 20) {
@@ -107,12 +107,13 @@ async function handleAddAlias(message, args) {
     return embeds.warn(message, `Cannot create alias \`${shortcut}\` - it conflicts with an existing command`);
   }
 
-  // Validate command exists
-  const targetCommand = message.client.commands.get(command.split(' ')[0]) ||
-                       message.client.commands.get(message.client.aliases.get(command.split(' ')[0]));
+  // Validate command exists (check first word before {0} placeholder)
+  const commandBase = command.split(' ')[0].toLowerCase();
+  const targetCommand = message.client.commands.get(commandBase) ||
+                       message.client.commands.get(message.client.aliases.get(commandBase));
   
   if (!targetCommand) {
-    return embeds.warn(message, `Command \`${command.split(' ')[0]}\` does not exist`);
+    return embeds.warn(message, `Command \`${commandBase}\` does not exist`);
   }
 
   try {

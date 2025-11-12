@@ -648,14 +648,6 @@ module.exports = {
       }
     }
 
-    const roleResult = findRole(message.guild, args.slice(1).join(' '));
-
-    if (!roleResult.found) {
-      return embeds.deny(message, roleResult.error);
-    }
-
-    const role = roleResult.role;
-
     // Get the actual user object (handle both GuildMember and User objects)
     const targetUser = user.user || user;
 
@@ -667,23 +659,100 @@ module.exports = {
     // Check if Discord allows role management on this member
     if (!checkDiscordActionable(message, user, 'manage roles')) return;
 
-    // Check role hierarchy using utils/permissions.js
-    if (!checkUserRoleHierarchy(message, role)) return;
-    if (!checkBotRoleHierarchy(message, role)) return;
+    // Parse multiple roles separated by commas
+    const roleArgs = args.slice(1).join(' ').split(',').map(r => r.trim());
+    
+    const rolesToAdd = [];
+    const rolesToRemove = [];
+    const rolesToToggle = [];
+
+    for (const roleArg of roleArgs) {
+      if (!roleArg) continue;
+
+      let shouldRemove = false;
+      let shouldAdd = false;
+      let roleQuery = roleArg;
+
+      // Check for + prefix (force add)
+      if (roleArg.startsWith('+')) {
+        shouldAdd = true;
+        roleQuery = roleArg.slice(1).trim();
+      }
+      // Check for - prefix (force remove)
+      else if (roleArg.startsWith('-')) {
+        shouldRemove = true;
+        roleQuery = roleArg.slice(1).trim();
+      }
+
+      const roleResult = findRole(message.guild, roleQuery);
+
+      if (!roleResult.found) {
+        return embeds.deny(message, roleResult.error);
+      }
+
+      const role = roleResult.role;
+
+      // Check role hierarchy using utils/permissions.js
+      if (!checkUserRoleHierarchy(message, role)) return;
+      if (!checkBotRoleHierarchy(message, role)) return;
+
+      if (shouldRemove) {
+        rolesToRemove.push(role);
+      } else if (shouldAdd) {
+        rolesToAdd.push(role);
+      } else {
+        rolesToToggle.push(role);
+      }
+    }
 
     try {
-      if (user.roles.cache.has(role.id)) {
-        // Remove role
-        await user.roles.remove(role.id, `Role removed by ${message.author.tag}`);
-        return embeds.success(message, `Removed ${role} from ${targetUser}`);
+      const addedRoles = [];
+      const removedRoles = [];
+
+      // Handle forced additions
+      for (const role of rolesToAdd) {
+        if (!user.roles.cache.has(role.id)) {
+          await user.roles.add(role.id, `Role added by ${message.author.tag}`);
+          addedRoles.push(role);
+        }
+      }
+
+      // Handle forced removals
+      for (const role of rolesToRemove) {
+        if (user.roles.cache.has(role.id)) {
+          await user.roles.remove(role.id, `Role removed by ${message.author.tag}`);
+          removedRoles.push(role);
+        }
+      }
+
+      // Handle toggles (add if not present, remove if present)
+      for (const role of rolesToToggle) {
+        if (user.roles.cache.has(role.id)) {
+          await user.roles.remove(role.id, `Role removed by ${message.author.tag}`);
+          removedRoles.push(role);
+        } else {
+          await user.roles.add(role.id, `Role added by ${message.author.tag}`);
+          addedRoles.push(role);
+        }
+      }
+
+      // Build response message
+      const messages = [];
+      if (addedRoles.length > 0) {
+        messages.push(`Added ${addedRoles.join(', ')} to ${targetUser}`);
+      }
+      if (removedRoles.length > 0) {
+        messages.push(`Removed ${removedRoles.join(', ')} from ${targetUser}`);
+      }
+
+      if (messages.length > 0) {
+        return embeds.success(message, messages.join('\n'));
       } else {
-        // Add role
-        await user.roles.add(role.id, `Role added by ${message.author.tag}`);
-        return embeds.success(message, `Added ${role} to ${targetUser}`);
+        return embeds.warn(message, 'No role changes were made');
       }
     } catch (error) {
       if (error.code === 50013) {
-        return embeds.deny(message, `I don't have permission to manage **${targetUser.username}**'s roles or the **${role.name}** role. Please check my role hierarchy and permissions.`);
+        return embeds.deny(message, `I don't have permission to manage **${targetUser.username}**'s roles. Please check my role hierarchy and permissions.`);
       }
       return embeds.deny(message, 'Failed to modify user roles. Please check my permissions.');
     }
