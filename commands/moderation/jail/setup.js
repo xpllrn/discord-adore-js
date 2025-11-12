@@ -132,7 +132,7 @@ module.exports = {
           .setColor('#415159')
           .setTitle('Welcome to the basement')
           .setDescription('> If you\'ve been **locked** here, Please wait here **patiently** for a staff member to discuss your **punishment**')
-          .setFooter({ text: 'Please do not mention, let lead to increase in punishment' })
+          .setFooter({ text: 'Please do not mention, can lead to increase in punishment' })
           .setThumbnail('https://media.discordapp.net/attachments/1379150778354372678/1380449503366221895/pngwing.com_1.png?ex=6843eb49&is=684299c9&hm=114f359ef41a695ea8799a2931654295eadee44b48d13add93e394c1be706117&=&format=webp&quality=lossless&width=1706&height=1706');
 
         await jailChannel.send({ embeds: [jailWelcomeEmbed] });
