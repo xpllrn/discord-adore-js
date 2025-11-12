@@ -24,7 +24,7 @@ module.exports = {
 
         const description = userPrefix 
           ? `**Your self prefix:** \`${userPrefix}\``
-          : `**Your self prefix:** *Not set*`;
+          : `**Your self prefix:** **none**`;
 
         return embeds.info(message, description);
       } catch (error) {

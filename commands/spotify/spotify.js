@@ -23,56 +23,154 @@ module.exports = {
 
     switch (subcommand) {
       case 'link':
-      case 'login':
+      case 'login': {
+        const subcommandInfo = {
+          description: 'Link your Spotify account to control playback',
+          usage: '{guildprefix}spotify link',
+          aliases: ['login'],
+          example: '{guildprefix}spotify link'
+        };
         return await handleLogin(message, spotifyService, guildprefix);
+      }
       
       case 'unlink':
-      case 'logout':
+      case 'logout': {
+        const subcommandInfo = {
+          description: 'Unlink your Spotify account',
+          usage: '{guildprefix}spotify unlink',
+          aliases: ['logout'],
+          example: '{guildprefix}spotify unlink'
+        };
         return await handleLogout(message, spotifyService, guildprefix);
+      }
       
-      case 'play':
+      case 'play': {
+        const subcommandInfo = {
+          description: 'Play a track, search query, or from another user',
+          usage: '{guildprefix}spotify play <track link|search query|@user>',
+          aliases: [],
+          example: '{guildprefix}spotify play never gonna give you up'
+        };
         return await handlePlay(client, message, args.slice(1), spotifyService);
+      }
       
-      case 'pause':
+      case 'pause': {
+        const subcommandInfo = {
+          description: 'Pause current playback',
+          usage: '{guildprefix}spotify pause',
+          aliases: [],
+          example: '{guildprefix}spotify pause'
+        };
         return await handlePause(message, spotifyService);
+      }
       
       case 'skip':
-      case 'next':
+      case 'next': {
+        const subcommandInfo = {
+          description: 'Skip to the next track',
+          usage: '{guildprefix}spotify skip',
+          aliases: ['next'],
+          example: '{guildprefix}spotify skip'
+        };
         return await handleSkip(message, spotifyService);
+      }
       
       case 'previous':
-      case 'back':
+      case 'back': {
+        const subcommandInfo = {
+          description: 'Go back to the previous track',
+          usage: '{guildprefix}spotify previous',
+          aliases: ['back'],
+          example: '{guildprefix}spotify previous'
+        };
         return await handlePrevious(message, spotifyService);
+      }
       
       case 'volume':
-      case 'vol':
+      case 'vol': {
+        const subcommandInfo = {
+          description: 'Set playback volume (0-100)',
+          usage: '{guildprefix}spotify volume <0-100>',
+          aliases: ['vol'],
+          example: '{guildprefix}spotify volume 50'
+        };
         return await handleVolume(message, args.slice(1), spotifyService);
+      }
       
       case 'repeat':
-      case 'loop':
+      case 'loop': {
+        const subcommandInfo = {
+          description: 'Set repeat mode (track, context, or off)',
+          usage: '{guildprefix}spotify repeat <track|context|off>',
+          aliases: ['loop'],
+          example: '{guildprefix}spotify repeat track'
+        };
         return await handleRepeat(message, args.slice(1), spotifyService);
+      }
       
-      case 'shuffle':
+      case 'shuffle': {
+        const subcommandInfo = {
+          description: 'Toggle shuffle mode on or off',
+          usage: '{guildprefix}spotify shuffle <on|off>',
+          aliases: [],
+          example: '{guildprefix}spotify shuffle on'
+        };
         return await handleShuffle(message, args.slice(1), spotifyService);
+      }
       
       case 'queue':
-      case 'q':
+      case 'q': {
+        const subcommandInfo = {
+          description: 'Add a track to your queue',
+          usage: '{guildprefix}spotify queue <track link|search query>',
+          aliases: ['q'],
+          example: '{guildprefix}spotify queue bohemian rhapsody'
+        };
         return await handleQueue(message, args.slice(1), spotifyService);
+      }
       
-      case 'search':
+      case 'search': {
+        const subcommandInfo = {
+          description: 'Search for a track and get its Spotify link',
+          usage: '{guildprefix}spotify search <search query|@user>',
+          aliases: [],
+          example: '{guildprefix}spotify search the beatles'
+        };
         return await handleGetLink(client, message, args.slice(1));
+      }
       
       case 'recents':
-      case 'recent':
+      case 'recent': {
+        const subcommandInfo = {
+          description: 'View your recently played tracks',
+          usage: '{guildprefix}spotify recents',
+          aliases: ['recent'],
+          example: '{guildprefix}spotify recents'
+        };
         return await handleRecents(message, spotifyService);
+      }
       
       case 'toptracks':
-      case 'tracks':
+      case 'tracks': {
+        const subcommandInfo = {
+          description: 'View your top tracks (short, medium, or long term)',
+          usage: '{guildprefix}spotify toptracks [short|medium|long]',
+          aliases: ['tracks'],
+          example: '{guildprefix}spotify toptracks short'
+        };
         return await handleTopTracks(message, args.slice(1), spotifyService);
+      }
       
       case 'topartists':
-      case 'artists':
+      case 'artists': {
+        const subcommandInfo = {
+          description: 'View your top artists (short, medium, or long term)',
+          usage: '{guildprefix}spotify topartists [short|medium|long]',
+          aliases: ['artists'],
+          example: '{guildprefix}spotify topartists long'
+        };
         return await handleTopArtists(message, args.slice(1), spotifyService);
+      }
       
       default:
         return runHelpCommand(message, 'spotify');
