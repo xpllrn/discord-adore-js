@@ -45,7 +45,7 @@ module.exports = {
         // Build embed
         const embed = new EmbedBuilder()
           .setColor(colors.embed)
-          .setTitle(`🏙️ ${definition.word}`)
+          .setTitle(`${definition.word}`)
 
         // Add definition
         let definitionText = cleanDefinition;

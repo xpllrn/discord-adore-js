@@ -168,6 +168,7 @@ function createGiveawayEmbed(giveaway, guild) {
 // Start giveaway subcommand
 async function handleStart(client, message, args) {
   const { runHelpCommand } = require('../../utils/commandProcessor');
+  const guildService = getService('guild');
   
   if (args.length < 3) {
     return runHelpCommand(message, 'giveaways');
@@ -282,6 +283,8 @@ function selectRandomWinners(participants, count) {
 
 // End giveaway subcommand
 async function handleEnd(client, message, args) {
+  const guildService = getService('guild');
+  
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **message link** to the giveaway you want to end');
   }
@@ -361,6 +364,7 @@ async function handleEnd(client, message, args) {
 
 // List giveaways subcommand
 async function handleList(client, message, args) {
+  const guildService = getService('guild');
   const activeGiveaways = await guildService.getActiveGiveaways(message.guild.id);
 
   if (activeGiveaways.length === 0) {
@@ -396,6 +400,8 @@ async function handleList(client, message, args) {
 
 // Cancel giveaway subcommand
 async function handleCancel(client, message, args) {
+  const guildService = getService('guild');
+  
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **message link** to the giveaway you want to cancel');
   }
@@ -451,6 +457,8 @@ async function handleCancel(client, message, args) {
 
 // Reroll giveaway subcommand
 async function handleReroll(client, message, args) {
+  const guildService = getService('guild');
+  
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **message link** to the giveaway you want to reroll');
   }
@@ -542,6 +550,7 @@ async function handleReroll(client, message, args) {
 // Edit giveaway subcommand
 async function handleEdit(client, message, args) {
   const { runHelpCommand } = require('../../utils/commandProcessor');
+  const guildService = getService('guild');
   
   if (!args[0]) {
     return runHelpCommand(message, 'giveaways');
@@ -611,6 +620,8 @@ async function updateGiveawayMessage(giveaway, linkData, guild) {
 
 // Edit level requirement
 async function handleEditLevel(client, message, args, giveaway, linkData) {
+  const guildService = getService('guild');
+  
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **level requirement** (or "none" to remove)');
   }
@@ -647,6 +658,8 @@ async function handleEditLevel(client, message, args, giveaway, linkData) {
 
 // Edit role requirement
 async function handleEditRole(client, message, args, giveaway, linkData) {
+  const guildService = getService('guild');
+  
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **role** (or "none" to remove)');
   }
@@ -683,6 +696,8 @@ async function handleEditRole(client, message, args, giveaway, linkData) {
 
 // Edit host
 async function handleEditHost(client, message, args, giveaway, linkData) {
+  const guildService = getService('guild');
+  
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **user** to set as the new host');
   }
@@ -714,6 +729,8 @@ async function handleEditHost(client, message, args, giveaway, linkData) {
 
 // Edit description
 async function handleEditDescription(client, message, args, giveaway, linkData) {
+  const guildService = getService('guild');
+  
   if (!args[0]) {
     return embeds.warn(message, 'Please provide a **description** for the giveaway');
   }
@@ -745,6 +762,7 @@ async function handleEditDescription(client, message, args, giveaway, linkData) 
 
 // Edit image
 async function handleEditImage(client, message, args, giveaway, linkData) {
+  const guildService = getService('guild');
   let imageUrl = null;
 
   // Check for attachment first
