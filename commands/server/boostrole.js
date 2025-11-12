@@ -30,8 +30,11 @@ module.exports = {
       return runHelpCommand(message, 'br');
     }
 
+    // Get the subcommand
+    const subcommand = args[0].toLowerCase();
+
     // Base role management requires Manage Guild permission
-    if (args[0] === 'baserole') {
+    if (subcommand === 'baserole') {
       const subcommandInfo = {
         description: 'Set the base role for booster role positioning',
         usage: '{guildprefix}br baserole [@role]',
@@ -45,7 +48,7 @@ module.exports = {
     }
 
     // Cleanup requires Manage Guild permission
-    if (args[0] === 'cleanup') {
+    if (subcommand === 'cleanup') {
       const subcommandInfo = {
         description: 'Remove unused booster roles',
         usage: '{guildprefix}br cleanup [days]',
@@ -59,7 +62,7 @@ module.exports = {
     }
 
     // Create booster role
-    if (args[0] === 'create') {
+    if (subcommand === 'create') {
       const subcommandInfo = {
         description: 'Create your personal booster role',
         usage: '{guildprefix}br create [name]',
@@ -113,11 +116,11 @@ module.exports = {
     }
 
     // Set booster role color
-    if (subcommand === 'color') {
+    if (subcommand === 'color' || subcommand === 'colour') {
       const subcommandInfo = {
         description: 'Set a color for your booster role',
         usage: '{guildprefix}br color [color]',
-        aliases: [],
+        aliases: ['colour'],
         parameters: ['color'],
         example: '{guildprefix}br color #FF0000'
       };
@@ -499,7 +502,7 @@ async function handleIcon(client, message, args) {
 
   let iconUrl = null;
   if (args[0]) {
-    if (args[0].toLowerCase() === 'none' || args[0].toLowerCase() === 'remove') {
+    if (args[0].toLowerCase() === 'none' || args[0].toLowerCase() === 'remove' || args[0].toLowerCase() === 'delete') {
       iconUrl = null;
     } else {
       // Check if it's a URL
@@ -905,16 +908,12 @@ async function handleShare(client, message, args) {
   try {
     // Check if the Discord role still exists
     let discordRole = message.guild.roles.cache.get(boosterRole.roleId);
-    console.log(`Role cache check: roleId=${boosterRole.roleId}, found in cache=${!!discordRole}`);
 
     // If not in cache, try to fetch it
     if (!discordRole) {
       try {
-        console.log(`Attempting to fetch role ${boosterRole.roleId} from Discord...`);
         discordRole = await message.guild.roles.fetch(boosterRole.roleId);
-        console.log(`Role fetch result: ${!!discordRole}, name=${discordRole?.name}`);
       } catch (error) {
-        console.log(`Role fetch failed:`, error.message);
         discordRole = null;
       }
     }
@@ -922,12 +921,10 @@ async function handleShare(client, message, args) {
     let roleDisplay;
     if (discordRole) {
       roleDisplay = `<@&${boosterRole.roleId}>`;
-      console.log(`Using role mention: ${roleDisplay}`);
     } else {
       // Role was deleted, use stored name or fallback
       const roleName = boosterRole.name || 'Unknown Role';
       roleDisplay = `**${roleName}** (role deleted)`;
-      console.log(`Role deleted, using fallback: ${roleDisplay}`);
     }
 
     // Generate pending share ID first
@@ -1020,6 +1017,92 @@ async function handleShare(client, message, args) {
     logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to send share request. Please try again.');
   }
+}
+
+// Remove someone from shared booster role
+async function handleShareRemove(client, message, args) {
+  const guildService = getService('guild');
+
+  // Get user's booster role
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
+  if (!boosterRole) {
+    return embeds.warn(message, 'You don\'t have a booster role!');
+  }
+
+  if (!args[0]) {
+    return embeds.warn(message, 'Please mention a **user** to remove from your booster role');
+  }
+
+  const userResult = await findUser(message.guild, args[0], client);
+  if (!userResult.found) {
+    return embeds.warn(message, userResult.error);
+  }
+
+  const targetUser = userResult.user.user;
+  const targetMember = userResult.user;
+
+  // Initialize missing properties
+  if (!boosterRole.sharedWith) boosterRole.sharedWith = [];
+
+  // Check if user is in shared list
+  const sharedIndex = boosterRole.sharedWith.findIndex(s => s.userId === targetUser.id);
+  if (sharedIndex === -1) {
+    return embeds.warn(message, `**${targetUser.username}** doesn't have access to your booster role`);
+  }
+
+  try {
+    // Remove the role from the user
+    const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
+    if (discordRole && targetMember.roles.cache.has(discordRole.id)) {
+      await targetMember.roles.remove(discordRole);
+    }
+
+    // Remove from shared list
+    boosterRole.sharedWith.splice(sharedIndex, 1);
+
+    // Update in database
+    await guildService.updateBoosterRole(message.guild.id, message.author.id, {
+      sharedWith: boosterRole.sharedWith
+    });
+
+    return embeds.success(message, `Removed **${targetUser.username}** from your booster role`);
+
+  } catch (error) {
+    logger.webhook.error(error, message);
+    return embeds.deny(message, 'Failed to remove user from booster role. Please check my permissions.');
+  }
+}
+
+// List users who have access to your booster role
+async function handleShareList(client, message, args) {
+  const guildService = getService('guild');
+
+  // Get user's booster role
+  const boosterRole = await guildService.getUserBoosterRole(message.guild.id, message.author.id);
+  if (!boosterRole) {
+    return embeds.warn(message, 'You don\'t have a booster role!');
+  }
+
+  // Initialize missing properties
+  if (!boosterRole.sharedWith) boosterRole.sharedWith = [];
+
+  if (boosterRole.sharedWith.length === 0) {
+    return embeds.info(message, 'You haven\'t shared your booster role with anyone yet');
+  }
+
+  // Build list of shared users
+  const sharedList = boosterRole.sharedWith.map((share, index) => {
+    const sharedDate = share.sharedAt ? new Date(share.sharedAt).toLocaleDateString() : 'Unknown';
+    return `${index + 1}. <@${share.userId}> - Shared on ${sharedDate}`;
+  }).join('\n');
+
+  const embed = new EmbedBuilder()
+    .setColor(config.colors.embed)
+    .setTitle('Booster Role Shared With')
+    .setDescription(sharedList)
+    .setFooter({ text: `${boosterRole.sharedWith.length}/5 shares used` });
+
+  return message.channel.send({ embeds: [embed] });
 }
 
 // Cleanup unused booster roles

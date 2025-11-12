@@ -797,7 +797,8 @@ async function handleBoosterRoleShare(interaction) {
     }
 
     if (!boosterRole || !pendingShare) {
-      console.error(`Pending share not found: guildId=${interaction.guild.id}, pendingShareId=${pendingShareId}, targetUserId=${targetUserId}`);
+      const logger = require('../../utils/logger');
+      logger.console.error(`Pending share not found: guildId=${interaction.guild.id}, pendingShareId=${pendingShareId}, targetUserId=${targetUserId}`);
 
       const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Share request not found. It may have expired or been cancelled.');
       return await safeInteractionResponse(interaction, {
@@ -869,7 +870,8 @@ async function handleBoosterRoleShare(interaction) {
         // DM notifications removed per user request
 
       } catch (error) {
-        console.error('Error adding booster role:', error);
+        const logger = require('../../utils/logger');
+        logger.webhook.error(error, interaction.message);
         const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to add booster role. Please check bot permissions.');
         return await safeInteractionResponse(interaction, {
           embeds: [embed],
@@ -898,7 +900,8 @@ async function handleBoosterRoleShare(interaction) {
     }
 
   } catch (error) {
-    console.error('Error handling booster role share:', error);
+    const logger = require('../../utils/logger');
+    logger.webhook.error(error, interaction.message);
     const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'An error occurred while processing the share request.');
     return await safeInteractionResponse(interaction, {
       embeds: [embed],

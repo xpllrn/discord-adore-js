@@ -1451,42 +1451,7 @@ guildSchema.pre('validate', function () {
     });
   }
 
-  // Clean up MessageStats entries without required date field
-  if (this.MessageStats && this.MessageStats.length > 0) {
-    const originalLength = this.MessageStats.length;
-    const removedEntries = [];
-    
-    this.MessageStats = this.MessageStats.filter((stat, index) => {
-      const isValid = stat.date && stat.userId;
-      if (!isValid) {
-        removedEntries.push({
-          index,
-          userId: stat.userId || 'MISSING',
-          date: stat.date || 'MISSING',
-          count: stat.count || 0
-        });
-      }
-      return isValid;
-    });
-    
-    if (removedEntries.length > 0) {
-      console.log(`[Guild ${this.GuildID}] Removed ${removedEntries.length} corrupted MessageStats entries (missing required fields):`);
-      removedEntries.forEach(entry => {
-        console.log(`  - Index ${entry.index}: userId=${entry.userId}, date=${entry.date}, count=${entry.count}`);
-      });
-    }
-  }
 
-  // Clean up LastFMCrowns entries without required fields
-  if (this.LastFMCrowns && this.LastFMCrowns.length > 0) {
-    const originalLength = this.LastFMCrowns.length;
-    this.LastFMCrowns = this.LastFMCrowns.filter((crown) => {
-      return crown.artist && crown.userId && crown.plays;
-    });
-    if (this.LastFMCrowns.length < originalLength) {
-      console.log(`[Guild ${this.GuildID}] Removed ${originalLength - this.LastFMCrowns.length} corrupted LastFMCrowns entries`);
-    }
-  }
 });
 
 // Create indexes for better performance
