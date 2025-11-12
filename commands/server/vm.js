@@ -34,7 +34,8 @@ module.exports = {
 
     // Show help embed if no arguments
     if (!args[0]) {
-      return await showVMHelp(message);
+      const { runHelpCommand } = require('../../utils/commandProcessor');
+      return runHelpCommand(message, 'vm');
     }
 
     const subcommand = args[0].toLowerCase();
@@ -52,7 +53,6 @@ module.exports = {
           description: 'Setup the VoiceMaster system',
           usage: '{guildprefix}vm setup',
           aliases: [],
-          parameters: [],
           example: '{guildprefix}vm setup'
         };
         return await handleSetupCommand(message, client);
@@ -61,7 +61,6 @@ module.exports = {
           description: 'Reset the VoiceMaster system',
           usage: '{guildprefix}vm reset',
           aliases: [],
-          parameters: [],
           example: '{guildprefix}vm reset'
         };
         return await handleResetCommand(message);
@@ -496,83 +495,6 @@ async function createVoiceManagerPanel(client, channel) {
     });
     console.log('Voice manager panel created with fallback buttons');
   }
-}
-
-// Show VM help embed
-async function showVMHelp(message) {
-  const embed = new EmbedBuilder()
-    .setColor(colors.embed)
-    .setTitle('Voice Manager Commands')
-    .setDescription('Manage your temporary voice channels with these commands:')
-    .addFields([
-      {
-        name: '**vm setup**',
-        value: '> Setup the VoiceMaster system',
-        inline: true
-      },
-      {
-        name: '**vm reset**',
-        value: '> Reset the VoiceMaster system',
-        inline: true
-      },
-      {
-        name: '**vm lock**',
-        value: '> Lock your voice channel',
-        inline: true
-      },
-      {
-        name: '**vm unlock**',
-        value: '> Unlock your voice channel',
-        inline: true
-      },
-      {
-        name: '**vm ghost**',
-        value: '> Hide your voice channel',
-        inline: true
-      },
-      {
-        name: '**vm unghost**',
-        value: '> Unhide your voice channel',
-        inline: true
-      },
-      {
-        name: '**vm increase**',
-        value: '> Increase user limit by 1',
-        inline: true
-      },
-      {
-        name: '**vm decrease**',
-        value: '> Decrease user limit by 1',
-        inline: true
-      },
-      {
-        name: '**vm limit [number]**',
-        value: '> Set user limit (0-99)',
-        inline: true
-      },
-      {
-        name: '**vm rename [name]**',
-        value: '> Change your channel name',
-        inline: true
-      },
-      {
-        name: '**vm kick @user**',
-        value: '> Disconnect a user from your channel',
-        inline: true
-      },
-      {
-        name: '**vm invite @user**',
-        value: '> Invite a user to your channel',
-        inline: true
-      },
-      {
-        name: '**vm claim**',
-        value: '> Claim ownership of an abandoned channel',
-        inline: true
-      }
-    ]);
-
-  return message.channel.send({ embeds: [embed] });
 }
 
 // Command handlers

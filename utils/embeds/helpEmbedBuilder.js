@@ -20,11 +20,11 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
   const aliasValue = command.aliases && command.aliases.length > 0
     ? command.aliases.join(', ')
     : 'n/a';
-  fields.push({ name: '**Aliases**', value: aliasValue, inline: false });
+  fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
   // Permission field
   if (command.permission) {
-    fields.push({ name: '**Permission**', value: command.permission, inline: false });
+    fields.push({ name: '**Permission**', value: command.permission, inline: true });
   }
 
   // Usage field - only show syntax for group commands
@@ -62,11 +62,11 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
   const aliasValue = subcommand.aliases && subcommand.aliases.length > 0
     ? subcommand.aliases.join(', ')
     : 'n/a';
-  fields.push({ name: '**Aliases**', value: aliasValue, inline: false });
+  fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
   // Permission field
   if (command.permission) {
-    fields.push({ name: '**Permission**', value: command.permission, inline: false });
+    fields.push({ name: '**Permission**', value: command.permission, inline: true });
   }
 
   // Usage field
@@ -112,11 +112,11 @@ function createTraditionalEmbed(command, guildPrefix) {
   const aliasValue = command.aliases && command.aliases.length > 0
     ? command.aliases.join(', ')
     : 'n/a';
-  fields.push({ name: '**Aliases**', value: aliasValue, inline: false });
+  fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
   // Permission field
   const permissionValue = command.permission || 'n/a';
-  fields.push({ name: '**Permission**', value: permissionValue, inline: false });
+  fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
   // Usage field with syntax and example
   if (command.syntax || command.example) {

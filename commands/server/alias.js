@@ -12,74 +12,74 @@ module.exports = {
   isGroupCommand: true,
   run: async (client, message, args) => {
     if (!args[0]) {
-      return await showAliasHelp(message);
+      const { runHelpCommand } = require('../../utils/commandProcessor');
+      return runHelpCommand(message, 'alias');
     }
 
     const subcommand = args[0].toLowerCase();
 
     switch (subcommand) {
       case 'add':
-      case 'create':
+      case 'create': {
+        const subcommandInfo = {
+          description: 'Create an alias for a command',
+          usage: '{guildprefix}alias add [shortcut] [command]',
+          aliases: ['create'],
+          example: '{guildprefix}alias add bal balance'
+        };
         return await handleAddAlias(message, args);
+      }
       
       case 'remove':
-      case 'delete':
+      case 'delete': {
+        const subcommandInfo = {
+          description: 'Remove an alias',
+          usage: '{guildprefix}alias remove [shortcut]',
+          aliases: ['delete'],
+          example: '{guildprefix}alias remove bal'
+        };
         return await handleRemoveAlias(message, args);
+      }
       
       case 'removeall':
-      case 'clear':
+      case 'clear': {
+        const subcommandInfo = {
+          description: 'Remove all your aliases',
+          usage: '{guildprefix}alias removeall',
+          aliases: ['clear'],
+          example: '{guildprefix}alias removeall'
+        };
         return await handleRemoveAllAliases(message);
+      }
       
       case 'list':
-      case 'view':
+      case 'view': {
+        const subcommandInfo = {
+          description: 'List all your aliases',
+          usage: '{guildprefix}alias list',
+          aliases: ['view'],
+          example: '{guildprefix}alias list'
+        };
         return await handleListAliases(message);
+      }
       
-      case 'reset':
+      case 'reset': {
+        const subcommandInfo = {
+          description: 'Reset all your aliases',
+          usage: '{guildprefix}alias reset',
+          aliases: [],
+          example: '{guildprefix}alias reset'
+        };
         return await handleResetAliases(message);
+      }
       
-      default:
-        return await showAliasHelp(message);
+      default: {
+        const { runHelpCommand } = require('../../utils/commandProcessor');
+        return runHelpCommand(message, 'alias');
+      }
     }
   }
 };
-
-// Show alias help embed
-async function showAliasHelp(message) {
-  const embed = new EmbedBuilder()
-    .setColor(colors.embed)
-    .setTitle('Alias Commands')
-    .setDescription('Create custom shortcuts for commands')
-    .addFields([
-      {
-        name: '**alias add [shortcut] [command]**',
-        value: '> Create an alias for a command',
-        inline: false
-      },
-      {
-        name: '**alias remove [shortcut]**',
-        value: '> Remove an alias',
-        inline: false
-      },
-      {
-        name: '**alias list**',
-        value: '> List all your aliases',
-        inline: false
-      },
-      {
-        name: '**alias removeall**',
-        value: '> Remove all your aliases',
-        inline: false
-      },
-      {
-        name: '**alias reset**',
-        value: '> Reset all your aliases',
-        inline: false
-      }
-    ])
-    .setFooter({ text: 'Example: alias add bal balance' });
-
-  return message.channel.send({ embeds: [embed] });
-}
 
 // Add alias handler
 async function handleAddAlias(message, args) {

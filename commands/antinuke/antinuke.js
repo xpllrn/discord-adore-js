@@ -21,115 +21,144 @@ module.exports = {
     }
 
     if (!args[0]) {
-      return showAntinukeHelp(message);
+      const { runHelpCommand } = require('../../utils/commandProcessor');
+      return runHelpCommand(message, 'antinuke');
     }
 
     const subcommand = args[0].toLowerCase();
 
     switch (subcommand) {
-      case 'whitelist':
+      case 'whitelist': {
+        const subcommandInfo = {
+          description: 'Whitelist a member or bot from triggering antinuke',
+          usage: '{guildprefix}antinuke whitelist [@user|@bot]',
+          aliases: [],
+          example: '{guildprefix}antinuke whitelist @user'
+        };
         return handleWhitelist(message, args, antinukeService);
+      }
       
-      case 'role':
-      case 'kick':
-      case 'ban':
-      case 'channel':
-      case 'webhook':
-      case 'botadd':
-        return handleModuleToggle(message, args, antinukeService, subcommand);
+      case 'role': {
+        const subcommandInfo = {
+          description: 'Prevent mass role delete',
+          usage: '{guildprefix}antinuke role <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          aliases: [],
+          example: '{guildprefix}antinuke role on --threshold 5 --do kick'
+        };
+        return handleModuleToggle(message, args, antinukeService, 'role');
+      }
       
-      case 'config':
+      case 'kick': {
+        const subcommandInfo = {
+          description: 'Prevent mass member kick',
+          usage: '{guildprefix}antinuke kick <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          aliases: [],
+          example: '{guildprefix}antinuke kick on --threshold 3 --do ban'
+        };
+        return handleModuleToggle(message, args, antinukeService, 'kick');
+      }
+      
+      case 'ban': {
+        const subcommandInfo = {
+          description: 'Prevent mass member ban',
+          usage: '{guildprefix}antinuke ban <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          aliases: [],
+          example: '{guildprefix}antinuke ban on --threshold 3 --do ban'
+        };
+        return handleModuleToggle(message, args, antinukeService, 'ban');
+      }
+      
+      case 'channel': {
+        const subcommandInfo = {
+          description: 'Prevent mass channel create and delete',
+          usage: '{guildprefix}antinuke channel <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          aliases: [],
+          example: '{guildprefix}antinuke channel on --threshold 5 --do kick'
+        };
+        return handleModuleToggle(message, args, antinukeService, 'channel');
+      }
+      
+      case 'webhook': {
+        const subcommandInfo = {
+          description: 'Prevent mass webhook creation',
+          usage: '{guildprefix}antinuke webhook <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          aliases: [],
+          example: '{guildprefix}antinuke webhook on --threshold 3 --do ban'
+        };
+        return handleModuleToggle(message, args, antinukeService, 'webhook');
+      }
+      
+      case 'botadd': {
+        const subcommandInfo = {
+          description: 'Prevent new bot additions',
+          usage: '{guildprefix}antinuke botadd <on|off> [--do strip|kick|ban]',
+          aliases: [],
+          example: '{guildprefix}antinuke botadd on --do ban'
+        };
+        return handleModuleToggle(message, args, antinukeService, 'botadd');
+      }
+      
+      case 'config': {
+        const subcommandInfo = {
+          description: 'View server configuration for Antinuke',
+          usage: '{guildprefix}antinuke config',
+          aliases: [],
+          example: '{guildprefix}antinuke config'
+        };
         return handleConfig(message, antinukeService);
+      }
       
-      case 'permissions':
+      case 'permissions': {
+        const subcommandInfo = {
+          description: 'Watch dangerous permissions (auto-watches 9 permissions)',
+          usage: '{guildprefix}antinuke permissions <on|off> [--do strip|kick|ban]',
+          aliases: [],
+          example: '{guildprefix}antinuke permissions on --do kick'
+        };
         return handlePermissions(message, args, antinukeService);
+      }
       
-      case 'list':
+      case 'list': {
+        const subcommandInfo = {
+          description: 'View all whitelisted members & bots',
+          usage: '{guildprefix}antinuke list',
+          aliases: [],
+          example: '{guildprefix}antinuke list'
+        };
         return handleList(message, antinukeService);
+      }
       
-      case 'admin':
+      case 'admin': {
+        const subcommandInfo = {
+          description: 'Give a user permissions to edit antinuke settings',
+          usage: '{guildprefix}antinuke admin [@user]',
+          aliases: [],
+          example: '{guildprefix}antinuke admin @user'
+        };
         return handleAdmin(message, args, antinukeService, isOwner);
+      }
       
-      case 'admins':
+      case 'admins': {
+        const subcommandInfo = {
+          description: 'View all antinuke admins',
+          usage: '{guildprefix}antinuke admins',
+          aliases: [],
+          example: '{guildprefix}antinuke admins'
+        };
         return handleAdmins(message, antinukeService);
+      }
       
       default:
-        return showAntinukeHelp(message);
+        return handleAdmin(message, args, antinukeService, isOwner);
+      }
+      
+      default: {
+        const { runHelpCommand } = require('../../utils/commandProcessor');
+        return runHelpCommand(message, 'antinuke');
+      }
     }
   }
 };
-
-async function showAntinukeHelp(message) {
-  const embed = new EmbedBuilder()
-    .setColor(colors.embed)
-    .setTitle('Antinuke Protection System')
-    .setDescription('Protect your server from malicious actions')
-    .addFields([
-      {
-        name: '**antinuke whitelist <@user|@bot>**',
-        value: '> Whitelist a member or bot from triggering antinuke',
-        inline: false
-      },
-      {
-        name: '**antinuke role <on|off> [--threshold 1-10] [--do strip|kick|ban]**',
-        value: '> Prevent mass role delete',
-        inline: false
-      },
-      {
-        name: '**antinuke kick <on|off> [--threshold 1-10] [--do strip|kick|ban]**',
-        value: '> Prevent mass member kick',
-        inline: false
-      },
-      {
-        name: '**antinuke ban <on|off> [--threshold 1-10] [--do strip|kick|ban]**',
-        value: '> Prevent mass member ban',
-        inline: false
-      },
-      {
-        name: '**antinuke channel <on|off> [--threshold 1-10] [--do strip|kick|ban]**',
-        value: '> Prevent mass channel create and delete',
-        inline: false
-      },
-      {
-        name: '**antinuke webhook <on|off> [--threshold 1-10] [--do strip|kick|ban]**',
-        value: '> Prevent mass webhook creation',
-        inline: false
-      },
-      {
-        name: '**antinuke botadd <on|off> [--do strip|kick|ban]**',
-        value: '> Prevent new bot additions',
-        inline: false
-      },
-      {
-        name: '**antinuke permissions <on|off> [--do strip|kick|ban]**',
-        value: '> Watch dangerous permissions (auto-watches 9 permissions)',
-        inline: false
-      },
-      {
-        name: '**antinuke config**',
-        value: '> View server configuration for Antinuke',
-        inline: false
-      },
-      {
-        name: '**antinuke list**',
-        value: '> View all whitelisted members & bots',
-        inline: false
-      },
-      {
-        name: '**antinuke admin <@user>**',
-        value: '> Give a user permissions to edit antinuke settings',
-        inline: false
-      },
-      {
-        name: '**antinuke admins**',
-        value: '> View all antinuke admins',
-        inline: false
-      }
-    ])
-    .setFooter({ text: 'Punishment types: strip (remove roles) | kick (kick from server) | ban (ban from server)' });
-
-  return message.channel.send({ embeds: [embed] });
-}
 
 async function handleWhitelist(message, args, antinukeService) {
   const target = message.mentions.users.first() || message.mentions.members.first()?.user;
