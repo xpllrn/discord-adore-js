@@ -5,8 +5,10 @@ const { checkBotRoleHierarchy } = require('../../utils/permissions');
 const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 const config = require('../../config/setup');
 const { findRole, findChannel } = require('../../handlers/finder');
-const { getService } = require('@services');
 const logger = require('../../utils/logger');
+
+// Get GuildService instance
+const guildService = require('../../database').services.guild;
 
 module.exports = {
   name: "vanity",
@@ -137,19 +139,15 @@ module.exports = {
       const isUpdate = globaldata.VanityLogChannel && globaldata.VanityMessage;
 
       try {
-
         // Update both database and cache
         globaldata.VanityLogChannel = vanitychannel.id;
         globaldata.VanityMessage = vanitymessage;
         await globaldata.save();
 
-        // Update cache to ensure sync
-        await guildService.setVanityMessage(message.guild.id, vanitychannel.id, vanitymessage);
-
         const action = isUpdate ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **vanity message** for ${vanitychannel}`);
       } catch (error) {
-        logger.webhook.error(error, message);
+        await logger.webhook.error(error, message);
         return embeds.deny(message, `Failed to set vanity message: ${error.message}`);
       }
 
@@ -185,12 +183,9 @@ module.exports = {
         globaldata.VanityMessage = null;
         await globaldata.save();
 
-        // Update cache to ensure sync
-        await guildService.removeVanityMessage(message.guild.id);
-
         return embeds.success(message, `Removed the **vanity message** for ${vanitychannel}`);
       } catch (error) {
-        logger.webhook.error(error, message);
+        await logger.webhook.error(error, message);
         return embeds.deny(message, `Failed to remove vanity message: ${error.message}`);
       }
 

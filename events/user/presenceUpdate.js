@@ -35,8 +35,8 @@ async function processVanityStatusDetection(newPresence) {
   }
 
   // Check if vanity is disabled due to permission issues
-  const isDisabled = await guildService.isVanityDisabled(newPresence.guild.id);
-  if (isDisabled) {
+  const vanityDisabledInfo = await guildService.getVanityDisabledInfo(newPresence.guild.id);
+  if (vanityDisabledInfo.disabled) {
     return; // Skip if vanity is disabled
   }
 
