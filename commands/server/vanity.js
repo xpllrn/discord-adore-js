@@ -5,10 +5,8 @@ const { checkBotRoleHierarchy } = require('../../utils/permissions');
 const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 const config = require('../../config/setup');
 const { findRole, findChannel } = require('../../handlers/finder');
+const { getService } = require('@services');
 const logger = require('../../utils/logger');
-
-// Get GuildService instance
-const guildService = require('../../database').services.guild;
 
 module.exports = {
   name: "vanity",
@@ -17,6 +15,7 @@ module.exports = {
   permission: "Manage Guild",
   isGroupCommand: true,
   run: async(client, message, args) => {
+    const guildService = getService('guild');
 
     // Show help if no subcommand provided
     if (!args[0]) return false;
