@@ -7,8 +7,8 @@ const { colors, emojis } = require('../../config/setup');
 const logger = require('../../utils/logger');
 
 module.exports = {
-  name: "automod",
-  aliases: ['filter'],
+  name: "filter",
+  aliases: ['automod'],
   description: "Manage Discord's built-in AutoMod filtering system",
   permission: "Manage Guild",
   isGroupCommand: true,
@@ -21,7 +21,7 @@ module.exports = {
     }
 
     if (!args[0]) {
-      return runHelpCommand(message, 'automod');
+      return runHelpCommand(message, 'filter');
     }
 
     const category = args[0].toLowerCase();
@@ -90,7 +90,7 @@ module.exports = {
           return await handleWordsIgnore(message, subcommand, args.slice(2));
         }
         default:
-          return runHelpCommand(message, 'automod');
+          return runHelpCommand(message, 'filter');
       }
     } catch (error) {
       logger.webhook.error(error, message);
@@ -103,7 +103,7 @@ module.exports = {
 
 async function handleInvitesCategory(message, subcommand, args) {
   if (!subcommand) {
-    return runHelpCommand(message, 'automod');
+    return runHelpCommand(message, 'filter');
   }
 
   switch (subcommand) {
@@ -114,7 +114,7 @@ async function handleInvitesCategory(message, subcommand, args) {
     case 'ignore':
       return await handleInvitesIgnore(message, args);
     default:
-      return runHelpCommand(message, 'automod');
+      return runHelpCommand(message, 'filter');
   }
 }
 
@@ -251,7 +251,7 @@ async function handleWordsReset(message) {
 
 async function handleWordsIgnore(message, subcommand, args) {
   if (!subcommand) {
-    return runHelpCommand(message, 'automod');
+    return runHelpCommand(message, 'filter');
   }
 
   if (subcommand === 'list') {
@@ -395,7 +395,7 @@ async function handleWordsToggleIgnore(message, args) {
 
 async function handleInvitesIgnore(message, args) {
   if (!args[0]) {
-    return runHelpCommand(message, 'automod');
+    return runHelpCommand(message, 'filter');
   }
 
   if (args[0] === 'list') {
