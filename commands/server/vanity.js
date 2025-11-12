@@ -46,13 +46,11 @@ module.exports = {
           return embeds.warn(message, 'No vanity exists to reset');
         }
 
-        globaldata.Vanity = null;
-        await globaldata.save();
+        await guildService.setGuildField(message.guild.id, 'Vanity', null);
         return embeds.success(message, 'Vanity has been reset');
       } else {
         const vanitytext = args.slice(1).join(' ');
-        globaldata.Vanity = vanitytext;
-        await globaldata.save();
+        await guildService.setGuildField(message.guild.id, 'Vanity', vanitytext);
         return embeds.success(message, `Set **${vanitytext}** as the vanity`);
       }
 
@@ -73,8 +71,7 @@ module.exports = {
           return embeds.warn(message, 'No vanity role exists to clear');
         }
 
-        globaldata.VanityRoles = [];
-        await globaldata.save();
+        await guildService.setGuildField(message.guild.id, 'VanityRoles', []);
         return embeds.success(message, 'Vanity role has been cleared');
       } else {
         // Use role finder for role detection
@@ -108,8 +105,7 @@ module.exports = {
         }
 
         // Replace any existing vanity role with the new one
-        globaldata.VanityRoles = [role.id];
-        await globaldata.save();
+        await guildService.setGuildField(message.guild.id, 'VanityRoles', [role.id]);
         return embeds.success(message, `**${role.name}** is now the vanity role`);
       }
 
@@ -145,9 +141,10 @@ module.exports = {
 
       try {
         // Update both database and cache
-        globaldata.VanityLogChannel = vanitychannel.id;
-        globaldata.VanityMessage = vanitymessage;
-        await globaldata.save();
+        await guildService.updateGuildData(message.guild.id, {
+          VanityLogChannel: vanitychannel.id,
+          VanityMessage: vanitymessage
+        });
 
         const action = isUpdate ? 'Updated the' : 'Created a';
         return embeds.success(message, `${action} **vanity message** for ${vanitychannel}`);
@@ -184,9 +181,10 @@ module.exports = {
 
       try {
         // Update both database and cache
-        globaldata.VanityLogChannel = null;
-        globaldata.VanityMessage = null;
-        await globaldata.save();
+        await guildService.updateGuildData(message.guild.id, {
+          VanityLogChannel: null,
+          VanityMessage: null
+        });
 
         return embeds.success(message, `Removed the **vanity message** for ${vanitychannel}`);
       } catch (error) {

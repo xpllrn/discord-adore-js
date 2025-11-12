@@ -38,7 +38,7 @@ async function createSprint(guildId, sprintData) {
     }
     
     guildData.Sprints.push(sprintData);
-    await guildData.save();
+    await guildData.save({ validateBeforeSave: false });
     
     return guildData.Sprints[guildData.Sprints.length - 1];
   } catch (error) {
@@ -263,7 +263,7 @@ async function endSprint(client, message) {
       async (interaction, confirmMessage) => {
         // End the sprint
         sprint.isActive = false;
-        await guildData.save();
+        await guildData.save({ validateBeforeSave: false });
 
         // Save to user history
         await saveSprintHistory(sprint);
@@ -427,7 +427,7 @@ async function joinSprint(client, message, args) {
       lastPauseTime: null
     });
 
-    await guildData.save();
+    await guildData.save({ validateBeforeSave: false });
 
     // Update the sprint message
     try {
@@ -475,7 +475,7 @@ async function leaveSprint(client, message) {
       async (interaction, confirmMessage) => {
         // Remove participant
         sprint.participants.splice(participantIndex, 1);
-        await guildData.save();
+        await guildData.save({ validateBeforeSave: false });
 
         // Update the sprint message
         try {
@@ -535,7 +535,7 @@ async function updateSprint(client, message, args) {
 
     const oldTab = participant.currentTab;
     participant.currentTab = currentTab;
-    await guildData.save();
+    await guildData.save({ validateBeforeSave: false });
 
     // Update the sprint message
     try {
@@ -591,14 +591,14 @@ async function toggleFlow(client, message) {
       participant.isPaused = false;
       participant.lastPauseTime = null;
 
-      await guildData.save();
+      await guildData.save({ validateBeforeSave: false });
       return embeds.success(message, 'Time tracking **resumed**! Your timer is now running.');
     } else {
       // Pause - record pause start time
       participant.isPaused = true;
       participant.lastPauseTime = now;
 
-      await guildData.save();
+      await guildData.save({ validateBeforeSave: false });
       return embeds.success(message, 'Time tracking **paused**! Use `,sprint flow` again to resume.');
     }
 
