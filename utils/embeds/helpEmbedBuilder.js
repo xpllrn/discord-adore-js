@@ -19,13 +19,12 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
   // Aliases field
   const aliasValue = command.aliases && command.aliases.length > 0
     ? command.aliases.join(', ')
-    : 'n/a';
+    : 'none';
   fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
-  // Permission field
-  if (command.permission) {
-    fields.push({ name: '**Permission**', value: command.permission, inline: true });
-  }
+  // Permission field - always show
+  const permissionValue = command.permission || 'none';
+  fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
   // Usage field - only show syntax for group commands
   const usageValue = `\`\`\`Syntax: ${guildPrefix}${command.name} (subcommand) <args>\`\`\``;
@@ -61,13 +60,12 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
   // Aliases field
   const aliasValue = subcommand.aliases && subcommand.aliases.length > 0
     ? subcommand.aliases.join(', ')
-    : 'n/a';
+    : 'none';
   fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
-  // Permission field
-  if (command.permission) {
-    fields.push({ name: '**Permission**', value: command.permission, inline: true });
-  }
+  // Permission field - always show
+  const permissionValue = command.permission || 'none';
+  fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
   // Usage field
   const usageLines = [];
@@ -111,11 +109,11 @@ function createTraditionalEmbed(command, guildPrefix) {
   // Aliases field
   const aliasValue = command.aliases && command.aliases.length > 0
     ? command.aliases.join(', ')
-    : 'n/a';
+    : 'none';
   fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
 
   // Permission field
-  const permissionValue = command.permission || 'n/a';
+  const permissionValue = command.permission || 'none';
   fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
   // Usage field with syntax and example
