@@ -24,22 +24,38 @@ module.exports = {
         targetMember = userResult.user;
       }
 
-      // Get message statistics from guild cache
+      // Get message and voice statistics
       const { getService } = require('@services');
       const guildService = getService('guild');
-      const userMessageStats = await guildService.getMessageStats(message.guild.id, targetUser.id);
+      const messageStats = await guildService.getMessageStats(message.guild.id, targetUser.id);
+      const voiceStats = await guildService.getVoiceStats(message.guild.id, targetUser.id);
 
-      // Get total count from user stats
-      const totalCount = userMessageStats?.count || 0;
+      // Helper function to format minutes to hours and minutes
+      const formatTime = (totalMinutes) => {
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours}h ${minutes}m`;
+      };
 
       // Create embed
       const embed = new EmbedBuilder()
         .setColor(colors.embed)
         .setAuthor({
-          name: `${targetUser.username}'s Messages`,
+          name: `${targetUser.username}'s Statistics`,
           iconURL: targetUser.displayAvatarURL({ dynamic: true })
         })
-        .setDescription(`**Total Messages:** ${totalCount}`);
+        .addFields(
+          { 
+            name: 'Messages', 
+            value: `**Today:** ${messageStats.today}\n**This Week:** ${messageStats.week}\n**This Month:** ${messageStats.month}\n**Total:** ${messageStats.total}`, 
+            inline: true 
+          },
+          { 
+            name: 'Voice Time', 
+            value: `**Today:** ${formatTime(voiceStats.today)}\n**This Week:** ${formatTime(voiceStats.week)}\n**This Month:** ${formatTime(voiceStats.month)}`, 
+            inline: true 
+          }
+        );
 
       return message.channel.send({
         content: `<@${targetUser.id}>`,

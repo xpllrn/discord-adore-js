@@ -702,6 +702,31 @@ const guildSchema = new mongoose.Schema({
     lastMessageTime: {
       type: Date,
       default: null
+    },
+    // Voice tracking
+    voiceJoinTime: {
+      type: Date,
+      default: null
+    },
+    lastVoiceXPTime: {
+      type: Date,
+      default: null
+    }
+  }],
+
+  // Voice statistics tracking (time-based)
+  VoiceStats: [{
+    userId: {
+      type: String,
+      required: true
+    },
+    date: {
+      type: Date,
+      required: true
+    },
+    minutes: {
+      type: Number,
+      default: 0
     }
   }],
 
@@ -1470,6 +1495,11 @@ guildSchema.index({ 'LoggingConfig.logTypes': 1 });
 guildSchema.index({ 'MessageStats.userId': 1 });
 guildSchema.index({ 'MessageStats.date': 1 });
 guildSchema.index({ 'MessageStats.userId': 1, 'MessageStats.date': 1 }); // Compound for user daily stats
+
+// Voice statistics indexes
+guildSchema.index({ 'VoiceStats.userId': 1 });
+guildSchema.index({ 'VoiceStats.date': 1 });
+guildSchema.index({ 'VoiceStats.userId': 1, 'VoiceStats.date': 1 }); // Compound for user daily stats
 
 // Swear tracker indexes
 guildSchema.index({ 'SwearTracker.userId': 1 });

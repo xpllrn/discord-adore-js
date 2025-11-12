@@ -53,6 +53,8 @@ async function checkReminders(client) {
 
     if (!usersWithReminders || usersWithReminders.length === 0) return;
 
+    const now = new Date();
+
     for (const userData of usersWithReminders) {
       try {
         if (!userData || !userData.UserID) continue;
@@ -63,8 +65,9 @@ async function checkReminders(client) {
         for (const reminder of reminders) {
           if (!reminder || !reminder.nextTrigger || !reminder.content) continue;
           
-          const now = new Date();
-          if (reminder.nextTrigger <= now) {
+          // Check if reminder is due (with 5 second buffer to prevent duplicates)
+          const timeDiff = now.getTime() - new Date(reminder.nextTrigger).getTime();
+          if (timeDiff >= 0 && timeDiff < 65000) { // Within 65 seconds of trigger time
             try {
               const user = await client.users.fetch(userId);
               if (user) {
@@ -89,15 +92,16 @@ async function checkReminders(client) {
                 await user.send({ embeds: [embed], components });
 
                 if (reminder.isDaily) {
-                  // For daily reminders, add 24 hours from now, not the original duration
+                  // For daily reminders, add 24 hours from the original trigger time
                   const oneDayInMs = 24 * 60 * 60 * 1000;
-                  const nextTrigger = new Date(now.getTime() + oneDayInMs);
+                  const nextTrigger = new Date(new Date(reminder.nextTrigger).getTime() + oneDayInMs);
                   await userService.updateReminderNextTrigger(userId, reminder.id, nextTrigger);
                 } else {
                   await userService.removeReminder(userId, reminder.id);
                 }
               }
             } catch (dmError) {
+              // If DM fails, remove the reminder
               await userService.removeReminder(userId, reminder.id);
             }
           }
