@@ -111,8 +111,8 @@ module.exports = {
           const username = targetMember ? targetMember.displayName : targetUser.username;
           const isAuthor = targetUser.id === message.author.id;
           const footerText = isAuthor
-            ? `You have sweared ${userData.todaySwears} times today • Total: ${calculatedTotal} • Page ${currentPage}/${totalPages}`
-            : `${username} has sweared ${userData.todaySwears} times today • Total: ${calculatedTotal} • Page ${currentPage}/${totalPages}`;
+            ? `You have sweared ${userData.todaySwears} times today • Total: ${calculatedTotal}`
+            : `${username} has sweared ${userData.todaySwears} times today • Total: ${calculatedTotal}`;
 
           return new EmbedBuilder()
             .setColor(config.colors.embed)

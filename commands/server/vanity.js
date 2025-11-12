@@ -15,13 +15,19 @@ module.exports = {
   permission: 'Manage Guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const guildService = getService('guild');
+    try {
+      const guildService = getService('guild');
 
-    // Show help if no subcommand provided
-    if (!args[0]) return false;
+      // Show help if no subcommand provided
+      if (!args[0]) return false;
 
-    // Ensure guild data exists in the database
-    const globaldata = await ensureGuildData(message.guild.id);
+      // Ensure guild data exists in the database
+      const globaldata = await ensureGuildData(message.guild.id);
+      
+      if (!globaldata) {
+        await logger.webhook.error(new Error('Failed to get guild data'), message);
+        return embeds.deny(message, 'Failed to load server data. Please try again.');
+      }
 
     if (args[0] === 'set') {
       const subcommandInfo = {
@@ -355,6 +361,11 @@ module.exports = {
     } else {
       // Invalid subcommand - show help
       return false;
+    }
+    } catch (error) {
+      await logger.webhook.error(error, message);
+      console.error('[VANITY COMMAND ERROR]', error);
+      return embeds.deny(message, `An error occurred: ${error.message}`);
     }
   }
 }

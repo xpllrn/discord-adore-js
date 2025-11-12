@@ -47,7 +47,7 @@ module.exports = {
         .addFields(
           { 
             name: 'Messages', 
-            value: `**Today:** ${messageStats.today}\n**This Week:** ${messageStats.week}\n**This Month:** ${messageStats.month}\n**Total:** ${messageStats.total}`, 
+            value: `**Today:** ${messageStats.today}\n**This Week:** ${messageStats.week}\n**This Month:** ${messageStats.month}`, 
             inline: true 
           },
           { 
@@ -55,7 +55,8 @@ module.exports = {
             value: `**Today:** ${formatTime(voiceStats.today)}\n**This Week:** ${formatTime(voiceStats.week)}\n**This Month:** ${formatTime(voiceStats.month)}`, 
             inline: true 
           }
-        );
+        )
+        .setFooter({ text: `Total Messages: ${messageStats.total}` });
 
       return message.channel.send({
         content: `<@${targetUser.id}>`,

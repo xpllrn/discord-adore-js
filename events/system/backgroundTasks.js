@@ -45,60 +45,58 @@ async function checkReminders(client) {
     if (!dbStatus.global && !dbStatus.local && !dbStatus.legacy) return;
 
     const models = getModels();
-    if (!models || !models.User) return;
+    if (!models?.User) return;
 
     const usersWithReminders = await models.User.find({
       'Reminders.0': { $exists: true }
     }).select('UserID Reminders').maxTimeMS(5000);
 
-    if (!usersWithReminders || usersWithReminders.length === 0) return;
+    if (!usersWithReminders?.length) return;
 
     const now = new Date();
 
     for (const userData of usersWithReminders) {
       try {
-        if (!userData || !userData.UserID) continue;
+        if (!userData?.UserID) continue;
 
         const userId = userData.UserID;
         const reminders = await userService.getReminders(userId);
 
         for (const reminder of reminders) {
-          if (!reminder || !reminder.nextTrigger || !reminder.content) continue;
+          if (!reminder?.nextTrigger || !reminder.content) continue;
           
-          // Check if reminder is due (with 5 second buffer to prevent duplicates)
-          const timeDiff = now.getTime() - new Date(reminder.nextTrigger).getTime();
-          if (timeDiff >= 0 && timeDiff < 65000) { // Within 65 seconds of trigger time
+          // Check if reminder is due
+          if (new Date(reminder.nextTrigger) <= now) {
             try {
               const user = await client.users.fetch(userId);
-              if (user) {
-                const embed = new EmbedBuilder()
-                  .setColor(config.colors.embed)
-                  .setTitle('⏰ Reminder')
-                  .setDescription(`You wanted me to remind you to: **${reminder.content}**`)
-                  .setTimestamp(reminder.createdAt);
+              
+              const embed = new EmbedBuilder()
+                .setColor(config.colors.embed)
+                .setTitle('⏰ Reminder')
+                .setDescription(`You wanted me to remind you to: **${reminder.content}**`)
+                .setTimestamp(reminder.createdAt);
 
-                const components = [];
-                if (reminder.messageUrl) {
-                  const row = new ActionRowBuilder()
-                    .addComponents(
-                      new ButtonBuilder()
-                        .setLabel('Message')
-                        .setStyle(ButtonStyle.Link)
-                        .setURL(reminder.messageUrl)
-                    );
-                  components.push(row);
-                }
+              const components = [];
+              if (reminder.messageUrl) {
+                const row = new ActionRowBuilder()
+                  .addComponents(
+                    new ButtonBuilder()
+                      .setLabel('Message')
+                      .setStyle(ButtonStyle.Link)
+                      .setURL(reminder.messageUrl)
+                  );
+                components.push(row);
+              }
 
-                await user.send({ embeds: [embed], components });
+              await user.send({ embeds: [embed], components });
 
-                if (reminder.isDaily) {
-                  // For daily reminders, add 24 hours from the original trigger time
-                  const oneDayInMs = 24 * 60 * 60 * 1000;
-                  const nextTrigger = new Date(new Date(reminder.nextTrigger).getTime() + oneDayInMs);
-                  await userService.updateReminderNextTrigger(userId, reminder.id, nextTrigger);
-                } else {
-                  await userService.removeReminder(userId, reminder.id);
-                }
+              // Update or remove reminder based on type
+              if (reminder.isDaily) {
+                const oneDayInMs = 24 * 60 * 60 * 1000;
+                const nextTrigger = new Date(new Date(reminder.nextTrigger).getTime() + oneDayInMs);
+                await userService.updateReminderNextTrigger(userId, reminder.id, nextTrigger);
+              } else {
+                await userService.removeReminder(userId, reminder.id);
               }
             } catch (dmError) {
               // If DM fails, remove the reminder
@@ -113,12 +111,10 @@ async function checkReminders(client) {
   } catch (error) {
     const now = Date.now();
     if (now - reminderLastErrorTime > ERROR_COOLDOWN) {
-      if (client?.errorLogger) {
-        client.errorLogger.log(error, 'Reminder Check System', {
-          command: 'Reminder Check',
-          args: 'System Check'
-        });
-      }
+      client?.errorLogger?.log(error, 'Reminder Check System', {
+        command: 'Reminder Check',
+        args: 'System Check'
+      });
       reminderLastErrorTime = now;
     }
   }
@@ -140,33 +136,31 @@ function setupGiveawayCheck(client) {
 
 async function checkGiveaways(client) {
   try {
-    const { getService } = require('@services');
-    const guildService = getService('guild');
     const { getModels, isDatabaseReady } = require('../../database');
 
     const dbStatus = isDatabaseReady();
     if (!dbStatus.global && !dbStatus.local && !dbStatus.legacy) return;
 
     const models = getModels();
-    if (!models || !models.Guild) return;
+    if (!models?.Guild) return;
 
     const guildsWithGiveaways = await models.Guild.find({
       'Giveaways.0': { $exists: true }
     }).select('GuildID Giveaways').maxTimeMS(5000);
 
-    if (!guildsWithGiveaways || guildsWithGiveaways.length === 0) return;
+    if (!guildsWithGiveaways?.length) return;
 
     const now = new Date();
 
     for (const guildData of guildsWithGiveaways) {
       try {
-        if (!guildData || !guildData.GuildID) continue;
+        if (!guildData?.GuildID) continue;
 
         const guildId = guildData.GuildID;
         const giveaways = guildData.Giveaways || [];
 
         for (const giveaway of giveaways) {
-          if (!giveaway || !giveaway.endTime || giveaway.ended) continue;
+          if (!giveaway?.endTime || giveaway.ended) continue;
 
           if (new Date(giveaway.endTime) <= now) {
             await endGiveaway(client, guildId, giveaway);
@@ -179,12 +173,10 @@ async function checkGiveaways(client) {
   } catch (error) {
     const now = Date.now();
     if (now - giveawayLastErrorTime > ERROR_COOLDOWN) {
-      if (client?.errorLogger) {
-        client.errorLogger.log(error, 'Giveaway Check System', {
-          command: 'Giveaway Check',
-          args: 'System Check'
-        });
-      }
+      client?.errorLogger?.log(error, 'Giveaway Check System', {
+        command: 'Giveaway Check',
+        args: 'System Check'
+      });
       giveawayLastErrorTime = now;
     }
   }
@@ -194,16 +186,19 @@ async function endGiveaway(client, guildId, giveaway) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
-    if (!models || !models.Guild) return;
+    if (!models?.Guild) return;
 
-    // Mark as ended
-    await models.Guild.updateOne(
-      { GuildID: guildId, 'Giveaways.messageId': giveaway.messageId },
+    // Mark as ended first to prevent duplicate processing
+    const result = await models.Guild.updateOne(
+      { GuildID: guildId, 'Giveaways.messageId': giveaway.messageId, 'Giveaways.ended': { $ne: true } },
       { $set: { 'Giveaways.$.ended': true } }
     );
 
+    // If no document was modified, giveaway was already ended
+    if (result.modifiedCount === 0) return;
+
     // Select winners
-    const winners = selectRandomWinners(giveaway.participants, giveaway.winners);
+    const winners = selectRandomWinners(giveaway.participants || [], giveaway.winners);
 
     // Send winner announcement
     try {
@@ -238,8 +233,16 @@ async function endGiveaway(client, guildId, giveaway) {
 }
 
 function selectRandomWinners(participants, count) {
+  if (!participants?.length) return [];
   if (participants.length <= count) return [...participants];
-  const shuffled = [...participants].sort(() => 0.5 - Math.random());
+  
+  // Fisher-Yates shuffle (proper random shuffle)
+  const shuffled = [...participants];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  
   return shuffled.slice(0, count);
 }
 
@@ -254,56 +257,46 @@ async function resumeActiveSprints(client) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
-    if (!models || !models.Guild) {
-      return;
-    }
-
-    const Guild = models.Guild;
+    if (!models?.Guild) return;
     
     // Find all guilds with active sprints
-    const guildsWithSprints = await Guild.find({ 
+    const guildsWithSprints = await models.Guild.find({ 
       'Sprints.isActive': true 
     }).select('GuildID Sprints');
     
-    let totalActiveSprints = 0;
+    if (!guildsWithSprints?.length) return;
+    
+    const now = Date.now();
+    const thirtyMinutes = 30 * 60 * 1000;
     
     for (const guildData of guildsWithSprints) {
-      const activeSprints = guildData.Sprints.filter(s => s.isActive);
-      totalActiveSprints += activeSprints.length;
+      const activeSprints = guildData.Sprints?.filter(s => s.isActive) || [];
       
       for (const sprint of activeSprints) {
-        const now = Date.now();
         const endTime = sprint.endTime.getTime();
+        const timeUntilEnd = endTime - now;
 
-        // Check if sprint should have ended
-        if (now >= endTime) {
+        // Sprint already ended - end it immediately
+        if (timeUntilEnd <= 0) {
           await autoEndSprint(client, guildData.GuildID, sprint.messageId);
           continue;
         }
 
-        // Schedule remaining timers
-        const timeUntilEnd = endTime - now;
-        const thirtyMinutes = 30 * 60 * 1000;
-
-        // Schedule reminder if not sent and within 30 minutes
+        // Sprint is still active - schedule reminder if needed
         if (!sprint.reminderSent && timeUntilEnd <= thirtyMinutes) {
           await sendSprintReminder(client, guildData.GuildID, sprint.messageId);
         }
 
-        // Schedule auto-end with better error handling
-        if (timeUntilEnd > 0) {
-          setTimeout(async () => {
-            try {
-              await autoEndSprint(client, guildData.GuildID, sprint.messageId);
-            } catch (error) {
-              console.error('Sprint auto-end error:', error);
-            }
-          }, timeUntilEnd);
-        }
+        // Schedule auto-end
+        setTimeout(async () => {
+          try {
+            await autoEndSprint(client, guildData.GuildID, sprint.messageId);
+          } catch (error) {
+            console.error('Sprint auto-end error:', error);
+          }
+        }, timeUntilEnd);
       }
     }
-    
-
   } catch (error) {
     console.error('Sprint manager error:', error);
   }
@@ -313,44 +306,43 @@ async function autoEndSprint(client, guildId, messageId) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
-    if (!models || !models.Guild) return;
+    if (!models?.Guild) return;
 
-    const Guild = models.Guild;
-    const guildData = await Guild.findOne({ GuildID: guildId });
-    
+    const guildData = await models.Guild.findOne({ GuildID: guildId });
     if (!guildData) return;
     
-    const sprint = guildData.Sprints.find(s => s.messageId === messageId && s.isActive);
-    if (!sprint) return;
+    const sprint = guildData.Sprints?.find(s => s.messageId === messageId && s.isActive);
+    if (!sprint) return; // Already ended or doesn't exist
 
+    // Mark as inactive
     sprint.isActive = false;
     await guildData.save();
 
     // Save to user history
     await saveSprintHistory(sprint);
 
-    // Create new message with results
+    // Update Discord message
     try {
       const channel = await client.channels.fetch(sprint.channelId);
       const sprintMessage = await channel.messages.fetch(sprint.messageId);
-
       const endedEmbed = createSprintEndedEmbed(sprint);
 
-      // Create mentions for all participants (hidden in spoiler)
+      // Create hidden mentions for participants
       let content = '';
-      if (sprint.participants.length > 0) {
+      if (sprint.participants?.length > 0) {
         const mentions = sprint.participants.map(p => `<@${p.userId}>`).join(' ');
+        // Hidden spoiler trick to ping without showing
         content = `||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||${mentions}`;
       }
 
-      // Reply to the original message with the ended embed
+      // Reply with results
       await sprintMessage.reply({
         content,
         embeds: [endedEmbed],
-        allowedMentions: { users: sprint.participants.map(p => p.userId) }
+        allowedMentions: { users: sprint.participants?.map(p => p.userId) || [] }
       });
 
-      // Disable buttons on original message but keep the embed unchanged
+      // Disable buttons on original message
       const disabledRow = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
@@ -365,8 +357,8 @@ async function autoEndSprint(client, guildId, messageId) {
             .setDisabled(true)
         );
       await sprintMessage.edit({ components: [disabledRow] });
-    } catch (err) {
-      console.error('Sprint auto-end: Could not update message:', err);
+    } catch (messageError) {
+      console.error('Sprint auto-end: Could not update message:', messageError);
     }
   } catch (error) {
     console.error('Sprint auto-end error:', error);
@@ -377,33 +369,27 @@ async function sendSprintReminder(client, guildId, messageId) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
-    if (!models || !models.Guild) return;
+    if (!models?.Guild) return;
 
-    const Guild = models.Guild;
-    const guildData = await Guild.findOne({ GuildID: guildId });
-    
+    const guildData = await models.Guild.findOne({ GuildID: guildId });
     if (!guildData) return;
     
-    const sprint = guildData.Sprints.find(s => s.messageId === messageId && s.isActive && !s.reminderSent);
-    if (!sprint || sprint.participants.length === 0) return;
+    const sprint = guildData.Sprints?.find(s => s.messageId === messageId && s.isActive && !s.reminderSent);
+    if (!sprint || !sprint.participants?.length) return;
 
     // Mark reminder as sent
     sprint.reminderSent = true;
     await guildData.save();
 
-    // Get channel and message
+    // Send reminder message
     const channel = await client.channels.fetch(sprint.channelId);
     const sprintMessage = await channel.messages.fetch(sprint.messageId);
-
-    // Create mentions for all participants
     const mentions = sprint.participants.map(p => `<@${p.userId}>`).join(' ');
 
-    // Send reminder
     await sprintMessage.reply({
       content: `**Hurry up!** ${mentions} The reading sprint is ending soon! ⏰`,
       allowedMentions: { users: sprint.participants.map(p => p.userId) }
     });
-
   } catch (error) {
     console.error('Sprint reminder error:', error);
   }
@@ -480,9 +466,7 @@ async function saveSprintHistory(sprint) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
-    if (!models || !models.User) return;
-
-    const User = models.User;
+    if (!models?.User || !sprint?.participants?.length) return;
 
     // Save for each participant
     for (const participant of sprint.participants) {
@@ -490,7 +474,7 @@ async function saveSprintHistory(sprint) {
       const tabsRead = p.currentTab - p.startTab;
 
       if (tabsRead > 0) {
-        await User.updateOne(
+        await models.User.updateOne(
           { UserID: p.userId },
           {
             $push: {
@@ -498,7 +482,7 @@ async function saveSprintHistory(sprint) {
                 bookName: p.bookName,
                 tabsRead: tabsRead,
                 completedAt: new Date(),
-                sprintId: sprint._id.toString()
+                sprintId: sprint._id?.toString() || 'unknown'
               }
             }
           },
