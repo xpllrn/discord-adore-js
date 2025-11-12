@@ -17,7 +17,7 @@ module.exports = {
     const isAdmin = await antinukeService.isAdmin(message.guild.id, message.author.id);
 
     if (!isOwner && !isAdmin) {
-      return embeds.deny(message, 'Only the server owner or antinuke admins can use this command');
+      return embeds.deny(message, 'Only the **server owner** or **antinuke admins** can use this command');
     }
 
     if (!args[0]) {
