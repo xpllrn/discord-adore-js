@@ -44,7 +44,7 @@ module.exports = {
       case 'removeall':
       case 'clear': {
         const subcommandInfo = {
-          description: 'Remove all your aliases',
+          description: 'Remove all aliases in this server',
           usage: '{guildprefix}alias removeall',
           aliases: ['clear'],
           example: '{guildprefix}alias removeall'

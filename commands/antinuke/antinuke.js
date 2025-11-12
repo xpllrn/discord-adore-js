@@ -148,10 +148,6 @@ module.exports = {
         return handleAdmins(message, antinukeService);
       }
       
-      default:
-        return handleAdmin(message, args, antinukeService, isOwner);
-      }
-      
       default: {
         const { runHelpCommand } = require('../../utils/commandProcessor');
         return runHelpCommand(message, 'antinuke');

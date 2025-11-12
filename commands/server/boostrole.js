@@ -14,8 +14,8 @@ const config = require('../../config/setup');
 const logger = require('../../utils/logger');
 
 module.exports = {
-  name: "br",
-  aliases: ['boosterrole', 'boostrole'],
+  name: "boostrole",
+  aliases: ['br', 'boosterrole'],
   description: `Manage booster roles`,
   isGroupCommand: true,
   run: async (client, message, args) => {
@@ -27,7 +27,7 @@ module.exports = {
 
     // If no subcommand provided, show help
     if (!args[0]) {
-      return runHelpCommand(message, 'br');
+      return runHelpCommand(message, 'boostrole');
     }
 
     // Get the subcommand
@@ -37,10 +37,10 @@ module.exports = {
     if (subcommand === 'baserole') {
       const subcommandInfo = {
         description: 'Set the base role for booster role positioning',
-        usage: '{guildprefix}br baserole [@role]',
+        usage: '{guildprefix}boostrole baserole [@role]',
         aliases: [],
         parameters: ['role'],
-        example: '{guildprefix}br baserole Booster'
+        example: '{guildprefix}boostrole baserole Booster'
       };
 
       if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
@@ -51,10 +51,10 @@ module.exports = {
     if (subcommand === 'cleanup') {
       const subcommandInfo = {
         description: 'Remove unused booster roles',
-        usage: '{guildprefix}br cleanup [days]',
+        usage: '{guildprefix}boostrole cleanup [days]',
         aliases: [],
         parameters: ['days (optional)'],
-        example: '{guildprefix}br cleanup 30'
+        example: '{guildprefix}boostrole cleanup 30'
       };
 
       if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
@@ -65,10 +65,10 @@ module.exports = {
     if (subcommand === 'create') {
       const subcommandInfo = {
         description: 'Create your personal booster role',
-        usage: '{guildprefix}br create [name]',
+        usage: '{guildprefix}boostrole create [name]',
         aliases: [],
         parameters: ['name'],
-        example: '{guildprefix}br create My Cool Role'
+        example: '{guildprefix}boostrole create My Cool Role'
       };
 
       // Check if booster role system is enabled
@@ -83,10 +83,10 @@ module.exports = {
     if (subcommand === 'rename') {
       const subcommandInfo = {
         description: 'Rename your booster role',
-        usage: '{guildprefix}br rename [name]',
+        usage: '{guildprefix}boostrole rename [name]',
         aliases: [],
         parameters: ['name'],
-        example: '{guildprefix}br rename New Name'
+        example: '{guildprefix}boostrole rename New Name'
       };
 
       // Check if booster role system is enabled
@@ -101,10 +101,10 @@ module.exports = {
     if (subcommand === 'icon') {
       const subcommandInfo = {
         description: 'Set an icon for your booster role',
-        usage: '{guildprefix}br icon [emoji/url]',
+        usage: '{guildprefix}boostrole icon [emoji/url]',
         aliases: [],
         parameters: ['emoji or url'],
-        example: '{guildprefix}br icon :star:'
+        example: '{guildprefix}boostrole icon :star:'
       };
 
       // Check if booster role system is enabled
@@ -119,10 +119,10 @@ module.exports = {
     if (subcommand === 'color' || subcommand === 'colour') {
       const subcommandInfo = {
         description: 'Set a color for your booster role',
-        usage: '{guildprefix}br color [color]',
+        usage: '{guildprefix}boostrole color [color]',
         aliases: ['colour'],
         parameters: ['color'],
-        example: '{guildprefix}br color #FF0000'
+        example: '{guildprefix}boostrole color #FF0000'
       };
 
       // Check if booster role system is enabled
@@ -137,10 +137,10 @@ module.exports = {
     if (subcommand === 'gradient') {
       const subcommandInfo = {
         description: 'Set a gradient color for your booster role',
-        usage: '{guildprefix}br gradient [color1] [color2]',
+        usage: '{guildprefix}boostrole gradient [color1] [color2]',
         aliases: [],
         parameters: ['color1', 'color2'],
-        example: '{guildprefix}br gradient red blue'
+        example: '{guildprefix}boostrole gradient red blue'
       };
 
       // Check if booster role system is enabled
@@ -155,10 +155,10 @@ module.exports = {
     if (subcommand === 'holographic' || subcommand === 'holo') {
       const subcommandInfo = {
         description: 'Set your booster role to holographic colors',
-        usage: '{guildprefix}br holographic',
+        usage: '{guildprefix}boostrole holographic',
         aliases: ['holo'],
         parameters: [],
-        example: '{guildprefix}br holographic'
+        example: '{guildprefix}boostrole holographic'
       };
 
       // Check if booster role system is enabled
@@ -177,10 +177,10 @@ module.exports = {
       if (shareSubcommand === 'remove') {
         const subcommandInfo = {
           description: 'Remove someone from your shared booster role',
-          usage: '{guildprefix}br share remove [@user]',
+          usage: '{guildprefix}boostrole share remove [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}br share remove @vwsn'
+          example: '{guildprefix}boostrole share remove @vwsn'
         };
 
         // Check if booster role system is enabled
@@ -194,10 +194,10 @@ module.exports = {
       if (shareSubcommand === 'list') {
         const subcommandInfo = {
           description: 'Show list of users who have your booster role',
-          usage: '{guildprefix}br share list',
+          usage: '{guildprefix}boostrole share list',
           aliases: [],
           parameters: [],
-          example: '{guildprefix}br share list'
+          example: '{guildprefix}boostrole share list'
         };
 
         // Check if booster role system is enabled
@@ -211,10 +211,10 @@ module.exports = {
       // Default share behavior
       const subcommandInfo = {
         description: 'Share your booster role with another user',
-        usage: '{guildprefix}br share [@user]',
+        usage: '{guildprefix}boostrole share [@user]',
         aliases: [],
         parameters: ['user'],
-        example: '{guildprefix}br share @vwsn'
+        example: '{guildprefix}boostrole share @vwsn'
       };
 
       // Check if booster role system is enabled
@@ -229,10 +229,10 @@ module.exports = {
     if (subcommand === 'remove' || subcommand === 'delete') {
       const subcommandInfo = {
         description: 'Remove your booster role',
-        usage: '{guildprefix}br remove',
+        usage: '{guildprefix}boostrole remove',
         aliases: ['delete'],
         parameters: [],
-        example: '{guildprefix}br remove'
+        example: '{guildprefix}boostrole remove'
       };
 
       // Check if booster role system is enabled
@@ -244,7 +244,7 @@ module.exports = {
     }
 
     // Default case - show help
-    return runHelpCommand(message, 'br');
+    return runHelpCommand(message, 'boostrole');
   }
 };
 

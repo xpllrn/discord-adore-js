@@ -9,8 +9,8 @@ const logger = require('../../utils/logger');
 const executionTracker = new Map();
 
 module.exports = {
-  name: "vm",
-  aliases: ['voicemaster', 'voice'],
+  name: "voicemaster",
+  aliases: ['vm', 'voice', 'vc'],
   description: 'Voice channel management system',
   isGroupCommand: true,
   run: async (client, message, args) => {
@@ -35,7 +35,7 @@ module.exports = {
     // Show help embed if no arguments
     if (!args[0]) {
       const { runHelpCommand } = require('../../utils/commandProcessor');
-      return runHelpCommand(message, 'vm');
+      return runHelpCommand(message, 'voicemaster');
     }
 
     const subcommand = args[0].toLowerCase();
@@ -51,17 +51,17 @@ module.exports = {
       if (subcommand === 'setup') {
         const subcommandInfo = {
           description: 'Setup the VoiceMaster system',
-          usage: '{guildprefix}vm setup',
+          usage: '{guildprefix}voicemaster setup',
           aliases: [],
-          example: '{guildprefix}vm setup'
+          example: '{guildprefix}voicemaster setup'
         };
         return await handleSetupCommand(message, client);
       } else if (subcommand === 'reset') {
         const subcommandInfo = {
           description: 'Reset the VoiceMaster system',
-          usage: '{guildprefix}vm reset',
+          usage: '{guildprefix}voicemaster reset',
           aliases: [],
-          example: '{guildprefix}vm reset'
+          example: '{guildprefix}voicemaster reset'
         };
         return await handleResetCommand(message);
       }
@@ -93,10 +93,10 @@ module.exports = {
       case 'lock': {
         const subcommandInfo = {
           description: 'Lock your voice channel',
-          usage: '{guildprefix}vm lock',
+          usage: '{guildprefix}voicemaster lock',
           aliases: [],
           parameters: [],
-          example: '{guildprefix}vm lock'
+          example: '{guildprefix}voicemaster lock'
         };
         await handleLockCommand(message, tempChannel);
         break;
@@ -104,10 +104,10 @@ module.exports = {
       case 'unlock': {
         const subcommandInfo = {
           description: 'Unlock your voice channel',
-          usage: '{guildprefix}vm unlock',
+          usage: '{guildprefix}voicemaster unlock',
           aliases: [],
           parameters: [],
-          example: '{guildprefix}vm unlock'
+          example: '{guildprefix}voicemaster unlock'
         };
         await handleUnlockCommand(message, tempChannel);
         break;
@@ -116,10 +116,10 @@ module.exports = {
       case 'ghost': {
         const subcommandInfo = {
           description: 'Hide your voice channel',
-          usage: '{guildprefix}vm hide',
+          usage: '{guildprefix}voicemaster hide',
           aliases: ['ghost'],
           parameters: [],
-          example: '{guildprefix}vm ghost'
+          example: '{guildprefix}voicemaster ghost'
         };
         await handleHideCommand(message, tempChannel);
         break;
@@ -128,10 +128,10 @@ module.exports = {
       case 'unghost': {
         const subcommandInfo = {
           description: 'Unhide your voice channel',
-          usage: '{guildprefix}vm unhide',
+          usage: '{guildprefix}voicemaster unhide',
           aliases: ['unghost'],
           parameters: [],
-          example: '{guildprefix}vm unghost'
+          example: '{guildprefix}voicemaster unghost'
         };
         await handleUnhideCommand(message, tempChannel);
         break;
@@ -139,10 +139,10 @@ module.exports = {
       case 'increase': {
         const subcommandInfo = {
           description: 'Increase user limit by 1',
-          usage: '{guildprefix}vm increase',
+          usage: '{guildprefix}voicemaster increase',
           aliases: [],
           parameters: [],
-          example: '{guildprefix}vm increase'
+          example: '{guildprefix}voicemaster increase'
         };
         await handleIncreaseCommand(message, tempChannel);
         break;
@@ -150,10 +150,10 @@ module.exports = {
       case 'decrease': {
         const subcommandInfo = {
           description: 'Decrease user limit by 1',
-          usage: '{guildprefix}vm decrease',
+          usage: '{guildprefix}voicemaster decrease',
           aliases: [],
           parameters: [],
-          example: '{guildprefix}vm decrease'
+          example: '{guildprefix}voicemaster decrease'
         };
         await handleDecreaseCommand(message, tempChannel);
         break;
@@ -161,10 +161,10 @@ module.exports = {
       case 'limit': {
         const subcommandInfo = {
           description: 'Set user limit (0-99)',
-          usage: '{guildprefix}vm limit [number]',
+          usage: '{guildprefix}voicemaster limit [number]',
           aliases: [],
           parameters: ['number'],
-          example: '{guildprefix}vm limit 5'
+          example: '{guildprefix}voicemaster limit 5'
         };
         await handleLimitCommand(message, args, tempChannel);
         break;
@@ -173,10 +173,10 @@ module.exports = {
       case 'rename': {
         const subcommandInfo = {
           description: 'Change your channel name',
-          usage: '{guildprefix}vm rename [name]',
+          usage: '{guildprefix}voicemaster rename [name]',
           aliases: ['name'],
           parameters: ['name'],
-          example: '{guildprefix}vm rename My Cool Channel'
+          example: '{guildprefix}voicemaster rename My Cool Channel'
         };
         await handleNameCommand(message, args, tempChannel);
         break;
@@ -185,10 +185,10 @@ module.exports = {
       case 'disconnect': {
         const subcommandInfo = {
           description: 'Disconnect a user from your channel',
-          usage: '{guildprefix}vm kick [@user]',
+          usage: '{guildprefix}voicemaster kick [@user]',
           aliases: ['disconnect'],
           parameters: ['user'],
-          example: '{guildprefix}vm kick @vwsn'
+          example: '{guildprefix}voicemaster kick @vwsn'
         };
         await handleDisconnectCommand(message, args, tempChannel);
         break;
@@ -196,10 +196,10 @@ module.exports = {
       case 'invite': {
         const subcommandInfo = {
           description: 'Invite a user to your channel',
-          usage: '{guildprefix}vm invite [@user]',
+          usage: '{guildprefix}voicemaster invite [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}vm invite @vwsn'
+          example: '{guildprefix}voicemaster invite @vwsn'
         };
         await handleInviteCommand(message, args, tempChannel);
         break;
@@ -207,10 +207,10 @@ module.exports = {
       case 'reject': {
         const subcommandInfo = {
           description: 'Reject a user from your channel',
-          usage: '{guildprefix}vm reject [@user]',
+          usage: '{guildprefix}voicemaster reject [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}vm reject @vwsn'
+          example: '{guildprefix}voicemaster reject @vwsn'
         };
         await handleRejectCommand(message, args, tempChannel);
         break;
@@ -218,10 +218,10 @@ module.exports = {
       case 'permit': {
         const subcommandInfo = {
           description: 'Permit a user to access your channel',
-          usage: '{guildprefix}vm permit [@user]',
+          usage: '{guildprefix}voicemaster permit [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}vm permit @vwsn'
+          example: '{guildprefix}voicemaster permit @vwsn'
         };
         await handlePermitCommand(message, args, tempChannel);
         break;
@@ -229,10 +229,10 @@ module.exports = {
       case 'status': {
         const subcommandInfo = {
           description: 'Set your channel status',
-          usage: '{guildprefix}vm status [text]',
+          usage: '{guildprefix}voicemaster status [text]',
           aliases: [],
           parameters: ['text'],
-          example: '{guildprefix}vm status Playing games!'
+          example: '{guildprefix}voicemaster status Playing games!'
         };
         await handleStatusCommand(message, args, tempChannel);
         break;
@@ -240,10 +240,10 @@ module.exports = {
       case 'transfer': {
         const subcommandInfo = {
           description: 'Transfer ownership to another user',
-          usage: '{guildprefix}vm transfer [@user]',
+          usage: '{guildprefix}voicemaster transfer [@user]',
           aliases: [],
           parameters: ['user'],
-          example: '{guildprefix}vm transfer @vwsn'
+          example: '{guildprefix}voicemaster transfer @vwsn'
         };
         await handleTransferCommand(message, args, tempChannel);
         break;
@@ -251,10 +251,10 @@ module.exports = {
       case 'claim': {
         const subcommandInfo = {
           description: 'Claim ownership of an abandoned channel',
-          usage: '{guildprefix}vm claim',
+          usage: '{guildprefix}voicemaster claim',
           aliases: [],
           parameters: [],
-          example: '{guildprefix}vm claim'
+          example: '{guildprefix}voicemaster claim'
         };
         await handleClaimCommand(message, tempChannel);
         break;
