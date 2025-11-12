@@ -441,7 +441,7 @@ class WebhookLogger {
     let description = '';
 
     if (action === 'roleCreate') {
-      description = `Role <@&${target?.id}> created by <@${executor?.id || 'Unknown'}>`;
+      description = `Role <@&${target?.id}> created by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
 
       // Add role details as inline fields
       if (target) {
@@ -459,9 +459,9 @@ class WebhookLogger {
         );
       }
     } else if (action === 'roleUpdate') {
-      description = `Role <@&${target?.id}> updated by <@${executor?.id || 'Unknown'}>`;
+      description = `Role <@&${target?.id}> updated by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'roleDelete') {
-      description = `Role **@${target?.name || 'unknown'}** deleted by <@${executor?.id || 'Unknown'}>`;
+      description = `Role **@${target?.name || 'unknown'}** deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
 
       // Add role details as inline fields
       if (target) {
@@ -480,7 +480,7 @@ class WebhookLogger {
       }
     } else if (action === 'channelDelete') {
       const channelType = this.getChannelTypeText(target?.type);
-      description = `${channelType} **#${target?.name || 'unknown'}** deleted by <@${executor?.id || 'Unknown'}>`;
+      description = `${channelType} **#${target?.name || 'unknown'}** deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
 
       // Add channel creation date if available
       if (target?.createdTimestamp) {
@@ -489,35 +489,39 @@ class WebhookLogger {
       }
     } else if (action === 'channelUpdate') {
       const channelType = this.getChannelTypeText(target?.type);
-      description = `${channelType} <#${target?.id}> updated by <@${executor?.id || 'Unknown'}>`;
+      description = `${channelType} <#${target?.id}> updated by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'channelCreate') {
       const channelType = this.getChannelTypeText(target?.type);
-      description = `${channelType} <#${target?.id}> created by <@${executor?.id || 'Unknown'}>`;
+      description = `${channelType} <#${target?.id}> created by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
+    } else if (action === 'memberKick') {
+      description = `Member ${target ? `<@${target.id}>` : '**Unknown**'} kicked by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
+    } else if (action === 'memberLeave') {
+      description = `Member ${target ? `<@${target.id}>` : '**Unknown**'} left ${executor ? `by ${executor.id === target?.id ? 'themselves' : `<@${executor.id}>`}` : ''}`;
     } else if (action === 'inviteCreate') {
-      description = `Invite created by <@${executor?.id || 'Unknown'}>`;
+      description = `Invite created by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'inviteDelete') {
-      description = `Invite deleted by <@${executor?.id || 'Unknown'}>`;
+      description = `Invite deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'inviteUpdate') {
-      description = `Invite updated by <@${executor?.id || 'Unknown'}>`;
+      description = `Invite updated by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'webhookCreate') {
-      description = `Webhook **${target?.name || 'Unknown'}** created by <@${executor?.id || 'Unknown'}>`;
+      description = `Webhook **${target?.name || 'Unknown'}** created by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'webhookDelete') {
-      description = `Webhook **${target?.name || 'Unknown'}** deleted by <@${executor?.id || 'Unknown'}>`;
+      description = `Webhook **${target?.name || 'Unknown'}** deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'webhookUpdate') {
-      description = `Webhook **${target?.name || 'Unknown'}** updated by <@${executor?.id || 'Unknown'}>`;
+      description = `Webhook **${target?.name || 'Unknown'}** updated by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'emojiCreate') {
-      description = `Emoji **:${target?.name || 'unknown'}:** created by <@${executor?.id || 'Unknown'}>`;
+      description = `Emoji **:${target?.name || 'unknown'}:** created by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'emojiDelete') {
-      description = `Emoji **:${target?.name || 'unknown'}:** deleted by <@${executor?.id || 'Unknown'}>`;
+      description = `Emoji **:${target?.name || 'unknown'}:** deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'emojiUpdate') {
-      description = `Emoji **:${target?.name || 'unknown'}:** updated by <@${executor?.id || 'Unknown'}>`;
+      description = `Emoji **:${target?.name || 'unknown'}:** updated by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'messageDelete') {
-      description = `Message deleted by <@${executor?.id || 'Unknown'}>`;
+      description = `Message deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'messageBulkDelete') {
-      description = `Messages bulk deleted by <@${executor?.id || 'Unknown'}>`;
+      description = `Messages bulk deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else {
       // Fallback for other events
-      description = `${this.getEventTitle(action)} by <@${executor?.id || 'Unknown'}>`;
+      description = `${this.getEventTitle(action)} by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     }
 
     embed.setDescription(description);
@@ -694,28 +698,7 @@ class WebhookLogger {
     return colors[action] || config.colors.info;
   }
 
-  /**
-   * Get emoji for moderator actions
-   * @param {string} action - The action type
-   * @returns {string} - Emoji
-   */
-  getActionEmoji(action) {
-    const emojis = {
-      ban: '🔨',
-      unban: '🔓',
-      kick: '👢',
-      timeout: '⏰',
-      untimeout: '🔓',
-      warn: '⚠️',
-      jail: '🔒',
-      unjail: '🔓',
-      imute: '🖼️',
-      iunmute: '🔓',
-      rmute: '😶',
-      runmute: '🔓'
-    };
-    return emojis[action] || '📝';
-  }
+
 
   /**
    * Get title for moderator actions
@@ -740,46 +723,7 @@ class WebhookLogger {
     return titles[action] || 'Moderator Action';
   }
 
-  /**
-   * Get emoji for server events
-   * @param {string} action - The event type
-   * @returns {string} - Emoji
-   */
-  getEventEmoji(action) {
-    const emojis = {
-      channelCreate: '📝',
-      channelDelete: '🗑️',
-      channelUpdate: '✏️',
-      channelPermissionsUpdate: '🔐',
-      roleCreate: '🎭',
-      roleDelete: '🗑️',
-      roleUpdate: '✏️',
-      guildUpdate: '🏠',
-      memberUpdate: '👤',
-      memberJoin: '📥',
-      memberLeave: '📤',
-      memberRoleAdd: '➕',
-      memberRoleRemove: '➖',
-      voiceJoin: '🔊',
-      voiceLeave: '🔇',
-      voiceMove: '🔄',
-      inviteCreate: '📨',
-      inviteDelete: '🗑️',
-      inviteUpdate: '✏️',
-      webhookCreate: '🔗',
-      webhookDelete: '🗑️',
-      webhookUpdate: '✏️',
-      emojiCreate: '😀',
-      emojiDelete: '🗑️',
-      emojiUpdate: '✏️',
-      stickerCreate: '🎨',
-      stickerDelete: '🗑️',
-      stickerUpdate: '✏️',
-      messageDelete: '🗑️',
-      messageBulkDelete: '🗑️'
-    };
-    return emojis[action] || '📋';
-  }
+
 
   /**
    * Get title for server events
@@ -799,6 +743,7 @@ class WebhookLogger {
       memberUpdate: 'Member Updated',
       memberJoin: 'Member Joined',
       memberLeave: 'Member Left',
+      memberKick: 'Member Kicked',
       memberRoleAdd: 'Member Role Added',
       memberRoleRemove: 'Member Role Removed',
       voiceJoin: 'Voice Channel Joined',

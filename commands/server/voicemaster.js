@@ -445,7 +445,6 @@ async function createVoiceManagerPanel(client, channel) {
       embeds: [panelEmbed],
       components: [row1, row2]
     });
-    console.log('Voice manager panel created successfully');
   } catch (error) {
     console.error('Failed to create voice manager panel:', error);
     // Fallback with labels only if emojis still fail
