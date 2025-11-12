@@ -802,43 +802,80 @@ async function saveSprintHistory(sprint) {
 
 /**
  * Schedule sprint timers (reminder and auto-end)
+ * Uses smart reminder system based on sprint duration
  */
 function scheduleSprintTimers(client, guildId, sprint, durationMs) {
   const timeUntilEnd = sprint.endTime.getTime() - Date.now();
+  
+  // Get reminder times based on duration
+  const reminderTimes = calculateReminderTimes(durationMs, timeUntilEnd);
+  
+  // Schedule all reminders
+  reminderTimes.forEach((reminderTime, index) => {
+    if (reminderTime > 0) {
+      setTimeout(async () => {
+        try {
+          await sendSprintReminder(client, guildId, sprint.messageId, reminderTimes.length - index);
+        } catch (error) {
+          console.error('Sprint reminder error:', error);
+        }
+      }, reminderTime);
+    }
+  });
 
-  // Calculate reminder time (30 min before end, or 20% of duration if less than 30 min)
-  let reminderTime;
-  const thirtyMinutes = 30 * 60 * 1000;
-
-  if (durationMs <= thirtyMinutes) {
-    // If sprint is 30 min or less, remind at 20% of remaining time
-    reminderTime = timeUntilEnd * 0.8;
-  } else {
-    // Otherwise remind 30 min before end
-    reminderTime = timeUntilEnd - thirtyMinutes;
-  }
-
-  // Schedule reminder with better error handling
-  if (reminderTime > 0) {
-    setTimeout(async () => {
-      try {
-        await sendSprintReminder(client, guildId, sprint.messageId);
-      } catch (error) {
-        logger.webhook.error(error);
-      }
-    }, reminderTime);
-  }
-
-  // Schedule auto-end with better error handling
+  // Schedule auto-end
   if (timeUntilEnd > 0) {
     setTimeout(async () => {
       try {
         await autoEndSprint(client, guildId, sprint.messageId);
       } catch (error) {
-        logger.webhook.error(error);
+        console.error('Sprint auto-end error:', error);
       }
     }, timeUntilEnd);
   }
+}
+
+/**
+ * Calculate optimal reminder times based on sprint duration
+ * Returns array of milliseconds from now when reminders should fire
+ */
+function calculateReminderTimes(durationMs, timeUntilEnd) {
+  const oneMinute = 60 * 1000;
+  const fiveMinutes = 5 * 60 * 1000;
+  const tenMinutes = 10 * 60 * 1000;
+  const thirtyMinutes = 30 * 60 * 1000;
+  const oneHour = 60 * 60 * 1000;
+  
+  const reminders = [];
+  
+  // Very short sprints (< 5 minutes): Single reminder at 1 minute
+  if (durationMs < fiveMinutes) {
+    const reminderAt = timeUntilEnd - oneMinute;
+    if (reminderAt > 0) reminders.push(reminderAt);
+  }
+  // Short sprints (5-30 minutes): Single reminder at 5 minutes
+  else if (durationMs < thirtyMinutes) {
+    const reminderAt = timeUntilEnd - fiveMinutes;
+    if (reminderAt > 0) reminders.push(reminderAt);
+  }
+  // Medium sprints (30 min - 1 hour): Reminders at 10 min and 5 min
+  else if (durationMs < oneHour) {
+    const reminder10 = timeUntilEnd - tenMinutes;
+    const reminder5 = timeUntilEnd - fiveMinutes;
+    if (reminder10 > 0) reminders.push(reminder10);
+    if (reminder5 > 0) reminders.push(reminder5);
+  }
+  // Long sprints (1+ hours): Reminders at 30 min, 10 min, and 5 min
+  else {
+    const reminder30 = timeUntilEnd - thirtyMinutes;
+    const reminder10 = timeUntilEnd - tenMinutes;
+    const reminder5 = timeUntilEnd - fiveMinutes;
+    if (reminder30 > 0) reminders.push(reminder30);
+    if (reminder10 > 0) reminders.push(reminder10);
+    if (reminder5 > 0) reminders.push(reminder5);
+  }
+  
+  return reminders;
 }
 
 // Functions moved to sprintManager.js

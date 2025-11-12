@@ -267,6 +267,9 @@ async function resumeActiveSprints(client) {
     if (!guildsWithSprints?.length) return;
     
     const now = Date.now();
+    const oneMinute = 60 * 1000;
+    const fiveMinutes = 5 * 60 * 1000;
+    const tenMinutes = 10 * 60 * 1000;
     const thirtyMinutes = 30 * 60 * 1000;
     
     for (const guildData of guildsWithSprints) {
@@ -274,7 +277,9 @@ async function resumeActiveSprints(client) {
       
       for (const sprint of activeSprints) {
         const endTime = sprint.endTime.getTime();
+        const startTime = sprint.startTime.getTime();
         const timeUntilEnd = endTime - now;
+        const totalDuration = endTime - startTime;
 
         // Sprint already ended - end it immediately
         if (timeUntilEnd <= 0) {
@@ -282,9 +287,43 @@ async function resumeActiveSprints(client) {
           continue;
         }
 
-        // Sprint is still active - schedule reminder if needed
-        if (!sprint.reminderSent && timeUntilEnd <= thirtyMinutes) {
+        // Initialize reminder count if not exists
+        if (!sprint.reminderCount) sprint.reminderCount = 0;
+
+        // Determine which reminders to send based on time left and what's already been sent
+        const remindersToSend = [];
+        
+        // Check each reminder threshold
+        if (timeUntilEnd <= thirtyMinutes && sprint.reminderCount < 1 && totalDuration >= 60 * 60 * 1000) {
+          remindersToSend.push({ time: 0, label: '30min' }); // Send immediately
+        }
+        if (timeUntilEnd <= tenMinutes && sprint.reminderCount < 2 && totalDuration >= 30 * 60 * 1000) {
+          remindersToSend.push({ time: 0, label: '10min' });
+        }
+        if (timeUntilEnd <= fiveMinutes && sprint.reminderCount < 3 && totalDuration >= 5 * 60 * 1000) {
+          remindersToSend.push({ time: 0, label: '5min' });
+        }
+        if (timeUntilEnd <= oneMinute && sprint.reminderCount < 4 && totalDuration < 5 * 60 * 1000) {
+          remindersToSend.push({ time: 0, label: '1min' });
+        }
+
+        // Send any missed reminders immediately
+        for (const reminder of remindersToSend) {
           await sendSprintReminder(client, guildData.GuildID, sprint.messageId);
+        }
+
+        // Schedule future reminders
+        if (timeUntilEnd > thirtyMinutes && totalDuration >= 60 * 60 * 1000 && sprint.reminderCount === 0) {
+          setTimeout(() => sendSprintReminder(client, guildData.GuildID, sprint.messageId), timeUntilEnd - thirtyMinutes);
+        }
+        if (timeUntilEnd > tenMinutes && totalDuration >= 30 * 60 * 1000 && sprint.reminderCount <= 1) {
+          setTimeout(() => sendSprintReminder(client, guildData.GuildID, sprint.messageId), timeUntilEnd - tenMinutes);
+        }
+        if (timeUntilEnd > fiveMinutes && totalDuration >= 5 * 60 * 1000 && sprint.reminderCount <= 2) {
+          setTimeout(() => sendSprintReminder(client, guildData.GuildID, sprint.messageId), timeUntilEnd - fiveMinutes);
+        }
+        if (timeUntilEnd > oneMinute && totalDuration < 5 * 60 * 1000 && sprint.reminderCount === 0) {
+          setTimeout(() => sendSprintReminder(client, guildData.GuildID, sprint.messageId), timeUntilEnd - oneMinute);
         }
 
         // Schedule auto-end
@@ -365,7 +404,7 @@ async function autoEndSprint(client, guildId, messageId) {
   }
 }
 
-async function sendSprintReminder(client, guildId, messageId) {
+async function sendSprintReminder(client, guildId, messageId, remindersLeft = 1) {
   try {
     const { getModels } = require('../../database');
     const models = getModels();
@@ -374,11 +413,14 @@ async function sendSprintReminder(client, guildId, messageId) {
     const guildData = await models.Guild.findOne({ GuildID: guildId });
     if (!guildData) return;
     
-    const sprint = guildData.Sprints?.find(s => s.messageId === messageId && s.isActive && !s.reminderSent);
+    const sprint = guildData.Sprints?.find(s => s.messageId === messageId && s.isActive);
     if (!sprint || !sprint.participants?.length) return;
 
-    // Mark reminder as sent
-    sprint.reminderSent = true;
+    // Initialize reminder count if not exists
+    if (!sprint.reminderCount) sprint.reminderCount = 0;
+    
+    // Increment reminder count
+    sprint.reminderCount++;
     await guildData.save();
 
     // Send reminder message
@@ -386,8 +428,23 @@ async function sendSprintReminder(client, guildId, messageId) {
     const sprintMessage = await channel.messages.fetch(sprint.messageId);
     const mentions = sprint.participants.map(p => `<@${p.userId}>`).join(' ');
 
+    // Calculate time remaining
+    const timeLeft = sprint.endTime.getTime() - Date.now();
+    const minutesLeft = Math.ceil(timeLeft / (60 * 1000));
+    
+    let message;
+    if (minutesLeft <= 1) {
+      message = `**Final call!** ${mentions} Less than a minute left! 🏃‍♂️💨`;
+    } else if (minutesLeft <= 5) {
+      message = `**Hurry up!** ${mentions} Only **${minutesLeft} minutes** left in the sprint! ⏰`;
+    } else if (minutesLeft <= 10) {
+      message = `**Heads up!** ${mentions} **${minutesLeft} minutes** remaining in the sprint! 📚`;
+    } else {
+      message = `**Reminder!** ${mentions} **${minutesLeft} minutes** left in the reading sprint! 📖`;
+    }
+
     await sprintMessage.reply({
-      content: `**Hurry up!** ${mentions} The reading sprint is ending soon! ⏰`,
+      content: message,
       allowedMentions: { users: sprint.participants.map(p => p.userId) }
     });
   } catch (error) {

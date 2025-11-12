@@ -7599,7 +7599,7 @@ class GuildService extends BaseService {
           nickname: nickname.trim(),
           reason: reason ? reason.trim() : null,
           setAt: new Date(),
-          setBy: null // Can be enhanced to track who set it
+          setBy: setBy || 'Unknown' // Provide default value
         };
       } else {
         // Add new forced nick
@@ -7608,7 +7608,7 @@ class GuildService extends BaseService {
           nickname: nickname.trim(),
           reason: reason ? reason.trim() : null,
           setAt: new Date(),
-          setBy: null
+          setBy: setBy || 'Unknown' // Provide default value
         });
       }
 
