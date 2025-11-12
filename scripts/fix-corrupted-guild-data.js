@@ -11,20 +11,33 @@ async function fixCorruptedData() {
   console.log('🔧 Starting database cleanup...\n');
 
   try {
-    // Initialize database
-    const { initializeDatabase, getModels } = require('../database');
+    // Connect directly with mongoose
+    const mongoose = require('mongoose');
     const config = require('../config/setup');
+    const guildSchema = require('../database/models/guild');
 
     console.log('📦 Connecting to database...');
-    await initializeDatabase(config.database);
-
-    const models = getModels();
-    if (!models || !models.Guild) {
-      console.error('❌ Failed to get database models');
+    
+    // Get connection string from config
+    let connectionString;
+    if (typeof config.database === 'string') {
+      connectionString = config.database;
+    } else if (config.database?.guildConnection) {
+      connectionString = config.database.guildConnection;
+    } else if (config.database?.guild) {
+      connectionString = config.database.guild;
+    } else if (config.database?.local) {
+      connectionString = config.database.local;
+    } else {
+      console.error('❌ No database connection string found in config');
+      console.log('Config database:', config.database);
       process.exit(1);
     }
 
-    const Guild = models.Guild;
+    await mongoose.connect(connectionString);
+    console.log('✅ Connected to database\n');
+
+    const Guild = mongoose.model('Guild', guildSchema.schema);
 
     // Get all guilds
     const guilds = await Guild.find({});
@@ -84,10 +97,16 @@ async function fixCorruptedData() {
     console.log(`   MessageStats entries removed: ${fixedMessageStats}`);
     console.log('\n✅ Database cleanup complete!');
 
+    // Close connection
+    await mongoose.connection.close();
     process.exit(0);
 
   } catch (error) {
     console.error('❌ Error during cleanup:', error);
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.close();
+    }
     process.exit(1);
   }
 }
