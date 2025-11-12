@@ -11,7 +11,10 @@ module.exports = {
     // Send webhook log if configured
     await logMessageEdit(oldMessage, newMessage);
 
-    processEditedCommand(newMessage, client);
+    // Only process command if content actually changed (not just embed preview added)
+    if (oldMessage.content !== newMessage.content) {
+      processEditedCommand(newMessage, client);
+    }
   },
 };
 

@@ -25,7 +25,7 @@ module.exports = {
           description: 'Create an alias for a command with optional {0} placeholder',
           usage: '{guildprefix}alias add [shortcut] [command]',
           aliases: ['create'],
-          example: '{guildprefix}alias add bal balance\n{guildprefix}alias add pic role {0} @PicPerms\n{guildprefix}alias add shh timeout {0} 5m\n{guildprefix}alias add mod role {0} +123456, -789012'
+          example: '{guildprefix}alias add deport ban'
         };
         return await handleAddAlias(message, args);
       }
