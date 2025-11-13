@@ -158,11 +158,13 @@ class GuildService extends BaseService {
     }
 
     try {
-      // Try to get existing data first
-      let guildData = await this.get(guildId);
+      // CRITICAL: Always check database directly, not just cache
+      // This prevents data loss when cache is cleared
+      const Model = this.getModel();
+      let guildData = await Model.findOne({ GuildID: guildId }).lean();
 
       if (!guildData) {
-        // Create default guild data
+        // Create default guild data ONLY if truly doesn't exist in database
         guildData = {
           GuildID: guildId,
           Prefix: ',', // Default prefix
