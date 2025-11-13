@@ -1440,6 +1440,25 @@ const guildSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
+  }],
+
+  // Role Restore system - stores roles when members leave
+  RoleRestore: [{
+    userId: {
+      type: String,
+      required: true
+    },
+    roles: [{
+      type: String // Role IDs
+    }],
+    leftAt: {
+      type: Date,
+      default: Date.now
+    },
+    expiresAt: {
+      type: Date,
+      required: true // Auto-expire after 2 hours
+    }
   }]
 }, {
   timestamps: true
@@ -1639,6 +1658,10 @@ guildSchema.index({ 'Antinuke.logs.timestamp': -1 }); // Recent logs first
 
 // Aliases indexes
 guildSchema.index({ 'Aliases.shortcut': 1 }); // Alias lookups
+
+// Role Restore indexes
+guildSchema.index({ 'RoleRestore.userId': 1 });
+guildSchema.index({ 'RoleRestore.expiresAt': 1 }); // For cleanup of expired data
 
 module.exports = {
   schema: guildSchema,

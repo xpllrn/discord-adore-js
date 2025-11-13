@@ -625,6 +625,116 @@ module.exports = {
 
     }
 
+    // RESTORE ROLE SUBCOMMAND
+    if (args[0] === 'restore') {
+      const subcommandInfo = {
+        description: 'Restore roles to a user who left the server',
+        usage: '{guildprefix}role restore [user]',
+        aliases: [],
+        parameters: ['user'],
+        example: '{guildprefix}role restore @user'
+      };
+
+      if (!args[1]) {
+        return false;
+      }
+
+      const userResult = await findUser(message.guild, args[1], client);
+
+      if (!userResult.found) {
+        return embeds.deny(message, userResult.error);
+      }
+
+      let user = userResult.user;
+      
+      // If findUser returned a global User object, we need to fetch the GuildMember
+      if (userResult.isGlobal || !user.roles) {
+        try {
+          user = await message.guild.members.fetch(user.id);
+        } catch (error) {
+          return embeds.deny(message, `**${user.username}** is not a member of this server!`);
+        }
+      }
+
+      const targetUser = user.user || user;
+
+      // Check if user can perform action on target
+      if (!checkSelfAction(message, targetUser, 'restore roles for')) return;
+      if (!checkBotAction(message, targetUser)) return;
+      if (!checkUserMemberHierarchy(message, user)) return;
+      if (!checkDiscordActionable(message, user, 'manage roles')) return;
+
+      // Find restore data for this user
+      const guildData = await ensureGuildData(message.guild.id);
+      
+      // Clean up expired restore data first
+      guildData.RoleRestore = guildData.RoleRestore.filter(
+        restore => restore.expiresAt > new Date()
+      );
+
+      const restoreData = guildData.RoleRestore.find(
+        restore => restore.userId === user.id
+      );
+
+      if (!restoreData || restoreData.roles.length === 0) {
+        return embeds.deny(message, `No saved roles found for ${user}. Roles are only saved for 2 hours after a member leaves.`);
+      }
+
+      // Filter out roles that no longer exist or bot can't manage
+      const validRoles = [];
+      const invalidRoles = [];
+
+      for (const roleId of restoreData.roles) {
+        const role = message.guild.roles.cache.get(roleId);
+        
+        if (!role) {
+          invalidRoles.push(roleId);
+          continue;
+        }
+
+        // Check if bot can manage this role
+        if (role.position >= message.guild.members.me.roles.highest.position) {
+          invalidRoles.push(role.name);
+          continue;
+        }
+
+        // Check if command user can manage this role
+        if (role.position >= message.member.roles.highest.position && message.member.id !== message.guild.ownerId) {
+          invalidRoles.push(role.name);
+          continue;
+        }
+
+        validRoles.push(role);
+      }
+
+      if (validRoles.length === 0) {
+        return embeds.deny(message, `No valid roles to restore for ${user}. All saved roles are either deleted or cannot be managed.`);
+      }
+
+      try {
+        // Add all valid roles
+        await user.roles.add(validRoles.map(r => r.id), `Roles restored by ${message.author.tag}`);
+
+        // Remove restore data after successful restore
+        guildData.RoleRestore = guildData.RoleRestore.filter(
+          restore => restore.userId !== user.id
+        );
+        await guildData.save();
+
+        const timeAgo = Math.floor((Date.now() - restoreData.leftAt.getTime()) / 1000 / 60);
+        let response = `Restored **${validRoles.length}** role${validRoles.length !== 1 ? 's' : ''} to ${user} (saved ${timeAgo} minute${timeAgo !== 1 ? 's' : ''} ago)`;
+        
+        if (invalidRoles.length > 0) {
+          response += `\n\n**Note:** ${invalidRoles.length} role${invalidRoles.length !== 1 ? 's were' : ' was'} skipped (deleted or insufficient permissions)`;
+        }
+
+        return embeds.success(message, response);
+      } catch (error) {
+        console.error('Error restoring roles:', error);
+        return embeds.deny(message, 'Failed to restore roles. Please check my permissions.');
+      }
+    }
+
     // DEFAULT ROLE TOGGLE (no subcommand)
     if (!args[0]) {
       return false;
@@ -739,10 +849,10 @@ module.exports = {
       // Build response message
       const messages = [];
       if (addedRoles.length > 0) {
-        messages.push(`Added ${addedRoles.join(', ')} to ${targetUser}`);
+        messages.push(`Added ${addedRoles.join(', ')} to ${user}`);
       }
       if (removedRoles.length > 0) {
-        messages.push(`Removed ${removedRoles.join(', ')} from ${targetUser}`);
+        messages.push(`Removed ${removedRoles.join(', ')} from ${user}`);
       }
 
       if (messages.length > 0) {
@@ -752,7 +862,7 @@ module.exports = {
       }
     } catch (error) {
       if (error.code === 50013) {
-        return embeds.deny(message, `I don't have permission to manage **${targetUser.username}**'s roles. Please check my role hierarchy and permissions.`);
+        return embeds.deny(message, `I don't have permission to manage ${user}'s roles. Please check my role hierarchy and permissions.`);
       }
       return embeds.deny(message, 'Failed to modify user roles. Please check my permissions.');
     }

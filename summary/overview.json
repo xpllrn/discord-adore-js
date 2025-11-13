@@ -1,0 +1,2508 @@
+{
+  "bot": {
+    "name": "Discord Bot",
+    "defaultPrefix": ",",
+    "description": "Learn how to set up the bot in your server or enhance your everyday use with commands & more.",
+    "supportServer": "https://dsc.gg/s-invite",
+    "version": "1.0"
+  },
+  "introduction": {
+    "title": "Introduction",
+    "description": "Learn how to set up the bot in your server or enhance your everyday use with commands & more.",
+    "quickStart": {
+      "prefix": {
+        "default": ",",
+        "changeCommand": ",prefix set (symbol)",
+        "description": "Server prefix is set to , by default. Use ,prefix set (symbol) to change it for your server."
+      },
+      "help": {
+        "command": ",help",
+        "description": "Use ,help to view all available commands or ,help [command] for specific command information."
+      }
+    }
+  },
+  "guides": [
+    {
+      "id": "getting-started",
+      "title": "Getting Started",
+      "description": "Server prefix is set to , by default. Use ,prefix set (symbol) to change it for your server.",
+      "icon": "🚀"
+    },
+    {
+      "id": "security-setup",
+      "title": "Security Setup",
+      "description": "Quickly configure your server to use the bot's advanced moderation system.",
+      "icon": "🔒",
+      "link": "#security-setup"
+    },
+    {
+      "id": "server-configuration",
+      "title": "Server Configuration",
+      "description": "Set up welcome & goodbye messages, reaction roles, and more for your server.",
+      "icon": "⚙️",
+      "link": "#server-configuration"
+    },
+    {
+      "id": "integrations",
+      "title": "Integrations",
+      "description": "Seamlessly integrate your favorite platforms directly into your server.",
+      "icon": "🔗",
+      "link": "#integrations"
+    },
+    {
+      "id": "embed-scripting",
+      "title": "Embed Scripting",
+      "description": "Learn how to build embeds and use variables for your server's configurations.",
+      "icon": "📝",
+      "link": "#embed-scripting"
+    }
+  ],
+  "categories": {
+    "customization": {
+      "title": "Customization",
+      "description": "Customize the bot's avatar, banner, and bio.",
+      "icon": "🎨",
+      "sections": [
+        {
+          "id": "bot-appearance",
+          "title": "Bot Appearance",
+          "overview": "Personalize the bot's appearance in your server by setting a custom avatar, banner, or bio to make your community stand out.",
+          "warning": "This feature is actively monitored and logged. Uploading inappropriate content will lead to immediate removal of the bot from your server and forfeiture of access.",
+          "permission": "Server Owner",
+          "note": "Only the server owner can use these commands.",
+          "commands": [
+            {
+              "name": "customize avatar",
+              "description": "Upload the bot's avatar",
+              "syntax": ",customize avatar (image URL)",
+              "example": ",customize avatar https://example.com/avatar.png",
+              "aliases": ["custom avatar"],
+              "permission": "Server Owner",
+              "parameters": [
+                {
+                  "name": "image URL",
+                  "type": "string",
+                  "required": false,
+                  "description": "URL of the image or attach an image file. Leave empty to reset to global avatar."
+                }
+              ],
+              "notes": [
+                "Supported formats: PNG, JPG, GIF",
+                "5 minute cooldown per customization type",
+                "Leave empty to reset to global avatar",
+                "Can also attach an image file instead of URL"
+              ]
+            },
+            {
+              "name": "customize banner",
+              "description": "Upload the bot's banner",
+              "syntax": ",customize banner (image URL)",
+              "example": ",customize banner https://example.com/banner.png",
+              "aliases": ["custom banner"],
+              "permission": "Server Owner",
+              "parameters": [
+                {
+                  "name": "image URL",
+                  "type": "string",
+                  "required": false,
+                  "description": "URL of the image or attach an image file. Leave empty to reset to global banner."
+                }
+              ],
+              "notes": [
+                "Supported formats: PNG, JPG, GIF",
+                "5 minute cooldown per customization type",
+                "Leave empty to reset to global banner",
+                "Can also attach an image file instead of URL"
+              ]
+            },
+            {
+              "name": "customize bio",
+              "description": "Set the bot's bio",
+              "syntax": ",customize bio (text)",
+              "example": ",customize bio Best bot for this server!",
+              "aliases": ["custom bio"],
+              "permission": "Server Owner",
+              "parameters": [
+                {
+                  "name": "text",
+                  "type": "string",
+                  "required": false,
+                  "description": "Bio text (max 190 characters). Leave empty to reset to global bio."
+                }
+              ],
+              "notes": [
+                "Maximum 190 characters",
+                "5 minute cooldown per customization type",
+                "Leave empty to reset to global bio"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "prefix-management",
+          "title": "Prefix Management",
+          "description": "Manage the server prefix and personal prefixes.",
+          "commands": [
+            {
+              "name": "prefix",
+              "description": "View the current server prefix",
+              "syntax": ",prefix",
+              "example": ",prefix",
+              "aliases": ["setprefix"]
+            },
+            {
+              "name": "prefix set",
+              "description": "Change the server prefix",
+              "syntax": ",prefix set (symbol)",
+              "example": ",prefix set !",
+              "permission": "Administrator",
+              "parameters": [
+                {
+                  "name": "symbol",
+                  "type": "string",
+                  "required": true,
+                  "description": "New prefix (max 3 characters, no spaces)"
+                }
+              ],
+              "notes": [
+                "Maximum 3 characters",
+                "No spaces allowed",
+                "Requires Administrator permission"
+              ]
+            },
+            {
+              "name": "prefix remove",
+              "description": "Reset prefix to default",
+              "syntax": ",prefix remove",
+              "example": ",prefix remove",
+              "aliases": ["prefix reset", "prefix default"],
+              "permission": "Administrator",
+              "notes": [
+                "Resets to default prefix: ,"
+              ]
+            },
+            {
+              "name": "selfprefix set",
+              "description": "Set a personal prefix (Premium only)",
+              "syntax": ",selfprefix set (prefix)",
+              "example": ",selfprefix set !",
+              "premium": true,
+              "parameters": [
+                {
+                  "name": "prefix",
+                  "type": "string",
+                  "required": true,
+                  "description": "Your personal prefix"
+                }
+              ],
+              "notes": [
+                "Premium feature only",
+                "Works alongside server prefix"
+              ]
+            },
+            {
+              "name": "selfprefix remove",
+              "description": "Remove your personal prefix",
+              "syntax": ",selfprefix remove",
+              "example": ",selfprefix remove",
+              "premium": true
+            }
+          ]
+        }
+      ]
+    },
+    "security": {
+      "title": "Security Setup",
+      "description": "Quickly configure your server to use the bot's advanced moderation system.",
+      "icon": "🔒",
+      "sections": [
+        {
+          "id": "antinuke",
+          "title": "Antinuke",
+          "subtitle": "Impose restrictions on moderators to prevent destructive behavior.",
+          "overview": {
+            "why": "It's important to have an antinuke system in place to prevent moderators from abusing their permissions. This is a security measure which lets your server stay safe from any harmful actions.",
+            "how": "The antinuke will set a limit on the number of actions a moderator can perform in a certain time frame. If the limit is exceeded, the moderator will be punished and a message will be sent to the owner."
+          },
+          "configuration": {
+            "note": "Discord recently implemented a new mass ban feature which can quickly ban 100+ members. It's HIGHLY recommended to utilize fake permissions to prevent moderators from using this feature.",
+            "access": {
+              "initial": "Only the server owner can configure the antinuke",
+              "admins": "Use ,antinuke admin @user to allow others to configure"
+            }
+          },
+          "commands": [
+            {
+              "name": "antinuke admin",
+              "description": "Allow users to configure the antinuke",
+              "syntax": ",antinuke admin (user)",
+              "example": ",antinuke admin @user",
+              "permission": "Server Owner",
+              "warning": "This is a dangerous command and will allow the user to entirely alter the antinuke configuration.",
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": true,
+                  "description": "User to grant antinuke admin permissions"
+                }
+              ]
+            },
+            {
+              "name": "antinuke whitelist",
+              "description": "Exempt users from the antinuke",
+              "syntax": ",antinuke whitelist (user)",
+              "example": ",antinuke whitelist @user",
+              "permission": "Server Owner or Antinuke Admin",
+              "warning": "This is a dangerous command and will allow the user to bypass the antinuke entirely.",
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": true,
+                  "description": "User or bot to whitelist"
+                }
+              ]
+            },
+            {
+              "name": "antinuke ban",
+              "description": "Prevent mass member bans",
+              "syntax": ",antinuke ban <on|off> [--threshold 1-10] [--do strip|kick|ban]",
+              "example": ",antinuke ban on --threshold 3 --do ban",
+              "permission": "Server Owner or Antinuke Admin",
+              "parameters": [
+                {
+                  "name": "status",
+                  "type": "string",
+                  "required": true,
+                  "options": ["on", "off"],
+                  "description": "Enable or disable the module"
+                },
+                {
+                  "name": "--threshold",
+                  "type": "number",
+                  "required": false,
+                  "range": "1-10",
+                  "description": "Number of actions before punishment"
+                },
+                {
+                  "name": "--do",
+                  "type": "string",
+                  "required": false,
+                  "options": ["strip", "kick", "ban"],
+                  "description": "Punishment type"
+                }
+              ],
+              "flags": {
+                "threshold": "Number of bans allowed before punishment (1-10)",
+                "punishment": "Action to take: strip (remove roles), kick, or ban"
+              }
+            },
+            {
+              "name": "antinuke kick",
+              "description": "Prevent mass member kicks",
+              "syntax": ",antinuke kick <on|off> [--threshold 1-10] [--do strip|kick|ban]",
+              "example": ",antinuke kick on --threshold 3 --do ban",
+              "permission": "Server Owner or Antinuke Admin",
+              "parameters": [
+                {
+                  "name": "status",
+                  "type": "string",
+                  "required": true,
+                  "options": ["on", "off"]
+                },
+                {
+                  "name": "--threshold",
+                  "type": "number",
+                  "required": false,
+                  "range": "1-10"
+                },
+                {
+                  "name": "--do",
+                  "type": "string",
+                  "required": false,
+                  "options": ["strip", "kick", "ban"]
+                }
+              ]
+            },
+            {
+              "name": "antinuke role",
+              "description": "Prevent mass role deletions",
+              "syntax": ",antinuke role <on|off> [--threshold 1-10] [--do strip|kick|ban]",
+              "example": ",antinuke role on --threshold 5 --do kick",
+              "permission": "Server Owner or Antinuke Admin",
+              "parameters": [
+                {
+                  "name": "status",
+                  "type": "string",
+                  "required": true,
+                  "options": ["on", "off"]
+                },
+                {
+                  "name": "--threshold",
+                  "type": "number",
+                  "required": false,
+                  "range": "1-10"
+                },
+                {
+                  "name": "--do",
+                  "type": "string",
+                  "required": false,
+                  "options": ["strip", "kick", "ban"]
+                }
+              ]
+            },
+            {
+              "name": "antinuke channel",
+              "description": "Prevent mass channel creation/deletion",
+              "syntax": ",antinuke channel <on|off> [--threshold 1-10] [--do strip|kick|ban]",
+              "example": ",antinuke channel on --threshold 5 --do kick",
+              "permission": "Server Owner or Antinuke Admin",
+              "parameters": [
+                {
+                  "name": "status",
+                  "type": "string",
+                  "required": true,
+                  "options": ["on", "off"]
+                },
+                {
+                  "name": "--threshold",
+                  "type": "number",
+                  "required": false,
+                  "range": "1-10"
+                },
+                {
+                  "name": "--do",
+                  "type": "string",
+                  "required": false,
+                  "options": ["strip", "kick", "ban"]
+                }
+              ]
+            },
+            {
+              "name": "antinuke webhook",
+              "description": "Prevent mass webhook creation",
+              "syntax": ",antinuke webhook <on|off> [--threshold 1-10] [--do strip|kick|ban]",
+              "example": ",antinuke webhook on --threshold 3 --do ban",
+              "permission": "Server Owner or Antinuke Admin",
+              "parameters": [
+                {
+                  "name": "status",
+                  "type": "string",
+                  "required": true,
+                  "options": ["on", "off"]
+                },
+                {
+                  "name": "--threshold",
+                  "type": "number",
+                  "required": false,
+                  "range": "1-10"
+                },
+                {
+                  "name": "--do",
+                  "type": "string",
+                  "required": false,
+                  "options": ["strip", "kick", "ban"]
+                }
+              ]
+            },
+            {
+              "name": "antinuke botadd",
+              "description": "Prevent unauthorized bot additions",
+              "syntax": ",antinuke botadd <on|off> [--do strip|kick|ban]",
+              "example": ",antinuke botadd on --do ban",
+              "permission": "Server Owner or Antinuke Admin",
+              "parameters": [
+                {
+                  "name": "status",
+                  "type": "string",
+                  "required": true,
+                  "options": ["on", "off"]
+                },
+                {
+                  "name": "--do",
+                  "type": "string",
+                  "required": false,
+                  "options": ["strip", "kick", "ban"]
+                }
+              ],
+              "notes": [
+                "No threshold needed for botadd module"
+              ]
+            },
+            {
+              "name": "antinuke permissions",
+              "description": "Watch dangerous permission grants",
+              "syntax": ",antinuke permissions <on|off> [--do strip|kick|ban]",
+              "example": ",antinuke permissions on --do strip",
+              "permission": "Server Owner or Antinuke Admin",
+              "parameters": [
+                {
+                  "name": "status",
+                  "type": "string",
+                  "required": true,
+                  "options": ["on", "off"]
+                },
+                {
+                  "name": "--do",
+                  "type": "string",
+                  "required": false,
+                  "options": ["strip", "kick", "ban"]
+                }
+              ],
+              "watchedPermissions": [
+                "Administrator",
+                "Ban Members",
+                "Kick Members",
+                "Moderate Members",
+                "Mention Everyone",
+                "Manage Guild",
+                "Manage Channels",
+                "Manage Roles",
+                "Manage Webhooks"
+              ],
+              "notes": [
+                "Automatically watches 9 dangerous permissions when enabled"
+              ]
+            },
+            {
+              "name": "antinuke config",
+              "description": "View the current antinuke configuration",
+              "syntax": ",antinuke config",
+              "example": ",antinuke config",
+              "permission": "Server Owner or Antinuke Admin"
+            },
+            {
+              "name": "antinuke list",
+              "description": "View enabled modules and whitelisted users",
+              "syntax": ",antinuke list",
+              "example": ",antinuke list",
+              "permission": "Server Owner or Antinuke Admin"
+            },
+            {
+              "name": "antinuke admins",
+              "description": "View users with antinuke admin permissions",
+              "syntax": ",antinuke admins",
+              "example": ",antinuke admins",
+              "permission": "Server Owner or Antinuke Admin"
+            }
+          ],
+          "availableModules": [
+            {
+              "name": "ban",
+              "description": "Preventing members from being banned"
+            },
+            {
+              "name": "kick",
+              "description": "Preventing members from being kicked"
+            },
+            {
+              "name": "role",
+              "description": "Preventing roles from being deleted"
+            },
+            {
+              "name": "channel",
+              "description": "Preventing channels from being created or deleted"
+            },
+            {
+              "name": "webhook",
+              "description": "Preventing webhooks from being created"
+            },
+            {
+              "name": "botadd",
+              "description": "Preventing bots from being added"
+            },
+            {
+              "name": "permissions",
+              "description": "Watching dangerous permission grants"
+            }
+          ],
+          "punishmentTypes": [
+            {
+              "name": "strip",
+              "description": "Remove all roles and permissions from the user"
+            },
+            {
+              "name": "kick",
+              "description": "Kick the user from the server"
+            },
+            {
+              "name": "ban",
+              "description": "Ban the user from the server"
+            }
+          ]
+        }
+      ]
+    },
+    "moderation": {
+      "title": "Moderation",
+      "description": "Guide to setting up moderation commands in your server.",
+      "icon": "🛡️",
+      "sections": [
+        {
+          "id": "moderation-setup",
+          "title": "Moderation Setup",
+          "overview": "Moderation commands require some basic setup before they can be used. This includes moderation logs, mute roles, and the jailed role & channel.",
+          "steps": [
+            {
+              "step": 1,
+              "title": "Creating the case logs & jail role",
+              "description": "Jail is a feature similar to mute, but it restricts users from all channels except #jail.",
+              "command": ",setup",
+              "creates": [
+                "Case logs channel - Logs all moderation actions",
+                "Jail role - For jailing members",
+                "#jail channel - Where jailed members can talk"
+              ]
+            },
+            {
+              "step": 2,
+              "title": "Creating the necessary mute roles",
+              "description": "This will create a text mute, image mute, and reaction mute role.",
+              "command": ",setupmute",
+              "creates": [
+                "Muted - Used to restrict users from sending messages",
+                "Image Muted - Used to restrict users from uploading attachments",
+                "Reaction Muted - Used to restrict users from reacting to messages",
+                "Jailed - Used to restrict users from all channels except the #jail channel"
+              ]
+            }
+          ],
+          "notes": [
+            "The jailed role cannot be renamed since it's found by its name",
+            "The #jail-log channel logs all moderation actions done through the bot",
+            "The #jail channel is where users jailed by the jail command are restricted to"
+          ],
+          "commands": [
+            {
+              "name": "setup",
+              "description": "Create case logs channel and jail role",
+              "syntax": ",setup",
+              "example": ",setup",
+              "permission": "Administrator"
+            },
+            {
+              "name": "setupmute",
+              "description": "Create all mute roles",
+              "syntax": ",setupmute",
+              "example": ",setupmute",
+              "permission": "Administrator"
+            }
+          ]
+        },
+        {
+          "id": "moderation-commands",
+          "title": "Moderation Commands",
+          "commands": [
+            {
+              "name": "ban",
+              "description": "Ban a member from the server",
+              "syntax": ",ban @user [reason]",
+              "examples": [
+                ",ban @spammer Spamming in chat",
+                ",ban @user 7d Temporary ban"
+              ],
+              "permission": "Ban Members",
+              "aliases": [],
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": true,
+                  "description": "User to ban"
+                },
+                {
+                  "name": "duration",
+                  "type": "string",
+                  "required": false,
+                  "description": "Ban duration (e.g., 7d, 1h, 30m)"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "required": false,
+                  "description": "Reason for the ban"
+                }
+              ]
+            },
+            {
+              "name": "massban",
+              "description": "Ban multiple members at once",
+              "syntax": ",massban @user1 @user2 @user3 [reason]",
+              "example": ",massban @user1 @user2 @user3 Raid",
+              "permission": "Ban Members",
+              "parameters": [
+                {
+                  "name": "users",
+                  "type": "mentions",
+                  "required": true,
+                  "description": "Users to ban"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "required": false,
+                  "description": "Reason for the bans"
+                }
+              ]
+            },
+            {
+              "name": "unban",
+              "description": "Unban a user from the server",
+              "syntax": ",unban [user ID] [reason]",
+              "example": ",unban 123456789012345678 Appeal accepted",
+              "permission": "Ban Members",
+              "parameters": [
+                {
+                  "name": "user ID",
+                  "type": "string",
+                  "required": true,
+                  "description": "Discord ID of the user to unban"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "required": false,
+                  "description": "Reason for the unban"
+                }
+              ]
+            },
+            {
+              "name": "kick",
+              "description": "Kick a member from the server",
+              "syntax": ",kick @user [reason]",
+              "example": ",kick @user Breaking rules",
+              "permission": "Kick Members",
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": true,
+                  "description": "User to kick"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "required": false,
+                  "description": "Reason for the kick"
+                }
+              ]
+            },
+            {
+              "name": "masskick",
+              "description": "Kick multiple members at once",
+              "syntax": ",masskick @user1 @user2 @user3 [reason]",
+              "example": ",masskick @user1 @user2 @user3 Spam",
+              "permission": "Kick Members"
+            },
+            {
+              "name": "mute",
+              "description": "Mute a member (text mute)",
+              "syntax": ",mute @user [duration] [reason]",
+              "examples": [
+                ",mute @user 1h Spamming",
+                ",mute @user 30m Caps spam"
+              ],
+              "permission": "Moderate Members",
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": true,
+                  "description": "User to mute"
+                },
+                {
+                  "name": "duration",
+                  "type": "string",
+                  "required": false,
+                  "description": "Mute duration (e.g., 1h, 30m, 1d)"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "required": false,
+                  "description": "Reason for the mute"
+                }
+              ]
+            },
+            {
+              "name": "unmute",
+              "description": "Unmute a member",
+              "syntax": ",unmute @user [reason]",
+              "example": ",unmute @user",
+              "permission": "Moderate Members"
+            },
+            {
+              "name": "imagemute",
+              "description": "Prevent a member from uploading images",
+              "syntax": ",imagemute @user [duration] [reason]",
+              "example": ",imagemute @user 1h Inappropriate images",
+              "permission": "Moderate Members",
+              "aliases": ["imute"]
+            },
+            {
+              "name": "unimagemute",
+              "description": "Remove image mute from a member",
+              "syntax": ",unimagemute @user [reason]",
+              "example": ",unimagemute @user",
+              "permission": "Moderate Members",
+              "aliases": ["unimute"]
+            },
+            {
+              "name": "reactionmute",
+              "description": "Prevent a member from adding reactions",
+              "syntax": ",reactionmute @user [duration] [reason]",
+              "example": ",reactionmute @user 30m Reaction spam",
+              "permission": "Moderate Members",
+              "aliases": ["rmute"]
+            },
+            {
+              "name": "unreactionmute",
+              "description": "Remove reaction mute from a member",
+              "syntax": ",unreactionmute @user [reason]",
+              "example": ",unreactionmute @user",
+              "permission": "Moderate Members",
+              "aliases": ["unrmute"]
+            },
+            {
+              "name": "jail",
+              "description": "Jail a member (restrict to #jail channel only)",
+              "syntax": ",jail @user [reason]",
+              "example": ",jail @user Timeout needed",
+              "permission": "Moderate Members",
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": true,
+                  "description": "User to jail"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "required": false,
+                  "description": "Reason for jailing"
+                }
+              ]
+            },
+            {
+              "name": "unjail",
+              "description": "Remove a member from jail",
+              "syntax": ",unjail @user [reason]",
+              "example": ",unjail @user",
+              "permission": "Moderate Members"
+            },
+            {
+              "name": "warn",
+              "description": "Warn a member",
+              "syntax": ",warn @user [reason]",
+              "example": ",warn @user Please follow the rules",
+              "permission": "Moderate Members",
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": true,
+                  "description": "User to warn"
+                },
+                {
+                  "name": "reason",
+                  "type": "string",
+                  "required": false,
+                  "description": "Reason for the warning"
+                }
+              ]
+            },
+            {
+              "name": "warnings",
+              "description": "View a member's warnings",
+              "syntax": ",warnings @user",
+              "example": ",warnings @user",
+              "permission": "Moderate Members"
+            },
+            {
+              "name": "clearwarnings",
+              "description": "Clear all warnings for a member",
+              "syntax": ",clearwarnings @user",
+              "example": ",clearwarnings @user",
+              "permission": "Moderate Members"
+            },
+            {
+              "name": "history",
+              "description": "View a member's moderation history",
+              "syntax": ",history @user",
+              "example": ",history @user",
+              "permission": "Moderate Members"
+            },
+            {
+              "name": "case",
+              "description": "View a specific moderation case",
+              "syntax": ",case [case ID]",
+              "example": ",case 42",
+              "permission": "Moderate Members"
+            },
+            {
+              "name": "purge",
+              "description": "Delete messages in bulk",
+              "syntax": ",purge [amount] [@user]",
+              "examples": [
+                ",purge 50",
+                ",purge 100 @spammer"
+              ],
+              "permission": "Manage Messages",
+              "parameters": [
+                {
+                  "name": "amount",
+                  "type": "number",
+                  "required": true,
+                  "description": "Number of messages to delete (1-100)"
+                },
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": false,
+                  "description": "Only delete messages from this user"
+                }
+              ]
+            },
+            {
+              "name": "cleanup",
+              "description": "Delete bot messages",
+              "syntax": ",cleanup",
+              "example": ",cleanup",
+              "permission": "Manage Messages"
+            },
+            {
+              "name": "filter add",
+              "description": "Add a word to the filter",
+              "syntax": ",filter add [word]",
+              "example": ",filter add badword",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "filter remove",
+              "description": "Remove a word from the filter",
+              "syntax": ",filter remove [word]",
+              "example": ",filter remove badword",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "filter list",
+              "description": "View all filtered words",
+              "syntax": ",filter list",
+              "example": ",filter list",
+              "permission": "Manage Guild"
+            }
+          ]
+        }
+      ]
+    },
+    "serverConfiguration": {
+      "title": "Server Configuration",
+      "description": "Set up welcome & goodbye messages, reaction roles, and more for your server.",
+      "icon": "⚙️",
+      "sections": [
+        {
+          "id": "welcome-messages",
+          "title": "Welcome & Goodbye Messages",
+          "description": "Set up automated messages when members join or leave your server.",
+          "limits": {
+            "maxWelcomeMessages": 5,
+            "supportsEmbeds": true,
+            "supportsVariables": true
+          },
+          "commands": [
+            {
+              "name": "welcome add",
+              "description": "Add a welcome message for a channel",
+              "syntax": ",welcome add #channel {message}",
+              "examples": [
+                ",welcome add #general Welcome {user.mention} to {server.name}!",
+                ",welcome add #general {embed}$v{title: Welcome!}$v{description: Welcome {user.mention}!}$v{color: #5865F2}"
+              ],
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "channel",
+                  "type": "channel",
+                  "required": true,
+                  "description": "Channel to send welcome messages"
+                },
+                {
+                  "name": "message",
+                  "type": "string",
+                  "required": true,
+                  "description": "Welcome message (supports embeds and variables)"
+                }
+              ],
+              "notes": [
+                "Maximum 5 welcome messages per server",
+                "Supports full embed scripting",
+                "Prefix with {embed}$v for embed messages"
+              ]
+            },
+            {
+              "name": "welcome remove",
+              "description": "Remove a welcome message from a channel",
+              "syntax": ",welcome remove #channel",
+              "example": ",welcome remove #general",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "welcome view",
+              "description": "Preview the welcome message for a channel",
+              "syntax": ",welcome view #channel",
+              "example": ",welcome view #general",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "welcome list",
+              "description": "List all configured welcome messages",
+              "syntax": ",welcome list",
+              "example": ",welcome list",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "welcome variables",
+              "description": "Show available variables for welcome messages",
+              "syntax": ",welcome variables",
+              "example": ",welcome variables"
+            },
+            {
+              "name": "leave add",
+              "description": "Add a goodbye message for a channel",
+              "syntax": ",leave add #channel {message}",
+              "example": ",leave add #goodbye {user.name} just left. We now have {server.membercount} members.",
+              "permission": "Manage Guild",
+              "aliases": ["goodbye add"]
+            },
+            {
+              "name": "leave remove",
+              "description": "Remove a goodbye message from a channel",
+              "syntax": ",leave remove #channel",
+              "example": ",leave remove #goodbye",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "leave view",
+              "description": "Preview the goodbye message for a channel",
+              "syntax": ",leave view #channel",
+              "example": ",leave view #goodbye",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "leave list",
+              "description": "List all configured goodbye messages",
+              "syntax": ",leave list",
+              "example": ",leave list",
+              "permission": "Manage Guild"
+            }
+          ]
+        },
+        {
+          "id": "boost-messages",
+          "title": "Boost Messages",
+          "description": "Celebrate when members boost your server!",
+          "commands": [
+            {
+              "name": "boost add",
+              "description": "Add a boost message for a channel",
+              "syntax": ",boost add #channel {message}",
+              "example": ",boost add #boosts Thank you {user.mention} for boosting! We now have {server.boost_count} boosts!",
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "channel",
+                  "type": "channel",
+                  "required": true,
+                  "description": "Channel to send boost messages"
+                },
+                {
+                  "name": "message",
+                  "type": "string",
+                  "required": true,
+                  "description": "Boost message (supports embeds and variables)"
+                }
+              ]
+            },
+            {
+              "name": "boost remove",
+              "description": "Remove the boost message",
+              "syntax": ",boost remove #channel",
+              "example": ",boost remove #boosts",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "boost view",
+              "description": "Preview the boost message",
+              "syntax": ",boost view #channel",
+              "example": ",boost view #boosts",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "boostlost add",
+              "description": "Add a message for when boosts are lost",
+              "syntax": ",boostlost add #channel {message}",
+              "example": ",boostlost add #boosts {user.name} removed their boost.",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "boostlost remove",
+              "description": "Remove the boost lost message",
+              "syntax": ",boostlost remove #channel",
+              "example": ",boostlost remove #boosts",
+              "permission": "Manage Guild"
+            }
+          ]
+        },
+        {
+          "id": "logging",
+          "title": "Logging",
+          "description": "Track important server events with logging channels.",
+          "loggedEvents": [
+            "Member joins/leaves",
+            "Message edits/deletes",
+            "Role changes",
+            "Channel updates",
+            "Bans/kicks/mutes",
+            "Nickname changes"
+          ],
+          "commands": [
+            {
+              "name": "logs set",
+              "description": "Set the logging channel",
+              "syntax": ",logs set #channel",
+              "example": ",logs set #logs",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "logs remove",
+              "description": "Remove the logging channel",
+              "syntax": ",logs remove",
+              "example": ",logs remove",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "logs view",
+              "description": "View the current logging configuration",
+              "syntax": ",logs view",
+              "example": ",logs view",
+              "permission": "Manage Guild"
+            }
+          ]
+        },
+        {
+          "id": "starboard",
+          "title": "Starboard",
+          "description": "Highlight popular messages in a dedicated channel.",
+          "commands": [
+            {
+              "name": "starboard set",
+              "description": "Set up the starboard",
+              "syntax": ",starboard set #channel [emoji] [threshold]",
+              "example": ",starboard set #starboard ⭐ 5",
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "channel",
+                  "type": "channel",
+                  "required": true,
+                  "description": "Channel for starred messages"
+                },
+                {
+                  "name": "emoji",
+                  "type": "emoji",
+                  "required": false,
+                  "default": "⭐",
+                  "description": "Reaction emoji to track"
+                },
+                {
+                  "name": "threshold",
+                  "type": "number",
+                  "required": false,
+                  "default": 5,
+                  "description": "Number of reactions needed"
+                }
+              ]
+            },
+            {
+              "name": "starboard remove",
+              "description": "Remove the starboard",
+              "syntax": ",starboard remove",
+              "example": ",starboard remove",
+              "permission": "Manage Guild"
+            }
+          ]
+        },
+        {
+          "id": "voicemaster",
+          "title": "VoiceMaster",
+          "description": "Give users control over their own voice channels.",
+          "features": [
+            "🔒 Lock/Unlock channel",
+            "👻 Hide/Unhide channel",
+            "➕ Increase user limit",
+            "➖ Decrease user limit",
+            "ℹ️ View channel info",
+            "✏️ Rename channel"
+          ],
+          "howItWorks": [
+            "User joins the VoiceMaster channel",
+            "Bot creates a temporary voice channel for them",
+            "User gets control panel with buttons",
+            "Channel auto-deletes when empty"
+          ],
+          "commands": [
+            {
+              "name": "voicemaster set",
+              "description": "Set up VoiceMaster",
+              "syntax": ",voicemaster set #channel",
+              "example": ",voicemaster set #Join to Create",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "voicemaster remove",
+              "description": "Remove VoiceMaster",
+              "syntax": ",voicemaster remove",
+              "example": ",voicemaster remove",
+              "permission": "Manage Guild"
+            }
+          ]
+        }
+      ]
+    },
+    "roles": {
+      "title": "Roles",
+      "description": "Manage various role systems in your server.",
+      "icon": "🎭",
+      "sections": [
+        {
+          "id": "booster-roles",
+          "title": "Booster Roles",
+          "subtitle": "Reward your boosters with unique roles for themselves.",
+          "overview": "Booster roles are unique roles that are given to members which have boosted your server. These roles can be fully customized by the members themselves.",
+          "setup": {
+            "title": "Setting the base role",
+            "description": "In order for the booster roles to work, you must set a base role. All booster roles will be placed under this role.",
+            "note": "The base role should be a role which is above any roles with a color, otherwise the color won't be visible due to Discord's role hierarchy."
+          },
+          "commands": [
+            {
+              "name": "boostrole enable",
+              "description": "Enable booster roles",
+              "syntax": ",boostrole enable",
+              "example": ",boostrole enable",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "boostrole disable",
+              "description": "Disable booster roles",
+              "syntax": ",boostrole disable",
+              "example": ",boostrole disable",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "boostrole create",
+              "description": "Create a booster role (for boosters)",
+              "syntax": ",boostrole create [name] [color]",
+              "example": ",boostrole create \"My Cool Role\" #ff0000",
+              "permission": "Server Booster",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": "string",
+                  "required": true,
+                  "description": "Name of the role"
+                },
+                {
+                  "name": "color",
+                  "type": "string",
+                  "required": true,
+                  "description": "Hex color code or color name"
+                }
+              ]
+            },
+            {
+              "name": "boostrole delete",
+              "description": "Delete your booster role",
+              "syntax": ",boostrole delete",
+              "example": ",boostrole delete",
+              "permission": "Server Booster"
+            },
+            {
+              "name": "boostrole rename",
+              "description": "Rename your booster role",
+              "syntax": ",boostrole rename [new name]",
+              "example": ",boostrole rename \"New Name\"",
+              "permission": "Server Booster"
+            },
+            {
+              "name": "boostrole color",
+              "description": "Change your booster role color",
+              "syntax": ",boostrole color [hex color]",
+              "example": ",boostrole color #00ff00",
+              "permission": "Server Booster"
+            }
+          ]
+        },
+        {
+          "id": "reaction-roles",
+          "title": "Reaction Roles",
+          "subtitle": "Allow your members to assign themselves roles by reacting to a message.",
+          "overview": "Reaction roles are roles that are assigned to members when they react to a message. This can be useful for letting members choose unique roles or as a way to verify themselves.",
+          "commands": [
+            {
+              "name": "reactionrole add",
+              "description": "Create a reaction role",
+              "syntax": ",reactionrole add (message link) (emoji) (role)",
+              "example": ",reactionrole add https://discord.com/channels/... 🎮 @Gamer",
+              "permission": "Manage Roles",
+              "parameters": [
+                {
+                  "name": "message link",
+                  "type": "string",
+                  "required": true,
+                  "description": "Link to the message (right-click > Copy Message Link)"
+                },
+                {
+                  "name": "emoji",
+                  "type": "emoji",
+                  "required": true,
+                  "description": "Emoji to react with"
+                },
+                {
+                  "name": "role",
+                  "type": "role",
+                  "required": true,
+                  "description": "Role to assign"
+                }
+              ],
+              "notes": [
+                "You can create multiple reaction roles for a single message",
+                "Use different emojis for each role"
+              ]
+            },
+            {
+              "name": "reactionrole remove",
+              "description": "Remove a reaction role",
+              "syntax": ",reactionrole remove (message link) (emoji)",
+              "example": ",reactionrole remove https://discord.com/channels/... 🎮",
+              "permission": "Manage Roles"
+            },
+            {
+              "name": "reactionrole removeall",
+              "description": "Remove all reaction roles for a message",
+              "syntax": ",reactionrole removeall (message link)",
+              "example": ",reactionrole removeall https://discord.com/channels/...",
+              "permission": "Manage Roles",
+              "notes": [
+                "This is different from reactionrole reset which removes all reaction roles from the server"
+              ]
+            },
+            {
+              "name": "reactionrole reset",
+              "description": "Remove all reaction roles from the server",
+              "syntax": ",reactionrole reset",
+              "example": ",reactionrole reset",
+              "permission": "Manage Roles",
+              "warning": "This CAN NOT be undone and will remove ALL reaction roles from the server."
+            },
+            {
+              "name": "reactionrole list",
+              "description": "View all reaction roles",
+              "syntax": ",reactionrole list",
+              "example": ",reactionrole list",
+              "permission": "Manage Roles"
+            }
+          ],
+          "useCases": [
+            {
+              "title": "Verification System",
+              "description": "Reaction roles can be used to create a verification system where members must react to a message to gain access to the server.",
+              "note": "In order for this to work, you'll need to create a role that will be assigned to members when they react to the message, such as a Member role."
+            }
+          ]
+        },
+        {
+          "id": "auto-roles",
+          "title": "Auto Roles",
+          "description": "Automatically assign roles when members join.",
+          "types": [
+            "Regular auto roles (for members)",
+            "Bot auto roles (for bots joining)"
+          ],
+          "commands": [
+            {
+              "name": "autorole add",
+              "description": "Add an auto role",
+              "syntax": ",autorole add @role",
+              "example": ",autorole add @Member",
+              "permission": "Manage Roles"
+            },
+            {
+              "name": "autorole remove",
+              "description": "Remove an auto role",
+              "syntax": ",autorole remove @role",
+              "example": ",autorole remove @Member",
+              "permission": "Manage Roles"
+            },
+            {
+              "name": "autorole list",
+              "description": "List all auto roles",
+              "syntax": ",autorole list",
+              "example": ",autorole list",
+              "permission": "Manage Roles"
+            }
+          ]
+        }
+      ]
+    },
+    "messages": {
+      "title": "Messages",
+      "description": "Automate and customize message responses in your server.",
+      "icon": "💬",
+      "sections": [
+        {
+          "id": "auto-responder",
+          "title": "Auto Responder",
+          "description": "Automatically respond to specific triggers.",
+          "commands": [
+            {
+              "name": "autoresponder add",
+              "description": "Add an auto responder",
+              "syntax": ",autoresponder add [trigger] [response]",
+              "examples": [
+                ",autoresponder add hello Hi there {user.mention}!",
+                ",autoresponder add rules Check out our rules in #rules",
+                ",autoresponder add welcome {embed}$v{title: Welcome!}$v{description: Thanks for saying hi!}"
+              ],
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "trigger",
+                  "type": "string",
+                  "required": true,
+                  "description": "Word or phrase to trigger the response"
+                },
+                {
+                  "name": "response",
+                  "type": "string",
+                  "required": true,
+                  "description": "Response message (supports embeds and variables)"
+                }
+              ],
+              "notes": [
+                "Supports embed scripting",
+                "Supports all variables"
+              ]
+            },
+            {
+              "name": "autoresponder remove",
+              "description": "Remove an auto responder",
+              "syntax": ",autoresponder remove [trigger]",
+              "example": ",autoresponder remove hello",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "autoresponder list",
+              "description": "List all auto responders",
+              "syntax": ",autoresponder list",
+              "example": ",autoresponder list",
+              "permission": "Manage Guild"
+            }
+          ]
+        },
+        {
+          "id": "auto-react",
+          "title": "Auto React",
+          "description": "Automatically react to messages containing keywords.",
+          "commands": [
+            {
+              "name": "autoreact add",
+              "description": "Add an auto react",
+              "syntax": ",autoreact add [trigger] [emoji]",
+              "examples": [
+                ",autoreact add hello 👋",
+                ",autoreact add thanks ❤️"
+              ],
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "trigger",
+                  "type": "string",
+                  "required": true,
+                  "description": "Word or phrase to trigger the reaction"
+                },
+                {
+                  "name": "emoji",
+                  "type": "emoji",
+                  "required": true,
+                  "description": "Emoji to react with"
+                }
+              ]
+            },
+            {
+              "name": "autoreact remove",
+              "description": "Remove an auto react",
+              "syntax": ",autoreact remove [trigger]",
+              "example": ",autoreact remove hello",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "autoreact list",
+              "description": "List all auto reacts",
+              "syntax": ",autoreact list",
+              "example": ",autoreact list",
+              "permission": "Manage Guild"
+            }
+          ]
+        },
+        {
+          "id": "starboard",
+          "title": "Starboard",
+          "description": "Highlight popular messages in a dedicated channel.",
+          "link": "#starboard"
+        }
+      ]
+    },
+    "serverFeatures": {
+      "title": "Server Features",
+      "description": "Additional features to enhance your server.",
+      "icon": "✨",
+      "sections": [
+        {
+          "id": "levels",
+          "title": "Level Rewards",
+          "description": "Reward active members with roles as they level up.",
+          "commands": [
+            {
+              "name": "levels enable",
+              "description": "Enable the leveling system",
+              "syntax": ",levels enable",
+              "example": ",levels enable",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "levels disable",
+              "description": "Disable the leveling system",
+              "syntax": ",levels disable",
+              "example": ",levels disable",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "levels reward add",
+              "description": "Add a level reward",
+              "syntax": ",levels reward add [level] @role",
+              "examples": [
+                ",levels reward add 10 @Active Member",
+                ",levels reward add 25 @Veteran",
+                ",levels reward add 50 @Legend"
+              ],
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": "number",
+                  "required": true,
+                  "description": "Level to reward at"
+                },
+                {
+                  "name": "role",
+                  "type": "role",
+                  "required": true,
+                  "description": "Role to assign"
+                }
+              ]
+            },
+            {
+              "name": "levels reward remove",
+              "description": "Remove a level reward",
+              "syntax": ",levels reward remove [level]",
+              "example": ",levels reward remove 10",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "levels reward list",
+              "description": "List all level rewards",
+              "syntax": ",levels reward list",
+              "example": ",levels reward list",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "rank",
+              "description": "View rank card",
+              "syntax": ",rank [@user]",
+              "examples": [
+                ",rank",
+                ",rank @user"
+              ]
+            },
+            {
+              "name": "leaderboard",
+              "description": "View server leaderboard",
+              "syntax": ",leaderboard",
+              "example": ",leaderboard",
+              "aliases": ["lb"]
+            }
+          ]
+        },
+        {
+          "id": "command-aliases",
+          "title": "Command Aliases",
+          "description": "Create custom command shortcuts.",
+          "commands": [
+            {
+              "name": "alias add",
+              "description": "Add a command alias",
+              "syntax": ",alias add [alias] [command]",
+              "examples": [
+                ",alias add ui userinfo",
+                ",alias add si serverinfo"
+              ],
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "alias",
+                  "type": "string",
+                  "required": true,
+                  "description": "Shortcut name"
+                },
+                {
+                  "name": "command",
+                  "type": "string",
+                  "required": true,
+                  "description": "Full command name"
+                }
+              ]
+            },
+            {
+              "name": "alias remove",
+              "description": "Remove a command alias",
+              "syntax": ",alias remove [alias]",
+              "example": ",alias remove ui",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "alias list",
+              "description": "List all command aliases",
+              "syntax": ",alias list",
+              "example": ",alias list",
+              "permission": "Manage Guild"
+            }
+          ]
+        },
+        {
+          "id": "tickets",
+          "title": "Tickets",
+          "description": "Create a support ticket system.",
+          "commands": [
+            {
+              "name": "ticket setup",
+              "description": "Set up the ticket system",
+              "syntax": ",ticket setup",
+              "example": ",ticket setup",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "ticket panel",
+              "description": "Create a ticket panel in a channel",
+              "syntax": ",ticket panel #channel",
+              "example": ",ticket panel #support",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "ticket close",
+              "description": "Close a ticket",
+              "syntax": ",ticket close",
+              "example": ",ticket close"
+            }
+          ]
+        },
+        {
+          "id": "giveaways",
+          "title": "Giveaways",
+          "description": "Host giveaways in your server.",
+          "commands": [
+            {
+              "name": "giveaway start",
+              "description": "Start a giveaway",
+              "syntax": ",giveaway start [duration] [winners] [prize]",
+              "example": ",giveaway start 1d 3 Discord Nitro",
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "duration",
+                  "type": "string",
+                  "required": true,
+                  "description": "Giveaway duration (e.g., 1d, 12h, 30m)"
+                },
+                {
+                  "name": "winners",
+                  "type": "number",
+                  "required": true,
+                  "description": "Number of winners"
+                },
+                {
+                  "name": "prize",
+                  "type": "string",
+                  "required": true,
+                  "description": "Prize description"
+                }
+              ]
+            },
+            {
+              "name": "giveaway end",
+              "description": "End a giveaway early",
+              "syntax": ",giveaway end [message ID]",
+              "example": ",giveaway end 123456789012345678",
+              "permission": "Manage Guild"
+            },
+            {
+              "name": "giveaway reroll",
+              "description": "Reroll giveaway winners",
+              "syntax": ",giveaway reroll [message ID]",
+              "example": ",giveaway reroll 123456789012345678",
+              "permission": "Manage Guild"
+            }
+          ]
+        },
+        {
+          "id": "vanity",
+          "title": "Vanity Monitoring",
+          "description": "Monitor and reward members with your vanity URL in their status.",
+          "commands": [
+            {
+              "name": "vanity set",
+              "description": "Set the vanity URL to monitor",
+              "syntax": ",vanity set [url]",
+              "example": ",vanity set /coolserver",
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "url",
+                  "type": "string",
+                  "required": true,
+                  "description": "Vanity URL code (with or without /)"
+                }
+              ]
+            },
+            {
+              "name": "vanity remove",
+              "description": "Remove vanity monitoring",
+              "syntax": ",vanity remove",
+              "example": ",vanity remove",
+              "permission": "Manage Guild"
+            }
+          ]
+        }
+      ]
+    },
+    "integrations": {
+      "title": "Integrations",
+      "description": "Seamlessly integrate your favorite platforms directly into your server.",
+      "icon": "🔗",
+      "sections": [
+        {
+          "id": "spotify",
+          "title": "Spotify",
+          "description": "Control Spotify playback directly from Discord.",
+          "features": [
+            "Interactive control panel with buttons",
+            "Real-time playback status",
+            "Queue viewing",
+            "Volume control",
+            "Shuffle and repeat toggles"
+          ],
+          "commands": [
+            {
+              "name": "spotify login",
+              "description": "Connect your Spotify account",
+              "syntax": ",spotify login",
+              "example": ",spotify login",
+              "notes": [
+                "Follow the authentication flow to connect your account"
+              ]
+            },
+            {
+              "name": "spotify logout",
+              "description": "Disconnect your Spotify account",
+              "syntax": ",spotify logout",
+              "example": ",spotify logout"
+            },
+            {
+              "name": "spotify",
+              "description": "Show player status",
+              "syntax": ",spotify",
+              "example": ",spotify"
+            },
+            {
+              "name": "spotify play",
+              "description": "Resume playback",
+              "syntax": ",spotify play",
+              "example": ",spotify play"
+            },
+            {
+              "name": "spotify pause",
+              "description": "Pause playback",
+              "syntax": ",spotify pause",
+              "example": ",spotify pause"
+            },
+            {
+              "name": "spotify skip",
+              "description": "Skip to next track",
+              "syntax": ",spotify skip",
+              "example": ",spotify skip",
+              "aliases": ["spotify next"]
+            },
+            {
+              "name": "spotify previous",
+              "description": "Go to previous track",
+              "syntax": ",spotify previous",
+              "example": ",spotify previous"
+            },
+            {
+              "name": "spotify shuffle",
+              "description": "Toggle shuffle",
+              "syntax": ",spotify shuffle",
+              "example": ",spotify shuffle"
+            },
+            {
+              "name": "spotify repeat",
+              "description": "Cycle repeat modes",
+              "syntax": ",spotify repeat",
+              "example": ",spotify repeat"
+            },
+            {
+              "name": "spotify queue",
+              "description": "View queue",
+              "syntax": ",spotify queue",
+              "example": ",spotify queue"
+            },
+            {
+              "name": "spotify queue add",
+              "description": "Add song to queue",
+              "syntax": ",spotify queue add [song]",
+              "example": ",spotify queue add Bohemian Rhapsody"
+            },
+            {
+              "name": "spotify np",
+              "description": "Now playing with details",
+              "syntax": ",spotify np",
+              "example": ",spotify np"
+            }
+          ]
+        },
+        {
+          "id": "lastfm",
+          "title": "Last.fm",
+          "description": "Display your music listening activity from Last.fm.",
+          "displayInfo": [
+            "Current track",
+            "Artist name",
+            "Album name",
+            "Album artwork",
+            "Play count",
+            "Whether currently playing or last played"
+          ],
+          "commands": [
+            {
+              "name": "lastfm set",
+              "description": "Connect your Last.fm account",
+              "syntax": ",lastfm set [username]",
+              "example": ",lastfm set john_doe",
+              "parameters": [
+                {
+                  "name": "username",
+                  "type": "string",
+                  "required": true,
+                  "description": "Your Last.fm username"
+                }
+              ]
+            },
+            {
+              "name": "lastfm remove",
+              "description": "Disconnect your Last.fm account",
+              "syntax": ",lastfm remove",
+              "example": ",lastfm remove"
+            },
+            {
+              "name": "fm",
+              "description": "Show now playing",
+              "syntax": ",fm [@user]",
+              "examples": [
+                ",fm",
+                ",fm @user"
+              ],
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": false,
+                  "description": "User to check (defaults to yourself)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "embedScripting": {
+      "title": "Embed Scripting",
+      "description": "Learn how to build embeds and use variables for your server's configurations.",
+      "icon": "📝",
+      "overview": {
+        "what": "Embeds are rich message formats that allow you to display information in a structured, visually appealing way with colors, images, fields, and more.",
+        "structure": "Embeds use a key-value pair structure where each parameter is separated by a colon and parameters are separated by $v."
+      },
+      "syntax": {
+        "basic": "{parameter: content}$v{parameter: content}",
+        "components": {
+          "{": "Begins a parameter",
+          ":": "Separates parameter name from content",
+          "$v": "Separates multiple parameters",
+          "}": "Ends a parameter"
+        },
+        "usage": "Some commands accept both raw text and embed code. When using embeds, prefix your code with {embed}$v"
+      },
+      "parameters": {
+        "basic": [
+          {
+            "name": "title",
+            "description": "Sets the embed title (main heading)",
+            "syntax": "{title: Welcome to our server!}",
+            "required": false
+          },
+          {
+            "name": "description",
+            "description": "Sets the main content/body of the embed",
+            "syntax": "{description: This is the main text}",
+            "required": false,
+            "notes": [
+              "Press SHIFT + ENTER to add new lines"
+            ]
+          },
+          {
+            "name": "color",
+            "description": "Sets the embed's side color bar (use hex color codes)",
+            "syntax": "{color: #5865F2}",
+            "required": false,
+            "examples": [
+              "{color: #5865F2}",
+              "{color: #ff0000}",
+              "{color: #00ff00}"
+            ]
+          },
+          {
+            "name": "url",
+            "description": "Makes the title clickable with a link",
+            "syntax": "{url: https://discord.com}",
+            "required": false
+          },
+          {
+            "name": "image",
+            "description": "Adds a large image at the bottom of the embed",
+            "syntax": "{image: https://example.com/image.png}",
+            "required": false,
+            "examples": [
+              "{image: https://example.com/image.png}",
+              "{image: {server.banner}}"
+            ]
+          },
+          {
+            "name": "thumbnail",
+            "description": "Adds a small image in the top-right corner",
+            "syntax": "{thumbnail: https://example.com/icon.png}",
+            "required": false,
+            "examples": [
+              "{thumbnail: https://example.com/icon.png}",
+              "{thumbnail: {user.avatar}}"
+            ]
+          },
+          {
+            "name": "timestamp",
+            "description": "Adds a timestamp at the bottom (uses current time, no arguments needed)",
+            "syntax": "{timestamp}",
+            "required": false
+          }
+        ],
+        "author": {
+          "description": "Displays information at the top of the embed with optional icon and link",
+          "syntax": "{author: name && icon && url}",
+          "parameters": [
+            {
+              "name": "name",
+              "required": true,
+              "description": "Author name"
+            },
+            {
+              "name": "icon",
+              "required": false,
+              "description": "Author icon URL"
+            },
+            {
+              "name": "url",
+              "required": false,
+              "description": "Author URL"
+            }
+          ],
+          "examples": [
+            "{author: {user.name}}",
+            "{author: {user.name} && {user.avatar}}",
+            "{author: {user.name} && {user.avatar} && https://discord.com}"
+          ]
+        },
+        "footer": {
+          "description": "Displays text and optional icon at the bottom of the embed",
+          "syntax": "{footer: text && icon}",
+          "parameters": [
+            {
+              "name": "text",
+              "required": true,
+              "description": "Footer text"
+            },
+            {
+              "name": "icon",
+              "required": false,
+              "description": "Footer icon URL"
+            }
+          ],
+          "examples": [
+            "{footer: Requested by {user.name}}",
+            "{footer: {server.name} && {server.icon}}",
+            "{footer: Page 1 of 5 && {user.avatar}}"
+          ]
+        },
+        "field": {
+          "description": "Fields allow you to display information in organized columns",
+          "syntax": "{field: name && value && inline}",
+          "parameters": [
+            {
+              "name": "name",
+              "required": true,
+              "description": "Field title"
+            },
+            {
+              "name": "value",
+              "required": true,
+              "description": "Field content"
+            },
+            {
+              "name": "inline",
+              "required": false,
+              "description": "Add this to make field display side-by-side with others"
+            }
+          ],
+          "examples": [
+            "{field: Member Count && {server.membercount}}",
+            "{field: Members && {server.membercount} && inline}",
+            "{field: Boosts && {server.boost_count} && inline}"
+          ]
+        },
+        "button": {
+          "description": "Add interactive buttons to your embeds",
+          "syntax": "{button: type && label && url && state}",
+          "parameters": [
+            {
+              "name": "type",
+              "required": true,
+              "description": "Button style",
+              "options": ["Link", "Blurple", "Green", "Grey", "Red"]
+            },
+            {
+              "name": "label",
+              "required": true,
+              "description": "Button text"
+            },
+            {
+              "name": "url",
+              "required": true,
+              "description": "Button URL (for Link type) or emoji"
+            },
+            {
+              "name": "state",
+              "required": true,
+              "description": "Button state",
+              "options": ["enabled", "disabled"]
+            }
+          ],
+          "buttonTypes": [
+            {
+              "name": "Link",
+              "description": "Opens a URL (requires valid https:// URL)"
+            },
+            {
+              "name": "Blurple",
+              "description": "Discord's signature blue color"
+            },
+            {
+              "name": "Green",
+              "description": "Green button"
+            },
+            {
+              "name": "Grey",
+              "description": "Gray button"
+            },
+            {
+              "name": "Red",
+              "description": "Red button"
+            }
+          ],
+          "examples": [
+            {
+              "type": "Link button",
+              "code": "{button: Link && Visit Website && https://discord.com && enabled}"
+            },
+            {
+              "type": "Colored button",
+              "code": "{button: Blurple && Click Me && emoji && enabled}"
+            },
+            {
+              "type": "Green button",
+              "code": "{button: Green && Accept && ✅ && enabled}"
+            },
+            {
+              "type": "Red button",
+              "code": "{button: Red && Decline && ❌ && enabled}"
+            },
+            {
+              "type": "Disabled button",
+              "code": "{button: Grey && Unavailable && emoji && disabled}"
+            },
+            {
+              "type": "Multiple buttons",
+              "code": "{button: Link && Website && https://example.com && enabled}$v{button: Link && Support && https://discord.gg/support && enabled}$v{button: Green && Join && 🎉 && enabled}"
+            }
+          ]
+        }
+      },
+      "examples": [
+        {
+          "title": "Simple Welcome Message",
+          "code": "{title: Welcome!}$v{description: Thanks for joining our server}$v{color: #5865F2}"
+        },
+        {
+          "title": "Welcome Message with Everything",
+          "code": "{embed}$v{author: {server.name} && {server.icon}}$v{title: Welcome to the server!}$v{description: Hey {user.mention}! 👋\n\nThanks for joining **{server.name}**!\nYou are our **{server.humanmembercount}** member!}$v{thumbnail: {user.avatar}}$v{field: Account Created && {user.created_at} && inline}$v{field: Joined Server && {user.joined_at} && inline}$v{image: {server.banner}}$v{footer: Welcome! && {server.icon}}$v{timestamp}$v{color: #5865F2}$v{button: Link && Read Rules && https://example.com/rules && enabled}$v{button: Green && Get Started && 🚀 && enabled}"
+        },
+        {
+          "title": "Server Info Embed",
+          "code": "{title: {server.name} Information}$v{description: Here's everything about this server}$v{thumbnail: {server.icon}}$v{field: 👥 Members && {server.membercount} && inline}$v{field: 💎 Boosts && {server.boost_count} && inline}$v{field: 📊 Boost Tier && {server.boost_tier} && inline}$v{color: #5865F2}"
+        },
+        {
+          "title": "Boost Thank You",
+          "code": "{title: 💎 Server Boosted!}$v{description: **{user.mention}** just boosted the server!\n\nThank you so much for your support! 🎉}$v{thumbnail: {user.avatar}}$v{field: Current Boosts && {server.boost_count} && inline}$v{field: Boost Tier && {server.boost_tier} && inline}$v{color: #ff73fa}$v{footer: Boosted at}$v{timestamp}"
+        }
+      ]
+    },
+    "variables": {
+      "title": "Variables",
+      "description": "All available variables for use in embeds, welcome messages, and other customizable features.",
+      "icon": "🔤",
+      "overview": {
+        "description": "Variables are dynamic placeholders that get replaced with actual data when messages are sent. They use the format {category.property}.",
+        "usage": "Simply include variables in your text or embed code",
+        "example": "Welcome {user.mention} to {server.name}! You're member #{server.membercount}",
+        "worksIn": [
+          "Welcome/goodbye messages",
+          "Boost messages",
+          "Auto responders",
+          "Embed descriptions, titles, fields, footers",
+          "Any customizable message"
+        ]
+      },
+      "categories": {
+        "user": {
+          "title": "User Variables",
+          "description": "Information about the user/member",
+          "variables": [
+            {
+              "variable": "{user.id}",
+              "example": "123456789012345678",
+              "description": "User's Discord ID"
+            },
+            {
+              "variable": "{user.name}",
+              "example": "JohnDoe",
+              "description": "User's current username"
+            },
+            {
+              "variable": "{user.mention}",
+              "example": "@JohnDoe",
+              "description": "Mentions the user (pings them)"
+            },
+            {
+              "variable": "{user.tag}",
+              "example": "JohnDoe#1234",
+              "description": "User's tag with discriminator"
+            },
+            {
+              "variable": "{user.avatar}",
+              "example": "https://cdn.discord...",
+              "description": "User's avatar URL"
+            },
+            {
+              "variable": "{user.created_at}",
+              "example": "2020-01-15",
+              "description": "Account creation date"
+            },
+            {
+              "variable": "{user.created_at_timestamp}",
+              "example": "1579046400",
+              "description": "Account creation Unix timestamp"
+            },
+            {
+              "variable": "{user.joined_at}",
+              "example": "2023-05-20",
+              "description": "Server join date"
+            },
+            {
+              "variable": "{user.joined_at_timestamp}",
+              "example": "1684540800",
+              "description": "Server join Unix timestamp"
+            },
+            {
+              "variable": "{user.nickname}",
+              "example": "Johnny",
+              "description": "Server nickname (or username)"
+            },
+            {
+              "variable": "{user.display_name}",
+              "example": "Johnny",
+              "description": "Display name in server"
+            },
+            {
+              "variable": "{user.discriminator}",
+              "example": "1234",
+              "description": "User's discriminator"
+            },
+            {
+              "variable": "{user.bot}",
+              "example": "true/false",
+              "description": "Whether user is a bot"
+            }
+          ]
+        },
+        "server": {
+          "title": "Server/Guild Variables",
+          "description": "Information about the server",
+          "variables": [
+            {
+              "variable": "{server.name}",
+              "example": "My Cool Server",
+              "description": "Server name"
+            },
+            {
+              "variable": "{server.id}",
+              "example": "987654321098765432",
+              "description": "Server ID"
+            },
+            {
+              "variable": "{server.membercount}",
+              "example": "1,234",
+              "description": "Total member count"
+            },
+            {
+              "variable": "{server.humanmembercount}",
+              "example": "1,234th",
+              "description": "Member count with ordinal"
+            },
+            {
+              "variable": "{server.icon}",
+              "example": "https://cdn.discord...",
+              "description": "Server icon URL"
+            },
+            {
+              "variable": "{server.banner}",
+              "example": "https://cdn.discord...",
+              "description": "Server banner URL"
+            },
+            {
+              "variable": "{server.boost_count}",
+              "example": "14",
+              "description": "Number of boosts"
+            },
+            {
+              "variable": "{server.boost_tier}",
+              "example": "Level 2",
+              "description": "Boost tier (0-3)"
+            },
+            {
+              "variable": "{server.owner}",
+              "example": "@ServerOwner",
+              "description": "Mentions server owner"
+            },
+            {
+              "variable": "{server.owner_id}",
+              "example": "111222333444555666",
+              "description": "Server owner's ID"
+            },
+            {
+              "variable": "{server.created_at}",
+              "example": "2019-03-10",
+              "description": "Server creation date"
+            },
+            {
+              "variable": "{server.emoji_count}",
+              "example": "50",
+              "description": "Custom emoji count"
+            },
+            {
+              "variable": "{server.role_count}",
+              "example": "25",
+              "description": "Number of roles"
+            },
+            {
+              "variable": "{server.channels_count}",
+              "example": "30",
+              "description": "Total channel count"
+            },
+            {
+              "variable": "{server.vanity}",
+              "example": "coolserver",
+              "description": "Vanity URL code"
+            }
+          ],
+          "aliases": [
+            "You can also use {guild.name}, {guild.id}, {guild.membercount}, etc. as aliases for server variables"
+          ]
+        },
+        "channel": {
+          "title": "Channel Variables",
+          "description": "Information about channels",
+          "variables": [
+            {
+              "variable": "{channel.name}",
+              "example": "general",
+              "description": "Channel name"
+            },
+            {
+              "variable": "{channel.id}",
+              "example": "123456789012345678",
+              "description": "Channel ID"
+            },
+            {
+              "variable": "{channel.mention}",
+              "example": "#general",
+              "description": "Mentions the channel"
+            },
+            {
+              "variable": "{channel.topic}",
+              "example": "Welcome!",
+              "description": "Channel topic"
+            },
+            {
+              "variable": "{channel.created_at}",
+              "example": "2020-05-15",
+              "description": "Channel creation date"
+            }
+          ]
+        },
+        "datetime": {
+          "title": "Date & Time Variables",
+          "description": "Current date and time information",
+          "variables": [
+            {
+              "variable": "{date}",
+              "example": "November 13, 2025",
+              "description": "Current date"
+            },
+            {
+              "variable": "{time}",
+              "example": "14:30:45",
+              "description": "Current time"
+            },
+            {
+              "variable": "{timestamp}",
+              "example": "1731513045",
+              "description": "Current Unix timestamp"
+            },
+            {
+              "variable": "{year}",
+              "example": "2025",
+              "description": "Current year"
+            },
+            {
+              "variable": "{month}",
+              "example": "November",
+              "description": "Current month name"
+            },
+            {
+              "variable": "{day}",
+              "example": "13",
+              "description": "Current day"
+            },
+            {
+              "variable": "{weekday}",
+              "example": "Thursday",
+              "description": "Current day of week"
+            }
+          ]
+        },
+        "lastfm": {
+          "title": "Last.fm Variables",
+          "description": "Available in Last.fm commands and messages",
+          "variables": [
+            {
+              "variable": "{lastfm.username}",
+              "example": "john_doe",
+              "description": "Last.fm username"
+            },
+            {
+              "variable": "{lastfm.track}",
+              "example": "Bohemian Rhapsody",
+              "description": "Current/last track"
+            },
+            {
+              "variable": "{lastfm.artist}",
+              "example": "Queen",
+              "description": "Current/last artist"
+            },
+            {
+              "variable": "{lastfm.album}",
+              "example": "A Night at the Opera",
+              "description": "Current/last album"
+            },
+            {
+              "variable": "{lastfm.playcount}",
+              "example": "1,234",
+              "description": "Total scrobbles"
+            }
+          ]
+        },
+        "leveling": {
+          "title": "Leveling Variables",
+          "description": "Available in level-related messages",
+          "variables": [
+            {
+              "variable": "{level.current}",
+              "example": "15",
+              "description": "User's current level"
+            },
+            {
+              "variable": "{level.next}",
+              "example": "16",
+              "description": "Next level"
+            },
+            {
+              "variable": "{level.xp}",
+              "example": "450",
+              "description": "Current XP in level"
+            },
+            {
+              "variable": "{level.xp_needed}",
+              "example": "500",
+              "description": "XP needed for next level"
+            },
+            {
+              "variable": "{level.total_xp}",
+              "example": "12,450",
+              "description": "Total XP earned"
+            },
+            {
+              "variable": "{level.rank}",
+              "example": "5",
+              "description": "Leaderboard rank"
+            }
+          ]
+        },
+        "boost": {
+          "title": "Boost Variables",
+          "description": "Available in boost messages",
+          "variables": [
+            {
+              "variable": "{boost.count}",
+              "example": "14",
+              "description": "Current boost count"
+            },
+            {
+              "variable": "{boost.tier}",
+              "example": "Level 2",
+              "description": "Current boost tier"
+            },
+            {
+              "variable": "{boost.user}",
+              "example": "@JohnDoe",
+              "description": "User who boosted"
+            },
+            {
+              "variable": "{boost.time}",
+              "example": "2023-11-13",
+              "description": "Time of boost"
+            }
+          ]
+        },
+        "punishment": {
+          "title": "Punishment Variables",
+          "description": "Available in moderation case messages",
+          "variables": [
+            {
+              "variable": "{punishment.type}",
+              "example": "ban",
+              "description": "Type of punishment"
+            },
+            {
+              "variable": "{punishment.reason}",
+              "example": "Spamming",
+              "description": "Punishment reason"
+            },
+            {
+              "variable": "{punishment.moderator}",
+              "example": "@ModName",
+              "description": "Moderator who issued it"
+            },
+            {
+              "variable": "{punishment.duration}",
+              "example": "7 days",
+              "description": "Duration (if temporary)"
+            },
+            {
+              "variable": "{punishment.case_id}",
+              "example": "42",
+              "description": "Case ID number"
+            }
+          ]
+        }
+      },
+      "tips": [
+        {
+          "title": "Case Sensitivity",
+          "description": "Variables are case-sensitive. Always use lowercase",
+          "correct": "{user.name}",
+          "incorrect": "{User.Name}"
+        },
+        {
+          "title": "Mentions",
+          "description": "Variables ending in .mention will ping/link",
+          "examples": [
+            "{user.mention} - Pings the user",
+            "{channel.mention} - Links to channel",
+            "{role.mention} - Mentions role (if mentionable)"
+          ]
+        },
+        {
+          "title": "URLs for Embeds",
+          "description": "Use URL variables in embed image parameters",
+          "examples": [
+            "{thumbnail: {user.avatar}}",
+            "{image: {server.banner}}",
+            "{author: {server.name} && {server.icon}}"
+          ]
+        },
+        {
+          "title": "Combining Variables",
+          "description": "Use multiple variables in one message",
+          "example": "{user.mention} joined {server.name} on {date} at {time}"
+        },
+        {
+          "title": "Context-Specific",
+          "description": "Some variables only work in specific contexts",
+          "examples": [
+            "Boost variables only work in boost messages",
+            "Level variables only work in level messages",
+            "Punishment variables only work in moderation logs"
+          ]
+        }
+      ]
+    }
+  }
+}

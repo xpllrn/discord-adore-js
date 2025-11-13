@@ -86,6 +86,27 @@ module.exports = {
         channelCreated = true;
       }
 
+      // Check if mod-logs channel already exists
+      const logsChannelResult = findChannel(message.guild, 'mod-logs');
+      let logsChannel = logsChannelResult.found ? logsChannelResult.channel : null;
+      let logsChannelCreated = false;
+
+      if (!logsChannel) {
+        // Create mod-logs channel
+        logsChannel = await message.guild.channels.create({
+          name: 'mod-logs',
+          type: ChannelType.GuildText,
+          permissionOverwrites: [
+            {
+              id: message.guild.id, // @everyone
+              deny: [PermissionFlagsBits.ViewChannel],
+            }
+          ],
+          reason: `Moderator logs setup by ${message.author.tag}`
+        });
+        logsChannelCreated = true;
+      }
+
       const allChannels = message.guild.channels.cache.filter(channel =>
         channel.id !== jailChannel.id
       );
@@ -150,11 +171,40 @@ module.exports = {
         return embeds.deny(message, `Jail system was created but failed to save to database. Please try running the command again.`);
       }
 
+      // Set up moderator logging in mod-logs channel if it was created
+      if (logsChannel && logsChannelCreated) {
+        try {
+          // Create webhook for logging
+          const webhook = await logsChannel.createWebhook({
+            name: `vleed Audits`,
+            avatar: client.user.displayAvatarURL({ format: 'png' }),
+            reason: `Jail logging setup by ${message.author.tag}`
+          });
+
+          // Set up moderator logging
+          await guildService.setLoggingChannel(
+            message.guild.id,
+            logsChannel.id,
+            webhook.url,
+            ['moderator'],
+            message.author.id
+          );
+        } catch (error) {
+          // Log error but don't fail the entire setup
+          logger.webhook.error(error, message);
+        }
+      }
+
       await loadingMessage.delete();
-      embeds.success(message, 'Jail system setup complete!');
+      
+      let successMessage = 'Jail system setup complete!';
+      if (logsChannelCreated) {
+        successMessage += `\n\n**Moderator logs** have been configured in ${logsChannel}`;
+      }
+      embeds.success(message, successMessage);
 
       // Log the jail setup action
-      await logJailSetup(message.author, jailRole, jailChannel, message.guild, roleCreated, channelCreated, permissionUpdates);
+      await logJailSetup(message.author, jailRole, jailChannel, logsChannel, message.guild, roleCreated, channelCreated, logsChannelCreated, permissionUpdates);
 
     } catch (error) {
       // Update loading message with error
@@ -176,22 +226,32 @@ module.exports = {
   }
 }
 
-async function logJailSetup(executor, jailRole, jailChannel, guild, roleCreated, channelCreated, permissionUpdates) {
+async function logJailSetup(executor, jailRole, jailChannel, logsChannel, guild, roleCreated, channelCreated, logsChannelCreated, permissionUpdates) {
   try {
     const webhookLogger = require('../../../utils/webhookLogger');
     const { EmbedBuilder } = require('discord.js');
     const { colors } = require('../../../config/setup');
 
+    const fields = [
+      { name: 'Executor', value: `${executor}`, inline: true },
+      { name: 'Jail Role', value: `${jailRole} ${roleCreated ? '(Created)' : '(Existing)'}`, inline: true },
+      { name: 'Jail Channel', value: `${jailChannel} ${channelCreated ? '(Created)' : '(Existing)'}`, inline: true },
+      { name: 'Permissions Updated', value: `${permissionUpdates} channels`, inline: true }
+    ];
+
+    if (logsChannel) {
+      fields.push({ 
+        name: 'Logs Channel', 
+        value: `${logsChannel} ${logsChannelCreated ? '(Created)' : '(Existing)'}`, 
+        inline: true 
+      });
+    }
+
     const embed = new EmbedBuilder()
       .setColor(colors.success)
       .setAuthor({ name: `${executor.tag} (${executor.id})`, iconURL: executor.displayAvatarURL() })
       .setTitle('🔧 Jail System Setup')
-      .addFields(
-        { name: 'Executor', value: `${executor}`, inline: true },
-        { name: 'Jail Role', value: `${jailRole} ${roleCreated ? '(Created)' : '(Existing)'}`, inline: true },
-        { name: 'Jail Channel', value: `${jailChannel} ${channelCreated ? '(Created)' : '(Existing)'}`, inline: true },
-        { name: 'Permissions Updated', value: `${permissionUpdates} channels`, inline: true }
-      )
+      .addFields(fields)
       .setTimestamp();
 
     await webhookLogger.sendLog(guild.id, 'moderator', embed);

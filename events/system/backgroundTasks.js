@@ -18,6 +18,7 @@ module.exports = {
     setupReminderCheck(client);
     setupGiveawayCheck(client);
     setupSprintManager(client);
+    setupRoleRestoreCleanup(client);
   }
 };
 
@@ -226,9 +227,10 @@ async function endGiveaway(client, guildId, giveaway) {
         await channel.send(`Congratulations ${winnerMentions}! You won **${giveaway.title}**!`);
       }
     } catch (channelError) {
-      // Silently handle deleted messages/channels (error code 10008 = Unknown Message, 10003 = Unknown Channel)
-      if (channelError.code === 10008 || channelError.code === 10003) {
-        // Message or channel was deleted, giveaway is already marked as ended, nothing more to do
+      // Silently handle deleted messages/channels/missing access
+      // 10008 = Unknown Message, 10003 = Unknown Channel, 50001 = Missing Access
+      if (channelError.code === 10008 || channelError.code === 10003 || channelError.code === 50001) {
+        // Message or channel was deleted/inaccessible, giveaway is already marked as ended, nothing more to do
         return;
       }
       logger.webhook.error(channelError);
@@ -555,6 +557,53 @@ async function saveSprintHistory(sprint) {
     }
   } catch (error) {
     logger.console.error('Save sprint history error:', error);
+  }
+}
+
+// ===== ROLE RESTORE CLEANUP =====
+
+let roleRestoreLastErrorTime = 0;
+
+function setupRoleRestoreCleanup(client) {
+  // Run every 30 minutes
+  setInterval(async () => {
+    await cleanupExpiredRoleRestore(client);
+  }, 30 * 60 * 1000);
+
+  // Initial check after 1 minute
+  setTimeout(() => cleanupExpiredRoleRestore(client), 60000);
+}
+
+async function cleanupExpiredRoleRestore(client) {
+  try {
+    const { getModels, isDatabaseReady } = require('../../database');
+
+    const dbStatus = isDatabaseReady();
+    if (!dbStatus.global && !dbStatus.local && !dbStatus.legacy) return;
+
+    const models = getModels();
+    if (!models?.Guild) return;
+
+    const now = new Date();
+
+    // Remove expired role restore data from all guilds
+    const result = await models.Guild.updateMany(
+      { 'RoleRestore.0': { $exists: true } },
+      { $pull: { RoleRestore: { expiresAt: { $lte: now } } } }
+    );
+
+    if (result.modifiedCount > 0) {
+      logger.console.log(`Cleaned up expired role restore data from ${result.modifiedCount} guild(s)`);
+    }
+  } catch (error) {
+    const now = Date.now();
+    if (now - roleRestoreLastErrorTime > ERROR_COOLDOWN) {
+      client?.errorLogger?.log(error, 'Role Restore Cleanup System', {
+        command: 'Role Restore Cleanup',
+        args: 'System Check'
+      });
+      roleRestoreLastErrorTime = now;
+    }
   }
 }
 

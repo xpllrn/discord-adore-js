@@ -158,10 +158,8 @@ class GuildService extends BaseService {
     }
 
     try {
-      // CRITICAL: Always check database directly, not just cache
-      // This prevents data loss when cache is cleared
-      const Model = this.getModel();
-      let guildData = await Model.findOne({ GuildID: guildId }).lean();
+      // Use the standard get() method which handles cache properly
+      let guildData = await this.get(guildId);
 
       if (!guildData) {
         // Create default guild data ONLY if truly doesn't exist in database
