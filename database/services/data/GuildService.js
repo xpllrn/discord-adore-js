@@ -31,6 +31,52 @@ class GuildService extends BaseService {
       const Model = this.getModel();
       const query = { [this.keyField]: key };
 
+      // Check for potential data loss before writing
+      const existing = await Model.findOne(query).lean();
+      
+      if (existing) {
+        // Log warning if important fields are being removed
+        const importantFields = [
+          'WelcomeChannel', 'WelcomeMessage', 'WelcomeMessages',
+          'LeaveChannel', 'LeaveMessage', 'LeaveMessages',
+          'BoostChannel', 'BoostMessage', 'BoostMessages',
+          'AutoRoles', 'Aliases', 'Antinuke', 'VoiceMaster',
+          'StarboardChannel', 'LoggingConfig', 'LevelSystem'
+        ];
+        
+        const missingFields = [];
+        for (const field of importantFields) {
+          // Check if field exists in existing data but is missing or null in new data
+          if (existing[field] !== null && existing[field] !== undefined) {
+            // For arrays, check if they have content
+            if (Array.isArray(existing[field]) && existing[field].length > 0) {
+              if (!data[field] || (Array.isArray(data[field]) && data[field].length === 0)) {
+                missingFields.push(`${field} (had ${existing[field].length} items)`);
+              }
+            }
+            // For objects, check if they have properties
+            else if (typeof existing[field] === 'object' && !Array.isArray(existing[field])) {
+              if (!data[field]) {
+                missingFields.push(`${field} (was configured)`);
+              }
+            }
+            // For strings/primitives
+            else if (existing[field] && !data[field]) {
+              missingFields.push(`${field} (was: ${existing[field]})`);
+            }
+          }
+        }
+        
+        if (missingFields.length > 0) {
+          const logger = require('../../../utils/logger');
+          logger.webhook.warn(
+            `⚠️ Potential data loss detected for guild ${key}:\n` +
+            `Missing fields: ${missingFields.join(', ')}\n` +
+            `This may indicate incomplete data being saved.`
+          );
+        }
+      }
+
       // Remove _id from data to prevent duplicate key errors
       const updateData = { ...data };
       delete updateData._id;
