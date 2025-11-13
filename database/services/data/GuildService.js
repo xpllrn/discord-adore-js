@@ -86,11 +86,24 @@ class GuildService extends BaseService {
         
         if (missingFields.length > 0) {
           const logger = require('../../../utils/logger');
+          
+          // Get stack trace to find where this is being called from
+          const stack = new Error().stack;
+          const callerLine = stack.split('\n')[3] || 'unknown';
+          
           logger.webhook.warn(
             `⚠️ Potential data loss detected for guild ${key}:\n` +
             `Missing fields: ${missingFields.join(', ')}\n` +
-            `This may indicate incomplete data being saved.`
+            `This may indicate incomplete data being saved.\n\n` +
+            `Called from: ${callerLine}`
           );
+          
+          dbLogger.warn('DATA_LOSS', `Incomplete data for guild ${key}`, {
+            missingFields,
+            caller: callerLine,
+            hasAutoRoles: !!data.AutoRoles,
+            hasWelcomeChannel: !!data.WelcomeChannel
+          });
         }
       } else {
         // New guild being created

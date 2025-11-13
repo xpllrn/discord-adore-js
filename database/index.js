@@ -139,7 +139,16 @@ async function ensureGuildData(guildId) {
       return null;
     }
 
-    // Use findOneAndUpdate with upsert to avoid race conditions
+    // OPTIMIZATION: Check if guild already exists first
+    // This avoids unnecessary cache invalidations for existing guilds
+    const existing = await Guild.findOne({ GuildID: guildId }).maxTimeMS(30000);
+    
+    if (existing) {
+      // Guild exists - no changes made, no need to invalidate cache
+      return existing;
+    }
+
+    // NEW GUILD: Create it with defaults
     const data = await Guild.findOneAndUpdate(
       { GuildID: guildId },
       {
@@ -156,7 +165,7 @@ async function ensureGuildData(guildId) {
       }
     );
 
-    // CRITICAL: Invalidate cache since we bypassed the service layer
+    // Only invalidate cache for NEW guilds
     try {
       const { getService } = require('@services');
       const guildService = getService('guild');
@@ -164,8 +173,8 @@ async function ensureGuildData(guildId) {
         guildService.invalidateCache(guildId);
         const dbLogger = require('../utils/dbLogger');
         dbLogger.cache('INVALIDATE', 'guild', guildId, { 
-          reason: 'legacy ensureGuildData called',
-          warning: 'bypassed service layer'
+          reason: 'new guild created',
+          note: 'legacy ensureGuildData - first time setup'
         });
       }
     } catch (cacheError) {
@@ -177,20 +186,7 @@ async function ensureGuildData(guildId) {
     // If there's still a duplicate key error, just find and return the existing record
     if (error.code === 11000) {
       try {
-        const existing = await Guild.findOne({ GuildID: guildId }).maxTimeMS(30000);
-        
-        // Invalidate cache for existing record too
-        try {
-          const { getService } = require('@services');
-          const guildService = getService('guild');
-          if (guildService) {
-            guildService.invalidateCache(guildId);
-          }
-        } catch (cacheError) {
-          // Silent fail
-        }
-        
-        return existing;
+        return await Guild.findOne({ GuildID: guildId }).maxTimeMS(30000);
       } catch (findError) {
         // Silent fail for find error
         return null;
