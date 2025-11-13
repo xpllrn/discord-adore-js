@@ -232,13 +232,9 @@ module.exports = {
                     example: '{guildprefix}lastfm index'
                 };
 
-                try {
-                    message.channel.sendTyping();
-                    const serverIndex = new ServerIndex();
-                    await serverIndex.execute(message);
-                } catch (error) {
-                    return embeds.warn(message, `Error indexing server Last.fm data. Please try again.`);
-                }
+                message.channel.sendTyping();
+                const serverIndex = new ServerIndex();
+                await serverIndex.execute(message);
                 break;
             }
 

@@ -59,11 +59,19 @@ module.exports = {
 
       if (!currentNSFW) {
         // Channel is now NSFW
-        await message.react('🔞');
+        try {
+          await message.react('🔞');
+        } catch (reactError) {
+          // Ignore reaction errors (message might be deleted)
+        }
         return embeds.success(message, `**#${targetChannel.name}** is now marked as **NSFW (18+)**`);
       } else {
         // Channel is no longer NSFW
-        await message.react('✅');
+        try {
+          await message.react('✅');
+        } catch (reactError) {
+          // Ignore reaction errors (message might be deleted)
+        }
         return embeds.success(message, `**#${targetChannel.name}** is no longer marked as **NSFW**`);
       }
 

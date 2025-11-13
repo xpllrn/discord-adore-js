@@ -8,6 +8,7 @@
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../../config/setup');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: 'cacheReadyComplete',
@@ -105,7 +106,7 @@ async function checkReminders(client) {
           }
         }
       } catch (userError) {
-        console.error(`Error processing reminders for user ${userData.UserID}:`, userError);
+        logger.console.error(`Error processing reminders for user ${userData.UserID}:`, userError);
       }
     }
   } catch (error) {
@@ -167,7 +168,7 @@ async function checkGiveaways(client) {
           }
         }
       } catch (guildError) {
-        console.error(`Error processing giveaways for guild ${guildData.GuildID}:`, guildError);
+        logger.console.error(`Error processing giveaways for guild ${guildData.GuildID}:`, guildError);
       }
     }
   } catch (error) {
@@ -225,10 +226,15 @@ async function endGiveaway(client, guildId, giveaway) {
         await channel.send(`Congratulations ${winnerMentions}! You won **${giveaway.title}**!`);
       }
     } catch (channelError) {
-      console.error('Error announcing giveaway winner:', channelError);
+      // Silently handle deleted messages/channels (error code 10008 = Unknown Message, 10003 = Unknown Channel)
+      if (channelError.code === 10008 || channelError.code === 10003) {
+        // Message or channel was deleted, giveaway is already marked as ended, nothing more to do
+        return;
+      }
+      logger.webhook.error(channelError);
     }
   } catch (error) {
-    console.error('Error ending giveaway:', error);
+    logger.webhook.error(error);
   }
 }
 
@@ -331,13 +337,13 @@ async function resumeActiveSprints(client) {
           try {
             await autoEndSprint(client, guildData.GuildID, sprint.messageId);
           } catch (error) {
-            console.error('Sprint auto-end error:', error);
+            logger.webhook.error(error);
           }
         }, timeUntilEnd);
       }
     }
   } catch (error) {
-    console.error('Sprint manager error:', error);
+    logger.webhook.error(error);
   }
 }
 
@@ -397,10 +403,10 @@ async function autoEndSprint(client, guildId, messageId) {
         );
       await sprintMessage.edit({ components: [disabledRow] });
     } catch (messageError) {
-      console.error('Sprint auto-end: Could not update message:', messageError);
+      logger.console.error('Sprint auto-end: Could not update message:', messageError);
     }
   } catch (error) {
-    console.error('Sprint auto-end error:', error);
+    logger.webhook.error(error);
   }
 }
 
@@ -448,7 +454,7 @@ async function sendSprintReminder(client, guildId, messageId, remindersLeft = 1)
       allowedMentions: { users: sprint.participants.map(p => p.userId) }
     });
   } catch (error) {
-    console.error('Sprint reminder error:', error);
+    logger.webhook.error(error);
   }
 }
 
@@ -548,7 +554,7 @@ async function saveSprintHistory(sprint) {
       }
     }
   } catch (error) {
-    console.error('Save sprint history error:', error);
+    logger.console.error('Save sprint history error:', error);
   }
 }
 
