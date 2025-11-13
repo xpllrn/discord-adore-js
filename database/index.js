@@ -126,6 +126,8 @@ async function disconnectDatabase() {
 
 /**
  * Ensures guild data exists in the database with default values
+ * IMPORTANT: This function bypasses the service layer cache!
+ * Use GuildService.ensureGuildData() instead when possible.
  * @param {string} guildId - The Discord guild ID
  * @returns {Promise<Object>} The guild data document
  */
@@ -154,12 +156,41 @@ async function ensureGuildData(guildId) {
       }
     );
 
+    // CRITICAL: Invalidate cache since we bypassed the service layer
+    try {
+      const { getService } = require('@services');
+      const guildService = getService('guild');
+      if (guildService) {
+        guildService.invalidateCache(guildId);
+        const dbLogger = require('../utils/dbLogger');
+        dbLogger.cache('INVALIDATE', 'guild', guildId, { 
+          reason: 'legacy ensureGuildData called',
+          warning: 'bypassed service layer'
+        });
+      }
+    } catch (cacheError) {
+      // Silent fail for cache invalidation
+    }
+
     return data;
   } catch (error) {
     // If there's still a duplicate key error, just find and return the existing record
     if (error.code === 11000) {
       try {
-        return await Guild.findOne({ GuildID: guildId }).maxTimeMS(30000);
+        const existing = await Guild.findOne({ GuildID: guildId }).maxTimeMS(30000);
+        
+        // Invalidate cache for existing record too
+        try {
+          const { getService } = require('@services');
+          const guildService = getService('guild');
+          if (guildService) {
+            guildService.invalidateCache(guildId);
+          }
+        } catch (cacheError) {
+          // Silent fail
+        }
+        
+        return existing;
       } catch (findError) {
         // Silent fail for find error
         return null;
