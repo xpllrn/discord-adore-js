@@ -37,7 +37,11 @@ class DatabaseLogger {
       let logEntry = `[${timestamp}] [${level.toUpperCase()}] [${category}] ${message}`;
       
       if (data) {
-        logEntry += `\n  Data: ${JSON.stringify(data, null, 2)}`;
+        // Pretty print with indentation for readability
+        const dataStr = JSON.stringify(data, null, 2);
+        // Indent each line for better visual hierarchy
+        const indentedData = dataStr.split('\n').map(line => `  ${line}`).join('\n');
+        logEntry += `\n${indentedData}`;
       }
       
       logEntry += '\n';
@@ -69,7 +73,17 @@ class DatabaseLogger {
   write(service, key, success, details = null) {
     const level = success ? 'INFO' : 'ERROR';
     const status = success ? 'SUCCESS' : 'FAILED';
-    this.writeLog(level, 'WRITE', `${service} - ${status} - ${key}`, details);
+    
+    // Add more context to write logs
+    const enhancedDetails = {
+      ...details,
+      timestamp: new Date().toISOString(),
+      service,
+      key,
+      success
+    };
+    
+    this.writeLog(level, 'WRITE', `${service} - ${status} - ${key}`, enhancedDetails);
   }
 
   /**
@@ -86,16 +100,25 @@ class DatabaseLogger {
     const errorDetails = {
       message: error.message,
       stack: error.stack,
-      code: error.code
+      code: error.code,
+      name: error.name
     };
+    // Add separator line for errors to make them stand out
+    const separator = '='.repeat(80);
+    fs.appendFileSync(this.logFile, `\n${separator}\n`, 'utf8');
     this.writeLog('ERROR', category, message, errorDetails);
+    fs.appendFileSync(this.logFile, `${separator}\n\n`, 'utf8');
   }
 
   /**
    * Log warnings
    */
   warn(category, message, details = null) {
+    // Add separator line for warnings to make them stand out
+    const separator = '='.repeat(80);
+    fs.appendFileSync(this.logFile, `\n${separator}\n`, 'utf8');
     this.writeLog('WARN', category, message, details);
+    fs.appendFileSync(this.logFile, `${separator}\n\n`, 'utf8');
   }
 
   /**

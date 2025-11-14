@@ -87,23 +87,38 @@ class GuildService extends BaseService {
         if (missingFields.length > 0) {
           const logger = require('../../../utils/logger');
           
-          // Get stack trace to find where this is being called from
+          // Get full stack trace to find where this is being called from
           const stack = new Error().stack;
-          const callerLine = stack.split('\n')[3] || 'unknown';
+          const stackLines = stack.split('\n').slice(1, 6); // Get top 5 lines
+          const callerInfo = stackLines.join('\n');
           
-          logger.webhook.warn(
-            `⚠️ Potential data loss detected for guild ${key}:\n` +
-            `Missing fields: ${missingFields.join(', ')}\n` +
-            `This may indicate incomplete data being saved.\n\n` +
-            `Called from: ${callerLine}`
-          );
+          // Build detailed warning
+          let warningMsg = `⚠️ **DATA LOSS PREVENTED** for guild ${key}\n\n`;
+          warningMsg += `**Missing Fields:**\n`;
+          missingFields.forEach(field => warningMsg += `  • ${field}\n`);
+          warningMsg += `\n**What's in the data being saved:**\n`;
+          warningMsg += `  • AutoRoles: ${data.AutoRoles ? `${data.AutoRoles.length} items` : 'MISSING ❌'}\n`;
+          warningMsg += `  • WelcomeChannel: ${data.WelcomeChannel || 'MISSING ❌'}\n`;
+          warningMsg += `  • WelcomeMessage: ${data.WelcomeMessage ? 'Set ✓' : 'MISSING ❌'}\n`;
+          warningMsg += `\n**Call Stack:**\n\`\`\`\n${callerInfo}\n\`\`\`\n`;
+          warningMsg += `\n**Action:** Data was NOT saved to prevent loss. Fix the code to load full guild data first.`;
+          
+          logger.webhook.warn(warningMsg);
           
           dbLogger.warn('DATA_LOSS', `Incomplete data for guild ${key}`, {
             missingFields,
-            caller: callerLine,
+            caller: callerInfo,
+            dataKeys: Object.keys(data),
             hasAutoRoles: !!data.AutoRoles,
-            hasWelcomeChannel: !!data.WelcomeChannel
+            hasWelcomeChannel: !!data.WelcomeChannel,
+            autoRolesCount: data.AutoRoles?.length || 0
           });
+          
+          // PREVENT THE SAVE - throw error to stop execution
+          throw new DatabaseWriteError(
+            `Prevented data loss: Missing fields ${missingFields.join(', ')}. ` +
+            `Load full guild data with ensureGuildData() before modifying.`
+          );
         }
       } else {
         // New guild being created
@@ -113,6 +128,14 @@ class GuildService extends BaseService {
       // Remove _id from data to prevent duplicate key errors
       const updateData = { ...data };
       delete updateData._id;
+
+      // CRITICAL: Remove undefined/null fields to prevent deleting existing data
+      // $set with undefined/null will DELETE the field in MongoDB
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined || updateData[key] === null) {
+          delete updateData[key];
+        }
+      });
 
       await Model.updateOne(query, { $set: updateData }, { upsert: true });
       
