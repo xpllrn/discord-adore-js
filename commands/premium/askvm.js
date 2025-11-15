@@ -130,7 +130,7 @@ Question: ${question}`
 
       await message.channel.send({
         files: [attachment],
-        flags: ['IS_VOICE_MESSAGE']
+        flags: ['IsVoiceMessage']
       });
 
     } catch (error) {
