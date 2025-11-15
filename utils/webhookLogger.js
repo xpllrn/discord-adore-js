@@ -531,14 +531,7 @@ class WebhookLogger {
       // Format changes based on action type
       if (action === 'roleUpdate' || action === 'channelUpdate') {
         const changeText = changes.map(change => {
-          // Handle special formatting for certain change types
-          if (change.key === 'name') {
-            return `**${change.key}:** ${change.old || 'None'} → ${change.new || 'None'}`;
-          } else if (change.key === 'color') {
-            return `**${change.key}:** \`${change.old || '#000000'}\` → \`${change.new || '#000000'}\``;
-          } else {
-            return `**${change.key}:** ${change.old || 'None'} → ${change.new || 'None'}`;
-          }
+          return this.formatChange(change);
         }).join('\n');
 
         embed.addFields({
@@ -561,6 +554,111 @@ class WebhookLogger {
   }
 
   /**
+   * Format a change object into human-readable text
+   * @param {Object} change - Change object with key, old, and new values
+   * @returns {string} - Formatted change text
+   */
+  formatChange(change) {
+    const { key, old, new: newValue } = change;
+
+    // Handle color changes (convert objects or numbers to hex)
+    if (key === 'color' || key === 'colors') {
+      const oldColor = this.formatColor(old);
+      const newColor = this.formatColor(newValue);
+      return `**${key}:** \`${oldColor}\` → \`${newColor}\``;
+    }
+
+    // Handle permission changes (convert bitfield to permission names)
+    if (key === 'permissions' || key === 'allow' || key === 'deny') {
+      const oldPerms = this.formatPermissions(old);
+      const newPerms = this.formatPermissions(newValue);
+      return `**${key}:** ${oldPerms} → ${newPerms}`;
+    }
+
+    // Handle name changes
+    if (key === 'name') {
+      return `**${key}:** ${old || 'None'} → ${newValue || 'None'}`;
+    }
+
+    // Handle topic changes
+    if (key === 'topic') {
+      return `**${key}:** ${old || 'None'} → ${newValue || 'None'}`;
+    }
+
+    // Default formatting
+    return `**${key}:** ${old || 'None'} → ${newValue || 'None'}`;
+  }
+
+  /**
+   * Format color value to hex string
+   * @param {*} color - Color value (can be number, object, or string)
+   * @returns {string} - Hex color string
+   */
+  formatColor(color) {
+    if (!color && color !== 0) return '#000000';
+    
+    // If it's already a hex string
+    if (typeof color === 'string' && color.startsWith('#')) {
+      return color;
+    }
+
+    // If it's a number, convert to hex
+    if (typeof color === 'number') {
+      return `#${color.toString(16).padStart(6, '0')}`;
+    }
+
+    // If it's an object (shouldn't happen but handle it)
+    if (typeof color === 'object') {
+      return '#000000';
+    }
+
+    return '#000000';
+  }
+
+  /**
+   * Format permissions bitfield to human-readable names
+   * @param {*} permissions - Permission value (can be string, number, or bigint)
+   * @returns {string} - Formatted permission names
+   */
+  formatPermissions(permissions) {
+    if (!permissions && permissions !== 0n && permissions !== 0) return 'None';
+
+    try {
+      const { PermissionFlagsBits } = require('discord.js');
+      
+      // Convert to BigInt if it's a string or number
+      let permBigInt;
+      if (typeof permissions === 'string') {
+        permBigInt = BigInt(permissions);
+      } else if (typeof permissions === 'number') {
+        permBigInt = BigInt(permissions);
+      } else if (typeof permissions === 'bigint') {
+        permBigInt = permissions;
+      } else {
+        return 'Unknown';
+      }
+
+      // Get all permission names that are set
+      const permissionNames = [];
+      for (const [name, flag] of Object.entries(PermissionFlagsBits)) {
+        if ((permBigInt & flag) === flag) {
+          // Convert camelCase to readable format
+          const readableName = name.replace(/([A-Z])/g, ' $1').trim();
+          permissionNames.push(readableName);
+        }
+      }
+
+      if (permissionNames.length === 0) return 'None';
+      if (permissionNames.length > 5) {
+        return `${permissionNames.slice(0, 5).join(', ')} +${permissionNames.length - 5} more`;
+      }
+      return permissionNames.join(', ');
+    } catch (error) {
+      return 'Unknown';
+    }
+  }
+
+  /**
    * Create a channel permissions log embed
    * @param {Object} options - Log options
    * @returns {EmbedBuilder} - The log embed
@@ -576,22 +674,57 @@ class WebhookLogger {
       })
       .setTimestamp();
 
+    // Determine target display name
+    let targetDisplay = '@everyone';
+    if (target) {
+      if (target.name) {
+        targetDisplay = target.name; // Role name
+      } else if (target.user) {
+        targetDisplay = target.user.username; // Member username
+      }
+    }
+
     if (action === 'create') {
-      embed.setDescription(`${target?.name || '@everyone'} permissions for <#${channel?.id}> created by <@${executor?.id}>`);
+      embed.setDescription(`**${targetDisplay}** permissions for <#${channel?.id}> created by <@${executor?.id}>`);
     } else {
       embed.setDescription(`Channel permissions for <#${channel?.id}> updated by <@${executor?.id}>`);
 
       // Add permission changes
       if (changes && changes.length > 0) {
-        const permissionText = changes.map(change =>
-          `**${change.key}:** \`${change.old ? '✅' : '❌'}\` → \`${change.new ? '✅' : '❌'}\``
-        ).join('\n');
+        const permissionText = changes.map(change => {
+          // Handle allow/deny permission changes
+          if (change.key === 'allow' || change.key === 'deny') {
+            const oldPerms = this.getPermissionDiff(change.old, change.new);
+            const newPerms = this.getPermissionDiff(change.new, change.old);
+            
+            let text = '';
+            if (change.key === 'allow') {
+              if (newPerms.length > 0) {
+                text = `**allow:** ${newPerms.map(p => `\`✅\` ${p}`).join(', ')}`;
+              } else if (oldPerms.length > 0) {
+                text = `**allow:** ${oldPerms.map(p => `\`❌\` ${p}`).join(', ')}`;
+              }
+            } else if (change.key === 'deny') {
+              if (newPerms.length > 0) {
+                text = `**deny:** ${newPerms.map(p => `\`✅\` ${p}`).join(', ')}`;
+              } else if (oldPerms.length > 0) {
+                text = `**deny:** ${oldPerms.map(p => `\`❌\` ${p}`).join(', ')}`;
+              }
+            }
+            return text;
+          }
+          
+          // Default formatting for other changes
+          return this.formatChange(change);
+        }).filter(text => text).join('\n');
 
-        embed.addFields({
-          name: '**Changes**',
-          value: permissionText,
-          inline: false
-        });
+        if (permissionText) {
+          embed.addFields({
+            name: '**Changes**',
+            value: permissionText.length > 1024 ? permissionText.substring(0, 1021) + '...' : permissionText,
+            inline: false
+          });
+        }
       }
     }
 
@@ -601,6 +734,41 @@ class WebhookLogger {
     });
 
     return embed;
+  }
+
+  /**
+   * Get permission differences between two permission sets
+   * @param {*} newPerms - New permissions
+   * @param {*} oldPerms - Old permissions
+   * @returns {Array<string>} - Array of permission names that changed
+   */
+  getPermissionDiff(newPerms, oldPerms) {
+    try {
+      const { PermissionFlagsBits } = require('discord.js');
+      
+      // Convert to BigInt
+      const newBigInt = newPerms ? (typeof newPerms === 'bigint' ? newPerms : BigInt(newPerms)) : 0n;
+      const oldBigInt = oldPerms ? (typeof oldPerms === 'bigint' ? oldPerms : BigInt(oldPerms)) : 0n;
+      
+      // Find permissions that are in new but not in old
+      const diff = newBigInt & ~oldBigInt;
+      
+      if (diff === 0n) return [];
+      
+      // Get permission names
+      const permissionNames = [];
+      for (const [name, flag] of Object.entries(PermissionFlagsBits)) {
+        if ((diff & flag) === flag) {
+          // Convert camelCase to readable format
+          const readableName = name.replace(/([A-Z])/g, ' $1').trim();
+          permissionNames.push(readableName);
+        }
+      }
+      
+      return permissionNames;
+    } catch (error) {
+      return [];
+    }
   }
 
   /**
@@ -665,7 +833,8 @@ class WebhookLogger {
       .setTimestamp();
 
     const actionText = action === 'add' ? 'was granted' : 'was removed from';
-    embed.setDescription(`<@${member.user.id}> ${actionText} <@&${role.id}> by <@${executor?.id}>`);
+    const executorText = executor ? `<@${executor.id}>` : '<@undefined>';
+    embed.setDescription(`<@${member.user.id}> ${actionText} <@&${role.id}> by ${executorText}`);
 
     embed.setFooter({
       text: `User ID: ${member?.user?.id}`,
