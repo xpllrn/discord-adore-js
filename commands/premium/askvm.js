@@ -121,29 +121,59 @@ Question: ${question}`
       });
 
       const audioBuffer = Buffer.from(ttsResponse.data);
+      const fileSize = audioBuffer.length;
       
-      // Generate waveform (256 bytes max, as per Discord spec)
-      const waveform = Buffer.alloc(256, 128).toString('base64');
-      
-      // Estimate duration based on text length (roughly 150 chars per second for TTS)
-      const duration = Math.max(1, Math.ceil(responseText.length / 150));
-      
-      // Create attachment with voice metadata
-      const attachment = new AttachmentBuilder(audioBuffer, { 
-        name: "voice-message.ogg"
+      // Step 1: Request upload URL from Discord
+      const uploadRequest = await axios.post(
+        `https://discord.com/api/v10/channels/${message.channel.id}/attachments`,
+        {
+          files: [{
+            filename: "voice-message.ogg",
+            file_size: fileSize,
+            id: "2"
+          }]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bot ${client.token}`
+          }
+        }
+      );
+
+      const { upload_url, upload_filename } = uploadRequest.data.attachments[0];
+
+      // Step 2: Upload the audio file to Discord's CDN
+      await axios.put(upload_url, audioBuffer, {
+        headers: {
+          'Content-Type': 'audio/ogg'
+        }
       });
 
-      // Send voice message with proper metadata structure
-      await message.channel.send({
-        files: [attachment],
-        flags: 1 << 13, // IS_VOICE_MESSAGE flag
-        attachments: [{
-          id: 0,
-          filename: "voice-message.ogg",
-          duration_secs: duration,
-          waveform: waveform
-        }]
-      });
+      // Step 3: Generate waveform and duration
+      const waveform = Buffer.alloc(256, 128).toString('base64');
+      const duration = Math.max(1, Math.ceil(responseText.length / 150));
+
+      // Step 4: Send the voice message
+      await axios.post(
+        `https://discord.com/api/v10/channels/${message.channel.id}/messages`,
+        {
+          flags: 8192, // IS_VOICE_MESSAGE flag
+          attachments: [{
+            id: "0",
+            filename: "voice-message.ogg",
+            uploaded_filename: upload_filename,
+            duration_secs: duration,
+            waveform: waveform
+          }]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bot ${client.token}`
+          }
+        }
+      );
 
     } catch (error) {
       logger.webhook.error(error, message);
