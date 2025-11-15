@@ -130,18 +130,19 @@ Question: ${question}`
       
       // Create attachment with voice metadata
       const attachment = new AttachmentBuilder(audioBuffer, { 
-        name: "voice-message.mp3"
+        name: "voice-message.ogg"
       });
 
-      // Send voice message using REST API directly
+      // Send voice message with proper metadata structure
       await message.channel.send({
-        files: [{
-          attachment: audioBuffer,
-          name: "voice-message.mp3",
+        files: [attachment],
+        flags: 1 << 13, // IS_VOICE_MESSAGE flag
+        attachments: [{
+          id: 0,
+          filename: "voice-message.ogg",
           duration_secs: duration,
           waveform: waveform
-        }],
-        flags: 1 << 13 // IS_VOICE_MESSAGE flag
+        }]
       });
 
     } catch (error) {
