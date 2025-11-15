@@ -128,20 +128,18 @@ Question: ${question}`
       // Estimate duration (rough: 150 chars per second)
       const duration = Math.max(1, Math.ceil(responseText.length / 150));
       
-      // Send as voice message with proper metadata
+      // Create attachment with voice message metadata
       const attachment = new AttachmentBuilder(audioBuffer, { 
         name: 'voice-message.ogg'
       });
+      
+      // Set voice message properties
+      attachment.duration_secs = duration;
+      attachment.waveform = waveform;
 
       await message.channel.send({
         files: [attachment],
-        flags: 1 << 13, // MessageFlags.IsVoiceMessage (8192)
-        attachments: [{
-          id: 0,
-          filename: 'voice-message.ogg',
-          duration_secs: duration,
-          waveform: waveform
-        }]
+        flags: 1 << 13 // MessageFlags.IsVoiceMessage (8192)
       });
 
     } catch (error) {
