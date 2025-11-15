@@ -47,7 +47,6 @@ const BaseService = require('./core/BaseService');
 const SmartCache = require('./core/SmartCache');
 const { ConnectionManager, getConnectionManager } = require('./core/connection');
 const cacheWarmer = require('./core/CacheWarmer');
-const performanceMonitor = require('./core/PerformanceMonitor');
 const {
   ServiceError,
   DatabaseConnectionError,
@@ -212,7 +211,6 @@ module.exports = {
   SmartCache,
   ConnectionManager,
   cacheWarmer,
-  performanceMonitor,
   
   // Error classes
   ServiceError,
