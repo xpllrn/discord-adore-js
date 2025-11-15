@@ -57,12 +57,18 @@ class BaseService {
    * @returns {Promise<boolean>} Success status
    */
   async set(key, data, customTTL) {
+    const startTime = Date.now();
     try {
       // Step 1: Write to database first (write-through strategy)
       await this.writeToDatabase(key, data);
       
       // Step 2: Update cache only after successful database write
       this.cache.set(key, data, customTTL);
+      
+      const duration = Date.now() - startTime;
+      if (duration > 100) {
+        console.log(`⚠️ SLOW WRITE: ${this.modelName} ${key} took ${duration}ms`);
+      }
       
       return true;
     } catch (error) {
@@ -78,6 +84,7 @@ class BaseService {
    * @returns {Promise<*>} Cached or database value
    */
   async get(key) {
+    const startTime = Date.now();
     try {
       // Step 1: Try cache first
       const cached = this.cache.get(key);
@@ -91,6 +98,11 @@ class BaseService {
       // Step 3: Cache the result if found
       if (data !== null) {
         this.cache.set(key, data);
+      }
+      
+      const duration = Date.now() - startTime;
+      if (duration > 100) {
+        console.log(`⚠️ SLOW READ: ${this.modelName} ${key} took ${duration}ms`);
       }
       
       return data;

@@ -31,12 +31,15 @@ class GuildService extends BaseService {
       const Model = this.getModel();
       const query = { [this.keyField]: key };
 
-      // Check for potential data loss before writing
-      const existing = await Model.findOne(query).lean();
+      // Only check for data loss if data looks incomplete (missing common fields)
+      // This avoids an extra DB query on every write
+      const looksIncomplete = !data.AutoRoles || !data.Aliases || !data.WelcomeMessages;
       
-      const changes = { added: [], modified: [], removed: [] };
-      
-      if (existing) {
+      if (looksIncomplete) {
+        // Potential issue - do the full check
+        const existing = await Model.findOne(query).lean();
+        
+        if (existing) {
         // Log warning if important fields are being removed
         const importantFields = [
           'WelcomeChannel', 'WelcomeMessage', 'WelcomeMessages',
@@ -109,6 +112,7 @@ class GuildService extends BaseService {
             `Prevented data loss: Missing fields ${missingFields.join(', ')}. ` +
             `Load full guild data with ensureGuildData() before modifying.`
           );
+        }
         }
       }
 
