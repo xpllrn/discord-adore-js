@@ -86,7 +86,7 @@ module.exports = {
             await userService.updateWallet(userId, VOTE_REWARD);
             await userService.updateVoteTimestamp(userId);
 
-            return embeds.success(message, `You received **${formatCurrency(VOTE_REWARD)}** coins for voting!\n\nYou can vote again in **12 hours** for another **${formatCurrency(VOTE_REWARD)}** coins!`);
+            return embeds.success(message, `You received **${formatCurrency(VOTE_REWARD)}** coins for voting! come back in **12 hours** `);
           } catch (rewardError) {
             return embeds.deny(message, 'You voted successfully, but there was an error giving your reward. Please contact an administrator.');
           }
