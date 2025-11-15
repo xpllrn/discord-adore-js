@@ -46,7 +46,7 @@ function findRole(guild, roleInput) {
   return {
     found: false,
     role: null,
-    error: `I was unable to find a role with the name: ${roleInput}`
+    error: `I was unable to find a **role** with the name: **${roleInput}**`
   };
 }
 
@@ -121,7 +121,7 @@ async function findUser(guild, userInput, client = null) {
   return {
     found: false,
     user: null,
-    error: `I was unable to find a user with the name: ${userInput}`,
+    error: `I was unable to find a **user** with the name: **${userInput}**`,
     isGlobal: false
   };
 }
@@ -181,7 +181,7 @@ function findChannel(guild, channelInput) {
   return {
     found: false,
     channel: null,
-    error: `I was unable to find a channel with the name: ${channelInput}`
+    error: `I was unable to find a **channel** with the name: **${channelInput}**`
   };
 }
 
@@ -227,7 +227,7 @@ async function findGuild(client, guildInput) {
   return {
     found: false,
     guild: null,
-    error: `I was unable to find a server with the name: ${guildInput}`
+    error: `I was unable to find a **server** with the name: **${guildInput}**`
   };
 }
 
