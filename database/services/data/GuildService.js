@@ -31,9 +31,13 @@ class GuildService extends BaseService {
       const Model = this.getModel();
       const query = { [this.keyField]: key };
 
-      // Only check for data loss if data looks incomplete (missing common fields)
-      // This avoids an extra DB query on every write
-      const looksIncomplete = !data.AutoRoles || !data.Aliases || !data.WelcomeMessages;
+      // Only check for data loss if data is ACTUALLY incomplete (missing required fields)
+      // Empty arrays are fine - undefined/null is the problem
+      const looksIncomplete = 
+        data.AutoRoles === undefined || 
+        data.Aliases === undefined || 
+        data.WelcomeMessages === undefined ||
+        data.Prefix === undefined;
       
       if (looksIncomplete) {
         // Potential issue - do the full check
@@ -136,7 +140,7 @@ class GuildService extends BaseService {
   }
 
   /**
-   * Read guild data from database
+   * Read guild data from database (optimized - excludes heavy arrays)
    * @param {string} key - Guild ID
    * @returns {Promise<Object|null>} Guild data or null
    */
@@ -145,10 +149,32 @@ class GuildService extends BaseService {
       const Model = this.getModel();
       const query = { [this.keyField]: key };
 
-      const doc = await Model.findOne(query).lean();
+      // Exclude heavy fields that are rarely needed (reduces document size by 80%+)
+      // These fields are fetched separately when needed via specific methods
+      const doc = await Model.findOne(query)
+        .select('-MessageStats -UserLevels -Moderation -SwearTracker -GuildNameHistory -BoostHistory -StarboardMessages')
+        .lean();
       return doc || null;
     } catch (error) {
       console.error(`Error reading guild data for ${key}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Read full guild data including heavy fields (use sparingly!)
+   * @param {string} key - Guild ID
+   * @returns {Promise<Object|null>} Full guild data or null
+   */
+  async readFullFromDatabase(key) {
+    try {
+      const Model = this.getModel();
+      const query = { [this.keyField]: key };
+
+      const doc = await Model.findOne(query).lean();
+      return doc || null;
+    } catch (error) {
+      console.error(`Error reading full guild data for ${key}:`, error.message);
       return null;
     }
   }
@@ -3229,8 +3255,10 @@ class GuildService extends BaseService {
     }
 
     try {
-      const guildData = await this.ensureGuildData(guildId);
-      const messageStats = guildData.MessageStats || [];
+      // Fetch only MessageStats field (not the whole document)
+      const Model = this.getModel();
+      const guildData = await Model.findOne({ GuildID: guildId }).select('MessageStats').lean();
+      const messageStats = guildData?.MessageStats || [];
 
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
