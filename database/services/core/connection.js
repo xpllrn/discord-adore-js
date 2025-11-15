@@ -46,8 +46,6 @@ class ConnectionManager {
    */
   async initialize(connectionStrings) {
     try {
-      dbLogger.connection('SYSTEM', 'initialization started');
-      
       // Configure mongoose settings
       mongoose.set('strictQuery', false);
 
@@ -59,13 +57,11 @@ class ConnectionManager {
 
       // Connect to user database if provided
       if (userConnection) {
-        dbLogger.connection('user', 'connecting');
         promises.push(this.connectWithRetry('user', userConnection));
       }
 
       // Connect to guild database if provided
       if (guildConnection) {
-        dbLogger.connection('guild', 'connecting');
         promises.push(this.connectWithRetry('guild', guildConnection));
       }
 
@@ -76,8 +72,6 @@ class ConnectionManager {
       if (!this.hasAnyConnection()) {
         throw new DatabaseConnectionError('No database connections established');
       }
-
-      dbLogger.connection('SYSTEM', 'initialization complete');
       
       // Start health monitoring
       this.startHealthMonitoring();
@@ -103,15 +97,12 @@ class ConnectionManager {
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        dbLogger.connection(type, `connection attempt ${attempt}/${maxRetries}`);
         const connection = await this.createConnection(connectionString, type);
         this.connections[type] = connection;
         
         // Update statistics
         this.stats[type].connected = true;
         this.stats[type].lastConnected = new Date();
-        
-        dbLogger.connection(type, 'connected successfully', { attempt });
         
         // Set up connection event handlers
         this.setupConnectionHandlers(connection, type);
@@ -199,10 +190,6 @@ class ConnectionManager {
       console.log(chalk.yellow(`${type} database disconnected`));
       this.stats[type].connected = false;
       this.stats[type].lastDisconnected = new Date();
-      dbLogger.connection(type, 'disconnected', {
-        lastConnected: this.stats[type].lastConnected,
-        reconnectCount: this.stats[type].reconnectCount
-      });
     });
 
     connection.on('reconnected', () => {
@@ -210,11 +197,6 @@ class ConnectionManager {
       this.stats[type].connected = true;
       this.stats[type].lastConnected = new Date();
       this.stats[type].reconnectCount++;
-      
-      dbLogger.connection(type, 'reconnected', {
-        reconnectCount: this.stats[type].reconnectCount,
-        lastDisconnected: this.stats[type].lastDisconnected
-      });
       
       // Clear service caches on reconnect to prevent stale data
       try {
@@ -224,7 +206,6 @@ class ConnectionManager {
           if (guildService) {
             guildService.clearCache();
             console.log(chalk.blue('Cleared guild service cache after reconnection'));
-            dbLogger.cache('CLEAR_ALL', 'guild', 'reconnection', { reason: 'database reconnected' });
           }
         }
         if (type === 'user' || type === 'global') {
@@ -232,7 +213,6 @@ class ConnectionManager {
           if (userService) {
             userService.clearCache();
             console.log(chalk.blue('Cleared user service cache after reconnection'));
-            dbLogger.cache('CLEAR_ALL', 'user', 'reconnection', { reason: 'database reconnected' });
           }
         }
       } catch (error) {

@@ -1,6 +1,6 @@
 const BaseService = require('../core/BaseService');
 const { ValidationError, NotFoundError, DatabaseWriteError } = require('../core/errors');
-const dbLogger = require('../../../utils/dbLogger');
+const dbLogger = require('../../../utils/dbLogger'); // Only for errors/warnings
 
 /**
  * Guild Service
@@ -120,9 +120,6 @@ class GuildService extends BaseService {
             `Load full guild data with ensureGuildData() before modifying.`
           );
         }
-      } else {
-        // New guild being created
-        dbLogger.write('guild', key, true, { action: 'CREATE', note: 'New guild data' });
       }
 
       // Remove _id from data to prevent duplicate key errors
@@ -139,13 +136,7 @@ class GuildService extends BaseService {
 
       await Model.updateOne(query, { $set: updateData }, { upsert: true });
       
-      // Log the changes
-      if (changes.added.length > 0 || changes.modified.length > 0 || changes.removed.length > 0) {
-        dbLogger.write('guild', key, true, { action: 'UPDATE', changes });
-      }
-      
     } catch (error) {
-      dbLogger.write('guild', key, false, { error: error.message });
       throw new DatabaseWriteError(`Failed to write guild data for ${key}`, error);
     }
   }
@@ -656,21 +647,8 @@ class GuildService extends BaseService {
 
       await this.set(guildId, guildData);
       
-      dbLogger.write('guild', guildId, true, {
-        action: 'SET_WELCOME',
-        channelId,
-        messageLength: message.trim().length,
-        wasConfigured: !!oldChannel,
-        oldChannel,
-        oldMessageLength: oldMessage?.length || 0
-      });
-      
       return true;
     } catch (error) {
-      dbLogger.write('guild', guildId, false, {
-        action: 'SET_WELCOME_FAILED',
-        error: error.message
-      });
       if (error instanceof ValidationError) {
         throw error;
       }
@@ -698,18 +676,8 @@ class GuildService extends BaseService {
 
       await this.set(guildId, guildData);
       
-      dbLogger.write('guild', guildId, true, {
-        action: 'REMOVE_WELCOME',
-        hadChannel,
-        hadMessage: !!hadMessage
-      });
-      
       return true;
     } catch (error) {
-      dbLogger.write('guild', guildId, false, {
-        action: 'REMOVE_WELCOME_FAILED',
-        error: error.message
-      });
       throw new DatabaseWriteError(`Failed to remove welcome settings for guild ${guildId}`, error);
     }
   }
@@ -1734,28 +1702,10 @@ class GuildService extends BaseService {
         autoRoles.push(roleId);
         guildData.AutoRoles = autoRoles;
         await this.set(guildId, guildData);
-        
-        dbLogger.write('guild', guildId, true, {
-          action: 'ADD_AUTOROLE',
-          roleId,
-          totalAutoRoles: autoRoles.length,
-          allRoles: autoRoles
-        });
-      } else {
-        dbLogger.write('guild', guildId, true, {
-          action: 'ADD_AUTOROLE_SKIPPED',
-          roleId,
-          reason: 'already exists'
-        });
       }
 
       return true;
     } catch (error) {
-      dbLogger.write('guild', guildId, false, {
-        action: 'ADD_AUTOROLE_FAILED',
-        roleId,
-        error: error.message
-      });
       if (error instanceof ValidationError) {
         throw error;
       }
@@ -1784,26 +1734,11 @@ class GuildService extends BaseService {
       const beforeCount = autoRoles.length;
 
       guildData.AutoRoles = autoRoles.filter(id => id !== roleId);
-      const afterCount = guildData.AutoRoles.length;
       
       await this.set(guildId, guildData);
-      
-      dbLogger.write('guild', guildId, true, {
-        action: 'REMOVE_AUTOROLE',
-        roleId,
-        wasRemoved: beforeCount !== afterCount,
-        beforeCount,
-        afterCount,
-        remainingRoles: guildData.AutoRoles
-      });
 
       return true;
     } catch (error) {
-      dbLogger.write('guild', guildId, false, {
-        action: 'REMOVE_AUTOROLE_FAILED',
-        roleId,
-        error: error.message
-      });
       if (error instanceof ValidationError) {
         throw error;
       }

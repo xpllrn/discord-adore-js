@@ -37,7 +37,7 @@ module.exports = {
       // Top.gg configuration - hardcoded to avoid env loading issues
       const TOPGG_API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfdCI6Ijc3MTI1NTgzMTAyMTk0NDgzMiIsImlkIjoiNzcwNTY0MDIwMjk0NjMxNDI0IiwiaWF0IjoxNzYxNzE4NTE5fQ.Qd5Adqx-NhtIEldO5PsYrQat8iQvNVuqyTYXC96f1Qk';
       const BOT_ID = client.user?.id || '1431062059260575825';
-      const VOTE_REWARD = 10000;
+      const VOTE_REWARD = 100000;
       const VOTE_COOLDOWN = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
 

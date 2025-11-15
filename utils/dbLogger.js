@@ -29,7 +29,7 @@ class DatabaseLogger {
   }
 
   /**
-   * Write log entry to file
+   * Write log entry to file (async, non-blocking)
    */
   writeLog(level, category, message, data = null) {
     try {
@@ -46,7 +46,15 @@ class DatabaseLogger {
       
       logEntry += '\n';
       
-      fs.appendFileSync(this.logFile, logEntry, 'utf8');
+      // Async write - don't block the caller
+      setImmediate(() => {
+        fs.appendFile(this.logFile, logEntry, 'utf8', (err) => {
+          if (err) {
+            // Silent fail to avoid infinite loops
+            console.error('Failed to write to database log:', err.message);
+          }
+        });
+      });
     } catch (error) {
       // Silent fail to avoid infinite loops
       console.error('Failed to write to database log:', error.message);
@@ -61,10 +69,15 @@ class DatabaseLogger {
   }
 
   /**
-   * Log cache operations
+   * Log cache operations (only important ones to reduce file I/O)
    */
   cache(operation, service, key, details = null) {
-    this.writeLog('DEBUG', 'CACHE', `${service} - ${operation} - ${key}`, details);
+    // Only log cache operations that matter (not every HIT/MISS)
+    const importantOps = ['INVALIDATE', 'CLEAR_ALL', 'SET_FAILED', 'INVALIDATE_SKIPPED'];
+    if (importantOps.includes(operation)) {
+      this.writeLog('DEBUG', 'CACHE', `${service} - ${operation} - ${key}`, details);
+    }
+    // Skip logging HIT, MISS, LOADED, SET - too noisy (3 logs per command = 26MB in 2 days)
   }
 
   /**
@@ -87,14 +100,15 @@ class DatabaseLogger {
   }
 
   /**
-   * Log database reads
+   * Log database reads (disabled - too noisy)
    */
   read(service, key, found, details = null) {
-    this.writeLog('DEBUG', 'READ', `${service} - ${found ? 'FOUND' : 'NOT_FOUND'} - ${key}`, details);
+    // Disabled to reduce file I/O - reads are tracked via cache logs
+    // Uncomment for debugging: this.writeLog('DEBUG', 'READ', `${service} - ${found ? 'FOUND' : 'NOT_FOUND'} - ${key}`, details);
   }
 
   /**
-   * Log errors
+   * Log errors (async)
    */
   error(category, message, error) {
     const errorDetails = {
@@ -105,20 +119,26 @@ class DatabaseLogger {
     };
     // Add separator line for errors to make them stand out
     const separator = '='.repeat(80);
-    fs.appendFileSync(this.logFile, `\n${separator}\n`, 'utf8');
-    this.writeLog('ERROR', category, message, errorDetails);
-    fs.appendFileSync(this.logFile, `${separator}\n\n`, 'utf8');
+    setImmediate(() => {
+      fs.appendFile(this.logFile, `\n${separator}\n`, 'utf8', () => {
+        this.writeLog('ERROR', category, message, errorDetails);
+        fs.appendFile(this.logFile, `${separator}\n\n`, 'utf8', () => {});
+      });
+    });
   }
 
   /**
-   * Log warnings
+   * Log warnings (async)
    */
   warn(category, message, details = null) {
     // Add separator line for warnings to make them stand out
     const separator = '='.repeat(80);
-    fs.appendFileSync(this.logFile, `\n${separator}\n`, 'utf8');
-    this.writeLog('WARN', category, message, details);
-    fs.appendFileSync(this.logFile, `${separator}\n\n`, 'utf8');
+    setImmediate(() => {
+      fs.appendFile(this.logFile, `\n${separator}\n`, 'utf8', () => {
+        this.writeLog('WARN', category, message, details);
+        fs.appendFile(this.logFile, `${separator}\n\n`, 'utf8', () => {});
+      });
+    });
   }
 
   /**

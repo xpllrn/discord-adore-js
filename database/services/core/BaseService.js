@@ -1,6 +1,5 @@
 const SmartCache = require('./SmartCache');
 const { ServiceError, DatabaseConnectionError, ValidationError } = require('./errors');
-const dbLogger = require('../../../utils/dbLogger');
 
 /**
  * Base Service Class
@@ -65,13 +64,10 @@ class BaseService {
       // Step 2: Update cache only after successful database write
       this.cache.set(key, data, customTTL);
       
-      dbLogger.cache('SET', this.modelName, key, { cached: true, ttl: customTTL || this.ttl });
-      
       return true;
     } catch (error) {
       // Immediately invalidate cache key on write failure
       this.cache.invalidate(key);
-      dbLogger.cache('SET_FAILED', this.modelName, key, { error: error.message });
       throw error;
     }
   }
@@ -86,11 +82,8 @@ class BaseService {
       // Step 1: Try cache first
       const cached = this.cache.get(key);
       if (cached !== null) {
-        dbLogger.cache('HIT', this.modelName, key);
         return cached;
       }
-
-      dbLogger.cache('MISS', this.modelName, key);
       
       // Step 2: Cache miss - fetch from database
       const data = await this.readFromDatabase(key);
@@ -98,7 +91,6 @@ class BaseService {
       // Step 3: Cache the result if found
       if (data !== null) {
         this.cache.set(key, data);
-        dbLogger.cache('LOADED', this.modelName, key, { fromDatabase: true });
       }
       
       return data;
@@ -106,7 +98,6 @@ class BaseService {
       // For read errors, log but don't throw unless it's a critical error
       if (error instanceof DatabaseConnectionError) {
         console.error(`Database read error for key ${key}:`, error.message);
-        dbLogger.error('READ', `${this.modelName} read error for ${key}`, error);
         // Return null for database connection issues (graceful degradation)
         return null;
       }
@@ -189,12 +180,7 @@ class BaseService {
    * Clear all cache entries
    */
   clearCache() {
-    const stats = this.cache.getStats();
     this.cache.clear();
-    dbLogger.cache('CLEAR_ALL', this.modelName, 'all', { 
-      clearedEntries: stats.size,
-      reason: 'manual clear'
-    });
   }
 
   /**

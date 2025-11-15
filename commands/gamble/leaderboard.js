@@ -36,19 +36,23 @@ module.exports = {
         }
       } else {
         // Get users from current guild only
-        try {
-          const guildMembers = await message.guild.members.fetch({ time: 10000 });
-          userIds = Array.from(guildMembers.keys());
-          scopeTitle = `Wealth Leaderboard in ${message.guild.name}`;
-        } catch (error) {
-          // If fetching all members fails, fall back to cached members
-          logger.webhook.error(error, message);
-          const cachedMembers = message.guild.members.cache;
-          if (cachedMembers.size === 0) {
-            return embeds.deny(message, 'Unable to fetch server members. Please try again later.');
-          }
+        // Use cached members first (faster), only fetch if cache is empty
+        const cachedMembers = message.guild.members.cache;
+        
+        if (cachedMembers.size > 0) {
+          // Use cached members (instant, no API call)
           userIds = Array.from(cachedMembers.keys());
           scopeTitle = `Wealth Leaderboard in ${message.guild.name}`;
+        } else {
+          // Cache is empty, try to fetch with longer timeout
+          try {
+            const guildMembers = await message.guild.members.fetch({ time: 30000 }); // 30 second timeout
+            userIds = Array.from(guildMembers.keys());
+            scopeTitle = `Wealth Leaderboard in ${message.guild.name}`;
+          } catch (error) {
+            logger.webhook.error(error, message);
+            return embeds.deny(message, 'Unable to fetch server members. The server may be too large or Discord is slow. Try again in a moment.');
+          }
         }
       }
 
