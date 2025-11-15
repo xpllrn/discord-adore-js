@@ -128,18 +128,19 @@ Question: ${question}`
       // Estimate duration based on text length (roughly 150 chars per second for TTS)
       const duration = Math.max(1, Math.ceil(responseText.length / 150));
       
-      // Create voice message attachment (StreamElements returns MP3)
+      // Create attachment with voice metadata
       const attachment = new AttachmentBuilder(audioBuffer, { 
         name: "voice-message.mp3"
       });
-      
-      // Manually set voice metadata on the attachment object
-      attachment.duration_secs = duration;
-      attachment.waveform = waveform;
 
-      // Send as voice message
+      // Send voice message using REST API directly
       await message.channel.send({
-        files: [attachment],
+        files: [{
+          attachment: audioBuffer,
+          name: "voice-message.mp3",
+          duration_secs: duration,
+          waveform: waveform
+        }],
         flags: 1 << 13 // IS_VOICE_MESSAGE flag
       });
 
