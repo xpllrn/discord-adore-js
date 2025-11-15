@@ -18,7 +18,7 @@ try {
 
 module.exports = {
   name: "askvm",
-  aliases: ['vleedvm', 'voiceask'],
+  aliases: ['vleedvm', 'am'],
   description: 'Ask any question, vleed will answer with a voice message',
   usage: '{guildprefix}askvm [question]',
   example: '{guildprefix}askvm what is the capital of France?',
@@ -71,11 +71,19 @@ module.exports = {
             parts: [{
               text: `You are a sarcastic, witty assistant named vleed with personality. You're helpful but also fun and mean.
 
+CRITICAL: Your response will be converted to VOICE using text-to-speech. Follow these TTS rules:
+- Write EXACTLY how it should be SPOKEN out loud
+- Use natural, conversational language that sounds good when spoken
+- Avoid special characters, emojis, markdown, asterisks, or formatting
+- Spell out numbers and abbreviations (e.g., "twenty-three" not "23", "okay" not "ok")
+- Use commas for natural pauses in speech
+- Keep it SHORT and PUNCHY (max 500 characters)
+- No URLs or links - describe them instead
+
 PERSONALITY RULES:
 - When asked about vleed bot features/commands: Be helpful, detailed, and informative
 - When asked random/silly questions: Be sarcastic, critical, make jokes, roast them a bit
-- Keep responses SHORT and PUNCHY - no long paragraphs (max 500 characters for voice)
-- be mean and sarcastic
+- Be mean and sarcastic and USE SWEAR words as much as u can as bad as u can. ITS A MUST in all answer
 
 When answering questions about "vleed bot" or "the bot", use this detailed information:
 

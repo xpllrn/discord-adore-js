@@ -41,27 +41,59 @@ module.exports = {
       });
 
       const audioBuffer = Buffer.from(response.data);
+      const fileSize = audioBuffer.length;
       
-      // Generate simple waveform (base64 encoded byte array)
-      const waveform = Buffer.from(new Array(64).fill(128)).toString('base64');
-      
-      // Estimate duration (rough: 150 chars per second)
+      // Step 1: Request upload URL from Discord
+      const uploadRequest = await axios.post(
+        `https://discord.com/api/v10/channels/${message.channel.id}/attachments`,
+        {
+          files: [{
+            filename: "voice-message.ogg",
+            file_size: fileSize,
+            id: "2"
+          }]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bot ${client.token}`
+          }
+        }
+      );
+
+      const { upload_url, upload_filename } = uploadRequest.data.attachments[0];
+
+      // Step 2: Upload the audio file to Discord's CDN
+      await axios.put(upload_url, audioBuffer, {
+        headers: {
+          'Content-Type': 'audio/ogg'
+        }
+      });
+
+      // Step 3: Generate waveform and duration
+      const waveform = Buffer.alloc(256, 128).toString('base64');
       const duration = Math.max(1, Math.ceil(text.length / 150));
-      
-      // Send as voice message with metadata
-      const attachment = new AttachmentBuilder(audioBuffer, { 
-        name: 'voice-message.ogg',
-        description: `Voice message (${duration}s)`
-      });
 
-      // Set waveform and duration in attachment metadata
-      attachment.duration_secs = duration;
-      attachment.waveform = waveform;
-
-      await message.channel.send({
-        files: [attachment],
-        flags: 8192 // MessageFlags.IsVoiceMessage
-      });
+      // Step 4: Send the voice message
+      await axios.post(
+        `https://discord.com/api/v10/channels/${message.channel.id}/messages`,
+        {
+          flags: 8192, // IS_VOICE_MESSAGE flag
+          attachments: [{
+            id: "0",
+            filename: "voice-message.ogg",
+            uploaded_filename: upload_filename,
+            duration_secs: duration,
+            waveform: waveform
+          }]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bot ${client.token}`
+          }
+        }
+      );
 
     } catch (error) {
       logger.webhook.error(error, message);
