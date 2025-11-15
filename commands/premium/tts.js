@@ -50,18 +50,17 @@ module.exports = {
       
       // Send as voice message with metadata
       const attachment = new AttachmentBuilder(audioBuffer, { 
-        name: 'voice-message.ogg'
+        name: 'voice-message.ogg',
+        description: `Voice message (${duration}s)`
       });
+
+      // Set waveform and duration in attachment metadata
+      attachment.duration_secs = duration;
+      attachment.waveform = waveform;
 
       await message.channel.send({
         files: [attachment],
-        flags: 8192, // MessageFlags.IsVoiceMessage
-        attachments: [{
-          id: '0',
-          filename: 'voice-message.ogg',
-          duration_secs: duration,
-          waveform: waveform
-        }]
+        flags: 8192 // MessageFlags.IsVoiceMessage
       });
 
     } catch (error) {
