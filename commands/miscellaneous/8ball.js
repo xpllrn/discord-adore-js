@@ -2,7 +2,7 @@ const { runHelpCommand } = require('../../utils/commandProcessor');
 
 module.exports = {
   name: "8ball",
-  aliases: ['8b', 'ask'],
+  aliases: ['8b'],
   description: `ask the magic 8-ball a question`,
   syntax: '8ball (question)',
   example: '8ball will I win?',

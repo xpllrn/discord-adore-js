@@ -21,6 +21,7 @@ module.exports = {
   description: 'Ask any question using AI',
   usage: '{guildprefix}ask [question]',
   example: '{guildprefix}ask what is the capital of France?',
+  premiumBypass: true, // Allow everyone to use this command even though it's in premium folder
   run: async (client, message, args) => {
     if (!args.length) {
       return embeds.warn(message, 'Please provide a question to ask');
