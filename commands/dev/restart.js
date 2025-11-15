@@ -15,7 +15,7 @@ module.exports = {
     if (!await hasPermissionLevel(message, 'dev')) return;
 
     try {
-      await message.channel.send('rebooting **vleed** in a sec master...');
+      await message.channel.send('okay master, rebooting vleed now');
       
       // Give time for message to send
       setTimeout(async () => {
