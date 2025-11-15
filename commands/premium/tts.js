@@ -7,91 +7,52 @@ module.exports = {
   name: "tts",
   aliases: ['speak', 'voice', 'say'],
   description: 'Convert text to high-quality voice message',
-  usage: '{guildprefix}tts [voice] [text]',
-  example: '{guildprefix}tts Kore Hello, this is a test message',
+  usage: '{guildprefix}tts [text]',
+  example: '{guildprefix}tts Hello, this is a test message',
   premiumBypass: true, // Free for everyone
   run: async (client, message, args) => {
     if (!args.length) {
-      const voiceList = [
-        '**Available Voices (Google Gemini TTS - Free):**',
-        '',
-        '`Puck` - Warm and friendly',
-        '`Charon` - Deep and authoritative',
-        '`Kore` - Clear and professional',
-        '`Fenrir` - Strong and confident',
-        '`Aoede` - Soft and gentle',
-        '',
-        '**Usage:** `{guildprefix}tts [voice] [text]`',
-        '**Example:** `{guildprefix}tts Kore Hello everyone!`'
-      ].join('\n');
-      
-      return message.channel.send(voiceList.replace(/{guildprefix}/g, message.prefix || ','));
+      return message.channel.send(
+        '**Text-to-Speech (Free & No API Key Required)**\n\n' +
+        '**Usage:** `{guildprefix}tts [text]`\n' +
+        '**Example:** `{guildprefix}tts Hello everyone!`\n\n' +
+        'Uses high-quality TTS from StreamElements (completely free!)'.replace(/{guildprefix}/g, message.prefix || ',')
+      );
     }
 
-    const voice = args[0];
-    const validVoices = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Aoede'];
+    const text = args.join(' ');
     
-    if (!validVoices.includes(voice)) {
-      return embeds.deny(message, `Invalid voice. Choose from: ${validVoices.join(', ')}`);
-    }
-
-    const text = args.slice(1).join(' ');
-    
-    if (!text) {
-      return embeds.deny(message, 'Please provide text to convert to speech');
-    }
-
-    if (text.length > 5000) {
-      return embeds.deny(message, 'Text is too long. Maximum 5000 characters');
+    if (text.length > 500) {
+      return embeds.deny(message, 'Text is too long. Maximum 500 characters');
     }
 
     await message.channel.sendTyping();
 
     try {
-      // Using Google Gemini 2.0 Flash with TTS (completely free!)
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          contents: [{
-            parts: [{ text: text }]
-          }],
-          generationConfig: {
-            response_modalities: ['AUDIO'],
-            speech_config: {
-              voice_config: {
-                prebuilt_voice_config: { voice_name: voice }
-              }
-            }
-          }
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      const audioData = response.data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      // Using StreamElements TTS API (completely free, no API key needed!)
+      const encodedText = encodeURIComponent(text);
+      const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=Brian&text=${encodedText}`;
       
-      if (!audioData) {
-        throw new Error('No audio data received from API');
-      }
+      const response = await axios.get(ttsUrl, {
+        responseType: 'arraybuffer',
+        headers: {
+          'User-Agent': 'Mozilla/5.0'
+        }
+      });
 
-      const audioBuffer = Buffer.from(audioData, 'base64');
-      const attachment = new AttachmentBuilder(audioBuffer, { name: 'voice.wav' });
+      const audioBuffer = Buffer.from(response.data);
+      const attachment = new AttachmentBuilder(audioBuffer, { name: 'voice.mp3' });
 
       await message.channel.send({
-        content: `🎙️ **${voice}** voice:`,
+        content: '🎙️ **TTS Voice:**',
         files: [attachment]
       });
 
     } catch (error) {
       logger.webhook.error(error, message);
       
-      if (error.response?.status === 400) {
-        return embeds.deny(message, 'Invalid request. The text might contain unsupported characters');
-      } else if (error.response?.status === 429) {
-        return embeds.deny(message, 'Rate limit reached. Please try again later');
+      if (error.response?.status === 429) {
+        return embeds.deny(message, 'Rate limit reached. Please try again in a moment');
       } else {
         return embeds.deny(message, 'Failed to generate voice message. Please try again');
       }
