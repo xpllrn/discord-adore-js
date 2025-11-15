@@ -1,348 +1,1837 @@
-# vleed Bot - Complete Documentation
+# vleed Bot - Ultra Detailed Documentation
+
+## 📋 Table of Contents
+1. [About vleed](#about-vleed)
+2. [Moderation System](#moderation-system)
+3. [Antinuke System](#antinuke-system)
+4. [Customization](#customization)
+5. [Embed System](#embed-system)
+6. [Variables](#variables)
+7. [Server Configuration](#server-configuration)
+8. [Role Systems](#role-systems)
+9. [Message Automation](#message-automation)
+10. [Integrations](#integrations)
+11. [Utility Commands](#utility-commands)
+12. [Common Issues](#common-issues)
+
+---
 
 ## About vleed
-**vleed** is a powerful, feature-rich Discord bot with advanced moderation, security, customization, and utility features. Built for server owners who want complete control and protection.
 
-- **Bot Name:** vleed (always lowercase)
-- **Default Prefix:** `,` (customizable per server)
+**vleed** (always lowercase) is a comprehensive Discord bot designed for server owners who demand complete control, security, and customization. Built with advanced features that rival premium bots while remaining accessible.
+
+### Core Information
+- **Bot Name:** vleed (NOT "bleed", "Vleed", or "VLEED")
+- **Default Prefix:** `,` (fully customizable per server)
 - **Support Server:** https://dsc.gg/s-invite
+- **Bot Type:** Traditional Discord bot with AI assistant feature
+- **Key Strength:** Security, moderation, and deep customization
+
+### What Makes vleed Different
+- **Not an AI bot** - vleed is a traditional Discord bot with an AI assistant command (`,ask`)
+- **Security-first** - Advanced antinuke system prevents server destruction
+- **Fully customizable** - Custom avatar, banner, bio per server
+- **Rich embed system** - Powerful scripting with 50+ variables
+- **Comprehensive logging** - Track everything that happens in your server
 
 ---
 
 ## 🛡️ Moderation System
 
-### Setup Commands
-**`,setup`** - Creates case logs channel (#jail-log) and jail role
-**`,setupmute`** - Creates all mute roles (Muted, Image Muted, Reaction Muted, Jailed)
+### Initial Setup
+
+Before using moderation commands, you need to set up the necessary infrastructure:
+
+**Step 1: Create Case Logs & Jail System**
+```
+,setup
+```
+This creates:
+- `#jail-log` channel - Logs all moderation actions with case numbers
+- `Jailed` role - Used for jailing members
+- `#jail` channel - Where jailed members are restricted to
+
+**Step 2: Create Mute Roles**
+```
+,setupmute
+```
+This creates four roles:
+- `Muted` - Prevents sending messages in all channels
+- `Image Muted` - Prevents uploading attachments/images
+- `Reaction Muted` - Prevents adding reactions
+- `Jailed` - Restricts to #jail channel only
+
+**Important Notes:**
+- The `Jailed` role CANNOT be renamed (bot finds it by name)
+- Bot's role must be higher than all mute roles
+- Bot needs `Manage Roles` and `Manage Channels` permissions
+- Mute roles automatically get permissions set in all channels
+
+---
 
 ### Core Moderation Commands
 
+#### Ban System
+
 **`,ban @user [duration] [reason]`**
-- Ban a member from the server
-- Optional duration: `7d`, `1h`, `30m` for temporary bans
-- Example: `,ban @spammer 7d Spamming in chat`
+- **Permission Required:** Ban Members
+- **What it does:** Permanently or temporarily bans a member
+- **Duration formats:** `7d` (7 days), `1h` (1 hour), `30m` (30 minutes), `1w` (1 week)
+- **Examples:**
+  - `,ban @spammer Spamming in chat` - Permanent ban
+  - `,ban @user 7d Temporary timeout` - 7 day ban
+  - `,ban @troll 1h Trolling` - 1 hour ban
+- **Features:**
+  - Creates case log entry
+  - DMs user with reason (if DMs open)
+  - Logs to #jail-log channel
+  - Temporary bans auto-unban after duration
+- **Limitations:**
+  - Cannot ban server owner
+  - Cannot ban users with higher roles than bot
+  - Cannot ban users with higher roles than you
 
 **`,massban @user1 @user2 @user3 [reason]`**
-- Ban multiple members at once
-- Useful for raids
-- Example: `,massban @user1 @user2 Raid attack`
+- **Permission Required:** Ban Members
+- **What it does:** Ban multiple members at once
+- **Max users:** 10 per command
+- **Example:** `,massban @raider1 @raider2 @raider3 Raid attack`
+- **Use case:** Perfect for handling raids or coordinated attacks
+- **Features:**
+  - Bans all users simultaneously
+  - Creates individual case logs for each
+  - Shows progress as it bans
+  - Skips users that can't be banned
 
 **`,unban [user ID] [reason]`**
-- Unban a user using their Discord ID
-- Example: `,unban 123456789012345678 Appeal accepted`
-
-**`,kick @user [reason]`**
-- Kick a member from the server
-- Example: `,kick @user Breaking rules`
-
-**`,masskick @user1 @user2 @user3 [reason]`**
-- Kick multiple members at once
-
-**`,mute @user [duration] [reason]`**
-- Text mute a member (prevents sending messages)
-- Duration examples: `1h`, `30m`, `1d`
-- Example: `,mute @user 1h Spamming`
-
-**`,unmute @user [reason]`**
-- Remove text mute from a member
-
-**`,imagemute @user [duration] [reason]`** (aliases: `imute`)
-- Prevent member from uploading images/attachments
-- Example: `,imagemute @user 1h Inappropriate images`
-
-**`,unimagemute @user [reason]`** (aliases: `unimute`)
-- Remove image mute
-
-**`,reactionmute @user [duration] [reason]`** (aliases: `rmute`)
-- Prevent member from adding reactions
-- Example: `,reactionmute @user 30m Reaction spam`
-
-**`,unreactionmute @user [reason]`** (aliases: `unrmute`)
-- Remove reaction mute
-
-**`,jail @user [reason]`**
-- Jail a member (restricts them to #jail channel only)
-- Example: `,jail @user Timeout needed`
-
-**`,unjail @user [reason]`**
-- Remove member from jail
-
-**`,warn @user [reason]`**
-- Warn a member
-- Example: `,warn @user Please follow the rules`
+- **Permission Required:** Ban Members
+- **What it does:** Removes a ban from a user
+- **Example:** `,unban 123456789012345678 Appeal accepted`
+- **How to get user ID:**
+  1. Enable Developer Mode in Discord settings
+  2. Right-click user in ban list
+  3. Click "Copy ID"
+- **Features:**
+  - Creates case log entry
+  - Notifies in #jail-log
+  - User can rejoin server immediately
 
 ---
 
-## 🔒 Antinuke System
+#### Kick System
 
-The antinuke system protects your server from destructive moderator actions. It monitors and limits dangerous actions to prevent server nuking.
+**`,kick @user [reason]`**
+- **Permission Required:** Kick Members
+- **What it does:** Removes member from server (they can rejoin)
+- **Example:** `,kick @user Breaking rules`
+- **Difference from ban:** User can rejoin with invite link
+- **Features:**
+  - Creates case log
+  - DMs user with reason
+  - Logs to #jail-log
+- **Use case:** Warning that's stronger than mute but less severe than ban
 
-### Setup & Configuration
+**`,masskick @user1 @user2 @user3 [reason]`**
+- **Permission Required:** Kick Members
+- **What it does:** Kick multiple members at once
+- **Max users:** 10 per command
+- **Example:** `,masskick @inactive1 @inactive2 Inactivity purge`
 
-**`,antinuke admin @user`** (Server Owner only)
-- Grant antinuke configuration permissions to a user
-- ⚠️ WARNING: This is dangerous - they can alter all antinuke settings
+---
 
-**`,antinuke whitelist @user`** (Server Owner/Antinuke Admin)
-- Exempt a user from antinuke restrictions
-- ⚠️ WARNING: Whitelisted users bypass ALL antinuke checks
+#### Mute System
 
-**`,antinuke config`**
-- View current antinuke configuration
+**`,mute @user [duration] [reason]`** (Text Mute)
+- **Permission Required:** Moderate Members
+- **What it does:** Prevents user from sending messages
+- **Duration formats:** `1h`, `30m`, `1d`, `1w`
+- **Examples:**
+  - `,mute @user 1h Spamming` - 1 hour mute
+  - `,mute @user Permanent mute` - Indefinite mute
+- **How it works:**
+  - Adds `Muted` role to user
+  - Role denies `Send Messages` in all channels
+  - Auto-unmutes after duration (if specified)
+- **Features:**
+  - Creates case log
+  - DMs user with reason and duration
+  - Shows remaining time
+  - Can be manually unmuted early
 
-**`,antinuke list`**
-- View enabled modules and whitelisted users
+**`,unmute @user [reason]`**
+- **Permission Required:** Moderate Members
+- **What it does:** Removes text mute
+- **Example:** `,unmute @user Good behavior`
 
-**`,antinuke admins`**
-- View users with antinuke admin permissions
+**`,imagemute @user [duration] [reason]`** (aliases: `imute`)
+- **Permission Required:** Moderate Members
+- **What it does:** Prevents uploading images/files/attachments
+- **Example:** `,imagemute @user 1h Inappropriate images`
+- **Use case:** User posting NSFW content, spam images, or inappropriate files
+- **How it works:**
+  - Adds `Image Muted` role
+  - Role denies `Attach Files` and `Embed Links`
+  - User can still send text messages
+
+**`,unimagemute @user [reason]`** (aliases: `unimute`)
+- **Permission Required:** Moderate Members
+- **What it does:** Removes image mute
+- **Example:** `,unimagemute @user`
+
+**`,reactionmute @user [duration] [reason]`** (aliases: `rmute`)
+- **Permission Required:** Moderate Members
+- **What it does:** Prevents adding reactions to messages
+- **Example:** `,reactionmute @user 30m Reaction spam`
+- **Use case:** User spamming reactions, using reactions inappropriately
+- **How it works:**
+  - Adds `Reaction Muted` role
+  - Role denies `Add Reactions` permission
+  - User can still send messages and view reactions
+
+**`,unreactionmute @user [reason]`** (aliases: `unrmute`)
+- **Permission Required:** Moderate Members
+- **What it does:** Removes reaction mute
+- **Example:** `,unreactionmute @user`
+
+---
+
+#### Jail System
+
+**`,jail @user [reason]`**
+- **Permission Required:** Moderate Members
+- **What it does:** Restricts user to #jail channel only
+- **Example:** `,jail @user Needs timeout to cool down`
+- **How it works:**
+  - Adds `Jailed` role
+  - Role denies access to all channels except #jail
+  - User can only see and talk in #jail
+- **Use case:** 
+  - User needs timeout but not full mute
+  - Want to talk to user about behavior
+  - Temporary isolation
+- **Features:**
+  - Creates case log
+  - User can see #jail channel
+  - Can communicate with mods in #jail
+  - No duration limit (manual unjail required)
+
+**`,unjail @user [reason]`**
+- **Permission Required:** Moderate Members
+- **What it does:** Removes user from jail
+- **Example:** `,unjail @user Discussed behavior`
+
+---
+
+#### Warning System
+
+**`,warn @user [reason]`**
+- **Permission Required:** Moderate Members
+- **What it does:** Issues formal warning to user
+- **Example:** `,warn @user Please follow the rules`
+- **Features:**
+  - Creates case log
+  - DMs user with warning
+  - Warnings are permanent record
+  - Can view all warnings later
+- **Use case:** Document rule violations without punishment
+
+**`,warnings @user`**
+- **Permission Required:** Moderate Members
+- **What it does:** View all warnings for a user
+- **Example:** `,warnings @user`
+- **Shows:**
+  - Warning count
+  - Each warning reason
+  - Date of each warning
+  - Moderator who issued it
+
+**`,clearwarnings @user`**
+- **Permission Required:** Moderate Members
+- **What it does:** Remove all warnings from user
+- **Example:** `,clearwarnings @user`
+- **Use case:** Clean slate after good behavior period
+
+---
+
+#### Moderation History
+
+**`,history @user`**
+- **Permission Required:** Moderate Members
+- **What it does:** View complete moderation history
+- **Example:** `,history @user`
+- **Shows:**
+  - All bans, kicks, mutes, warns, jails
+  - Case numbers
+  - Dates and times
+  - Moderators who issued them
+  - Reasons for each action
+  - Current active punishments
+
+**`,case [case ID]`**
+- **Permission Required:** Moderate Members
+- **What it does:** View specific case details
+- **Example:** `,case 42`
+- **Shows:**
+  - Case type (ban, kick, mute, etc.)
+  - Target user
+  - Moderator
+  - Reason
+  - Date/time
+  - Duration (if applicable)
+  - Status (active/expired)
+
+---
+
+#### Message Management
+
+**`,purge [amount] [@user]`**
+- **Permission Required:** Manage Messages
+- **What it does:** Bulk delete messages
+- **Amount range:** 1-100 messages
+- **Examples:**
+  - `,purge 50` - Delete last 50 messages
+  - `,purge 100 @spammer` - Delete last 100 messages from specific user
+- **Features:**
+  - Fast bulk deletion
+  - Can filter by user
+  - Shows deletion count
+  - Cannot delete messages older than 14 days (Discord limitation)
+- **Use cases:**
+  - Clean up spam
+  - Remove bot command spam
+  - Clear channel after raid
+
+**`,cleanup`**
+- **Permission Required:** Manage Messages
+- **What it does:** Delete all bot messages in channel
+- **Example:** `,cleanup`
+- **Use case:** Remove bot responses and command clutter
+
+---
+
+#### Word Filter
+
+**`,filter add [word]`**
+- **Permission Required:** Manage Guild
+- **What it does:** Add word to auto-delete filter
+- **Example:** `,filter add badword`
+- **Features:**
+  - Auto-deletes messages containing word
+  - Case-insensitive matching
+  - Warns user in DM
+  - Logs to moderation channel
+
+**`,filter remove [word]`**
+- **Permission Required:** Manage Guild
+- **What it does:** Remove word from filter
+- **Example:** `,filter remove badword`
+
+**`,filter list`**
+- **Permission Required:** Manage Guild
+- **What it does:** View all filtered words
+- **Example:** `,filter list`
+- **Shows:** Complete list of filtered words
+
+---
+
+
+## 🔒 Antinuke System - ULTRA DETAILED
+
+The antinuke system is vleed's most powerful security feature. It protects your server from malicious moderators, compromised accounts, and coordinated attacks.
+
+### Why You Need Antinuke
+
+**Real Threats:**
+- Compromised moderator accounts
+- Rogue moderators going on deletion sprees
+- Mass ban attacks using Discord's new mass ban feature
+- Webhook spam attacks
+- Channel/role deletion raids
+- Unauthorized bot additions with dangerous permissions
+
+**What Antinuke Does:**
+- Monitors all dangerous moderator actions
+- Sets thresholds for actions before punishment
+- Automatically punishes violators
+- Logs all antinuke events
+- Protects against both intentional and accidental damage
+
+### Initial Setup
+
+**Step 1: Enable Antinuke (Server Owner Only)**
+
+Only the server owner can initially configure antinuke. This is by design for security.
+
+**Step 2: Grant Antinuke Admin (Optional)**
+
+```
+,antinuke admin @user
+```
+- **⚠️ DANGER:** This user can modify ALL antinuke settings
+- **Use case:** Trusted co-owner or head admin
+- **They can:**
+  - Enable/disable modules
+  - Change thresholds
+  - Whitelist users
+  - View configuration
+- **They cannot:**
+  - Remove themselves from antinuke
+  - Bypass antinuke if not whitelisted
+
+**Step 3: Whitelist Trusted Users**
+
+```
+,antinuke whitelist @user
+```
+- **⚠️ DANGER:** Whitelisted users bypass ALL antinuke checks
+- **Use case:** Trusted admins who need to perform mass actions
+- **Examples:**
+  - Bot accounts that manage roles
+  - Admins who do server reorganization
+  - Trusted moderators
+- **Best practice:** Only whitelist when necessary, remove after
+
+---
 
 ### Antinuke Modules
 
-Each module can be configured with:
-- **Status:** `on` or `off`
-- **Threshold:** Number of actions before punishment (1-10)
-- **Punishment:** `strip` (remove roles), `kick`, or `ban`
+Each module protects against specific threats. All modules follow this pattern:
+
+```
+,antinuke [module] <on|off> [--threshold X] [--do punishment]
+```
+
+#### Module: Ban Protection
 
 **`,antinuke ban <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
-- Prevent mass member bans
-- Example: `,antinuke ban on --threshold 3 --do ban`
 
-**`,antinuke kick <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
-- Prevent mass member kicks
-- Example: `,antinuke kick on --threshold 3 --do ban`
+**What it protects:** Mass member bans
 
-**`,antinuke role <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
-- Prevent mass role deletions
-- Example: `,antinuke role on --threshold 5 --do kick`
+**Why it's critical:** Discord's new mass ban feature allows banning 100+ members instantly. A compromised account could destroy your community in seconds.
 
-**`,antinuke channel <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
-- Prevent mass channel creation/deletion
-- Example: `,antinuke channel on --threshold 5 --do kick`
+**How it works:**
+- Tracks bans per moderator
+- Counts bans within 60-second window
+- Triggers when threshold exceeded
+- Applies punishment immediately
+- Reverts bans if possible
 
-**`,antinuke webhook <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
-- Prevent mass webhook creation
-- Example: `,antinuke webhook on --threshold 3 --do ban`
+**Configuration examples:**
+```
+,antinuke ban on --threshold 3 --do ban
+```
+- Allows 3 bans per minute
+- 4th ban triggers punishment
+- Violator gets banned
+- All their bans are logged
 
-**`,antinuke botadd <on|off> [--do strip|kick|ban]`**
-- Prevent unauthorized bot additions
-- No threshold needed (any bot add triggers it)
-- Example: `,antinuke botadd on --do ban`
+```
+,antinuke ban on --threshold 5 --do strip
+```
+- Allows 5 bans per minute
+- 6th ban triggers punishment
+- Violator loses all roles/permissions
+- Can't do more damage
 
-**`,antinuke permissions <on|off> [--do strip|kick|ban]`**
-- Watch dangerous permission grants
-- Monitors: Administrator, Ban Members, Kick Members, Manage Guild, Manage Roles, Manage Channels, Manage Webhooks, Mention Everyone
-- Example: `,antinuke permissions on --do strip`
+**Recommended settings:**
+- Small servers (< 100 members): `--threshold 2 --do ban`
+- Medium servers (100-1000): `--threshold 3 --do ban`
+- Large servers (1000+): `--threshold 5 --do strip`
+
+**Real scenario:**
+1. Moderator account gets compromised
+2. Attacker starts mass banning members
+3. After 3 bans, antinuke triggers
+4. Attacker gets banned
+5. Server owner gets notified
+6. Damage limited to 3 bans instead of hundreds
 
 ---
 
-## 🎨 Customization
+#### Module: Kick Protection
+
+**`,antinuke kick <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
+
+**What it protects:** Mass member kicks
+
+**Why it matters:** While less severe than bans, mass kicks still disrupt your community and force members to rejoin.
+
+**How it works:**
+- Same as ban protection
+- Tracks kicks per moderator
+- 60-second rolling window
+- Triggers on threshold
+
+**Configuration examples:**
+```
+,antinuke kick on --threshold 3 --do ban
+```
+
+**Recommended settings:**
+- Most servers: `--threshold 3 --do ban`
+- High-activity mod teams: `--threshold 5 --do strip`
+
+**Use case:** Rogue moderator kicking active members
+
+---
+
+#### Module: Role Protection
+
+**`,antinuke role <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
+
+**What it protects:** Mass role deletions
+
+**Why it's critical:** Roles contain:
+- Permissions
+- Color hierarchies
+- Member assignments
+- Bot integrations
+- Reaction role setups
+
+Deleting roles destroys server structure and can't be easily undone.
+
+**How it works:**
+- Tracks role deletions
+- Monitors role permission changes
+- Counts within 60-second window
+- Triggers on threshold
+
+**Configuration examples:**
+```
+,antinuke role on --threshold 5 --do kick
+```
+- Allows 5 role deletions per minute
+- 6th deletion triggers kick
+- Prevents complete role structure destruction
+
+**Recommended settings:**
+- All servers: `--threshold 5 --do kick`
+- Servers with many roles: `--threshold 7 --do strip`
+
+**Real scenario:**
+1. Moderator decides to "reorganize" roles
+2. Starts deleting old roles
+3. Gets carried away, deletes important roles
+4. After 5 deletions, antinuke kicks them
+5. Remaining roles saved
+
+---
+
+#### Module: Channel Protection
+
+**`,antinuke channel <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
+
+**What it protects:** Mass channel creation/deletion
+
+**Why it matters:** Channels contain:
+- Message history
+- Pins
+- Permissions
+- Webhooks
+- Integrations
+
+**How it works:**
+- Tracks both creation AND deletion
+- Prevents channel spam attacks
+- Prevents mass deletion
+- 60-second window
+
+**Configuration examples:**
+```
+,antinuke channel on --threshold 5 --do kick
+```
+
+**Attack scenarios it prevents:**
+1. **Spam attack:** Creating 50+ channels to flood server
+2. **Deletion attack:** Deleting all channels
+3. **Reorganization gone wrong:** Accidental mass deletion
+
+**Recommended settings:**
+- Small servers: `--threshold 3 --do ban`
+- Medium servers: `--threshold 5 --do kick`
+- Large servers: `--threshold 7 --do strip`
+
+---
+
+#### Module: Webhook Protection
+
+**`,antinuke webhook <on|off> [--threshold 1-10] [--do strip|kick|ban]`**
+
+**What it protects:** Mass webhook creation
+
+**Why it's critical:** Webhooks can:
+- Spam messages
+- Impersonate users
+- Bypass rate limits
+- Send malicious links
+- Ping @everyone repeatedly
+
+**How it works:**
+- Tracks webhook creation
+- Monitors per moderator
+- Triggers on threshold
+- Deletes created webhooks
+
+**Configuration examples:**
+```
+,antinuke webhook on --threshold 3 --do ban
+```
+- Allows 3 webhook creations
+- 4th triggers ban
+- All webhooks deleted
+
+**Attack scenario:**
+1. Compromised account creates 20 webhooks
+2. Each webhook spams @everyone
+3. After 3 webhooks, antinuke triggers
+4. Attacker banned, webhooks deleted
+5. Spam limited to 3 webhooks instead of 20
+
+**Recommended settings:**
+- All servers: `--threshold 3 --do ban`
+- Servers with webhook integrations: `--threshold 5 --do strip`
+
+---
+
+#### Module: Bot Add Protection
+
+**`,antinuke botadd <on|off> [--do strip|kick|ban]`**
+
+**What it protects:** Unauthorized bot additions
+
+**Why it's critical:** Malicious bots can:
+- Mass DM members
+- Scrape user data
+- Spam channels
+- Create webhooks
+- Modify roles
+- Delete channels
+
+**How it works:**
+- Monitors all bot additions
+- Checks if bot adder is whitelisted
+- NO THRESHOLD (any bot add triggers it)
+- Immediately kicks bot
+- Punishes bot adder
+
+**Configuration examples:**
+```
+,antinuke botadd on --do ban
+```
+- Any bot addition triggers
+- Bot gets kicked immediately
+- Bot adder gets banned
+
+**Important notes:**
+- Whitelist users who manage bots
+- No threshold because even 1 malicious bot is dangerous
+- Bot is always kicked, punishment applies to adder
+
+**Real scenario:**
+1. Moderator account compromised
+2. Attacker adds malicious bot
+3. Antinuke immediately kicks bot
+4. Attacker gets banned
+5. No damage done
+
+**Recommended settings:**
+- All servers: `--do ban`
+- Servers with frequent bot testing: Whitelist bot managers
+
+---
+
+#### Module: Permission Protection
+
+**`,antinuke permissions <on|off> [--do strip|kick|ban]`**
+
+**What it protects:** Dangerous permission grants
+
+**Monitored permissions:**
+1. **Administrator** - Full server control
+2. **Ban Members** - Can ban anyone
+3. **Kick Members** - Can kick anyone
+4. **Moderate Members** - Can timeout anyone
+5. **Mention Everyone** - Can ping @everyone
+6. **Manage Guild** - Can change server settings
+7. **Manage Channels** - Can delete channels
+8. **Manage Roles** - Can modify permissions
+9. **Manage Webhooks** - Can create webhooks
+
+**How it works:**
+- Monitors role permission changes
+- Detects when dangerous permissions added
+- NO THRESHOLD (any grant triggers it)
+- Reverts permission change
+- Punishes moderator
+
+**Configuration examples:**
+```
+,antinuke permissions on --do strip
+```
+- Any dangerous permission grant triggers
+- Permission change reverted
+- Moderator loses all roles
+
+**Why no threshold:** Even ONE Administrator grant to wrong person can destroy server.
+
+**Attack scenario:**
+1. Moderator creates new role
+2. Gives it Administrator permission
+3. Assigns role to alt account
+4. Antinuke detects Administrator grant
+5. Reverts permission
+6. Moderator stripped of roles
+7. Alt account doesn't get dangerous permissions
+
+**Recommended settings:**
+- All servers: `--do strip`
+- High-security servers: `--do ban`
+
+---
+
+### Punishment Types Explained
+
+**Strip (Remove Roles)**
+- Removes ALL roles from violator
+- Leaves them as basic member
+- Can't do any more damage
+- Can be manually restored later
+- **Use when:** Want to stop them but investigate first
+
+**Kick**
+- Removes from server
+- Can rejoin with invite
+- Loses all roles
+- **Use when:** Want them gone but not permanently
+
+**Ban**
+- Permanently removes from server
+- Cannot rejoin
+- Most severe punishment
+- **Use when:** Clear malicious intent or compromised account
+
+---
+
+### Antinuke Management Commands
+
+**`,antinuke config`**
+- View complete antinuke configuration
+- Shows all module states
+- Shows thresholds
+- Shows punishments
+- Shows whitelisted users
+- Shows antinuke admins
+
+**`,antinuke list`**
+- Quick overview of enabled modules
+- Shows whitelisted users
+- Shows recent antinuke triggers
+
+**`,antinuke admins`**
+- View all users with antinuke admin permissions
+- Shows when they were granted access
+- Shows who granted them access
+
+---
+
+### Best Practices
+
+**1. Start Conservative**
+- Begin with low thresholds (2-3)
+- Use `strip` punishment initially
+- Monitor for false positives
+- Adjust based on server activity
+
+**2. Whitelist Carefully**
+- Only whitelist when absolutely necessary
+- Remove whitelist after mass actions complete
+- Never whitelist unknown users
+- Regularly audit whitelist
+
+**3. Multiple Layers**
+- Enable ALL modules
+- Use varying thresholds
+- Combine with Discord's built-in security
+- Regular permission audits
+
+**4. Communication**
+- Tell moderators about antinuke
+- Explain thresholds
+- Provide whitelist request process
+- Document in mod guidelines
+
+**5. Regular Testing**
+- Test antinuke in test server first
+- Verify thresholds work for your activity
+- Ensure punishments are appropriate
+- Check logs regularly
+
+---
+
+### Common Antinuke Scenarios
+
+**Scenario 1: Server Reorganization**
+```
+Problem: Admin needs to delete 10 old roles
+Solution: 
+1. ,antinuke whitelist @admin
+2. Admin deletes roles
+3. ,antinuke whitelist @admin (remove whitelist)
+```
+
+**Scenario 2: Compromised Moderator**
+```
+What happens:
+1. Moderator account hacked
+2. Attacker starts mass banning
+3. After 3 bans, antinuke triggers
+4. Attacker banned
+5. Owner notified
+6. Damage: 3 bans instead of 100+
+```
+
+**Scenario 3: Rogue Moderator**
+```
+What happens:
+1. Moderator goes rogue
+2. Starts deleting channels
+3. After 5 deletions, antinuke triggers
+4. Moderator kicked
+5. Remaining channels saved
+6. Owner can restore deleted channels
+```
+
+**Scenario 4: Bot Integration**
+```
+Problem: Need to add management bot
+Solution:
+1. ,antinuke whitelist @trusted_admin
+2. Trusted admin adds bot
+3. Bot functions normally
+4. Remove whitelist when done
+```
+
+---
+
+### Antinuke Logs
+
+Every antinuke trigger creates detailed logs:
+
+**Log includes:**
+- Timestamp
+- Violator
+- Action type (ban, kick, role delete, etc.)
+- Count (how many actions)
+- Threshold
+- Punishment applied
+- Module that triggered
+- All affected users/roles/channels
+
+**Where logs go:**
+- #jail-log channel
+- Antinuke log file
+- Owner DM (optional)
+
+---
+
+
+## 🎨 Customization System
+
+vleed allows complete per-server customization of the bot's appearance.
 
 ### Bot Appearance (Server Owner Only)
 
-**`,customize avatar [image URL]`** (aliases: `custom avatar`)
-- Set custom bot avatar for your server
-- Attach image or provide URL
-- Leave empty to reset to global avatar
-- 5 minute cooldown
-- Supported: PNG, JPG, GIF
-- ⚠️ Monitored for inappropriate content
+**Why Server Owner Only?**
+- Prevents abuse
+- Ensures accountability
+- Protects against inappropriate content
+- Maintains bot integrity
 
-**`,customize banner [image URL]`** (aliases: `custom banner`)
-- Set custom bot banner for your server
-- Same rules as avatar
-
-**`,customize bio [text]`** (aliases: `custom bio`)
-- Set custom bot bio (max 190 characters)
-- Leave empty to reset to global bio
-
-### Prefix Management
-
-**`,prefix`**
-- View current server prefix
-
-**`,prefix set [symbol]`** (Administrator)
-- Change server prefix (max 3 characters, no spaces)
-- Example: `,prefix set !`
-
-**`,prefix remove`** (Administrator, aliases: `prefix reset`, `prefix default`)
-- Reset to default prefix (`,`)
-
-**`,selfprefix set [prefix]`** (Premium)
-- Set personal prefix that works alongside server prefix
-- Example: `,selfprefix set !`
-
-**`,selfprefix remove`** (Premium)
-- Remove your personal prefix
+**⚠️ IMPORTANT WARNING:**
+All customizations are actively monitored and logged. Uploading inappropriate content (NSFW, offensive, illegal) will result in:
+- Immediate bot removal from your server
+- Permanent ban from using vleed
+- Report to Discord Trust & Safety
+- No appeals
 
 ---
 
-## 📝 Embed System
+#### Custom Avatar
 
-vleed has a powerful embed builder with variable support. Create custom embeds for welcome messages, announcements, and more.
+**`,customize avatar [image URL]`** (aliases: `custom avatar`)
 
-### Embed Syntax
+**What it does:** Sets a custom avatar for vleed in your server only
+
+**How to use:**
+1. **With URL:**
+   ```
+   ,customize avatar https://example.com/avatar.png
+   ```
+
+2. **With attachment:**
+   - Attach image to message
+   - Type `,customize avatar` in message
+   - Bot uses attached image
+
+3. **Reset to global:**
+   ```
+   ,customize avatar
+   ```
+   (No URL or attachment)
+
+**Supported formats:**
+- PNG (recommended)
+- JPG/JPEG
+- GIF (animated avatars supported!)
+- WebP
+
+**Requirements:**
+- Image must be accessible URL or attachment
+- Max file size: 8MB
+- Recommended size: 512x512 or 1024x1024
+- Square images work best
+
+**Cooldown:** 5 minutes between avatar changes
+
+**Examples:**
+```
+,customize avatar https://i.imgur.com/example.png
+,customize avatar (with image attached)
+,customize avatar (reset to default)
+```
+
+**Use cases:**
+- Match server theme
+- Seasonal avatars (Halloween, Christmas)
+- Event-specific avatars
+- Brand consistency
+
+---
+
+#### Custom Banner
+
+**`,customize banner [image URL]`** (aliases: `custom banner`)
+
+**What it does:** Sets a custom banner for vleed's profile in your server
+
+**How to use:**
+1. **With URL:**
+   ```
+   ,customize banner https://example.com/banner.png
+   ```
+
+2. **With attachment:**
+   - Attach image to message
+   - Type `,customize banner` in message
+
+3. **Reset to global:**
+   ```
+   ,customize banner
+   ```
+
+**Supported formats:**
+- PNG (recommended)
+- JPG/JPEG
+- GIF (animated banners!)
+- WebP
+
+**Requirements:**
+- Recommended size: 600x240 (5:2 aspect ratio)
+- Max file size: 8MB
+- Wide images work best
+
+**Cooldown:** 5 minutes between banner changes
+
+**Use cases:**
+- Server branding
+- Event announcements
+- Seasonal themes
+- Promotional banners
+
+---
+
+#### Custom Bio
+
+**`,customize bio [text]`** (aliases: `custom bio`)
+
+**What it does:** Sets a custom "About Me" bio for vleed in your server
+
+**How to use:**
+1. **Set bio:**
+   ```
+   ,customize bio Best bot for this server!
+   ```
+
+2. **Reset to global:**
+   ```
+   ,customize bio
+   ```
+
+**Requirements:**
+- Maximum 190 characters
+- No inappropriate content
+- Can include emojis
+- Can include line breaks (Shift+Enter)
+
+**Cooldown:** 5 minutes between bio changes
+
+**Examples:**
+```
+,customize bio Official bot of [Server Name]
+,customize bio Moderation • Utility • Fun | ,help for commands
+,customize bio 🎮 Gaming Server Bot | 24/7 Online
+```
+
+**Use cases:**
+- Server information
+- Command prefix reminder
+- Bot purpose description
+- Server branding
+
+---
+
+### Prefix Management
+
+#### Server Prefix
+
+**`,prefix`**
+- View current server prefix
+- Shows default if not customized
+- Example output: `Server prefix: ,`
+
+**`,prefix set [symbol]`** (Administrator)
+- Change server prefix
+- Max 3 characters
+- No spaces allowed
+- Examples:
+  ```
+  ,prefix set !
+  ,prefix set ?
+  ,prefix set v.
+  ```
+
+**`,prefix remove`** (Administrator, aliases: `prefix reset`, `prefix default`)
+- Reset to default prefix (`,`)
+- Example: `,prefix remove`
+
+**Prefix rules:**
+- Maximum 3 characters
+- Cannot contain spaces
+- Cannot be only numbers
+- Cannot be Discord markdown characters alone (*, _, ~, etc.)
+- Case-sensitive
+
+**Best practices:**
+- Choose unique prefix to avoid conflicts
+- Avoid common prefixes (!, ?, .)
+- Document prefix in server rules
+- Consider prefix that matches server theme
+
+---
+
+#### Personal Prefix (Premium Feature)
+
+**`,selfprefix`**
+- View your current personal prefix
+- Shows "none" if not set
+- Example output: `Your self prefix: !`
+
+**`,selfprefix set [prefix]`** (Premium)
+- Set personal prefix that works alongside server prefix
+- Max 3 characters
+- No spaces allowed
+- Examples:
+  ```
+  ,selfprefix set !
+  ,selfprefix set v!
+  ```
+
+**`,selfprefix remove`** (Premium, aliases: `selfprefix clear`)
+- Remove your personal prefix
+- Example: `,selfprefix remove`
+
+**How it works:**
+- Personal prefix works in addition to server prefix
+- Only you can use your personal prefix
+- Other members still use server prefix
+- Works across all servers with vleed
+
+**Use cases:**
+- Prefer different prefix than server
+- Faster command access
+- Personal preference
+- Muscle memory from other bots
+
+---
+
+## 📝 Embed System - COMPLETE GUIDE
+
+vleed's embed system is one of its most powerful features. Create rich, beautiful embeds with full variable support.
+
+### What Are Embeds?
+
+Embeds are rich message formats that display information in a structured, visually appealing way. They can include:
+- Colored side bars
+- Titles and descriptions
+- Images and thumbnails
+- Multiple fields
+- Author and footer sections
+- Timestamps
+- Clickable buttons
+
+### Basic Syntax
+
+**Structure:**
 ```
 {embed}$v{parameter: value}$v{parameter: value}
 ```
 
-### Available Parameters
+**Components:**
+- `{embed}` - Starts embed code (required)
+- `$v` - Separates parameters (required between each)
+- `{parameter: value}` - Each embed element
+- `:` - Separates parameter name from value
+- `&&` - Separates sub-parameters (for author, footer, fields, buttons)
 
-**Basic Structure:**
-- `{title: Your Title}` - Embed title
-- `{description: Your description text}` - Main embed text
-- `{color: #5865F2}` - Hex color code
-- `{url: https://example.com}` - Clickable title URL
-- `{timestamp}` - Add current timestamp
+**Simple example:**
+```
+{embed}$v{title: Hello}$v{description: World}$v{color: #5865F2}
+```
 
-**Author Section:**
-- `{author: Name}` - Just author name
-- `{author: Name && https://icon.url}` - Name with icon
-- `{author: Name && https://icon.url && https://url.com}` - Name, icon, and URL
+---
 
-**Footer Section:**
-- `{footer: Footer text}` - Just footer text
-- `{footer: Footer text && https://icon.url}` - Footer with icon
+### Embed Parameters - DETAILED
 
-**Images:**
-- `{thumbnail: https://image.url}` - Small image (top right)
-- `{image: https://image.url}` - Large image (bottom)
+#### Title
 
-**Fields:**
-- `{field: Field Name && Field Value}` - Regular field
-- `{field: Field Name && Field Value && inline}` - Inline field
+**Syntax:** `{title: Your Title Here}`
 
-**Buttons:**
-- `{button: Link && Button Text && https://url.com && enabled}` - Link button
-- `{button: Green && Button Text && emoji && enabled}` - Green button
-- `{button: Red && Button Text && emoji && enabled}` - Red button
-- `{button: Blue && Button Text && emoji && enabled}` - Blue button
-- `{button: Gray && Button Text && emoji && enabled}` - Gray button
+**What it does:** Sets the main heading of the embed
 
-**Content:**
-- `{content: Message text}` - Text outside the embed
+**Character limit:** 256 characters
 
-### Variables
+**Examples:**
+```
+{title: Welcome to the Server!}
+{title: 🎉 Giveaway Time!}
+{title: Server Rules}
+```
 
-**User Variables:**
-- `{user.mention}` - Mention the user
-- `{user.name}` - Username
-- `{user.tag}` - Username#0000
-- `{user.id}` - User ID
-- `{user.avatar}` - User avatar URL
-- `{user.created_at}` - Account creation date
-- `{user.joined_at}` - Server join date
+**Tips:**
+- Keep concise and clear
+- Use emojis for visual appeal
+- Make it descriptive
+- Can be combined with URL to make clickable
 
-**Server Variables:**
-- `{server.name}` - Server name
-- `{server.id}` - Server ID
-- `{server.icon}` - Server icon URL
-- `{server.banner}` - Server banner URL
-- `{server.membercount}` - Total member count
-- `{server.humanmembercount}` - Human member count (no bots)
-- `{server.owner}` - Server owner mention
+---
 
-**Channel Variables:**
-- `{channel.mention}` - Mention the channel
-- `{channel.name}` - Channel name
-- `{channel.id}` - Channel ID
+#### Description
 
-### Example Embed
+**Syntax:** `{description: Your text here}`
+
+**What it does:** Sets the main body text of the embed
+
+**Character limit:** 4096 characters
+
+**Formatting:**
+- `**bold**` - Bold text
+- `*italic*` - Italic text
+- `__underline__` - Underlined text
+- `~~strikethrough~~` - Strikethrough text
+- `\n` - New line (or Shift+Enter)
+- `[text](url)` - Hyperlinks
+
+**Examples:**
+```
+{description: Welcome to our server!}
+{description: **Bold** and *italic* text}
+{description: Line 1\nLine 2\nLine 3}
+{description: Check out [our website](https://example.com)}
+```
+
+**Tips:**
+- Use line breaks for readability
+- Bold important information
+- Keep paragraphs short
+- Use emojis for visual breaks
+
+---
+
+#### Color
+
+**Syntax:** `{color: #HEXCODE}`
+
+**What it does:** Sets the colored bar on the left side of embed
+
+**Format:** Hex color codes (6 characters)
+
+**Examples:**
+```
+{color: #5865F2}  - Discord Blurple
+{color: #57F287}  - Green
+{color: #ED4245}  - Red
+{color: #FEE75C}  - Yellow
+{color: #EB459E}  - Pink
+{color: #000000}  - Black
+{color: #FFFFFF}  - White
+```
+
+**Color meanings:**
+- Blue (#5865F2) - Information, general
+- Green (#57F287) - Success, positive
+- Red (#ED4245) - Error, warning, danger
+- Yellow (#FEE75C) - Caution, attention
+- Purple (#9B59B6) - Special, premium
+- Orange (#E67E22) - Moderate warning
+
+**Tips:**
+- Match server theme colors
+- Use consistent colors for message types
+- Consider color psychology
+- Test colors in dark and light mode
+
+---
+
+#### URL
+
+**Syntax:** `{url: https://example.com}`
+
+**What it does:** Makes the title clickable
+
+**Requirements:**
+- Must be valid URL
+- Must start with http:// or https://
+- Title must be set
+
+**Examples:**
+```
+{title: Visit Our Website}$v{url: https://example.com}
+{title: Join Support Server}$v{url: https://discord.gg/invite}
+```
+
+**Use cases:**
+- Link to website
+- Link to Discord invite
+- Link to documentation
+- Link to social media
+
+---
+
+#### Image
+
+**Syntax:** `{image: https://image-url.com/image.png}`
+
+**What it does:** Adds large image at bottom of embed
+
+**Requirements:**
+- Must be valid image URL
+- Must start with http:// or https://
+- Supported formats: PNG, JPG, GIF, WebP
+
+**Examples:**
+```
+{image: https://i.imgur.com/example.png}
+{image: {server.banner}}
+{image: {user.avatar}}
+```
+
+**Tips:**
+- Use high-quality images
+- Recommended width: 400-600px
+- Images auto-resize to fit
+- GIFs work (animated)
+- Can use variables for dynamic images
+
+---
+
+#### Thumbnail
+
+**Syntax:** `{thumbnail: https://image-url.com/icon.png}`
+
+**What it does:** Adds small image in top-right corner
+
+**Requirements:**
+- Must be valid image URL
+- Must start with http:// or https://
+- Supported formats: PNG, JPG, GIF, WebP
+
+**Examples:**
+```
+{thumbnail: https://i.imgur.com/icon.png}
+{thumbnail: {user.avatar}}
+{thumbnail: {server.icon}}
+```
+
+**Tips:**
+- Best for icons/logos
+- Recommended size: 80x80 to 200x200
+- Square images work best
+- Use for branding
+- Can combine with large image
+
+---
+
+#### Timestamp
+
+**Syntax:** `{timestamp}`
+
+**What it does:** Adds current date/time at bottom of embed
+
+**No parameters needed** - automatically uses current time
+
+**Display:** Shows in user's local timezone
+
+**Example:**
+```
+{timestamp}
+```
+
+**Use cases:**
+- Show when message was sent
+- Log timestamps
+- Event times
+- Automatic dating
+
+---
+
+#### Author Section
+
+**Syntax:** `{author: name && iconURL && url}`
+
+**Parameters:**
+1. **name** (required) - Author name
+2. **iconURL** (optional) - Small icon next to name
+3. **url** (optional) - Makes name clickable
+
+**Examples:**
+```
+{author: {user.name}}
+{author: {user.name} && {user.avatar}}
+{author: {server.name} && {server.icon}}
+{author: vleed Bot && https://bot-icon.png && https://website.com}
+```
+
+**Character limits:**
+- Name: 256 characters
+- URL: Must be valid URL
+
+**Use cases:**
+- Show who triggered action
+- Server branding
+- User identification
+- Attribution
+
+---
+
+#### Footer Section
+
+**Syntax:** `{footer: text && iconURL}`
+
+**Parameters:**
+1. **text** (required) - Footer text
+2. **iconURL** (optional) - Small icon next to text
+
+**Examples:**
+```
+{footer: Requested by {user.name}}
+{footer: {server.name} && {server.icon}}
+{footer: Page 1 of 5}
+{footer: vleed Bot && https://icon.png}
+```
+
+**Character limits:**
+- Text: 2048 characters
+- URL: Must be valid URL
+
+**Use cases:**
+- Attribution
+- Page numbers
+- Additional info
+- Branding
+
+---
+
+#### Fields
+
+**Syntax:** `{field: name && value && inline}`
+
+**Parameters:**
+1. **name** (required) - Field title
+2. **value** (required) - Field content
+3. **inline** (optional) - Add to make field display side-by-side
+
+**Character limits:**
+- Name: 256 characters
+- Value: 1024 characters
+- Max fields: 25 per embed
+
+**Examples:**
+```
+{field: Member Count && {server.membercount}}
+{field: Members && {server.membercount} && inline}
+{field: Boosts && {server.boost_count} && inline}
+{field: Owner && {server.owner} && inline}
+```
+
+**Inline behavior:**
+- Up to 3 fields per row
+- Fields wrap to new row automatically
+- Mix inline and non-inline fields
+- Non-inline fields take full width
+
+**Use cases:**
+- Organized information
+- Stats display
+- User info
+- Server info
+- Lists
+
+---
+
+#### Buttons
+
+**Syntax:** `{button: type && label && url/emoji && state}`
+
+**Parameters:**
+1. **type** (required) - Button style
+2. **label** (required) - Button text
+3. **url/emoji** (required) - URL for Link buttons, emoji for others
+4. **state** (required) - enabled or disabled
+
+**Button types:**
+- `Link` - Opens URL (requires https:// URL)
+- `Blurple` - Discord blue color
+- `Green` - Green button
+- `Red` - Red button
+- `Grey` - Gray button
+
+**Examples:**
+```
+{button: Link && Visit Website && https://example.com && enabled}
+{button: Green && Accept && ✅ && enabled}
+{button: Red && Decline && ❌ && enabled}
+{button: Blurple && Click Me && 🎉 && enabled}
+{button: Grey && Unavailable && ⏸️ && disabled}
+```
+
+**Multiple buttons:**
+```
+{button: Link && Rules && https://rules.com && enabled}$v{button: Link && Support && https://support.com && enabled}$v{button: Green && Join && 🎉 && enabled}
+```
+
+**Limits:**
+- Max 5 buttons per row
+- Max 5 rows (25 buttons total)
+- Label: 80 characters max
+
+**Use cases:**
+- Links to resources
+- Call-to-action
+- Navigation
+- Quick actions
+
+---
+
+
+#### Content (Text Outside Embed)
+
+**Syntax:** `{content: Text here}`
+
+**What it does:** Adds regular text message above the embed
+
+**Examples:**
+```
+{content: @everyone New announcement!}$v{embed}$v{title: Important}
+{content: {user.mention} Welcome!}$v{embed}$v{title: Welcome}
+```
+
+**Use cases:**
+- Ping roles/users
+- Additional context
+- Separate message from embed
+- Announcements
+
+---
+
+### Complete Embed Examples
+
+#### Example 1: Simple Welcome
+```
+{embed}$v{title: Welcome!}$v{description: Thanks for joining {server.name}!}$v{color: #5865F2}$v{thumbnail: {user.avatar}}$v{timestamp}
+```
+
+#### Example 2: Advanced Welcome
 ```
 {embed}$v{author: {server.name} && {server.icon}}$v{title: Welcome to the server!}$v{description: Hey {user.mention}! 👋\n\nThanks for joining **{server.name}**!\nYou are our **{server.humanmembercount}** member!}$v{thumbnail: {user.avatar}}$v{field: Account Created && {user.created_at} && inline}$v{field: Joined Server && {user.joined_at} && inline}$v{image: {server.banner}}$v{footer: Welcome! && {server.icon}}$v{timestamp}$v{color: #5865F2}$v{button: Link && Read Rules && https://example.com/rules && enabled}$v{button: Green && Get Started && 🚀 && enabled}
 ```
 
-### Embed Commands
+#### Example 3: Server Info
+```
+{embed}$v{title: {server.name} Information}$v{description: Everything about this server}$v{thumbnail: {server.icon}}$v{field: 👥 Members && {server.membercount} && inline}$v{field: 💎 Boosts && {server.boost_count} && inline}$v{field: 📊 Boost Tier && {server.boost_tier} && inline}$v{field: 👑 Owner && {server.owner} && inline}$v{field: 📅 Created && {server.created_at} && inline}$v{field: 🎭 Roles && {server.role_count} && inline}$v{image: {server.banner}}$v{color: #5865F2}$v{timestamp}
+```
 
-**`,createembed [embed code]`**
-- Create and send an embed
-- Example: `,createembed {embed}$v{title: Hello}$v{description: World}`
+#### Example 4: Announcement
+```
+{content: @everyone}$v{embed}$v{title: 🎉 Important Announcement}$v{description: We're excited to announce a major server update!\n\n**What's New:**\n• New channels\n• Updated rules\n• New roles\n• Events coming soon}$v{color: #57F287}$v{thumbnail: {server.icon}}$v{footer: Posted by {user.name}}$v{timestamp}$v{button: Link && Learn More && https://example.com && enabled}
+```
 
----
-
-## 🤖 AI Assistant
-
-**`,ask [question]`** (aliases: `ai`, `question`)
-- Ask the AI assistant anything
-- Powered by Google Gemini
-- Can reply to messages for context
-- Example: `,ask what is the capital of France?`
-- Example: Reply to an embed and use `,ask explain this embed`
+#### Example 5: Rules
+```
+{embed}$v{title: 📜 Server Rules}$v{description: Please read and follow all rules}$v{field: 1️⃣ Be Respectful && Treat everyone with respect}$v{field: 2️⃣ No Spam && Don't spam messages or mentions}$v{field: 3️⃣ No NSFW && Keep content appropriate}$v{field: 4️⃣ Follow Discord TOS && Respect Discord's Terms of Service}$v{field: 5️⃣ Listen to Staff && Follow moderator instructions}$v{color: #ED4245}$v{footer: Last updated}$v{timestamp}
+```
 
 ---
 
-## 📊 Logging System
+# Command Variables and Flags Documentation
 
-vleed has comprehensive logging for all server events.
-
-### Log Types:
-- **Moderator Logs** - All moderation actions (bans, kicks, mutes, warns)
-- **Message Logs** - Message edits and deletions
-- **Member Logs** - Member joins and leaves
-- **Server Event Logs** - Role changes, channel changes, permission updates
-
-### What Gets Logged:
-- Moderation actions with case numbers
-- Message edits (before/after)
-- Message deletions (with content)
-- Member role updates
-- Channel permission changes
-- Role updates (name, color, permissions)
-- Channel updates
-- Audit log events
+This document provides a comprehensive guide to all variables and command flags used in the Discord bot.
 
 ---
 
-## 🎂 Utility Commands
-
-**`,birthday set [MM/DD]`**
-- Set your birthday
-- Example: `,birthday set 12/25`
-
-**`,birthday remove`**
-- Remove your birthday
-
-**`,birthday [user]`**
-- View someone's birthday
-
-**`,serverinfo`**
-- View detailed server information
-
-**`,userinfo [user]`**
-- View detailed user information
-
-**`,avatar [user]`**
-- View user's avatar
+## Table of Contents
+- [Message Variables](#message-variables)
+- [Command Flags](#command-flags)
+- [Autoresponder Options](#autoresponder-options)
+- [Antinuke Flags](#antinuke-flags)
 
 ---
 
-## ⚠️ Common Issues
+## Message Variables
 
-**"I can't use moderation commands"**
-- Make sure you have the required permissions (Ban Members, Kick Members, etc.)
-- Check that the bot's role is higher than the target user's highest role
-- Ensure the bot has the necessary permissions
+Variables can be used in custom messages for welcome, leave, boost, and level-up messages. They are replaced with actual values when the message is sent.
 
-**"Antinuke isn't working"**
-- Only server owner can initially configure it
-- Use `,antinuke admin @user` to grant others access
-- Make sure modules are enabled with `,antinuke [module] on`
-- Check thresholds are set appropriately
+### User Variables
 
-**"Mute commands don't work"**
-- Run `,setupmute` first to create mute roles
-- Ensure bot has Manage Roles permission
-- Bot's role must be higher than mute roles
+| Variable | Description | Example Output |
+|----------|-------------|----------------|
+| `{user.id}` | User's Discord ID | `123456789012345678` |
+| `{user.name}` | User's username | `vwsn` |
+| `{user.display_name}` | User's display name in the server | `VWSN` |
+| `{user.mention}` | Mentions the user | `@vwsn` |
+| `{user.tag}` | User's full tag (username#discriminator) | `vwsn#1234` |
 
-**"Embed variables aren't working"**
-- Make sure variables are spelled correctly: `{user.mention}` not `{user.ping}`
-- Some variables like `{server.banner}` may be empty if server has no banner
-- Use proper syntax: `$v` between parameters
+### Server Variables
 
-**"Custom avatar/banner not showing"**
-- Only server owner can use customize commands
-- Wait 5 minutes between customizations (cooldown)
-- Make sure image URL is valid and accessible
-- Supported formats: PNG, JPG, GIF
+| Variable | Description | Example Output |
+|----------|-------------|----------------|
+| `{server.name}` | Server's name | `My Discord Server` |
+| `{server.membercount}` | Total member count | `1,234` |
+| `{server.humanmembercount}` | Member count with ordinal suffix | `1,234th` |
+| `{server.boostcount}` | Number of server boosts | `15` |
+| `{server.boostlevel}` | Server boost level (0-3) | `2` |
+
+### Level Variables
+
+| Variable | Description | Example Output |
+|----------|-------------|----------------|
+| `{level.new_rank}` | User's new level (required in level messages) | `25` |
+
+### Usage Examples
+
+**Welcome Message:**
+```
+Welcome {user.mention} to {server.name}! You are member #{server.humanmembercount}!
+```
+
+**Boost Message:**
+```
+Thanks for boosting {user.mention}! We now have {server.boostcount} boosts!
+```
+
+**Level Up Message:**
+```
+Congrats {user.mention}! You've reached level {level.new_rank}!
+```
+
+**Leave Message:**
+```
+Goodbye {user.name}! We now have {server.membercount} members.
+```
+
+---
+
+## Command Flags
+
+Flags are optional parameters that modify command behavior. They are prefixed with `--`.
+
+### Antinuke Flags
+
+#### `--threshold <number>`
+
+Sets the action limit before triggering antinuke protection.
+
+- **Valid Range:** 1-10
+- **Default:** Varies by module
+- **Used In:** role, kick, ban, channel, webhook modules
+
+**Examples:**
+```
+,antinuke role on --threshold 5
+,antinuke kick on --threshold 3
+,antinuke channel on --threshold 7
+```
+
+#### `--do <action>`
+
+Specifies the punishment action when antinuke is triggered.
+
+- **Valid Options:** `strip`, `kick`, `ban`
+  - `strip` - Remove dangerous permissions from the user
+  - `kick` - Kick the user from the server
+  - `ban` - Ban the user from the server
+- **Default:** `strip`
+- **Used In:** All antinuke modules
+
+**Examples:**
+```
+,antinuke role on --do ban
+,antinuke webhook on --threshold 3 --do kick
+,antinuke permissions on --do strip
+,antinuke botadd on --do ban
+```
+
+**Combined Usage:**
+```
+,antinuke ban on --threshold 5 --do kick
+,antinuke channel on --threshold 3 --do ban
+```
+
+---
+
+## Autoresponder Options
+
+Autoresponder options modify how the bot responds to triggers. They are added at the end of the response message.
+
+### `--reply`
+
+Makes the bot reply to the user's message instead of sending a standalone message.
+
+**Example:**
+```
+,autoresponder add hello, Hi there! --reply
+```
+
+### `--strict`
+
+Requires exact match of the trigger word (default behavior).
+
+**Example:**
+```
+,autoresponder add hello, Hi there! --strict
+```
+
+### `--not_strict`
+
+Allows partial matches of the trigger word anywhere in the message.
+
+**Example:**
+```
+,autoresponder add hello, Hi there! --not_strict
+```
+
+### `--delete`
+
+Deletes the user's original message after triggering the autoresponder.
+
+**Example:**
+```
+,autoresponder add badword, Please don't use that word! --delete
+```
+
+### `--self_destruct <seconds>`
+
+Automatically deletes the bot's response after the specified number of seconds.
+
+- **Default:** 5 seconds (if no number specified)
+- **Valid Range:** Any positive number
+
+**Examples:**
+```
+,autoresponder add temp, This message will disappear! --self_destruct 10
+,autoresponder add quick, Gone in 5 seconds! --self_destruct
+```
+
+### Combining Options
+
+You can combine multiple options in a single autoresponder:
+
+**Examples:**
+```
+,autoresponder add hello, Hi there! --reply --not_strict
+,autoresponder add spam, Stop spamming! --delete --self_destruct 5
+,autoresponder add test, Testing! --reply --strict --self_destruct 10
+```
+
+---
+
+## Complete Command Examples
+
+### Antinuke Commands
+
+**Enable role protection with custom settings:**
+```
+,antinuke role on --threshold 5 --do kick
+```
+
+**Enable ban protection with strict punishment:**
+```
+,antinuke ban on --threshold 3 --do ban
+```
+
+**Enable webhook protection:**
+```
+,antinuke webhook on --threshold 2 --do ban
+```
+
+**Enable bot addition protection:**
+```
+,antinuke botadd on --do ban
+```
+
+**Enable permission monitoring:**
+```
+,antinuke permissions on --do kick
+```
+
+### Autoresponder Commands
+
+**Basic autoresponder:**
+```
+,autoresponder add hello, Hi there!
+```
+
+**Reply to user:**
+```
+,autoresponder add help, Check out our help channel! --reply
+```
+
+**Partial match with reply:**
+```
+,autoresponder add thanks, You're welcome! --not_strict --reply
+```
+
+**Delete trigger message:**
+```
+,autoresponder add badword, Please watch your language! --delete
+```
+
+**Self-destructing message:**
+```
+,autoresponder add secret, This is a secret message! --self_destruct 10
+```
+
+**Complex autoresponder:**
+```
+,autoresponder add rules, Please read #rules! --reply --self_destruct 15
+```
+
+### Message Commands with Variables
+
+**Welcome message:**
+```
+,welcome add #general Welcome {user.mention} to {server.name}! You're our {server.humanmembercount} member!
+```
+
+**Boost message:**
+```
+,boost add #boosts Thank you {user.mention} for boosting! We now have {server.boostcount} boosts and are level {server.boostlevel}!
+```
+
+**Leave message:**
+```
+,leave add #general Goodbye {user.name}! We now have {server.membercount} members.
+```
+
+**Level up message:**
+```
+,levels message Congrats {user.mention}! You've reached level {level.new_rank} in {server.name}!
+```
+
+---
+
+## Notes
+
+- All flags are **optional** unless specified otherwise
+- Flags can be combined in any order
+- Variable names are **case-sensitive** and must be wrapped in curly braces `{}`
+- The `{level.new_rank}` variable is **required** in custom level up messages
+- Threshold values must be between 1 and 10 for antinuke modules
+- Autoresponder triggers are limited to 12 characters maximum
+- Maximum of 5 welcome/boost/leave messages per server
+- Maximum of 50 autoresponders per server
+
+---
+
+## Quick Reference
+
+### Most Common Flags
+
+| Flag | Purpose | Example |
+|------|---------|---------|
+| `--threshold <1-10>` | Set action limit | `--threshold 5` |
+| `--do <strip\|kick\|ban>` | Set punishment | `--do ban` |
+| `--reply` | Reply to message | `--reply` |
+| `--delete` | Delete trigger | `--delete` |
+| `--self_destruct <seconds>` | Auto-delete response | `--self_destruct 10` |
+| `--strict` | Exact match only | `--strict` |
+| `--not_strict` | Partial match | `--not_strict` |
+
+### Most Common Variables
+
+| Variable | Use Case |
+|----------|----------|
+| `{user.mention}` | Mention the user |
+| `{user.name}` | Show username |
+| `{server.name}` | Show server name |
+| `{server.membercount}` | Show member count |
+| `{level.new_rank}` | Show new level (level messages only) |
+
+
+nage Roles permission
+3. Ensure bot role is above mute roles
+4. Verify channel permissions are set correctly
+5. Don't rename the Jailed role
+
+### "Embed variables not working"
+**Solution:**
+1. Check spelling: `{user.mention}` not `{user.ping}`
+2. Some variables may be empty (e.g., `{server.banner}` if no banner)
+3. Use proper syntax: `$v` between parameters
+4. Ensure URLs are valid for images
+5. Test with `,createembed` command
+
+### "Custom avatar/banner not showing"
+**Solution:**
+1. Only server owner can customize
+2. Wait 5 minutes between changes (cooldown)
+3. Ensure image URL is valid and accessible
+4. Check image format (PNG, JPG, GIF, WebP)
+5. Max file size: 8MB
+6. Try with attachment instead of URL
+
+### "Welcome messages not sending"
+**Solution:**
+1. Check bot has Send Messages permission in channel
+2. Verify bot has Embed Links permission
+3. Test embed syntax with `,createembed`
+4. Check channel isn't deleted
+5. Verify welcome message is added: `,welcome list`
+
+### "Reaction roles not working"
+**Solution:**
+1. Bot needs Add Reactions permission
+2. Bot needs Manage Roles permission
+3. Bot role must be higher than assigned role
+4. Use message link, not message ID
+5. Ensure emoji is accessible (not from another server)
+
+### "Antinuke punishing legitimate actions"
+**Solution:**
+1. Whitelist trusted users: `,antinuke whitelist @user`
+2. Increase thresholds: `--threshold X`
+3. Use less severe punishment: `--do strip` instead of `--do ban`
+4. Remove whitelist after mass actions complete
+5. Adjust thresholds based on server activity
 
 ---
 
@@ -350,14 +1839,60 @@ vleed has comprehensive logging for all server events.
 
 - Personal prefix (`,selfprefix`)
 - Booster role system
-- Additional customization options
+- Priority support
+- Early access to new features
+- Custom bot status (coming soon)
 
 ---
 
-## Important Notes
+## 📊 Key Facts About vleed
 
-- vleed is NOT an AI bot - it's a Discord bot with an AI assistant feature (`,ask`)
-- The `,ask` command uses an AI to answer questions, but vleed itself is a traditional Discord bot
-- All moderation actions are logged and tracked with case numbers
-- Antinuke is highly recommended for servers with multiple moderators
-- Always test embed codes with `,createembed` before using in automated messages
+1. **vleed is NOT an AI bot** - It's a traditional Discord bot with an AI assistant feature (`,ask` command)
+2. **Security-first design** - Antinuke system prevents server destruction
+3. **Fully customizable** - Custom avatar, banner, bio per server
+4. **50+ variables** - Rich embed system with dynamic content
+5. **Comprehensive logging** - Track everything in your server
+6. **Active development** - Regular updates and new features
+7. **Free to use** - Core features available to everyone
+8. **Premium optional** - Extra features for supporters
+
+---
+
+## 🎯 Quick Start Guide
+
+**For New Servers:**
+1. Run `,setup` - Creates moderation infrastructure
+2. Run `,setupmute` - Creates mute roles
+3. Configure antinuke: `,antinuke ban on --threshold 3 --do ban`
+4. Set up logging: `,logs set #logs`
+5. Add welcome message: `,welcome add #general {embed}$v{title: Welcome!}$v{description: Welcome {user.mention}!}$v{color: #5865F2}`
+6. Customize bot: `,customize avatar [url]`
+
+**For Moderation:**
+1. Use `,ban`, `,kick`, `,mute` for punishments
+2. Use `,warn` for warnings
+3. Use `,jail` for timeouts
+4. Check history: `,history @user`
+5. View cases: `,case [ID]`
+
+**For Security:**
+1. Enable all antinuke modules
+2. Set conservative thresholds (2-3)
+3. Whitelist only when necessary
+4. Monitor #jail-log channel
+5. Regular permission audits
+
+---
+
+## 📞 Support
+
+- Support Server: https://dsc.gg/s-invite
+- Use `,ask` command for quick help
+- Check `,help [command]` for command details
+- Read this documentation thoroughly
+
+---
+
+**Remember:** vleed is always lowercase, never "Vleed", "VLEED", or "bleed"!
+
+

@@ -24,7 +24,7 @@ module.exports = {
   premiumBypass: true, // Allow everyone to use this command even though it's in premium folder
   run: async (client, message, args) => {
     if (!args.length) {
-      return embeds.warn(message, 'Please provide a question to ask');
+      return message.channel.send("sup, i'm vleed");
     }
 
     const question = args.join(' ');
@@ -70,14 +70,13 @@ module.exports = {
         {
           contents: [{
             parts: [{
-              text: `You are a sarcastic, witty AI assistant with personality. You're helpful but also fun and playful.
+              text: `You are a sarcastic, witty assistant named vleed with personality. You're helpful but also fun and mean.
 
 PERSONALITY RULES:
 - When asked about vleed bot features/commands: Be helpful, detailed, and informative
 - When asked random/silly questions: Be sarcastic, critical, make jokes, roast them a bit
 - Keep responses SHORT and PUNCHY - no long paragraphs
-- Use emojis occasionally for flavor
-- Don't be mean, just playfully sarcastic
+- be mean and sarcastic
 
 When answering questions about "vleed bot" or "the bot", use this detailed information:
 
