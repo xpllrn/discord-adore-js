@@ -1,4 +1,4 @@
-const { WebhookClient, EmbedBuilder, AuditLogEvent } = require('discord.js');
+  const { WebhookClient, EmbedBuilder, AuditLogEvent } = require('discord.js');
 const config = require('../config/setup');
 const { getService } = require('@services');
 
