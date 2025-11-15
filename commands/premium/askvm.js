@@ -132,17 +132,15 @@ Question: ${question}`
       const attachment = new AttachmentBuilder(audioBuffer, { 
         name: "voice-message.mp3"
       });
+      
+      // Manually set voice metadata on the attachment object
+      attachment.duration_secs = duration;
+      attachment.waveform = waveform;
 
-      // Send as voice message with metadata
+      // Send as voice message
       await message.channel.send({
         files: [attachment],
-        flags: 1 << 13, // IS_VOICE_MESSAGE flag
-        attachments: [{
-          id: 0,
-          filename: "voice-message.mp3",
-          duration_secs: duration,
-          waveform: waveform
-        }]
+        flags: 1 << 13 // IS_VOICE_MESSAGE flag
       });
 
     } catch (error) {
