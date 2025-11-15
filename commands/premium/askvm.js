@@ -122,25 +122,26 @@ Question: ${question}`
 
       const audioBuffer = Buffer.from(ttsResponse.data);
       
-      // Generate simple waveform (base64 encoded byte array)
-      const waveform = Buffer.from(new Array(64).fill(128)).toString('base64');
+      // Generate waveform (256 bytes required by Discord)
+      const waveform = Buffer.alloc(256, 128).toString('base64');
       
       // Estimate duration (rough: 150 chars per second)
       const duration = Math.max(1, Math.ceil(responseText.length / 150));
       
-      // Send as voice message with metadata
+      // Send as voice message with proper metadata
       const attachment = new AttachmentBuilder(audioBuffer, { 
-        name: 'voice-message.ogg',
-        description: `Voice message (${duration}s)`
+        name: 'voice-message.ogg'
       });
-
-      // Set waveform and duration in attachment metadata
-      attachment.duration_secs = duration;
-      attachment.waveform = waveform;
 
       await message.channel.send({
         files: [attachment],
-        flags: 8192 // MessageFlags.IsVoiceMessage
+        flags: 1 << 13, // MessageFlags.IsVoiceMessage (8192)
+        attachments: [{
+          id: 0,
+          filename: 'voice-message.ogg',
+          duration_secs: duration,
+          waveform: waveform
+        }]
       });
 
     } catch (error) {
