@@ -15,7 +15,22 @@ module.exports = {
     if (!await hasPermissionLevel(message, 'dev')) return;
 
     try {
-      await message.channel.send('okay master, rebooting vleed now');
+      const responses = [
+        'yes master, rebooting vleed now',
+        'okay mommy, restarting right away',
+        'as you say daddy, rebooting vleed',
+        'shh kitten, already done',
+        'on it boss, restarting vleed',
+        'right away master, rebooting now',
+        'yes sir, vleed going down',
+        'understood daddy, restarting',
+        'okay bestie, rebooting vleed',
+        'bet, restarting vleed rn',
+        'say less, already rebooting',
+        'aye aye captain, restarting vleed'
+      ];
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      await message.channel.send(randomResponse);
       
       // Give time for message to send
       setTimeout(async () => {
