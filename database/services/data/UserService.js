@@ -55,9 +55,6 @@ class UserService extends BaseService {
       const query = { [this.keyField]: key };
 
       const doc = await Model.findOne(query).lean();
-      
-
-      
       return doc || null;
     } catch (error) {
       console.error(`Error reading user data for ${key}:`, error.message);

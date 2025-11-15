@@ -31,95 +31,6 @@ class GuildService extends BaseService {
       const Model = this.getModel();
       const query = { [this.keyField]: key };
 
-      // Only check for data loss if data is ACTUALLY incomplete (missing required fields)
-      // Empty arrays are fine - undefined/null is the problem
-      const looksIncomplete = 
-        data.AutoRoles === undefined || 
-        data.Aliases === undefined || 
-        data.WelcomeMessages === undefined ||
-        data.Prefix === undefined;
-      
-      if (looksIncomplete) {
-        // Potential issue - do the full check
-        const existing = await Model.findOne(query).lean();
-        
-        if (existing) {
-        // Log warning if important fields are being removed
-        const importantFields = [
-          'WelcomeChannel', 'WelcomeMessage', 'WelcomeMessages',
-          'LeaveChannel', 'LeaveMessage', 'LeaveMessages',
-          'BoostChannel', 'BoostMessage', 'BoostMessages',
-          'AutoRoles', 'Aliases', 'Antinuke', 'VoiceMaster',
-          'StarboardChannel', 'LoggingConfig', 'LevelSystem'
-        ];
-        
-        const missingFields = [];
-        for (const field of importantFields) {
-          // Check if field exists in existing data but is missing or null in new data
-          if (existing[field] !== null && existing[field] !== undefined) {
-            // For arrays, check if they have content
-            if (Array.isArray(existing[field]) && existing[field].length > 0) {
-              if (!data[field] || (Array.isArray(data[field]) && data[field].length === 0)) {
-                missingFields.push(`${field} (had ${existing[field].length} items)`);
-                changes.removed.push({ field, oldValue: existing[field].length + ' items' });
-              } else if (data[field].length !== existing[field].length) {
-                changes.modified.push({ field, oldCount: existing[field].length, newCount: data[field].length });
-              }
-            }
-            // For objects, check if they have properties
-            else if (typeof existing[field] === 'object' && !Array.isArray(existing[field])) {
-              if (!data[field]) {
-                missingFields.push(`${field} (was configured)`);
-                changes.removed.push({ field, oldValue: 'configured' });
-              }
-            }
-            // For strings/primitives
-            else if (existing[field] && !data[field]) {
-              missingFields.push(`${field} (was: ${existing[field]})`);
-              changes.removed.push({ field, oldValue: existing[field] });
-            } else if (existing[field] !== data[field]) {
-              changes.modified.push({ field, oldValue: existing[field], newValue: data[field] });
-            }
-          } else if (data[field] !== null && data[field] !== undefined) {
-            // New field being added
-            if (Array.isArray(data[field]) && data[field].length > 0) {
-              changes.added.push({ field, value: data[field].length + ' items' });
-            } else if (data[field]) {
-              changes.added.push({ field, value: data[field] });
-            }
-          }
-        }
-        
-        if (missingFields.length > 0) {
-          const logger = require('../../../utils/logger');
-          
-          // Get full stack trace to find where this is being called from
-          const stack = new Error().stack;
-          const stackLines = stack.split('\n').slice(1, 6); // Get top 5 lines
-          const callerInfo = stackLines.join('\n');
-          
-          // Build detailed warning
-          let warningMsg = `⚠️ **DATA LOSS PREVENTED** for guild ${key}\n\n`;
-          warningMsg += `**Missing Fields:**\n`;
-          missingFields.forEach(field => warningMsg += `  • ${field}\n`);
-          warningMsg += `\n**What's in the data being saved:**\n`;
-          warningMsg += `  • AutoRoles: ${data.AutoRoles ? `${data.AutoRoles.length} items` : 'MISSING ❌'}\n`;
-          warningMsg += `  • WelcomeChannel: ${data.WelcomeChannel || 'MISSING ❌'}\n`;
-          warningMsg += `  • WelcomeMessage: ${data.WelcomeMessage ? 'Set ✓' : 'MISSING ❌'}\n`;
-          warningMsg += `\n**Call Stack:**\n\`\`\`\n${callerInfo}\n\`\`\`\n`;
-          warningMsg += `\n**Action:** Data was NOT saved to prevent loss. Fix the code to load full guild data first.`;
-          
-          logger.webhook.warn(warningMsg);
-          
-          // PREVENT THE SAVE - throw error to stop execution
-          throw new DatabaseWriteError(
-            `Prevented data loss: Missing fields ${missingFields.join(', ')}. ` +
-            `Load full guild data with ensureGuildData() before modifying.`
-          );
-        }
-        }
-      }
-
       // Remove _id from data to prevent duplicate key errors
       const updateData = { ...data };
       delete updateData._id;
@@ -149,11 +60,7 @@ class GuildService extends BaseService {
       const Model = this.getModel();
       const query = { [this.keyField]: key };
 
-      // Exclude heavy fields that are rarely needed (reduces document size by 80%+)
-      // These fields are fetched separately when needed via specific methods
-      const doc = await Model.findOne(query)
-        .select('-MessageStats -UserLevels -Moderation -SwearTracker -GuildNameHistory -BoostHistory -StarboardMessages')
-        .lean();
+      const doc = await Model.findOne(query).lean();
       return doc || null;
     } catch (error) {
       console.error(`Error reading guild data for ${key}:`, error.message);
@@ -161,23 +68,7 @@ class GuildService extends BaseService {
     }
   }
 
-  /**
-   * Read full guild data including heavy fields (use sparingly!)
-   * @param {string} key - Guild ID
-   * @returns {Promise<Object|null>} Full guild data or null
-   */
-  async readFullFromDatabase(key) {
-    try {
-      const Model = this.getModel();
-      const query = { [this.keyField]: key };
 
-      const doc = await Model.findOne(query).lean();
-      return doc || null;
-    } catch (error) {
-      console.error(`Error reading full guild data for ${key}:`, error.message);
-      return null;
-    }
-  }
 
   /**
    * Delete guild data from database
@@ -3255,10 +3146,8 @@ class GuildService extends BaseService {
     }
 
     try {
-      // Fetch only MessageStats field (not the whole document)
-      const Model = this.getModel();
-      const guildData = await Model.findOne({ GuildID: guildId }).select('MessageStats').lean();
-      const messageStats = guildData?.MessageStats || [];
+      const guildData = await this.ensureGuildData(guildId);
+      const messageStats = guildData.MessageStats || [];
 
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());

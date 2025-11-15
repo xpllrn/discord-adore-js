@@ -57,12 +57,7 @@ async function processCommand(message, isEdit = false) {
 
   // Check for guild aliases first
   const guildService = getService('guild');
-  const aliasStart = Date.now();
   const guildData = await guildService.get(message.guild.id);
-  const aliasDuration = Date.now() - aliasStart;
-  if (aliasDuration > 100) {
-    console.log(`⚠️ SLOW ALIAS CHECK: ${message.guild.id} took ${aliasDuration}ms`);
-  }
   const guildAliases = guildData?.Aliases || [];
   
   // Find matching alias
