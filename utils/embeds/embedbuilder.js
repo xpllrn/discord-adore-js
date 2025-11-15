@@ -97,11 +97,20 @@ class CustomEmbedBuilder {
             } else if (paramName === 'color') {
                 Embed.setColor(paramValue);
             } else if (paramName === 'thumbnail') {
-                Embed.setThumbnail(paramValue);
+                // Only set thumbnail if it's a valid URL
+                if (paramValue && (paramValue.startsWith('http://') || paramValue.startsWith('https://'))) {
+                    Embed.setThumbnail(paramValue);
+                }
             } else if (paramName === 'image') {
-                Embed.setImage(paramValue);
+                // Only set image if it's a valid URL
+                if (paramValue && (paramValue.startsWith('http://') || paramValue.startsWith('https://'))) {
+                    Embed.setImage(paramValue);
+                }
             } else if (paramName === 'url') {
-                Embed.setURL(paramValue);
+                // Only set URL if it's a valid URL
+                if (paramValue && (paramValue.startsWith('http://') || paramValue.startsWith('https://'))) {
+                    Embed.setURL(paramValue);
+                }
             } else if (paramName === 'message' || paramName === 'content') {
                 Content = paramValue;
             } else if (paramName === 'author') {

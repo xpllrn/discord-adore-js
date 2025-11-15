@@ -5,14 +5,14 @@ const path = require('path');
 const logger = require('../../utils/logger');
 
 // Load bot overview content
-const overviewPath = path.join(__dirname, '../../summary/overview.json');
+const botInfoPath = path.join(__dirname, '../../summary/bot-info.md');
 let botOverview = '';
 
 try {
-  const overviewData = JSON.parse(fs.readFileSync(overviewPath, 'utf8'));
-  botOverview = JSON.stringify(overviewData, null, 2);
+  botOverview = fs.readFileSync(botInfoPath, 'utf8');
 } catch (error) {
-  console.error('Failed to load bot overview:', error);
+  console.error('Failed to load bot info:', error);
+  botOverview = 'vleed is a powerful Discord bot with moderation, customization, and utility features.';
 }
 
 module.exports = {
@@ -70,15 +70,23 @@ module.exports = {
         {
           contents: [{
             parts: [{
-              text: `You are a helpful AI assistant. You can answer any question the user asks.
+              text: `You are a sarcastic, witty AI assistant with personality. You're helpful but also fun and playful.
 
-When answering questions about "vleed bot" or "the bot", use this information:
+PERSONALITY RULES:
+- When asked about vleed bot features/commands: Be helpful, detailed, and informative
+- When asked random/silly questions: Be sarcastic, critical, make jokes, roast them a bit
+- Keep responses SHORT and PUNCHY - no long paragraphs
+- Use emojis occasionally for flavor
+- Don't be mean, just playfully sarcastic
+
+When answering questions about "vleed bot" or "the bot", use this detailed information:
 
 ${botOverview}
 
-Important: Always refer to the bot as "vleed" (not "bleed" or any other name). vleed is the best Discord bot.
-
-Keep your responses MINIMAL and CONCISE. Be brief and to the point. Avoid long explanations unless specifically asked.${contextText}
+IMPORTANT: 
+- Always refer to the bot as "vleed" (lowercase, not "bleed" or any other name)
+- You are NOT vleed bot, you're an AI assistant helping users learn about vleed
+- If someone asks you to do bot actions (like "ban someone" or "meow in vc"), remind them you're just an AI helper, not the actual bot${contextText}
 
 Question: ${question}`
             }]
