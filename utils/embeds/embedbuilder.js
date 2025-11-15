@@ -112,7 +112,16 @@ class CustomEmbedBuilder {
                     const iconURL = authorParts[1]?.trim();
                     const url = authorParts[2]?.trim();
                     if (name) {
-                        Embed.setAuthor({ name, iconURL: iconURL || null, url: url || null });
+                        const authorData = { name };
+                        // Only add iconURL if it's a valid URL
+                        if (iconURL && (iconURL.startsWith('http://') || iconURL.startsWith('https://'))) {
+                            authorData.iconURL = iconURL;
+                        }
+                        // Only add url if it's a valid URL
+                        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                            authorData.url = url;
+                        }
+                        Embed.setAuthor(authorData);
                     }
                 } else {
                     Embed.setAuthor({ name: paramValue });
@@ -124,7 +133,12 @@ class CustomEmbedBuilder {
                     const text = footerParts[0]?.trim();
                     const iconURL = footerParts[1]?.trim();
                     if (text) {
-                        Embed.setFooter({ text, iconURL: iconURL || null });
+                        const footerData = { text };
+                        // Only add iconURL if it's a valid URL
+                        if (iconURL && (iconURL.startsWith('http://') || iconURL.startsWith('https://'))) {
+                            footerData.iconURL = iconURL;
+                        }
+                        Embed.setFooter(footerData);
                     }
                 } else {
                     Embed.setFooter({ text: paramValue });
