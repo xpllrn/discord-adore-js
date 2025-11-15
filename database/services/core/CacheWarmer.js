@@ -14,25 +14,16 @@ class CacheWarmer {
   }
 
   /**
-   * Start periodic cache warming (only after startup is complete)
+   * Start cache warming once on startup (no periodic updates - cache handles itself)
    * @param {Object} services - Service instances
+   * @param {Object} client - Discord client
    */
-  start(services) {
-    if (this.intervalId) {
-      return;
-    }
-
-    // Wait for startup to complete before starting periodic updates
+  start(services, client = null) {
+    // Only warm once on startup
     setTimeout(() => {
       this.startupComplete = true;
-      
-      // Start periodic warming
-      this.intervalId = setInterval(() => {
-        this.warmSystemCache(services);
-      }, this.warmInterval);
-
-      // Do initial warm
-      this.warmSystemCache(services);
+      console.log('Starting cache warming...');
+      this.warmSystemCache(services, client);
     }, 30000); // Wait 30 seconds after startup
   }
 
@@ -47,21 +38,29 @@ class CacheWarmer {
   }
 
   /**
-   * Warm system-wide cache data only
-   * IMPORTANT: Does NOT warm guild or user data (those remain on-demand)
+   * Warm essential cache data once (system, guild prefixes)
+   * After this, cache uses LRU + TTL to manage itself automatically
    * @param {Object} services - Service instances
+   * @param {Object} client - Discord client (optional, for guild list)
    */
-  async warmSystemCache(services) {
-    if (this.isWarming || !this.startupComplete) {
+  async warmSystemCache(services, client = null) {
+    if (this.isWarming) {
       return;
     }
 
     this.isWarming = true;
 
     try {
-      // Only warm system-wide data (blacklists, global settings)
+      // Warm system-wide data (blacklists, global settings)
       await this.warmSystemData(services.system);
+      
+      // Warm guild prefixes if client is available
+      if (client && services.guild) {
+        await this.warmGuildPrefixes(services.guild, client);
+      }
+      
       this.lastWarmTime = new Date();
+      console.log('✓ Cache warming complete - cache will now manage itself (LRU + TTL)');
     } catch (error) {
       console.error('Cache warmer error:', error.message);
     } finally {
@@ -85,8 +84,45 @@ class CacheWarmer {
       
       // Get blacklist info to ensure it's cached
       await systemService.getBlacklistInfo();
+      
+      console.log('✓ Warmed system cache (blacklists)');
     } catch (error) {
       console.error('Error warming system data:', error.message);
+    }
+  }
+
+  /**
+   * Warm guild prefixes for all guilds the bot is in
+   * @param {GuildService} guildService - Guild service instance
+   * @param {Object} client - Discord client
+   */
+  async warmGuildPrefixes(guildService, client) {
+    if (!guildService || !client || !client.guilds) {
+      return;
+    }
+
+    try {
+      const guildIds = Array.from(client.guilds.cache.keys());
+      
+      if (guildIds.length === 0) {
+        return;
+      }
+
+      // Batch load guild data (just prefix and basic info)
+      let warmedCount = 0;
+      for (const guildId of guildIds) {
+        try {
+          // This will load and cache the guild data
+          await guildService.getPrefix(guildId);
+          warmedCount++;
+        } catch (error) {
+          // Skip guilds that fail to load
+        }
+      }
+      
+      console.log(`✓ Warmed ${warmedCount}/${guildIds.length} guild prefixes`);
+    } catch (error) {
+      console.error('Error warming guild prefixes:', error.message);
     }
   }
 
@@ -107,9 +143,10 @@ class CacheWarmer {
   /**
    * Manually trigger cache warming
    * @param {Object} services - Service instances
+   * @param {Object} client - Discord client
    */
-  async manualWarm(services) {
-    await this.warmSystemCache(services);
+  async manualWarm(services, client = null) {
+    await this.warmSystemCache(services, client);
   }
 }
 

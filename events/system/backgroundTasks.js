@@ -19,6 +19,9 @@ module.exports = {
     setupGiveawayCheck(client);
     setupSprintManager(client);
     setupRoleRestoreCleanup(client);
+    
+    // Start cache warming with client
+    setupCacheWarming(client);
   }
 };
 
@@ -604,6 +607,26 @@ async function cleanupExpiredRoleRestore(client) {
       });
       roleRestoreLastErrorTime = now;
     }
+  }
+}
+
+// ===== CACHE WARMING =====
+
+function setupCacheWarming(client) {
+  try {
+    const cacheWarmer = require('../../database/services/core/CacheWarmer');
+    const { getService } = require('@services');
+    
+    const services = {
+      system: getService('system'),
+      guild: getService('guild'),
+      user: getService('user')
+    };
+    
+    // Start cache warmer with client for guild prefixes
+    cacheWarmer.start(services, client);
+  } catch (error) {
+    logger.console.error('Failed to start cache warmer:', error.message);
   }
 }
 
