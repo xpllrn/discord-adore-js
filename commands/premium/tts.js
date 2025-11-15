@@ -48,7 +48,7 @@ module.exports = {
     await message.channel.sendTyping();
 
     try {
-      // Using Google Gemini 2.5 Flash TTS (completely free!)
+      // Using Google Gemini 2.0 Flash with TTS (completely free!)
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
@@ -56,10 +56,10 @@ module.exports = {
             parts: [{ text: text }]
           }],
           generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: voice }
+            response_modalities: ['AUDIO'],
+            speech_config: {
+              voice_config: {
+                prebuilt_voice_config: { voice_name: voice }
               }
             }
           }

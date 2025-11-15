@@ -387,24 +387,6 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }],
-
-  // Conversation memory for AI assistant
-  ConversationMemory: [{
-    summary: {
-      type: String,
-      required: true,
-      maxlength: 200 // Keep summaries short (1-2 lines)
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-      required: true
-    },
-    context: {
-      type: String,
-      maxlength: 500 // Store additional context if needed
-    }
   }]
 
 }, {
@@ -454,9 +436,6 @@ userSchema.index({ 'Afk.since': -1 }); // Recent AFK users
 // Timezone and prefix indexes
 userSchema.index({ Timezone: 1 }); // Timezone-based queries
 userSchema.index({ SelfPrefix: 1 }); // Custom prefix lookups
-
-// Conversation memory indexes
-userSchema.index({ 'ConversationMemory.timestamp': -1 }); // Recent conversations
 
 module.exports = {
   schema: userSchema,
