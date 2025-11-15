@@ -122,15 +122,23 @@ Question: ${question}`
 
       const audioBuffer = Buffer.from(ttsResponse.data);
       
-      // Send as voice message
+      // Estimate duration (rough estimate: 150 chars per second of speech)
+      const estimatedDuration = Math.ceil(responseText.length / 150);
+      
+      // Send as voice message with metadata
       const attachment = new AttachmentBuilder(audioBuffer, { 
-        name: 'voice-message.ogg',
-        description: 'Voice Message'
+        name: 'voice-message.ogg'
       });
 
       await message.channel.send({
         files: [attachment],
-        flags: ['IsVoiceMessage']
+        flags: ['IsVoiceMessage'],
+        // Voice message metadata
+        attachments: [{
+          id: 0,
+          duration_secs: estimatedDuration,
+          waveform: 'AAAAAAAAAAAA' // Base64 encoded waveform (simplified)
+        }]
       });
 
     } catch (error) {
