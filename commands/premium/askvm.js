@@ -23,6 +23,7 @@ module.exports = {
   usage: '{guildprefix}askvm [question]',
   example: '{guildprefix}askvm what is the capital of France?',
   premiumBypass: true,
+
   run: async (client, message, args) => {
     if (!args.length) {
       return message.channel.send("sup, i'm vleed. ask me something and i'll respond with a voice message");
@@ -56,7 +57,7 @@ module.exports = {
           contextText += embedText;
         }
       } catch (error) {
-        // Continue without context
+        // Continue silently
       }
     }
 
@@ -82,9 +83,9 @@ When answering questions about "vleed bot" or "the bot", use this detailed infor
 ${botOverview}
 
 IMPORTANT: 
-- Always refer to the bot as "vleed" (lowercase, not "bleed" or any other name)
+- Always refer to the bot as "vleed"
 - You are NOT vleed bot, you're an AI assistant helping users learn about vleed
-- If someone asks you to do bot actions (like "ban someone" or "meow in vc"), remind them you're just an AI helper, not the actual bot${contextText}
+- If someone asks you to do bot actions, remind them you're not the bot${contextText}
 
 Question: ${question}`
             }]
@@ -103,54 +104,57 @@ Question: ${question}`
       );
 
       let responseText = aiResponse.data.candidates[0].content.parts[0].text;
-      
+
       // Limit to 500 chars for TTS
       if (responseText.length > 500) {
-        responseText = responseText.substring(0, 497) + '...';
+        responseText = responseText.substring(0, 497) + "...";
       }
 
-      // Convert to voice using StreamElements TTS
+      // Create TTS
       const encodedText = encodeURIComponent(responseText);
       const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=Brian&text=${encodedText}`;
       
       const ttsResponse = await axios.get(ttsUrl, {
         responseType: 'arraybuffer',
-        headers: {
-          'User-Agent': 'Mozilla/5.0'
-        }
+        headers: { 'User-Agent': 'Mozilla/5.0' }
       });
 
       const audioBuffer = Buffer.from(ttsResponse.data);
-      
-      // Generate waveform (256 bytes required by Discord)
-      const waveform = Buffer.alloc(256, 128).toString('base64');
-      
-      // Estimate duration (rough: 150 chars per second)
-      const duration = Math.max(1, Math.ceil(responseText.length / 150));
-      
-      // Create attachment with voice message metadata
-      const attachment = new AttachmentBuilder(audioBuffer, { 
-        name: 'voice-message.ogg'
-      });
-      
-      // Set voice message properties
-      attachment.duration_secs = duration;
-      attachment.waveform = waveform;
 
+      // Generate waveform (256 bytes)
+      const waveform = Buffer.alloc(256, 128).toString("base64");
+
+      // Estimate duration
+      const duration = Math.max(1, Math.ceil(responseText.length / 150));
+
+      // Build attachment
+      const attachment = new AttachmentBuilder(audioBuffer, {
+        name: "voice-message.ogg"
+      });
+
+      // Send as a valid Discord voice message
       await message.channel.send({
         files: [attachment],
-        flags: 1 << 13 // MessageFlags.IsVoiceMessage (8192)
+        flags: 1 << 13, // Voice message flag
+        attachments: [
+          {
+            id: 0,
+            filename: "voice-message.ogg",
+            duration_sec: duration,
+            waveform: waveform
+          }
+        ]
       });
 
     } catch (error) {
       logger.webhook.error(error, message);
-      
+
       if (error.response?.status === 429) {
-        return embeds.deny(message, 'Rate limit reached. Please try again later');
+        return embeds.deny(message, 'Rate limit reached. Try again later');
       } else if (error.response?.status === 400) {
-        return embeds.deny(message, 'Invalid request. Please try a different question');
+        return embeds.deny(message, 'Invalid request. Try a different question');
       } else {
-        return embeds.deny(message, 'Failed to generate voice response. Please try again');
+        return embeds.deny(message, 'Failed to generate voice response');
       }
     }
   }
