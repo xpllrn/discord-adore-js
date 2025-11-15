@@ -41,11 +41,16 @@ module.exports = {
       });
 
       const audioBuffer = Buffer.from(response.data);
-      const attachment = new AttachmentBuilder(audioBuffer, { name: 'voice.mp3' });
+      
+      // Send as voice message (Discord's voice message format)
+      const attachment = new AttachmentBuilder(audioBuffer, { 
+        name: 'voice-message.ogg',
+        description: 'Voice Message'
+      });
 
       await message.channel.send({
-        content: '🎙️ **TTS Voice:**',
-        files: [attachment]
+        files: [attachment],
+        flags: ['IS_VOICE_MESSAGE']
       });
 
     } catch (error) {
