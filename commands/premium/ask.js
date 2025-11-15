@@ -34,7 +34,7 @@ module.exports = {
 
     try {
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
         {
           contents: [{
             parts: [{
@@ -58,7 +58,8 @@ Question: ${question}`
         },
         {
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-goog-api-key': process.env.GEMINI_API_KEY
           }
         }
       );
