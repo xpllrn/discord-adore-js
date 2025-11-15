@@ -1,6 +1,5 @@
 const BaseService = require('../core/BaseService');
 const { ValidationError, NotFoundError, DatabaseWriteError } = require('../core/errors');
-const dbLogger = require('../../../utils/dbLogger'); // Only for errors/warnings
 
 /**
  * Guild Service
@@ -104,15 +103,6 @@ class GuildService extends BaseService {
           warningMsg += `\n**Action:** Data was NOT saved to prevent loss. Fix the code to load full guild data first.`;
           
           logger.webhook.warn(warningMsg);
-          
-          dbLogger.warn('DATA_LOSS', `Incomplete data for guild ${key}`, {
-            missingFields,
-            caller: callerInfo,
-            dataKeys: Object.keys(data),
-            hasAutoRoles: !!data.AutoRoles,
-            hasWelcomeChannel: !!data.WelcomeChannel,
-            autoRolesCount: data.AutoRoles?.length || 0
-          });
           
           // PREVENT THE SAVE - throw error to stop execution
           throw new DatabaseWriteError(

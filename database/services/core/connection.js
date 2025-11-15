@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const chalk = require('chalk');
 const { DatabaseConnectionError } = require('./errors');
-const dbLogger = require('../../../utils/dbLogger');
 
 /**
  * Connection Manager
@@ -80,7 +79,6 @@ class ConnectionManager {
 
     } catch (error) {
       console.error(chalk.red('Failed to initialize database connections:'), error.message);
-      dbLogger.error('CONNECTION', 'initialization failed', error);
       throw error;
     }
   }
@@ -112,7 +110,6 @@ class ConnectionManager {
       } catch (error) {
         lastError = error;
         this.stats[type].errorCount++;
-        dbLogger.error('CONNECTION', `${type} connection attempt ${attempt} failed`, error);
         
         if (attempt < maxRetries) {
           // Retry delays: 2s, 5s, 10s
@@ -183,7 +180,6 @@ class ConnectionManager {
     connection.on('error', (error) => {
       console.error(chalk.red(`${type} database error:`), error.message);
       this.stats[type].errorCount++;
-      dbLogger.error('CONNECTION', `${type} database error`, error);
     });
 
     connection.on('disconnected', () => {
@@ -217,7 +213,6 @@ class ConnectionManager {
         }
       } catch (error) {
         console.error(chalk.yellow('Failed to clear service caches on reconnect:'), error.message);
-        dbLogger.error('CACHE', 'Failed to clear caches on reconnect', error);
       }
     });
   }
