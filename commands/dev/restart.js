@@ -8,13 +8,14 @@ module.exports = {
   name: "restart",
   aliases: ['reboot'],
   description: 'restart your mom',
+  syntax: 'bozo u can not use it',
   permission: 'dev',
   run: async (client, message, args) => {
     // Check dev permission (silent fail if not dev)
     if (!await hasPermissionLevel(message, 'dev')) return;
 
     try {
-      await embeds.success(message, 'rebooting **vleed** in a sec master...');
+      await message.channel.send('rebooting **vleed** in a sec master...');
       
       // Give time for message to send
       setTimeout(async () => {
@@ -28,7 +29,7 @@ module.exports = {
       }, 1000);
       
     } catch (error) {
-      return embeds.deny(message, 'I **failed** master, I am sorry');
+      return message.channel.send('I **failed** master, I am sorry');
     }
   }
 };
