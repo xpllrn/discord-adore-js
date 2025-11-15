@@ -1,9 +1,8 @@
 const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const { hasPermissionLevel } = require('../../utils/permissions');
 const { findUser } = require('../../handlers/finder');
 const { ensureUserData } = require('../../database');
-const { createConfirmation, createPagination } = require('../../core/buttons');
+const { createPagination } = require('../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../config/setup');
 const logger = require('../../utils/logger');
@@ -93,72 +92,6 @@ module.exports = {
       } catch (error) {
         logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to set birthday');
-      }
-
-    } else if (args[0] === 'reset') {
-      const subcommandInfo = {
-        name: 'reset',
-        description: 'Reset a user\'s birthday (dev only)',
-        usage: '{guildprefix}bday reset [user]',
-        aliases: [],
-        parameters: ['user'],
-        example: '{guildprefix}bday reset @user'
-      };
-
-      // Reset user's birthday (dev only)
-      if (!await hasPermissionLevel(message, 'dev')) return;
-
-      if (!args[1]) {
-        return false;
-      }
-
-      // Find the target user
-      const userResult = await findUser(message.guild, args.slice(1).join(' '), client);
-
-      if (!userResult.found) {
-        return embeds.warn(message, userResult.error || 'User not found');
-      }
-
-      let targetUser, targetMember;
-      if (userResult.isGlobal) {
-        targetUser = userResult.user;
-        targetMember = null;
-      } else {
-        targetUser = userResult.user.user || userResult.user;
-        targetMember = userResult.user;
-      }
-
-      // Ensure user data exists
-      await ensureUserData(targetUser.id);
-
-      try {
-        // Get current birthday using service layer
-        const currentBirthday = await userService.getBirthday(targetUser.id);
-
-        if (!currentBirthday || !currentBirthday.day || !currentBirthday.month) {
-          const username = targetMember ? targetMember.displayName : targetUser.username;
-          return embeds.warn(message, `**${username}** has no birthday set`);
-        }
-
-        const username = targetMember ? targetMember.displayName : targetUser.username;
-
-        // Show confirmation dialog
-        await createConfirmation(
-          message,
-          `Are you sure you want to **reset the birthday** for **${username}**?`,
-          async (interaction) => {
-            // On approve: clear birthday
-            await userService.clearBirthday(targetUser.id);
-
-            // Edit the confirmation embed to show success message
-            const successEmbed = embeds.createSuccess(message, `Reset birthday for **${username}**`);
-
-            await interaction.editReply({ embeds: [successEmbed], components: [] });
-          }
-        );
-      } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to reset birthday');
       }
 
     } else if (args[0] === 'list') {
@@ -273,7 +206,7 @@ module.exports = {
       const userResult = await findUser(message.guild, args[0], client);
 
       if (!userResult.found) {
-        return embeds.warn(message, userResult.error || 'User not found');
+        return embeds.warn(message, userResult.error);
       }
 
       let targetUser, targetMember;
