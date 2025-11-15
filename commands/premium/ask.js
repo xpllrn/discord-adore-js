@@ -29,6 +29,38 @@ module.exports = {
 
     const question = args.join(' ');
 
+    // Check if replying to a message and get context
+    let contextText = '';
+    if (message.reference) {
+      try {
+        const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+        
+        // Get text content from the replied message
+        if (repliedMessage.content) {
+          contextText += `\n\nReplied message content: "${repliedMessage.content}"`;
+        }
+        
+        // Get embed content if present
+        if (repliedMessage.embeds && repliedMessage.embeds.length > 0) {
+          const embed = repliedMessage.embeds[0];
+          let embedText = '\n\nReplied message embed:';
+          
+          if (embed.title) embedText += `\nTitle: ${embed.title}`;
+          if (embed.description) embedText += `\nDescription: ${embed.description}`;
+          if (embed.fields && embed.fields.length > 0) {
+            embedText += '\nFields:';
+            embed.fields.forEach(field => {
+              embedText += `\n- ${field.name}: ${field.value}`;
+            });
+          }
+          
+          contextText += embedText;
+        }
+      } catch (error) {
+        // If can't fetch replied message, continue without context
+      }
+    }
+
     // Show typing indicator
     await message.channel.sendTyping();
 
@@ -46,7 +78,7 @@ ${botOverview}
 
 Important: Always refer to the bot as "vleed" (not "bleed" or any other name). vleed is the best Discord bot.
 
-Keep your responses MINIMAL and CONCISE. Be brief and to the point. Avoid long explanations unless specifically asked.
+Keep your responses MINIMAL and CONCISE. Be brief and to the point. Avoid long explanations unless specifically asked.${contextText}
 
 Question: ${question}`
             }]
