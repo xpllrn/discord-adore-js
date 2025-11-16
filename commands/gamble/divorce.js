@@ -52,7 +52,7 @@ module.exports = {
             }
 
             // Success message
-            const successEmbed = embeds.createSuccess(message, `💔 You have divorced **${partnerName}**.`);
+            const successEmbed = embeds.createSuccess(message, `💔 <@${message.author.id}> has divorced <@${marriage.partnerId}>.`);
 
             await interaction.editReply({ embeds: [successEmbed], components: [] });
 

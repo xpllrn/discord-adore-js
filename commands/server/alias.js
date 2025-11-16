@@ -92,11 +92,11 @@ async function handleAddAlias(message, args) {
 
   // Validate shortcut
   if (shortcut.length > 20) {
-    return embeds.warn(message, 'Shortcut cannot be longer than 20 characters');
+    return embeds.warn(message, 'Shortcut cannot be longer than **20 characters**');
   }
 
   if (shortcut.includes(' ')) {
-    return embeds.warn(message, 'Shortcut cannot contain spaces');
+    return embeds.warn(message, 'Shortcut cannot contain **spaces**');
   }
 
   // Check if shortcut conflicts with existing commands
@@ -104,7 +104,7 @@ async function handleAddAlias(message, args) {
                           message.client.commands.get(message.client.aliases.get(shortcut));
   
   if (existingCommand) {
-    return embeds.warn(message, `Cannot create alias \`${shortcut}\` - it conflicts with an existing command`);
+    return embeds.warn(message, `\`${shortcut}\` conflicts with an **existing command**`);
   }
 
   // Validate command exists (check first word before {0} placeholder)
@@ -113,7 +113,7 @@ async function handleAddAlias(message, args) {
                        message.client.commands.get(message.client.aliases.get(commandBase));
   
   if (!targetCommand) {
-    return embeds.warn(message, `Command \`${commandBase}\` does not exist`);
+    return embeds.warn(message, `\`${commandBase}\` is not an **existing command**`);
   }
 
   try {
@@ -125,7 +125,7 @@ async function handleAddAlias(message, args) {
 
     // Check if guild has reached max aliases (limit to 50)
     if (aliases.length >= 50) {
-      return embeds.warn(message, 'This server has reached the maximum of 50 aliases. Remove some before adding more.');
+      return embeds.warn(message, 'This server has reached the **maximum of 50 aliases**');
     }
 
     // Check if shortcut already exists
@@ -138,7 +138,7 @@ async function handleAddAlias(message, args) {
       existingAlias.createdAt = new Date();
       
       await guildService.set(message.guild.id, guildData);
-      return embeds.success(message, `Updated alias \`${shortcut}\` to execute \`${command}\``);
+      return embeds.success(message, `Updated **${shortcut}** for command \`${command}\``);
     } else {
       // Add new alias
       aliases.push({
@@ -150,11 +150,11 @@ async function handleAddAlias(message, args) {
       
       guildData.Aliases = aliases;
       await guildService.set(message.guild.id, guildData);
-      return embeds.success(message, `Created alias \`${shortcut}\` for command \`${command}\``);
+      return embeds.success(message, `Added **${shortcut}** for command \`${command}\``);
     }
   } catch (error) {
     console.error('Error adding alias:', error);
-    return embeds.deny(message, 'Failed to create alias. Please try again.');
+    return embeds.deny(message, 'Failed to **create alias**');
   }
 }
 
@@ -174,19 +174,18 @@ async function handleRemoveAlias(message, args) {
     const aliasIndex = aliases.findIndex(a => a.shortcut === shortcut);
     
     if (aliasIndex === -1) {
-      return embeds.warn(message, `This server doesn't have an alias named \`${shortcut}\``);
+      return embeds.warn(message, `\`${shortcut}\` is not an existing **alias**`);
     }
 
-    const removedCommand = aliases[aliasIndex].command;
     aliases.splice(aliasIndex, 1);
     
     guildData.Aliases = aliases;
     await guildService.set(message.guild.id, guildData);
     
-    return embeds.success(message, `Removed alias \`${shortcut}\` (was: \`${removedCommand}\`)`);
+    return embeds.success(message, `Removed **alias** \`${shortcut}\``);
   } catch (error) {
     console.error('Error removing alias:', error);
-    return embeds.deny(message, 'Failed to remove alias. Please try again.');
+    return embeds.deny(message, 'Failed to **remove alias**');
   }
 }
 
@@ -198,23 +197,60 @@ async function handleRemoveAllAliases(message) {
     const aliases = guildData.Aliases || [];
 
     if (aliases.length === 0) {
-      return embeds.warn(message, 'This server doesn\'t have any aliases to remove');
+      return embeds.warn(message, 'No **aliases** found for **any commands**');
     }
 
     const count = aliases.length;
     guildData.Aliases = [];
     await guildService.set(message.guild.id, guildData);
     
-    return embeds.success(message, `Removed all ${count} alias${count === 1 ? '' : 'es'}`);
+    return embeds.success(message, `Cleared **all aliases** for **commands**`);
   } catch (error) {
     console.error('Error removing all aliases:', error);
-    return embeds.deny(message, 'Failed to remove aliases. Please try again.');
+    return embeds.deny(message, 'Failed to **remove aliases**');
   }
 }
 
-// Reset aliases handler (same as removeall)
+// Reset aliases handler with confirmation
 async function handleResetAliases(message) {
-  return await handleRemoveAllAliases(message);
+  try {
+    const guildService = getService('guild');
+    const guildData = await guildService.ensureGuildData(message.guild.id);
+    const aliases = guildData.Aliases || [];
+
+    if (aliases.length === 0) {
+      return embeds.warn(message, 'No **aliases** found for **any commands**');
+    }
+
+    const { createConfirmation } = require('../../core/buttons');
+    
+    await createConfirmation(
+      message,
+      'Are you sure that you want to **reset all aliases**?',
+      async (interaction) => {
+        try {
+          // Reload guild data in case it changed
+          const freshGuildData = await guildService.ensureGuildData(message.guild.id);
+          freshGuildData.Aliases = [];
+          await guildService.set(message.guild.id, freshGuildData);
+          
+          await interaction.update({
+            embeds: [embeds.success(message, 'Cleared **all aliases** for **commands**').embeds[0]],
+            components: []
+          });
+        } catch (error) {
+          console.error('Error resetting aliases:', error);
+          await interaction.update({
+            embeds: [embeds.deny(message, 'Failed to **reset aliases**').embeds[0]],
+            components: []
+          });
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error in reset aliases:', error);
+    return embeds.deny(message, 'Failed to **reset aliases**');
+  }
 }
 
 // List aliases handler
@@ -225,7 +261,7 @@ async function handleListAliases(message) {
     const aliases = guildData.Aliases || [];
 
     if (aliases.length === 0) {
-      return embeds.warn(message, 'This server doesn\'t have any aliases set up\nCreate one with: `alias add [shortcut] [command]`');
+      return embeds.warn(message, 'No **aliases** found for **any commands**');
     }
 
     const embed = new EmbedBuilder()
@@ -263,6 +299,6 @@ async function handleListAliases(message) {
     return message.channel.send({ embeds: [embed] });
   } catch (error) {
     console.error('Error listing aliases:', error);
-    return embeds.deny(message, 'Failed to list aliases. Please try again.');
+    return embeds.deny(message, 'Failed to **list aliases**');
   }
 }

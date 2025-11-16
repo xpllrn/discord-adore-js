@@ -1,9 +1,7 @@
-const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { createConfirmation } = require('../../core/buttons');
 const { getService } = require('@services');
 const { findUser } = require('../../handlers/finder');
-const { colors } = require('../../config/setup');
 const logger = require('../../utils/logger');
 
 module.exports = {
@@ -15,7 +13,7 @@ module.exports = {
   run: async (client, message, args) => {
     
     if (!args[0]) {
-      return embeds.warn(message, 'Please mention someone to marry, like `marry @vwsn diamond ring`');
+      return embeds.warn(message, 'Please **mention someone** to marry, like `marry <user> [ring]`');
     }
 
     // Find the target user
@@ -142,7 +140,7 @@ module.exports = {
             });
 
             // Success message
-            const successEmbed = embeds.createSuccess(message, `💍 **${message.author.username}** and **${targetUser.username}** are now married! Congratulations!`);
+            const successEmbed = embeds.createSuccess(message, `💍 <@${message.author.id}> and <@${targetUser.id}> are now married! Congratulations! 🎉`);
 
             await interaction.editReply({ embeds: [successEmbed], components: [] });
 
@@ -154,7 +152,7 @@ module.exports = {
         },
         async (interaction) => {
           // Rejection callback
-          const rejectEmbed = embeds.createWarn(message, `💔 **${targetUser.username}** rejected the proposal from **${message.author.username}**.`);
+          const rejectEmbed = embeds.createWarn(message, `💔 <@${targetUser.id}> rejected the proposal from <@${message.author.id}>.`);
           
           await interaction.editReply({ embeds: [rejectEmbed], components: [] });
         }

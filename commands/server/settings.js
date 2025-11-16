@@ -62,7 +62,7 @@ module.exports = {
           name: message.author.username, 
           iconURL: message.author.displayAvatarURL({ dynamic: true }) 
         })
-        .setDescription(`**${message.guild.name} Settings**`)
+       
         .addFields(
           {
             name: 'Prefix',

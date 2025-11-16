@@ -65,7 +65,7 @@ module.exports = {
       // Format timestamp
       const timestamp = `<t:${Math.floor(marriedAt.getTime() / 1000)}:R>`;
 
-      const description = `💍 **${targetUser.username}** and **${partner.username}** are happily married with **${ringName}** from ${timestamp}`;
+      const description = `💍 <@${targetUser.id}> and <@${partner.id}> are happily married with **${ringName}** from ${timestamp}`;
 
       const embed = new EmbedBuilder()
         .setColor(colors.embed)

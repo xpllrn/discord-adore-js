@@ -1973,6 +1973,116 @@ Vote for adore and get coins every 12 hours.
 
 ---
 
+## 🔧 Utility Commands
+
+### Bot Information
+
+**`,botinfo`** (aliases: `bi`, `info`, `about`)
+- Get basic information about the bot
+- Shows server count and user count
+- Includes invite button to add bot to other servers
+- No permissions required
+- Example: `,botinfo`
+
+**What it shows:**
+- Bot name and description
+- Total servers using the bot
+- Total users across all servers
+- Invite link button
+
+---
+
+### Command Aliases
+
+Create custom shortcuts for frequently used commands or quick role assignment commands.
+
+**`,alias add [shortcut] [command]`**
+- Create a custom command alias
+- Use `{0}` as a placeholder for arguments
+- Perfect for role assignments and command shortcuts
+- Permission: Manage Guild
+- Max 50 aliases per server
+
+**Examples:**
+
+**Command shortcuts:**
+```
+,alias add ui userinfo
+,alias add si serverinfo
+,alias add av avatar
+```
+Usage: `,ui @user` → executes `,userinfo @user`
+
+**Role assignment shortcuts:**
+```
+,alias add member role {0} @Member
+,alias add verify role {0} @Verified
+,alias add vip role {0} @VIP
+```
+Usage: `,member @user` → executes `,role @user @Member`
+
+**Pre-filled commands:**
+```
+,alias add quickmute mute {0} 1h Temporary mute
+,alias add warn1 warn {0} First warning - follow the rules
+```
+Usage: `,quickmute @user` → executes `,mute @user 1h Temporary mute`
+
+**How {0} placeholder works:**
+- `{0}` gets replaced with whatever you type after the alias
+- Example: If alias is `member role {0} @Member`
+- When you type `,member @john`
+- It executes `,role @john @Member`
+- The `{0}` is replaced with `@john`
+
+**`,alias remove [shortcut]`**
+- Remove a command alias
+- Example: `,alias remove ui`
+- Permission: Manage Guild
+
+**`,alias list`**
+- View all aliases in the server
+- Shows shortcut → command mapping
+- Shows who created each alias
+- Permission: Manage Guild
+
+**`,alias removeall`** (aliases: `clear`, `reset`)
+- Remove all aliases from the server
+- Requires confirmation
+- Permission: Manage Guild
+
+**Alias Rules:**
+- Maximum 20 characters for shortcut name
+- No spaces in shortcut name
+- Cannot conflict with existing commands
+- Target command must exist
+- Server-specific (each server has its own aliases)
+- Maximum 50 aliases per server
+
+**Common Use Cases:**
+
+1. **Role Management:**
+   ```
+   ,alias add staff role {0} @Staff
+   ,alias add mod role {0} @Moderator
+   ,alias add helper role {0} @Helper
+   ```
+
+2. **Quick Moderation:**
+   ```
+   ,alias add timeout mute {0} 10m Timeout
+   ,alias add spam ban {0} 7d Spamming
+   ```
+
+3. **Information Commands:**
+   ```
+   ,alias add whois userinfo
+   ,alias add server serverinfo
+   ,alias add pfp avatar
+   ```
+
+---
+
 ## 💎 Premium Features
 
 - Personal prefix (`,selfprefix`)

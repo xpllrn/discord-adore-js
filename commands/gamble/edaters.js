@@ -6,7 +6,7 @@ const logger = require('../../utils/logger');
 
 module.exports = {
   name: "edaters",
-  aliases: ['marriages', 'couples'],
+  aliases: ['couples', 'edater'],
   description: 'View all married couples in the server',
   syntax: 'edaters',
   example: 'edaters',
@@ -39,7 +39,7 @@ module.exports = {
             processedPairs.add(marriage.partnerId);
 
             // Get ring info
-            let ringName = 'Unknown Ring';
+            let ringName = 'Cheap Ring';
             if (marriage.ringId) {
               const storeService = getService('store');
               const ring = await storeService.getItemById(marriage.ringId);
@@ -69,14 +69,13 @@ module.exports = {
       let description = '';
       marriages.forEach((marriage, index) => {
         const timestamp = `<t:${Math.floor(marriage.marriedAt.getTime() / 1000)}:R>`;
-        description += `**${index + 1}.** ${marriage.user1.username} 💍 ${marriage.user2.username}\n`;
-        description += `-# Married ${timestamp} with ${marriage.ringName}\n\n`;
+        description += `**${index + 1}.** <@${marriage.user1.id}> married <@${marriage.user2.id}> ${timestamp}\n`;
       });
 
       const embed = new EmbedBuilder()
         .setColor(colors.embed)
         .setDescription(description)
-        .setFooter({ text: `${marriages.length} couple${marriages.length !== 1 ? 's' : ''} in ${message.guild.name}` });
+        .setFooter({ text: `${marriages.length} e-couple${marriages.length !== 1 ? 's' : ''} in ${message.guild.name}` });
 
       return message.channel.send({ embeds: [embed] });
 
