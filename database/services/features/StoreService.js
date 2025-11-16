@@ -75,6 +75,52 @@ class StoreService extends BaseService {
         category: 'items',
         emoji: '🔒',
         type: 'protection'
+      },
+      // Rings
+      {
+        id: 8,
+        name: 'Copper Ring',
+        description: 'A simple copper ring for marriage',
+        price: 1000,
+        category: 'rings',
+        emoji: '💍',
+        type: 'ring'
+      },
+      {
+        id: 9,
+        name: 'Silver Ring',
+        description: 'A shiny silver ring for marriage',
+        price: 10000,
+        category: 'rings',
+        emoji: '💍',
+        type: 'ring'
+      },
+      {
+        id: 10,
+        name: 'Gold Ring',
+        description: 'A luxurious gold ring for marriage',
+        price: 100000,
+        category: 'rings',
+        emoji: '💍',
+        type: 'ring'
+      },
+      {
+        id: 11,
+        name: 'Platinum Ring',
+        description: 'A rare platinum ring for marriage',
+        price: 1000000,
+        category: 'rings',
+        emoji: '💍',
+        type: 'ring'
+      },
+      {
+        id: 12,
+        name: 'Diamond Ring',
+        description: 'An exquisite diamond ring for marriage',
+        price: 10000000,
+        category: 'rings',
+        emoji: '💎',
+        type: 'ring'
       }
     ];
     
@@ -183,6 +229,14 @@ class StoreService extends BaseService {
         return {
           success: true,
           message: `🔒 Successfully activated **${item.name}**${quantityText}! You are now protected from the next ${newProtection} robbery attempt${newProtection > 1 ? 's' : ''}.`
+        };
+      }
+      
+      // Handle rings - cannot be used directly
+      if (item.category === 'rings') {
+        return {
+          success: false,
+          message: `💍 **${item.name}** can only be used to propose marriage! Use \`marry @user\` to propose.`
         };
       }
       

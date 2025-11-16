@@ -387,6 +387,46 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
+  }],
+
+  // Marriage system
+  Marriage: {
+    partnerId: {
+      type: String,
+      default: null
+    },
+    marriedAt: {
+      type: Date,
+      default: null
+    },
+    ringId: {
+      type: Number,
+      default: null
+    }
+  },
+
+  // Inventory system for store items
+  Inventory: [{
+    id: {
+      type: Number,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    },
+    quantity: {
+      type: Number,
+      default: 1
+    },
+    category: {
+      type: String,
+      required: true
+    },
+    addedAt: {
+      type: Date,
+      default: Date.now
+    }
   }]
 
 }, {
@@ -436,6 +476,13 @@ userSchema.index({ 'Afk.since': -1 }); // Recent AFK users
 // Timezone and prefix indexes
 userSchema.index({ Timezone: 1 }); // Timezone-based queries
 userSchema.index({ SelfPrefix: 1 }); // Custom prefix lookups
+
+// Marriage system indexes
+userSchema.index({ 'Marriage.partnerId': 1 }); // Find marriages
+userSchema.index({ 'Marriage.marriedAt': -1 }); // Recent marriages
+
+// Inventory system indexes
+userSchema.index({ 'Inventory.id': 1 }); // Item lookups
 
 module.exports = {
   schema: userSchema,

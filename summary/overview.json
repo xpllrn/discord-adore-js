@@ -18,6 +18,18 @@
       "help": {
         "command": ",help",
         "description": "Use ,help to view all available commands or ,help [command] for specific command information."
+      },
+      "botinfo": {
+        "command": ",botinfo",
+        "aliases": ["bi", "info", "about"],
+        "description": "Get basic information about the bot including server count, user count, and invite link.",
+        "syntax": ",botinfo",
+        "example": ",botinfo",
+        "notes": [
+          "Shows current server and user statistics",
+          "Includes invite button to add bot to other servers",
+          "No permissions required"
+        ]
       }
     }
   },
@@ -1549,7 +1561,8 @@
         {
           "id": "command-aliases",
           "title": "Command Aliases",
-          "description": "Create custom command shortcuts.",
+          "description": "Create custom command shortcuts for commands or role assignments.",
+          "overview": "Aliases allow you to create custom shortcuts for frequently used commands or create quick role assignment commands. You can use the {0} placeholder to pass arguments to the aliased command.",
           "commands": [
             {
               "name": "alias add",
@@ -1557,7 +1570,10 @@
               "syntax": ",alias add [alias] [command]",
               "examples": [
                 ",alias add ui userinfo",
-                ",alias add si serverinfo"
+                ",alias add si serverinfo",
+                ",alias add member role {0} @Member",
+                ",alias add verify role {0} @Verified",
+                ",alias add mute mute {0} 1h Muted for 1 hour"
               ],
               "permission": "Manage Guild",
               "parameters": [
@@ -1565,13 +1581,42 @@
                   "name": "alias",
                   "type": "string",
                   "required": true,
-                  "description": "Shortcut name"
+                  "description": "Shortcut name (the command you'll type)"
                 },
                 {
                   "name": "command",
                   "type": "string",
                   "required": true,
-                  "description": "Full command name"
+                  "description": "Full command name or command with arguments. Use {0} as a placeholder for user input."
+                }
+              ],
+              "notes": [
+                "Use {0} as a placeholder for arguments passed to the alias",
+                "Perfect for creating role assignment shortcuts",
+                "Can include default arguments in the command",
+                "Aliases are server-specific"
+              ],
+              "useCases": [
+                {
+                  "title": "Role Assignment Shortcut",
+                  "description": "Create quick role assignment commands",
+                  "setup": ",alias add member role {0} @Member",
+                  "usage": ",member @user",
+                  "result": "Assigns @Member role to the user"
+                },
+                {
+                  "title": "Command Shortcut",
+                  "description": "Shorten long command names",
+                  "setup": ",alias add ui userinfo",
+                  "usage": ",ui @user",
+                  "result": "Shows userinfo for the user"
+                },
+                {
+                  "title": "Pre-filled Commands",
+                  "description": "Create commands with default arguments",
+                  "setup": ",alias add quickmute mute {0} 1h Temporary mute",
+                  "usage": ",quickmute @user",
+                  "result": "Mutes user for 1 hour with reason 'Temporary mute'"
                 }
               ]
             },
@@ -1580,14 +1625,26 @@
               "description": "Remove a command alias",
               "syntax": ",alias remove [alias]",
               "example": ",alias remove ui",
-              "permission": "Manage Guild"
+              "permission": "Manage Guild",
+              "parameters": [
+                {
+                  "name": "alias",
+                  "type": "string",
+                  "required": true,
+                  "description": "The alias name to remove"
+                }
+              ]
             },
             {
               "name": "alias list",
               "description": "List all command aliases",
               "syntax": ",alias list",
               "example": ",alias list",
-              "permission": "Manage Guild"
+              "permission": "Manage Guild",
+              "notes": [
+                "Shows all aliases configured in the server",
+                "Displays the alias name and the command it executes"
+              ]
             }
           ]
         },
