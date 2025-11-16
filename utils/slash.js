@@ -10,6 +10,9 @@
  *   node utils/slash.js --clear      - Clear all commands
  */
 
+// Initialize module aliases first (required for slash commands that use @services, etc.)
+require('module-alias/register');
+
 const { REST, Routes } = require('discord.js');
 const { readdirSync } = require('fs');
 const path = require('path');

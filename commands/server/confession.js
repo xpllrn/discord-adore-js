@@ -63,7 +63,32 @@ module.exports = {
       }
 
       await confessionService.setConfessionChannel(message.guild.id, channel.id);
-      return embeds.success(message, `Set ${channel} as the confession channel`);
+      
+      // Send the confession embed with button to the channel
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.embed)
+        .setTitle('Anonymous Confession System')
+        .setDescription('Please use the confess button below to create a confession');
+
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('confession_submit')
+            .setLabel('Submit a Confession')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('📝')
+        );
+
+      const sentMessage = await channel.send({ embeds: [embed], components: [row] });
+      
+      // Pin the message
+      try {
+        await sentMessage.pin();
+      } catch (error) {
+        console.error('Error pinning confession message:', error);
+      }
+      
+      return embeds.success(message, `Set ${channel} as the confession channel and sent the confession button`);
 
     } else if (args[0] === 'ignore') {
       if (!args[1]) {

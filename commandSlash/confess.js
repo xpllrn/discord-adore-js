@@ -11,7 +11,7 @@ module.exports = {
         .setName('confession')
         .setDescription('Your anonymous confession')
         .setRequired(true)
-        .setMinLength(10)
+        .setMinLength(1)
         .setMaxLength(2000)
     ),
   
