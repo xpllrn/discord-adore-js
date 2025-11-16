@@ -209,21 +209,14 @@ async function sendVoiceMessage(client, message, text) {
 module.exports = {
   name: "ask",
   aliases: ['vleed', 'question'],
-  description: 'Ask vleed anything - get text or voice responses',
-  usage: '{guildprefix}ask [question] OR {guildprefix}ask vm [question] OR {guildprefix}ask tts [text]',
-  example: '{guildprefix}ask what is vleed?\n{guildprefix}ask vm tell me a joke\n{guildprefix}ask tts Hello everyone!',
+  description: 'Ask vleed anything',
+  usage: '{guildprefix}ask [question]',
+  example: '{guildprefix}ask what is vleed?',
   premiumBypass: true,
   run: async (client, message, args) => {
     if (!args.length) {
       return message.channel.send(
-        "**vleed AI Assistant**\n\n" +
-        "**Text Response:** `{guildprefix}ask [question]`\n" +
-        "**Voice Response:** `{guildprefix}ask vm [question]`\n" +
-        "**Text-to-Speech:** `{guildprefix}ask tts [text]`\n\n" +
-        "Examples:\n" +
-        "`{guildprefix}ask what is vleed?`\n" +
-        "`{guildprefix}ask vm tell me a joke`\n" +
-        "`{guildprefix}ask tts Hello everyone!`".replace(/{guildprefix}/g, message.prefix || ',')
+sup, I am vleed
       );
     }
 
