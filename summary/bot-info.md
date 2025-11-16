@@ -2106,6 +2106,121 @@ Usage: `,quickmute @user` → executes `,mute @user 1h Temporary mute`
 
 ---
 
+## 📝 Confession System
+
+The confession system allows members to submit anonymous confessions that are posted to a designated channel. Perfect for community engagement and allowing members to share thoughts anonymously.
+
+### Features
+
+- **Completely Anonymous** - No tracking of who submitted what
+- **Unique IDs** - Each confession gets an auto-incrementing ID
+- **Reply System** - Members can reply to confessions anonymously
+- **Ignore List** - Prevent specific users from submitting
+- **Interactive Buttons** - Easy submission via modal forms
+
+### Setup
+
+**Step 1: Set Confession Channel**
+```
+,confession channel #confessions
+```
+This enables the system and sets where confessions will be posted.
+
+**Step 2: Users Submit Confessions**
+Users can submit confessions by:
+- Running `,confess` to get the submission button
+- Clicking "Submit a Confession" on any confession message
+- Clicking "Reply" to reply to a specific confession
+
+### Commands
+
+**`,confession`** or **`,confess`**
+- Shows an embed with "Submit a Confession" button
+- Anyone can use this command
+- Example: `,confess`
+
+**`,confession channel [#channel]`** (Manage Server)
+- Set or view the confession channel
+- Examples:
+  - `,confession channel #confessions` - Set channel
+  - `,confession channel` - View current channel
+- Setting a channel automatically enables the system
+
+**`,confession ignore [@user]`** (Manage Server)
+- Toggle a user's ability to submit confessions
+- Examples:
+  - `,confession ignore @user` - Toggle ignore status
+  - `,confession ignore` - View ignored users
+- Ignored users cannot submit confessions or replies
+
+**`,confession config`** (Manage Server)
+- View complete confession system configuration
+- Shows:
+  - System status (enabled/disabled)
+  - Confession channel
+  - List of ignored users
+  - Next confession ID
+- Example: `,confession config`
+
+### How It Works
+
+**Submitting a Confession:**
+1. User clicks "Submit a Confession" button
+2. Modal form opens asking for confession content
+3. User types confession (10-2000 characters)
+4. Confession is posted anonymously with unique ID
+
+**Replying to a Confession:**
+1. User clicks "Reply" button on any confession
+2. Modal form opens with confession ID pre-filled
+3. User types reply (10-2000 characters)
+4. Reply is posted as new confession with "Reply to #X" header
+
+### Confession Format
+
+Each confession appears as an embed with:
+- **Title:** Anonymous Confession (#ID)
+- **Description:** The confession content
+- **Footer:** Confession ID: #ID
+- **Buttons:**
+  - 📝 Submit a Confession - Opens submission modal
+  - 💬 Reply - Opens reply modal with ID pre-filled
+
+### Managing Confessions
+
+**Ignore Problematic Users:**
+```
+,confession ignore @user
+```
+Prevents the user from submitting confessions or replies.
+
+**View Configuration:**
+```
+,confession config
+```
+See all settings including ignored users and next confession ID.
+
+**Disable System:**
+Simply delete the confession channel or stop using the commands. The system is passive and only activates when users interact with buttons.
+
+### Best Practices
+
+1. **Set Clear Rules** - Establish guidelines for appropriate confessions
+2. **Monitor Regularly** - Check confessions for rule violations
+3. **Use Ignore List** - Quickly prevent abuse from specific users
+4. **Moderate Content** - Delete inappropriate confessions manually
+5. **Encourage Positivity** - Set the tone for constructive confessions
+
+### Use Cases
+
+- **Community Engagement** - Let members share thoughts freely
+- **Feedback Collection** - Anonymous suggestions and concerns
+- **Support Groups** - Safe space for sharing experiences
+- **Fun & Entertainment** - Light-hearted anonymous posts
+- **Venting Channel** - Let members express frustrations safely
+
+---
+
 ## 🎯 Quick Start Guide
 
 **For New Servers:**

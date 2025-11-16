@@ -150,6 +150,15 @@ module.exports = {
         if (interaction.customId.startsWith('buttonrole_')) {
           return handleButtonRole(interaction);
         }
+
+        // Handle confession buttons
+        if (interaction.customId === 'confession_submit') {
+          return handleConfessionSubmit(interaction);
+        }
+
+        if (interaction.customId.startsWith('confession_reply_')) {
+          return handleConfessionReply(interaction);
+        }
       }
 
       // Handle select menu interactions
@@ -161,6 +170,14 @@ module.exports = {
       if (interaction.isModalSubmit()) {
         if (interaction.customId === 'vm_rename_modal') {
           return handleVMRenameModal(interaction);
+        }
+
+        if (interaction.customId === 'confession_modal') {
+          return handleConfessionModal(interaction);
+        }
+
+        if (interaction.customId === 'confession_reply_modal') {
+          return handleConfessionReplyModal(interaction);
         }
       }
     } catch (error) {
@@ -1213,3 +1230,332 @@ async function handleButtonRole(interaction) {
   }
 }
 
+
+// ===== CONFESSION SYSTEM HANDLERS =====
+
+/**
+ * Handle confession submit button
+ * @param {ButtonInteraction} interaction - The button interaction
+ */
+async function handleConfessionSubmit(interaction) {
+  try {
+    const confessionService = getService('confession');
+    const config = await confessionService.getConfessionConfig(interaction.guild.id);
+
+    if (!config.enabled || !config.channelId) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'The confession system is not enabled on this server.'
+      );
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    }
+
+    // Check if user is ignored
+    const isIgnored = await confessionService.isUserIgnored(interaction.guild.id, interaction.user.id);
+    if (isIgnored) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'You are not allowed to submit confessions in this server.'
+      );
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    }
+
+    // Show modal
+    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+    
+    const modal = new ModalBuilder()
+      .setCustomId('confession_modal')
+      .setTitle('Submit a Confession');
+
+    const confessionInput = new TextInputBuilder()
+      .setCustomId('confession_content')
+      .setLabel('Confession Content')
+      .setStyle(TextInputStyle.Paragraph)
+      .setPlaceholder('Enter your anonymous confession here...')
+      .setRequired(true)
+      .setMinLength(10)
+      .setMaxLength(2000);
+
+    const row = new ActionRowBuilder().addComponents(confessionInput);
+    modal.addComponents(row);
+
+    await interaction.showModal(modal);
+
+  } catch (error) {
+    if (interaction.client?.errorLogger) {
+      interaction.client.errorLogger.log(error, 'Confession Submit Handler', {
+        command: 'Confession Submit',
+        user: interaction.user,
+        guild: interaction.guild,
+        channel: interaction.channel
+      });
+    }
+
+    try {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'An error occurred while opening the confession form.'
+      );
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    } catch (replyError) {
+      // Silent fail
+    }
+  }
+}
+
+/**
+ * Handle confession modal submission
+ * @param {ModalSubmitInteraction} interaction - The modal submit interaction
+ */
+async function handleConfessionModal(interaction) {
+  try {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const confessionService = getService('confession');
+    const config = await confessionService.getConfessionConfig(interaction.guild.id);
+
+    if (!config.enabled || !config.channelId) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'The confession system is not enabled on this server.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    }
+
+    const confessionChannel = interaction.guild.channels.cache.get(config.channelId);
+    if (!confessionChannel) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'The confession channel no longer exists.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    }
+
+    const confessionContent = interaction.fields.getTextInputValue('confession_content');
+    const confessionId = await confessionService.getNextConfessionId(interaction.guild.id);
+
+    // Create confession embed
+    const confessionEmbed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setTitle(`Anonymous Confession (#${confessionId})`)
+      .setDescription(confessionContent)
+      .setFooter({ text: `Confession ID: ${confessionId}` })
+      .setTimestamp();
+
+    // Create buttons
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('confession_submit')
+          .setLabel('Submit a Confession')
+          .setStyle(ButtonStyle.Primary)
+          .setEmoji('📝'),
+        new ButtonBuilder()
+          .setCustomId(`confession_reply_${confessionId}`)
+          .setLabel('Reply')
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('💬')
+      );
+
+    // Send confession
+    await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
+
+    // Confirm to user
+    const embed = embeds.createSuccess(
+      { author: { id: interaction.user.id } },
+      `Your confession has been submitted anonymously! (ID: #${confessionId})`
+    );
+    return await interaction.editReply({ embeds: [embed] });
+
+  } catch (error) {
+    if (interaction.client?.errorLogger) {
+      interaction.client.errorLogger.log(error, 'Confession Modal Handler', {
+        command: 'Confession Modal',
+        user: interaction.user,
+        guild: interaction.guild,
+        channel: interaction.channel
+      });
+    }
+
+    try {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'An error occurred while submitting your confession.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    } catch (replyError) {
+      // Silent fail
+    }
+  }
+}
+
+/**
+ * Handle confession reply button
+ * @param {ButtonInteraction} interaction - The button interaction
+ */
+async function handleConfessionReply(interaction) {
+  try {
+    const confessionService = getService('confession');
+    const config = await confessionService.getConfessionConfig(interaction.guild.id);
+
+    if (!config.enabled || !config.channelId) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'The confession system is not enabled on this server.'
+      );
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    }
+
+    // Check if user is ignored
+    const isIgnored = await confessionService.isUserIgnored(interaction.guild.id, interaction.user.id);
+    if (isIgnored) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'You are not allowed to submit confessions in this server.'
+      );
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    }
+
+    // Extract confession ID from button
+    const confessionId = interaction.customId.split('_')[2];
+
+    // Show modal
+    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+    
+    const modal = new ModalBuilder()
+      .setCustomId('confession_reply_modal')
+      .setTitle('Reply to Confession');
+
+    const replyToInput = new TextInputBuilder()
+      .setCustomId('reply_to_id')
+      .setLabel('Confession Reply To')
+      .setStyle(TextInputStyle.Short)
+      .setPlaceholder('Confession ID')
+      .setValue(confessionId)
+      .setRequired(true)
+      .setMinLength(1)
+      .setMaxLength(10);
+
+    const confessionInput = new TextInputBuilder()
+      .setCustomId('confession_content')
+      .setLabel('Confession Content')
+      .setStyle(TextInputStyle.Paragraph)
+      .setPlaceholder('Enter your anonymous reply here...')
+      .setRequired(true)
+      .setMinLength(10)
+      .setMaxLength(2000);
+
+    const row1 = new ActionRowBuilder().addComponents(replyToInput);
+    const row2 = new ActionRowBuilder().addComponents(confessionInput);
+    modal.addComponents(row1, row2);
+
+    await interaction.showModal(modal);
+
+  } catch (error) {
+    if (interaction.client?.errorLogger) {
+      interaction.client.errorLogger.log(error, 'Confession Reply Handler', {
+        command: 'Confession Reply',
+        user: interaction.user,
+        guild: interaction.guild,
+        channel: interaction.channel
+      });
+    }
+
+    try {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'An error occurred while opening the reply form.'
+      );
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    } catch (replyError) {
+      // Silent fail
+    }
+  }
+}
+
+/**
+ * Handle confession reply modal submission
+ * @param {ModalSubmitInteraction} interaction - The modal submit interaction
+ */
+async function handleConfessionReplyModal(interaction) {
+  try {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const confessionService = getService('confession');
+    const config = await confessionService.getConfessionConfig(interaction.guild.id);
+
+    if (!config.enabled || !config.channelId) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'The confession system is not enabled on this server.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    }
+
+    const confessionChannel = interaction.guild.channels.cache.get(config.channelId);
+    if (!confessionChannel) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'The confession channel no longer exists.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    }
+
+    const replyToId = interaction.fields.getTextInputValue('reply_to_id');
+    const confessionContent = interaction.fields.getTextInputValue('confession_content');
+    const confessionId = await confessionService.getNextConfessionId(interaction.guild.id);
+
+    // Create confession reply embed
+    const confessionEmbed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setTitle(`Anonymous Confession (#${confessionId})`)
+      .setDescription(`**Reply to #${replyToId}**\n\n${confessionContent}`)
+      .setFooter({ text: `Confession ID: ${confessionId} | Reply to: ${replyToId}` })
+      .setTimestamp();
+
+    // Create buttons
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('confession_submit')
+          .setLabel('Submit a Confession')
+          .setStyle(ButtonStyle.Primary)
+          .setEmoji('📝'),
+        new ButtonBuilder()
+          .setCustomId(`confession_reply_${confessionId}`)
+          .setLabel('Reply')
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('💬')
+      );
+
+    // Send confession reply
+    await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
+
+    // Confirm to user
+    const embed = embeds.createSuccess(
+      { author: { id: interaction.user.id } },
+      `Your reply has been submitted anonymously! (ID: #${confessionId}, Reply to: #${replyToId})`
+    );
+    return await interaction.editReply({ embeds: [embed] });
+
+  } catch (error) {
+    if (interaction.client?.errorLogger) {
+      interaction.client.errorLogger.log(error, 'Confession Reply Modal Handler', {
+        command: 'Confession Reply Modal',
+        user: interaction.user,
+        guild: interaction.guild,
+        channel: interaction.channel
+      });
+    }
+
+    try {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'An error occurred while submitting your reply.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    } catch (replyError) {
+      // Silent fail
+    }
+  }
+}

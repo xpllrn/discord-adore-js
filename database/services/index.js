@@ -12,6 +12,7 @@ let serviceInstances = {
   store: null,
   system: null,
   antinuke: null,
+  confession: null,
   connectionManager: null
 };
 
@@ -41,6 +42,7 @@ const PrefixService = require('./features/PrefixService');
 const SpotifyService = require('./features/SpotifyService');
 const StoreService = require('./features/StoreService');
 const AntinukeService = require('./features/AntinukeService');
+const ConfessionService = require('./features/ConfessionService');
 
 // Core infrastructure
 const BaseService = require('./core/BaseService');
@@ -76,6 +78,7 @@ async function initializeServices(config = {}) {
     serviceInstances.spotify = new SpotifyService();
     serviceInstances.store = new StoreService();
     serviceInstances.antinuke = new AntinukeService();
+    serviceInstances.confession = new ConfessionService();
     serviceInstances.prefix = new PrefixService(serviceInstances.guild, serviceInstances.user);
 
     // Start cache warmer for system-wide data (after startup delay)
@@ -228,5 +231,6 @@ module.exports = {
   PrefixService,
   SpotifyService,
   StoreService,
-  AntinukeService
+  AntinukeService,
+  ConfessionService
 };

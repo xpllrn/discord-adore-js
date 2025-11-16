@@ -1355,7 +1355,26 @@ const guildSchema = new mongoose.Schema({
       type: Date,
       required: true // Auto-expire after 2 hours
     }
-  }]
+  }],
+
+  // Confession system
+  ConfessionSystem: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    channelId: {
+      type: String,
+      default: null
+    },
+    ignoredUsers: [{
+      type: String // User IDs who cannot submit confessions
+    }],
+    nextConfessionId: {
+      type: Number,
+      default: 1
+    }
+  }
 }, {
   timestamps: true
 });
@@ -1539,6 +1558,11 @@ guildSchema.index({ 'Aliases.shortcut': 1 }); // Alias lookups
 // Role Restore indexes
 guildSchema.index({ 'RoleRestore.userId': 1 });
 guildSchema.index({ 'RoleRestore.expiresAt': 1 }); // For cleanup of expired data
+
+// Confession system indexes
+guildSchema.index({ 'ConfessionSystem.enabled': 1 });
+guildSchema.index({ 'ConfessionSystem.channelId': 1 });
+guildSchema.index({ 'ConfessionSystem.ignoredUsers': 1 });
 
 module.exports = {
   schema: guildSchema,

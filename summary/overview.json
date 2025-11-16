@@ -1180,6 +1180,131 @@
               "permission": "Manage Guild"
             }
           ]
+        },
+        {
+          "id": "confession-system",
+          "title": "Confession System",
+          "description": "Anonymous confession system for your server.",
+          "overview": "Allow members to submit anonymous confessions that are posted to a designated channel. Members can also reply to confessions anonymously.",
+          "features": [
+            "Completely anonymous submissions",
+            "Unique confession IDs",
+            "Reply system for confession threads",
+            "Ignore list for problematic users",
+            "Interactive buttons for easy submission"
+          ],
+          "commands": [
+            {
+              "name": "confession",
+              "description": "Show confession submission button",
+              "syntax": ",confession",
+              "example": ",confession",
+              "aliases": ["confess"],
+              "notes": [
+                "Displays an embed with a button to submit confessions",
+                "Anyone can use this command"
+              ]
+            },
+            {
+              "name": "confession channel",
+              "description": "Set or view the confession channel",
+              "syntax": ",confession channel [#channel]",
+              "examples": [
+                ",confession channel #confessions",
+                ",confession channel"
+              ],
+              "permission": "Manage Server",
+              "parameters": [
+                {
+                  "name": "channel",
+                  "type": "channel",
+                  "required": false,
+                  "description": "Channel where confessions will be posted. Leave empty to view current channel."
+                }
+              ],
+              "notes": [
+                "Setting a channel automatically enables the system",
+                "Without arguments, shows the current confession channel"
+              ]
+            },
+            {
+              "name": "confession ignore",
+              "description": "Toggle a user's ability to submit confessions",
+              "syntax": ",confession ignore [@user]",
+              "examples": [
+                ",confession ignore @user",
+                ",confession ignore"
+              ],
+              "permission": "Manage Server",
+              "parameters": [
+                {
+                  "name": "user",
+                  "type": "mention",
+                  "required": false,
+                  "description": "User to ignore/unignore. Leave empty to view ignored users."
+                }
+              ],
+              "notes": [
+                "Toggles ignore status - if ignored, removes from list; if not ignored, adds to list",
+                "Ignored users cannot submit confessions or replies",
+                "Without arguments, shows list of ignored users"
+              ]
+            },
+            {
+              "name": "confession config",
+              "description": "View confession system configuration",
+              "syntax": ",confession config",
+              "example": ",confession config",
+              "permission": "Manage Server",
+              "shows": [
+                "System status (enabled/disabled)",
+                "Confession channel",
+                "List of ignored users",
+                "Next confession ID"
+              ]
+            }
+          ],
+          "howItWorks": {
+            "submission": [
+              "User clicks 'Submit a Confession' button",
+              "Modal form opens asking for confession content",
+              "User types confession (10-2000 characters)",
+              "Confession is posted anonymously with unique ID"
+            ],
+            "reply": [
+              "User clicks 'Reply' button on any confession",
+              "Modal form opens with confession ID pre-filled",
+              "User types reply (10-2000 characters)",
+              "Reply is posted as new confession with 'Reply to #X' header"
+            ]
+          },
+          "confessionFormat": {
+            "title": "Anonymous Confession (#ID)",
+            "description": "The confession content",
+            "footer": "Confession ID: #ID",
+            "buttons": [
+              "Submit a Confession - Opens submission modal",
+              "Reply - Opens reply modal with ID pre-filled"
+            ]
+          },
+          "setup": {
+            "steps": [
+              {
+                "step": 1,
+                "description": "Set a confession channel",
+                "command": ",confession channel #confessions"
+              },
+              {
+                "step": 2,
+                "description": "Users can now submit confessions by clicking the button"
+              },
+              {
+                "step": 3,
+                "description": "(Optional) Ignore problematic users",
+                "command": ",confession ignore @user"
+              }
+            ]
+          }
         }
       ]
     },

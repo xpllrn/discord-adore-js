@@ -64,7 +64,6 @@ module.exports = {
         } catch (reactError) {
           // Ignore reaction errors (message might be deleted)
         }
-        return embeds.success(message, `**#${targetChannel.name}** is now marked as **NSFW (18+)**`);
       } else {
         // Channel is no longer NSFW
         try {
@@ -72,18 +71,17 @@ module.exports = {
         } catch (reactError) {
           // Ignore reaction errors (message might be deleted)
         }
-        return embeds.success(message, `**#${targetChannel.name}** is no longer marked as **NSFW**`);
       }
 
     } catch (error) {
       logger.webhook.error(error, message);
 
       if (error.code === 50013) {
-        return embeds.deny(message, 'Missing permissions to change NSFW status');
+        return embeds.deny(message, '**Missing permissions** to change NSFW status');
       } else if (error.code === 50035) {
-        return embeds.warn(message, 'Invalid channel type for NSFW toggle');
+        return embeds.warn(message, 'Invalid channel type for **NSFW toggle**');
       } else {
-        return embeds.deny(message, 'An error occurred while toggling NSFW status');
+        return embeds.deny(message, 'not wanna');
       }
     }
   }
