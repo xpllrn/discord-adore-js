@@ -32,13 +32,12 @@ module.exports = {
       return embeds.deny(message, 'You **cannot** marry yourself!');
     }
 
+    // Check if trying to marry the bot
+    if (!permissions.checkBotAction(message, targetUser)) return;
+
     // Prevent bot marriage
-    if (targetUser.id === message.guild.members.me.id) {
-      return message.channel.send('Leave me alone!');
-    }
-    
     if (targetUser.bot) {
-      return embeds.deny(message, 'You cannot marry a bot!');
+      return embeds.deny(message, 'You **cannot marry** my brethren');
     }
 
     try {
