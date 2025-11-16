@@ -10,7 +10,8 @@ module.exports = {
   permission: 'Manage Server',
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const confessionService = getService('confession');
+    try {
+      const confessionService = getService('confession');
 
     // If no args or just "confess", show info embed
     if (!args[0] || args[0] === 'confess') {
@@ -127,6 +128,21 @@ module.exports = {
 
     } else {
       return false;
+    }
+    } catch (error) {
+      console.error('Error in confession command:', error);
+      
+      if (client?.errorLogger) {
+        client.errorLogger.log(error, 'Confession Command', {
+          command: 'confession',
+          args: args.join(' ') || '',
+          user: message.author,
+          guild: message.guild,
+          channel: message.channel
+        });
+      }
+      
+      return embeds.deny(message, 'An error occurred while executing the confession command.');
     }
   }
 };

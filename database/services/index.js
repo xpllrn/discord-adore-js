@@ -158,6 +158,7 @@ function getServiceHealth() {
   health.spotify = serviceInstances.spotify?.initialized || false;
   health.store = serviceInstances.store?.initialized || false;
   health.system = serviceInstances.system?.initialized || false;
+  health.confession = serviceInstances.confession?.initialized || false;
 
   // Overall health is true if core services are healthy (connection manager is optional)
   health.overall = health.guild && health.user && health.prefix && health.system;
