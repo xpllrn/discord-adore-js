@@ -34,18 +34,9 @@ module.exports = {
     // Get the subcommand
     const subcommand = args[0].toLowerCase();
 
-    // Base role management requires Manage Guild permission
+    // Base role management has been moved to settings command
     if (subcommand === 'baserole') {
-      const subcommandInfo = {
-        description: 'Set the base role for booster role positioning',
-        usage: '{guildprefix}boostrole baserole [@role]',
-        aliases: [],
-        parameters: ['role'],
-        example: '{guildprefix}boostrole baserole Booster'
-      };
-
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
-      return await handleBaseRole(client, message, args.slice(1));
+      return embeds.info(message, 'The `baserole` command has been moved to `settings baserole`');
     }
 
     // Cleanup requires Manage Guild permission
@@ -75,7 +66,7 @@ module.exports = {
       // Check if booster role system is enabled
       const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
       if (!isEnabled) {
-        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
       }
       return await handleCreate(client, message, args.slice(1));
     }
@@ -93,7 +84,7 @@ module.exports = {
       // Check if booster role system is enabled
       const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
       if (!isEnabled) {
-        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
       }
       return await handleRename(client, message, args.slice(1));
     }
@@ -111,7 +102,7 @@ module.exports = {
       // Check if booster role system is enabled
       const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
       if (!isEnabled) {
-        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
       }
       return await handleIcon(client, message, args.slice(1));
     }
@@ -129,7 +120,7 @@ module.exports = {
       // Check if booster role system is enabled
       const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
       if (!isEnabled) {
-        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
       }
       return await handleColor(client, message, args.slice(1));
     }
@@ -147,7 +138,7 @@ module.exports = {
       // Check if booster role system is enabled
       const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
       if (!isEnabled) {
-        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
       }
       return await handleGradient(client, message, args.slice(1));
     }
@@ -165,7 +156,7 @@ module.exports = {
       // Check if booster role system is enabled
       const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
       if (!isEnabled) {
-        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
       }
       return await handleHolographic(client, message, args.slice(1));
     }
@@ -187,7 +178,7 @@ module.exports = {
         // Check if booster role system is enabled
         const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
         if (!isEnabled) {
-          return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+          return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
         }
         return await handleShareRemove(client, message, args.slice(2));
       }
@@ -204,7 +195,7 @@ module.exports = {
         // Check if booster role system is enabled
         const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
         if (!isEnabled) {
-          return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+          return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
         }
         return await handleShareList(client, message, args.slice(2));
       }
@@ -221,7 +212,7 @@ module.exports = {
       // Check if booster role system is enabled
       const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
       if (!isEnabled) {
-        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
       }
       return await handleShare(client, message, args.slice(1));
     }
@@ -239,7 +230,7 @@ module.exports = {
       // Check if booster role system is enabled
       const isEnabled = await guildService.isBoosterRoleSystemEnabled(message.guild.id);
       if (!isEnabled) {
-        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `br baserole @role`');
+        return embeds.warn(message, 'Booster role system is not enabled. An admin needs to set a base role first using `settings baserole @role`');
       }
       return await handleRemove(client, message, args.slice(1));
     }
