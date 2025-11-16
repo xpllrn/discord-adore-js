@@ -26,7 +26,7 @@ module.exports = {
         usage: '{guildprefix}blacklist users [user.id] [reason]',
         aliases: ['user'],
         parameters: ['user.id', 'reason'],
-        example: '{guildprefix}blacklist users @vwsn spam'
+        example: '{guildprefix}blacklist users @jonathan jon pork'
       };
 
       if (args[1]) {

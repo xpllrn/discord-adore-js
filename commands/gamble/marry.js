@@ -29,10 +29,14 @@ module.exports = {
 
     // Prevent self-marriage
     if (targetUser.id === message.author.id) {
-      return embeds.deny(message, 'You cannot marry yourself!');
+      return embeds.deny(message, 'You **cannot** marry yourself!');
     }
 
     // Prevent bot marriage
+    if (targetUser.id === message.guild.members.me.id) {
+      return message.channel.send('Leave me alone!');
+    }
+    
     if (targetUser.bot) {
       return embeds.deny(message, 'You cannot marry a bot!');
     }
@@ -43,13 +47,13 @@ module.exports = {
       // Check if author is already married
       const authorData = await userService.get(message.author.id);
       if (authorData?.Marriage?.partnerId) {
-        return embeds.deny(message, 'You are already married! you are trying to creat?');
+        return embeds.deny(message, 'You are **already married**! you are trying to **creat**?');
       }
 
       // Check if target is already married
       const targetData = await userService.get(targetUser.id);
       if (targetData?.Marriage?.partnerId) {
-        return embeds.deny(message, `**${targetUser.username}** is already married to someone else!`);
+        return embeds.deny(message, `**${targetUser.username}** is **already married** to someone else!`);
       }
 
       // Check if author has a ring in inventory
@@ -57,7 +61,7 @@ module.exports = {
       const rings = inventory.filter(item => item.category === 'rings');
 
       if (rings.length === 0) {
-        return embeds.deny(message, 'You need a ring to propose! Buy one from the `store rings`.');
+        return embeds.deny(message, 'You need a **ring to propose**! Buy one from the `store rings`.');
       }
 
       const storeService = getService('store');
@@ -109,7 +113,7 @@ module.exports = {
             const targetCheck = await userService.get(targetUser.id);
 
             if (authorCheck?.Marriage?.partnerId) {
-              const errorEmbed = embeds.createDeny(message, `**${message.author.username}** is already married!`);
+              const errorEmbed = embeds.createDeny(message, `**${message.author.username}** is **already** married!`);
               return await interaction.editReply({ embeds: [errorEmbed], components: [] });
             }
 
