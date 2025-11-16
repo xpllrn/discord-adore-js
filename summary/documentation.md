@@ -488,6 +488,3 @@ const embed = embeds.successEmbed('Title', 'Description');
 ```
 
 ---
-
-**Last Updated**: November 13, 2025  
-**Maintained By**: Development Team

@@ -33,9 +33,6 @@ module.exports = {
     // Process message tracking
     await processMessageTracking(message);
 
-    // Process sticky message activity tracking
-    await processStickyMessageActivity(message);
-
     // Process swear tracking
     await processSwearTracking(message);
 
@@ -363,21 +360,6 @@ async function processMessageTracking(message) {
 
   } catch (error) {
     // Silent fail for message tracking
-  }
-}
-
-async function processStickyMessageActivity(message) {
-  try {
-    // Skip bots
-    if (message.author.bot) return;
-
-    // Update sticky message activity for this channel using service layer
-    const { getService } = require('@services');
-    const guildService = getService('guild');
-    await guildService.updateStickyMessageActivity(message.guild.id, message.channel.id);
-
-  } catch (error) {
-    // Silent fail for sticky message activity tracking
   }
 }
 

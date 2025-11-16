@@ -187,9 +187,6 @@ class GuildService extends BaseService {
             stackRoles: true
           },
           UserLevels: [],
-          StickyMessages: [],
-          ScheduledNukes: [],
-          PojMessages: [],
           WelcomeMessages: [],
           LeaveMessages: [],
           BoostMessages: [],
@@ -200,7 +197,6 @@ class GuildService extends BaseService {
           },
           BoosterRoles: [],
           BoostHistory: [],
-          AutopostChannels: [],
           VanityDisabled: false,
           Counting: {
             channelId: null,
@@ -3507,44 +3503,6 @@ class GuildService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to update last voice XP time for guild ${guildId}`, error);
-    }
-  }
-
-  // ===== STICKY MESSAGE OPERATIONS =====
-
-  /**
-   * Update sticky message activity
-   * @param {string} guildId - Guild ID
-   * @param {string} channelId - Channel ID
-   * @returns {Promise<boolean>} Success status
-   */
-  async updateStickyMessageActivity(guildId, channelId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    if (!channelId) {
-      throw new ValidationError('Channel ID is required', 'channelId', channelId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      const stickyMessages = guildData.StickyMessages || [];
-
-      const stickyIndex = stickyMessages.findIndex(sm => sm.channelId === channelId);
-
-      if (stickyIndex !== -1) {
-        stickyMessages[stickyIndex].lastActivity = new Date();
-        guildData.StickyMessages = stickyMessages;
-        await this.set(guildId, guildData);
-      }
-
-      return true;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw error;
-      }
-      throw new DatabaseWriteError(`Failed to update sticky message activity for guild ${guildId}`, error);
     }
   }
 

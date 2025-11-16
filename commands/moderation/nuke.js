@@ -54,6 +54,15 @@ module.exports = {
           const leaveMsg = await guildService.getLeaveMessageForChannel(message.guild.id, channelId);
           const boostMsg = await guildService.getBoostMessage(message.guild.id, channelId);
           const loggingConfig = await guildService.getLoggingConfigForChannel(message.guild.id, channelId);
+          
+          // Get single channel reference settings
+          const starboardChannel = await guildService.getStarboardChannel(message.guild.id);
+          const jailConfig = await guildService.getJailConfig(message.guild.id);
+          const vanityConfig = await guildService.getVanityConfig(message.guild.id);
+          const voiceManager = await guildService.getVoiceManager(message.guild.id);
+          const ticketSystem = await guildService.getTicketSystem(message.guild.id);
+          const levelSystem = await guildService.getLevelSystem(message.guild.id);
+          const countingData = await guildService.getCounting(message.guild.id);
 
           // Delete the confirmation message first
           try {
@@ -102,6 +111,62 @@ module.exports = {
               loggingConfig.logTypes,
               loggingConfig.createdBy
             );
+          }
+
+          // Update single channel reference settings
+          if (starboardChannel === channelId) {
+            await guildService.setStarboardChannel(message.guild.id, newChannel.id);
+          }
+
+          if (jailConfig && jailConfig.channelId === channelId) {
+            await guildService.setJailConfig(message.guild.id, jailConfig.roleId, newChannel.id);
+          }
+
+          if (vanityConfig && vanityConfig.logChannelId === channelId) {
+            await guildService.setVanityConfig(
+              message.guild.id,
+              vanityConfig.vanity,
+              vanityConfig.roles,
+              newChannel.id,
+              vanityConfig.message
+            );
+          }
+
+          if (voiceManager) {
+            let updated = false;
+            const newConfig = { ...voiceManager };
+            
+            if (voiceManager.joinChannelId === channelId) {
+              newConfig.joinChannelId = newChannel.id;
+              updated = true;
+            }
+            
+            if (voiceManager.mutedChannelId === channelId) {
+              newConfig.mutedChannelId = newChannel.id;
+              updated = true;
+            }
+            
+            if (updated) {
+              await guildService.setVoiceManager(message.guild.id, newConfig);
+            }
+          }
+
+          if (ticketSystem && ticketSystem.setupChannelId === channelId) {
+            await guildService.setTicketSystem(message.guild.id, {
+              ...ticketSystem,
+              setupChannelId: newChannel.id
+            });
+          }
+
+          if (levelSystem && levelSystem.levelUpChannel === channelId) {
+            await guildService.setLevelUpChannel(message.guild.id, newChannel.id);
+          }
+
+          if (countingData && countingData.channelId === channelId) {
+            await guildService.setCounting(message.guild.id, {
+              ...countingData,
+              channelId: newChannel.id
+            });
           }
 
           // Send success message in the new channel

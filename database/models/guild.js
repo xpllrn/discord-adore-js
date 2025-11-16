@@ -61,22 +61,6 @@ const guildSchema = new mongoose.Schema({
     }
   }],
 
-  // Poj system (ping on join - auto-deleting messages)
-  PojMessages: [{
-    channelId: {
-      type: String,
-      required: true
-    },
-    message: {
-      type: String,
-      required: true,
-      maxlength: 2000
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
   // Boost system (legacy fields for backward compatibility)
   BoostChannel: {
     type: String,
@@ -798,31 +782,6 @@ const guildSchema = new mongoose.Schema({
     }
   }],
 
-  // Sticky Messages system
-  StickyMessages: [{
-    channelId: {
-      type: String,
-      required: true
-    },
-    message: {
-      type: String,
-      required: true,
-      maxlength: 2000
-    },
-    lastActivity: {
-      type: Date,
-      default: Date.now
-    },
-    lastStickyMessageId: {
-      type: String,
-      default: null
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-
   // Booster Role system
   BoosterRoleSystem: {
     baseRoleId: {
@@ -918,71 +877,6 @@ const guildSchema = new mongoose.Schema({
     boostStartTime: {
       type: Date,
       default: null
-    }
-  }],
-
-  // Autopost system
-  AutopostChannels: [{
-    channelId: {
-      type: String,
-      required: true
-    },
-    category: {
-      type: String,
-      required: true
-    },
-    enabled: {
-      type: Boolean,
-      default: true
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    createdBy: {
-      type: String,
-      required: true
-    },
-    lastPosted: {
-      type: Date,
-      default: null
-    }
-  }],
-
-  // Scheduled nuke system
-  ScheduledNukes: [{
-    id: {
-      type: Number,
-      required: true
-    },
-    channelId: {
-      type: String,
-      required: true
-    },
-    interval: {
-      type: Number,
-      required: true // Interval in milliseconds
-    },
-    message: {
-      type: String,
-      default: 'first',
-      maxlength: 2000
-    },
-    nextNuke: {
-      type: Date,
-      required: true
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    createdBy: {
-      type: String,
-      required: true
-    },
-    enabled: {
-      type: Boolean,
-      default: true
     }
   }],
 
@@ -1562,7 +1456,6 @@ guildSchema.index({ BoostChannel: 1 });
 guildSchema.index({ 'WelcomeMessages.channelId': 1 });
 guildSchema.index({ 'LeaveMessages.channelId': 1 });
 guildSchema.index({ 'BoostMessages.channelId': 1 });
-guildSchema.index({ 'PojMessages.channelId': 1 });
 
 // Level system indexes
 guildSchema.index({ 'LevelSystem.enabled': 1 });
@@ -1597,29 +1490,11 @@ guildSchema.index({ 'BoostHistory.userId': 1 });
 guildSchema.index({ 'BoostHistory.action': 1 });
 guildSchema.index({ 'BoostHistory.timestamp': -1 }); // Recent boost events first
 
-// Autopost system indexes
-guildSchema.index({ 'AutopostChannels.channelId': 1 });
-guildSchema.index({ 'AutopostChannels.category': 1 });
-guildSchema.index({ 'AutopostChannels.enabled': 1 });
-guildSchema.index({ 'AutopostChannels.lastPosted': 1 });
-guildSchema.index({ 'AutopostChannels.createdAt': -1 }); // Recent autopost channels first
-
-// Scheduled nuke system indexes
-guildSchema.index({ 'ScheduledNukes.id': 1 });
-guildSchema.index({ 'ScheduledNukes.channelId': 1 });
-guildSchema.index({ 'ScheduledNukes.nextNuke': 1 }); // For finding due nukes
-guildSchema.index({ 'ScheduledNukes.enabled': 1 });
-
 // Booster role system indexes
 guildSchema.index({ 'BoosterRoles.ownerId': 1 });
 guildSchema.index({ 'BoosterRoles.roleId': 1 });
 guildSchema.index({ 'BoosterRoles.sharedWith.userId': 1 });
 guildSchema.index({ 'BoosterRoles.createdAt': -1 }); // Recent booster roles first
-
-// Sticky Messages indexes
-guildSchema.index({ 'StickyMessages.channelId': 1 });
-guildSchema.index({ 'StickyMessages.lastActivity': 1 }); // For inactivity checks
-guildSchema.index({ 'StickyMessages.createdAt': -1 }); // Recent sticky messages first
 
 // Reaction Roles indexes
 guildSchema.index({ 'ReactionRoles.messageId': 1 });
