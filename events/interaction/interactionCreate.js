@@ -1152,18 +1152,20 @@ async function handleButtonRole(interaction) {
     // Find the button role configuration
     const buttonRole = buttonRoles.find(br => br.buttonId === interaction.customId);
     if (!buttonRole) {
-      return await interaction.editReply({
-        content: '❌ This button role is no longer configured.',
-        ephemeral: true
-      });
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'This button role is no longer configured.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
     }
 
     const role = interaction.guild.roles.cache.get(buttonRole.roleId);
     if (!role) {
-      return await interaction.editReply({
-        content: '❌ The role for this button no longer exists.',
-        ephemeral: true
-      });
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'The role for this button no longer exists.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
     }
 
     const member = interaction.member;
@@ -1173,34 +1175,38 @@ async function handleButtonRole(interaction) {
       if (hasRole) {
         // Remove role
         await member.roles.remove(role);
-        return await interaction.editReply({
-          content: `✅ Removed the **${role.name}** role from you.`,
-          ephemeral: true
-        });
+        const embed = embeds.createSuccess(
+          { author: { id: interaction.user.id } },
+          `Removed ${role} from you`
+        );
+        return await interaction.editReply({ embeds: [embed] });
       } else {
         // Add role
         await member.roles.add(role);
-        return await interaction.editReply({
-          content: `✅ Added the **${role.name}** role to you.`,
-          ephemeral: true
-        });
+        const embed = embeds.createSuccess(
+          { author: { id: interaction.user.id } },
+          `Added ${role} to you`
+        );
+        return await interaction.editReply({ embeds: [embed] });
       }
     } catch (roleError) {
       console.error('Error managing role:', roleError);
-      return await interaction.editReply({
-        content: '❌ I don\'t have permission to manage this role.',
-        ephemeral: true
-      });
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'I don\'t have permission to manage this role.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
     }
 
   } catch (error) {
     console.error('Error in button role handler:', error);
     
     try {
-      return await interaction.editReply({
-        content: '❌ An error occurred while processing the button role.',
-        ephemeral: true
-      });
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'An error occurred while processing the button role.'
+      );
+      return await interaction.editReply({ embeds: [embed] });
     } catch (replyError) {
       // Silent fail
     }

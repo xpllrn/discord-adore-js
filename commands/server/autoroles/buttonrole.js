@@ -20,7 +20,7 @@ module.exports = {
     if (args[0] === 'add') {
       const subcommandInfo = {
         description: 'Add a button role to a message',
-        usage: '{guildprefix}buttonrole add [message_link] [role] [style] [emoji] [label]',
+        usage: '{guildprefix}buttonrole add [message_link] [role] [style] <emoji> <label>',
         aliases: [],
         parameters: ['message_link', 'role', 'style', 'emoji', 'label'],
         example: '{guildprefix}buttonrole add https://discord.com/channels/.../... @Member primary 🌟 "Get Member Role"'
@@ -32,8 +32,13 @@ module.exports = {
       const emoji = args[4];
       const label = args.slice(5).join(' ');
 
-      if (!messageLink || !roleName || !style || !emoji || !label) {
+      if (!messageLink || !roleName || !style) {
         return false;
+      }
+
+      // At least one of emoji or label must be provided
+      if (!emoji && !label) {
+        return embeds.deny(message, 'You must provide at least an emoji or a label for the button!');
       }
 
       // Parse message link
@@ -73,31 +78,41 @@ module.exports = {
       const role = roleResult.role;
 
       // Check if role has dangerous permissions
-      if (role.permissions.has(PermissionFlagsBits.Administrator) || 
-          role.permissions.has(PermissionFlagsBits.ManageGuild) ||
-          role.permissions.has(PermissionFlagsBits.ManageRoles) ||
-          role.permissions.has(PermissionFlagsBits.ManageChannels) ||
-          role.permissions.has(PermissionFlagsBits.BanMembers) ||
-          role.permissions.has(PermissionFlagsBits.KickMembers)) {
-        return embeds.deny(message, `**${role.name}** is an admin/management role and cannot be used for button roles!`);
+      let deniedPerm = null;
+      if (role.permissions.has(PermissionFlagsBits.Administrator)) deniedPerm = '`administrator`';
+      else if (role.permissions.has(PermissionFlagsBits.ManageGuild)) deniedPerm = '`manage server`';
+      else if (role.permissions.has(PermissionFlagsBits.ManageRoles)) deniedPerm = '`manage roles`';
+      else if (role.permissions.has(PermissionFlagsBits.ManageChannels)) deniedPerm = '`manage channels`';
+      else if (role.permissions.has(PermissionFlagsBits.BanMembers)) deniedPerm = '`ban members`';
+      else if (role.permissions.has(PermissionFlagsBits.KickMembers)) deniedPerm = '`kick members`';
+
+      if (deniedPerm) {
+        return embeds.deny(message, `You can't add a button role with any **moderation related** permissions. Permissions denied: ${deniedPerm}`);
       }
 
       // Hierarchy checks
       if (!checkUserRoleHierarchy(message, role)) return;
       if (!checkBotRoleHierarchy(message, role)) return;
 
-      // Validate button style
-      const validStyles = ['primary', 'secondary', 'success', 'danger'];
-      if (!validStyles.includes(style.toLowerCase())) {
-        return embeds.deny(message, 'Invalid button style! Use: `primary`, `secondary`, `success`, or `danger`');
+      // Validate button style and map color names
+      const styleMap = {
+        'primary': ButtonStyle.Primary,
+        'blue': ButtonStyle.Primary,
+        'secondary': ButtonStyle.Secondary,
+        'grey': ButtonStyle.Secondary,
+        'gray': ButtonStyle.Secondary,
+        'success': ButtonStyle.Success,
+        'green': ButtonStyle.Success,
+        'danger': ButtonStyle.Danger,
+        'red': ButtonStyle.Danger
+      };
+
+      const normalizedStyle = style.toLowerCase();
+      if (!styleMap[normalizedStyle]) {
+        return embeds.deny(message, 'Invalid button style! Use: `primary/blue`, `secondary/grey`, `success/green`, or `danger/red`');
       }
 
-      const buttonStyleMap = {
-        'primary': ButtonStyle.Primary,
-        'secondary': ButtonStyle.Secondary,
-        'success': ButtonStyle.Success,
-        'danger': ButtonStyle.Danger
-      };
+      const buttonStyle = styleMap[normalizedStyle];
 
       // Get current button roles
       const buttonRoles = await guildService.getButtonRoles(message.guild.id) || [];
@@ -125,9 +140,21 @@ module.exports = {
       // Create button
       const button = new ButtonBuilder()
         .setCustomId(buttonId)
-        .setLabel(label)
-        .setStyle(buttonStyleMap[style.toLowerCase()])
-        .setEmoji(emoji);
+        .setStyle(buttonStyle);
+
+      // Add label if provided
+      if (label) {
+        button.setLabel(label);
+      }
+
+      // Add emoji if provided
+      if (emoji) {
+        try {
+          button.setEmoji(emoji);
+        } catch (error) {
+          return embeds.deny(message, 'Invalid emoji! Make sure the emoji is valid and accessible to the bot.');
+        }
+      }
 
       // Get existing components or create new ones
       let components = targetMessage.components || [];
@@ -149,7 +176,7 @@ module.exports = {
       try {
         await targetMessage.edit({ components: components });
       } catch (error) {
-        return embeds.deny(message, 'Failed to add button to message! Make sure the emoji is valid.');
+        return embeds.deny(message, 'Failed to add button to message! Make sure the emoji is valid and the bot has permissions.');
       }
 
       // Save to database
@@ -158,12 +185,13 @@ module.exports = {
         channelId: channelId,
         roleId: role.id,
         buttonId: buttonId,
-        label: label,
-        style: style.toLowerCase(),
-        emoji: emoji
+        label: label || null,
+        style: normalizedStyle,
+        emoji: emoji || null
       });
 
-      return embeds.success(message, `Added button role: **${label}** → ${role}`);
+      const displayText = label || (emoji ? 'Button' : 'Role Button');
+      return embeds.success(message, `Added button role: **${displayText}** → ${role}`);
 
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
@@ -289,12 +317,15 @@ module.exports = {
 
       for (const [messageId, roles] of Object.entries(messageGroups)) {
         const channel = message.guild.channels.cache.get(roles[0].channelId);
-        const channelMention = channel ? `<#${channel.id}>` : 'Unknown Channel';
+        const channelMention = channel ? channel : 'Unknown Channel';
         
         description += `**Message:** [Jump to Message](https://discord.com/channels/${message.guild.id}/${roles[0].channelId}/${messageId}) in ${channelMention}\n`;
         
         for (const roleData of roles) {
-          description += `${roleData.emoji} **${roleData.label}** (${roleData.style}) → ${roleData.role}\n`;
+          const displayEmoji = roleData.emoji || '';
+          const displayLabel = roleData.label || '';
+          const displayText = displayLabel ? `**${displayLabel}**` : (displayEmoji ? 'Button' : 'Role Button');
+          description += `${displayEmoji} ${displayText} (${roleData.style}) → ${roleData.role}\n`;
         }
         description += '\n';
       }
@@ -325,10 +356,10 @@ module.exports = {
       await createConfirmation(
         message,
         'Are you sure you want to **remove all button roles**?',
-        async (interaction) => {
+        async (interaction, sentMessage) => {
           await guildService.clearAllButtonRoles(message.guild.id);
           const successEmbed = embeds.createSuccess(message, 'Removed all button roles');
-          await interaction.update({ embeds: [successEmbed], components: [] });
+          await sentMessage.edit({ embeds: [successEmbed], components: [] });
         }
       );
 
@@ -370,7 +401,7 @@ module.exports = {
       await createConfirmation(
         message,
         `Are you sure you want to **remove all ${messageButtonRoles.length} button roles** from this message?`,
-        async (interaction) => {
+        async (interaction, sentMessage) => {
           // Remove all button roles for this message
           for (const br of messageButtonRoles) {
             await guildService.removeButtonRole(message.guild.id, messageId, br.roleId);
@@ -388,7 +419,7 @@ module.exports = {
           }
 
           const successEmbed = embeds.createSuccess(message, `Removed all button roles from the message`);
-          await interaction.update({ embeds: [successEmbed], components: [] });
+          await sentMessage.edit({ embeds: [successEmbed], components: [] });
         }
       );
 

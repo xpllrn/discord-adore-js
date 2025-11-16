@@ -351,6 +351,6 @@ module.exports = {
 
     } else {
 
-      return message.channel.send(`later`)
+      return message.channel.send(`website will be added soon, use [**support server**](https://discord.gg/8XajeEMH) for now`)
     }
   }}

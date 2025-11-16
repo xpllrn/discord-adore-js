@@ -7820,8 +7820,13 @@ class GuildService extends BaseService {
 
     const { messageId, channelId, roleId, buttonId, label, style, emoji } = buttonRoleData;
 
-    if (!messageId || !channelId || !roleId || !buttonId || !label || !style || !emoji) {
-      throw new ValidationError('All button role fields are required', 'buttonRoleData', buttonRoleData);
+    if (!messageId || !channelId || !roleId || !buttonId || !style) {
+      throw new ValidationError('Required button role fields are missing', 'buttonRoleData', buttonRoleData);
+    }
+
+    // At least one of label or emoji must be provided
+    if (!label && !emoji) {
+      throw new ValidationError('Either label or emoji must be provided', 'buttonRoleData', buttonRoleData);
     }
 
     try {
@@ -7833,9 +7838,9 @@ class GuildService extends BaseService {
         channelId,
         roleId,
         buttonId,
-        label,
+        label: label || null,
         style,
-        emoji,
+        emoji: emoji || null,
         createdAt: new Date()
       });
 
