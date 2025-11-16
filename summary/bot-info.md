@@ -11,8 +11,9 @@
 8. [Role Systems](#role-systems)
 9. [Message Automation](#message-automation)
 10. [Integrations](#integrations)
-11. [Utility Commands](#utility-commands)
-12. [Common Issues](#common-issues)
+11. [Economy & Gambling System](#economy-gambling-system)
+12. [Utility Commands](#utility-commands)
+13. [Common Issues](#common-issues)
 
 ---
 
@@ -1832,6 +1833,143 @@ nage Roles permission
 3. Use less severe punishment: `--do strip` instead of `--do ban`
 4. Remove whitelist after mass actions complete
 5. Adjust thresholds based on server activity
+
+---
+
+## 💰 Economy & Gambling System
+
+vleed includes a full economy system with gambling, earning, and trading features.
+
+### Getting Started
+
+**Check your balance:**
+```
+,bal
+,balance
+```
+Shows your wallet and bank balance.
+
+**Daily rewards:**
+```
+,daily
+```
+Claim free coins every 24 hours.
+
+**Vote rewards:**
+```
+,vote
+```
+Vote for vleed and get coins every 12 hours.
+
+---
+
+### Earning Coins
+
+**`,crime`** - Commit crimes for coins (risk/reward)
+**`,slut`** - Work for coins
+**`,mine`** - Mine for resources and coins
+**`,pick`** - Pick items for coins
+**`,pray`** - Pray for blessings and coins
+
+---
+
+### Gambling
+
+**`,coinflip [amount] [heads|tails]`** (aliases: `cf`)
+- Flip a coin, double or lose your bet
+- Example: `,coinflip 100 heads`
+
+**`,slot [amount]`**
+- Slot machine gambling
+- Example: `,slot 50`
+
+**`,ttt @user [amount]`** (Tic Tac Toe)
+- Play tic tac toe with wagers
+- Example: `,ttt @friend 100`
+
+---
+
+### Banking
+
+**`,deposit [amount|all]`** (aliases: `dep`)
+- Move coins from wallet to bank (safe storage)
+- Example: `,deposit 1000` or `,deposit all`
+
+**`,withdraw [amount|all]`** (aliases: `with`)
+- Move coins from bank to wallet
+- Example: `,withdraw 500` or `,withdraw all`
+
+**Why use bank?**
+- Coins in bank can't be robbed
+- Increase bank limit with banknotes
+- Keep your wealth safe
+
+---
+
+### Store & Items
+
+**`,store`** (aliases: `shop`)
+- View all items available for purchase
+- Categories: items, tools, consumables
+
+**`,banknotes`** (aliases: `notes`)
+- View banknotes that increase your bank storage limit
+- Higher tier banknotes = more storage
+- Example: Buy a banknote to store more coins safely
+
+**`,buy [item number]`**
+- Purchase items from store
+- Example: `,buy 01` (buys item #01)
+
+**`,sell [item] [amount]`**
+- Sell items from your inventory
+- Example: `,sell pickaxe 1`
+
+**`,inventory`** (aliases: `inv`, `bag`)
+- View your owned items
+- Shows quantities and values
+
+**`,use [item]`**
+- Use consumable items
+- Example: `,use potion`
+
+---
+
+### Social Features
+
+**`,transfer @user [amount]`** (aliases: `give`, `pay`)
+- Send coins to another user
+- Example: `,transfer @friend 500`
+
+**`,rob @user`**
+- Attempt to rob coins from someone's wallet
+- Risk: You can lose coins if you fail
+- Can't rob bank, only wallet
+- Cooldown applies
+
+**`,curse @user`**
+- Curse another user (fun feature)
+- Example: `,curse @enemy`
+
+---
+
+### Leaderboards
+
+**`,leaderboard`** (aliases: `lb`, `top`)
+- View richest users
+- Shows wallet + bank totals
+- See where you rank
+
+---
+
+### Economy Tips
+
+1. **Keep coins in bank** - Can't be robbed
+2. **Buy banknotes** - Increase bank storage limit
+3. **Do daily/vote** - Free coins every day
+4. **Gamble responsibly** - Don't bet everything
+5. **Rob carefully** - You can lose coins if you fail
+6. **Use items wisely** - Some items give bonuses
 
 ---
 
