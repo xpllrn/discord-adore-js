@@ -88,7 +88,7 @@ module.exports = {
     right: '<:right:1439540986299551775>',
     cancel: '<:cancel:1439546265733173299>',
     choose: '<:skipto:1439540990783258735>',
-    loading: '<a:loading:1431572348489699361>',
+    loading: '<a:loading:1439560863618175057>',
 
     lastfm: '<:lastfm:1439540983971840112>',
     join: '<:linked:1431572346216513639>',
