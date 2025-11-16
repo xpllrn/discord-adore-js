@@ -59,25 +59,26 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setColor(config.colors.embed)
         .setAuthor({ 
-          name: `${message.guild.name} Settings`, 
-          iconURL: message.guild.iconURL({ dynamic: true }) 
+          name: message.author.username, 
+          iconURL: message.author.displayAvatarURL({ dynamic: true }) 
         })
+        .setDescription(`**${message.guild.name} Settings**`)
         .addFields(
           {
             name: 'Prefix',
-            value: `\`${prefix}\``,
+            value: `Prefix for your server is \'${prefix}\``,
             inline: false
           },
           {
             name: 'Modules',
             value: [
-              `Antinuke: ${antinukeEnabled ? config.emojis.approve : config.emojis.deny}`,
-              `Starboard: ${starboardEnabled ? config.emojis.approve : config.emojis.deny}`,
-              `Reaction Roles: ${reactionRolesCount > 0 ? config.emojis.approve : config.emojis.deny}`,
-              `Button Roles: ${buttonRolesCount > 0 ? config.emojis.approve : config.emojis.deny}`,
-              `Level System: ${levelSystemEnabled ? config.emojis.approve : config.emojis.deny}`,
-              `Ticket System: ${ticketSystemEnabled ? config.emojis.approve : config.emojis.deny}`,
-              `Voice Manager: ${voiceManagerEnabled ? config.emojis.approve : config.emojis.deny}`
+              `Antinuke: ${antinukeEnabled ? config.emojis.success : config.emojis.error}`,
+              `Starboard: ${starboardEnabled ? config.emojis.success : config.emojis.error}`,
+              `Reaction Roles: ${reactionRolesCount > 0 ? config.emojis.success : config.emojis.error}`,
+              `Button Roles: ${buttonRolesCount > 0 ? config.emojis.success : config.emojis.error}`,
+              `Level System: ${levelSystemEnabled ? config.emojis.success : config.emojis.error}`,
+              `Ticket System: ${ticketSystemEnabled ? config.emojis.success : config.emojis.error}`,
+              `Voice Manager: ${voiceManagerEnabled ? config.emojis.success : config.emojis.error}`
             ].join('\n'),
             inline: true
           },
@@ -105,7 +106,7 @@ module.exports = {
               `Ticket Category: ${ticketCategory}`,
               `Support Role: ${supportRole}`
             ].join('\n'),
-            inline: false
+            inline: true
           }
         )
         .setFooter({ text: `Guild ID: ${message.guild.id}` })
@@ -115,7 +116,7 @@ module.exports = {
 
     } else if (args[0] === 'baserole') {
       const subcommandInfo = {
-        description: 'Set the base role for booster role positioning',
+        description: 'set base role for booster role positioning',
         usage: '{guildprefix}settings baserole [@role]',
         aliases: [],
         parameters: ['role'],
@@ -162,7 +163,7 @@ module.exports = {
       // Set the base role
       await guildService.setBoosterRoleBaseRole(message.guild.id, role.id);
 
-      return embeds.success(message, `Base role set to ${role}!\n\nBooster role system is now **enabled**. All booster roles will be positioned below this role.`);
+      return embeds.success(message, `Set ${role} as the **Base role**`);
 
     } else {
       return false;

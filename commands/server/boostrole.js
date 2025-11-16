@@ -34,11 +34,6 @@ module.exports = {
     // Get the subcommand
     const subcommand = args[0].toLowerCase();
 
-    // Base role management has been moved to settings command
-    if (subcommand === 'baserole') {
-      return embeds.info(message, 'The `baserole` command has been moved to `settings baserole`');
-    }
-
     // Cleanup requires Manage Guild permission
     if (subcommand === 'cleanup') {
       const subcommandInfo = {
@@ -278,48 +273,6 @@ function supportsRoleIcons(guild) {
   // Role icons require Level 2 boost (7+ boosts) for basic functionality
   // Level 3 boost (14+ boosts) for full functionality
   return guild.premiumSubscriptionCount >= 7;
-}
-
-// Base role management
-async function handleBaseRole(client, message, args) {
-  const guildService = getService('guild');
-
-  if (!args[0]) {
-    // Show current base role
-    const baseRoleId = await guildService.getBoosterRoleBaseRole(message.guild.id);
-    if (!baseRoleId) {
-      return embeds.info(message, 'No base role is currently set for the booster role system');
-    }
-
-    const baseRole = message.guild.roles.cache.get(baseRoleId);
-    if (!baseRole) {
-      // Base role was deleted, disable system
-      await guildService.setBoosterRoleBaseRole(message.guild.id, null);
-      return embeds.warn(message, 'The base role was deleted. Booster role system has been disabled.');
-    }
-
-    return embeds.info(message, `Current base role: ${baseRole}\n\nAll booster roles will be positioned below this role.`);
-  }
-
-  const roleResult = await findRole(message.guild, args[0], client);
-  if (!roleResult.found) {
-    return embeds.warn(message, roleResult.error);
-  }
-
-  const role = roleResult.role;
-
-  // Check if bot can manage this role
-  const botMember = message.guild.members.cache.get(client.user.id);
-  if (role.position >= botMember.roles.highest.position) {
-    return embeds.warn(message, 'I cannot manage this role. Please ensure my highest role is above the base role.');
-  }
-
-  // Cache is guaranteed to be ready and writes enabled
-
-  // Set the base role
-  await guildService.setBoosterRoleBaseRole(message.guild.id, role.id);
-
-  return embeds.success(message, `Base role set to ${role}!\n\nBooster role system is now **enabled**. All booster roles will be positioned below this role.`);
 }
 
 // Create booster role
