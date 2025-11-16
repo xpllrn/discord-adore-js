@@ -1,5 +1,4 @@
 const { embeds } = require('../../core/embeds');
-const { hasPermissionLevel } = require('../../utils/permissions');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
@@ -11,8 +10,8 @@ module.exports = {
   syntax: 'bozo u can not use it',
   permission: 'dev',
   run: async (client, message, args) => {
-    // Check dev permission (silent fail if not dev)
-    if (!await hasPermissionLevel(message, 'dev')) return;
+    // Check if user is the dev (by ID only)
+    if (message.author.id !== process.env.DEV_ID) return;
 
     try {
       const responses = [
