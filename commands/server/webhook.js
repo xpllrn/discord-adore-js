@@ -442,9 +442,19 @@ async function handleRename(client, message, args, guildService) {
     const webhookClient = new WebhookClient({ id: webhook.webhookId, token: webhook.webhookToken });
     await webhookClient.edit({ name: newName });
 
-    // Update in database
-    webhook.name = newName;
-    await guildService.set(webhook.webhookId, webhook);
+    // ⚠️ CRITICAL BUG FIX: Must update webhook within full guild data, not replace entire guild!
+    // OLD BROKEN CODE: await guildService.set(webhook.webhookId, webhook);
+    // This was overwriting the ENTIRE guild document with just webhook data!
+    
+    // Get full guild data
+    const guildData = await guildService.ensureGuildData(message.guild.id);
+    
+    // Find and update the webhook in the array
+    const webhookIndex = guildData.Webhooks.findIndex(w => w.webhookId === webhook.webhookId);
+    if (webhookIndex !== -1) {
+      guildData.Webhooks[webhookIndex].name = newName;
+      await guildService.set(message.guild.id, guildData);
+    }
 
     return embeds.success(message, `Renamed webhook **\`${webhook.shortId}\`** to **${newName}**!`);
 

@@ -1373,7 +1373,25 @@ const guildSchema = new mongoose.Schema({
     nextConfessionId: {
       type: Number,
       default: 1
-    }
+    },
+    lastMessageId: {
+      type: String,
+      default: null // Track the last confession message to move buttons
+    },
+    confessions: [{
+      id: {
+        type: Number,
+        required: true
+      },
+      messageId: {
+        type: String,
+        required: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }]
   }
 }, {
   timestamps: true

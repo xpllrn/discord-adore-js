@@ -25,7 +25,9 @@ class ConfessionService extends BaseService {
       enabled: confessionSystem.enabled || false,
       channelId: confessionSystem.channelId || null,
       ignoredUsers: confessionSystem.ignoredUsers || [],
-      nextConfessionId: confessionSystem.nextConfessionId || 1
+      nextConfessionId: confessionSystem.nextConfessionId || 1,
+      lastMessageId: confessionSystem.lastMessageId || null,
+      confessions: confessionSystem.confessions || []
     };
   }
 
@@ -90,6 +92,35 @@ class ConfessionService extends BaseService {
     const confessionId = config.nextConfessionId || 1;
     await this.getGuildService().setGuildField(guildId, 'ConfessionSystem.nextConfessionId', confessionId + 1);
     return confessionId;
+  }
+
+  /**
+   * Add a confession record
+   * @param {string} guildId - Guild ID
+   * @param {number} confessionId - Confession ID
+   * @param {string} messageId - Message ID
+   * @returns {Promise<void>}
+   */
+  async addConfession(guildId, confessionId, messageId) {
+    const config = await this.getConfessionConfig(guildId);
+    config.confessions.push({
+      id: confessionId,
+      messageId: messageId,
+      createdAt: new Date()
+    });
+    await this.getGuildService().setGuildField(guildId, 'ConfessionSystem.confessions', config.confessions);
+    await this.getGuildService().setGuildField(guildId, 'ConfessionSystem.lastMessageId', messageId);
+  }
+
+  /**
+   * Get confession by ID
+   * @param {string} guildId - Guild ID
+   * @param {number} confessionId - Confession ID
+   * @returns {Promise<Object|null>}
+   */
+  async getConfessionById(guildId, confessionId) {
+    const config = await this.getConfessionConfig(guildId);
+    return config.confessions.find(c => c.id === confessionId) || null;
   }
 
   /**

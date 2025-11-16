@@ -193,7 +193,7 @@ module.exports = {
           return handleConfessionSubmit(interaction);
         }
 
-        if (interaction.customId.startsWith('confession_reply_')) {
+        if (interaction.customId === 'confession_reply' || interaction.customId.startsWith('confession_reply_')) {
           return handleConfessionReply(interaction);
         }
       }
@@ -1310,7 +1310,7 @@ async function handleConfessionSubmit(interaction) {
       .setStyle(TextInputStyle.Paragraph)
       .setPlaceholder('Enter your anonymous confession here...')
       .setRequired(true)
-      .setMinLength(10)
+      .setMinLength(1)
       .setMaxLength(2000);
 
     const row = new ActionRowBuilder().addComponents(confessionInput);
@@ -1378,7 +1378,6 @@ async function handleConfessionModal(interaction) {
       .setColor(colors.embed)
       .setTitle(`Anonymous Confession (#${confessionId})`)
       .setDescription(confessionContent)
-      .setFooter({ text: `Confession ID: ${confessionId}` })
       .setTimestamp();
 
     // Create buttons
@@ -1390,19 +1389,34 @@ async function handleConfessionModal(interaction) {
           .setStyle(ButtonStyle.Secondary)
           .setEmoji('📝'),
         new ButtonBuilder()
-          .setCustomId(`confession_reply_${confessionId}`)
+          .setCustomId('confession_reply')
           .setLabel('Reply')
           .setStyle(ButtonStyle.Secondary)
           .setEmoji('💬')
       );
 
+    // Remove buttons from previous confession if exists
+    if (config.lastMessageId) {
+      try {
+        const lastMessage = await confessionChannel.messages.fetch(config.lastMessageId);
+        if (lastMessage) {
+          await lastMessage.edit({ components: [] });
+        }
+      } catch (error) {
+        // Message might be deleted, ignore
+      }
+    }
+
     // Send confession
-    await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
+    const sentMessage = await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
+    
+    // Track this confession
+    await confessionService.addConfession(interaction.guild.id, confessionId, sentMessage.id);
 
     // Confirm to user
     const embed = embeds.createSuccess(
       { author: { id: interaction.user.id } },
-      `Your confession has been submitted anonymously! (ID: #${confessionId})`
+      `Your **confession** has been submitted. Confession ID: ${confessionId}`
     );
     return await interaction.editReply({ embeds: [embed] });
 
@@ -1455,8 +1469,8 @@ async function handleConfessionReply(interaction) {
       return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    // Extract confession ID from button
-    const confessionId = interaction.customId.split('_')[2];
+    // Get the latest confession ID as default
+    const latestConfessionId = (config.nextConfessionId - 1).toString();
 
     // Show modal
     const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
@@ -1467,21 +1481,20 @@ async function handleConfessionReply(interaction) {
 
     const replyToInput = new TextInputBuilder()
       .setCustomId('reply_to_id')
-      .setLabel('Confession Reply To')
+      .setLabel('Confession ID (leave empty for latest)')
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder('Confession ID')
-      .setValue(confessionId)
-      .setRequired(true)
+      .setPlaceholder(`Leave empty to reply to #${latestConfessionId}`)
+      .setRequired(false)
       .setMinLength(1)
       .setMaxLength(10);
 
     const confessionInput = new TextInputBuilder()
       .setCustomId('confession_content')
-      .setLabel('Confession Content')
+      .setLabel('Reply Content')
       .setStyle(TextInputStyle.Paragraph)
       .setPlaceholder('Enter your anonymous reply here...')
       .setRequired(true)
-      .setMinLength(10)
+      .setMinLength(1)
       .setMaxLength(2000);
 
     const row1 = new ActionRowBuilder().addComponents(replyToInput);
@@ -1540,40 +1553,73 @@ async function handleConfessionReplyModal(interaction) {
       return await interaction.editReply({ embeds: [embed] });
     }
 
-    const replyToId = interaction.fields.getTextInputValue('reply_to_id');
+    let replyToIdInput = interaction.fields.getTextInputValue('reply_to_id').trim();
     const confessionContent = interaction.fields.getTextInputValue('confession_content');
-    const confessionId = await confessionService.getNextConfessionId(interaction.guild.id);
-
-    // Create confession reply embed
-    const confessionEmbed = new EmbedBuilder()
-      .setColor(colors.embed)
-      .setTitle(`Anonymous Confession (#${confessionId})`)
-      .setDescription(`**Reply to #${replyToId}**\n\n${confessionContent}`)
-      .setFooter({ text: `Confession ID: ${confessionId} | Reply to: ${replyToId}` })
-      .setTimestamp();
-
-    // Create buttons
-    const row = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('confession_submit')
-          .setLabel('Submit a Confession')
-          .setStyle(ButtonStyle.Secondary)
-          .setEmoji('📝'),
-        new ButtonBuilder()
-          .setCustomId(`confession_reply_${confessionId}`)
-          .setLabel('Reply')
-          .setStyle(ButtonStyle.Secondary)
-          .setEmoji('💬')
+    
+    // If no confession ID provided, use the latest one
+    if (!replyToIdInput) {
+      replyToIdInput = (config.nextConfessionId - 1).toString();
+    }
+    
+    const replyToId = parseInt(replyToIdInput);
+    if (isNaN(replyToId) || replyToId < 1) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        'Invalid confession ID provided.'
       );
+      return await interaction.editReply({ embeds: [embed] });
+    }
 
-    // Send confession reply
-    await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
+    // Find the confession message to reply to
+    const confession = await confessionService.getConfessionById(interaction.guild.id, replyToId);
+    if (!confession) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        `Confession #${replyToId} not found.`
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    }
+
+    // Fetch the confession message
+    let confessionMessage;
+    try {
+      confessionMessage = await confessionChannel.messages.fetch(confession.messageId);
+    } catch (error) {
+      const embed = embeds.createDeny(
+        { author: { id: interaction.user.id } },
+        `Could not find the message for confession #${replyToId}.`
+      );
+      return await interaction.editReply({ embeds: [embed] });
+    }
+
+    // Create or get existing thread
+    let thread;
+    if (confessionMessage.hasThread) {
+      thread = confessionMessage.thread;
+    } else {
+      try {
+        thread = await confessionMessage.startThread({
+          name: `Confession #${replyToId} Replies`,
+          autoArchiveDuration: 1440 // 24 hours
+        });
+      } catch (error) {
+        const embed = embeds.createDeny(
+          { author: { id: interaction.user.id } },
+          'Failed to create thread for the confession.'
+        );
+        return await interaction.editReply({ embeds: [embed] });
+      }
+    }
+
+    // Send the reply in the thread
+    await thread.send({
+      content: confessionContent
+    });
 
     // Confirm to user
     const embed = embeds.createSuccess(
       { author: { id: interaction.user.id } },
-      `Your reply has been submitted anonymously! (ID: #${confessionId}, Reply to: #${replyToId})`
+      `Your **reply** has been submitted to confession #${replyToId}.`
     );
     return await interaction.editReply({ embeds: [embed] });
 

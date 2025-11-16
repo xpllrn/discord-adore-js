@@ -53,7 +53,6 @@ module.exports = {
         .setColor(config.colors.embed)
         .setTitle(`Anonymous Confession (#${confessionId})`)
         .setDescription(confessionContent)
-        .setFooter({ text: `Confession ID: ${confessionId}` })
         .setTimestamp();
 
       // Create buttons
@@ -65,18 +64,37 @@ module.exports = {
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('📝'),
           new ButtonBuilder()
-            .setCustomId(`confession_reply_${confessionId}`)
+            .setCustomId('confession_reply')
             .setLabel('Reply')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('💬')
         );
 
+      // Remove buttons from previous confession if exists
+      if (confessionConfig.lastMessageId) {
+        try {
+          const lastMessage = await confessionChannel.messages.fetch(confessionConfig.lastMessageId);
+          if (lastMessage) {
+            await lastMessage.edit({ components: [] });
+          }
+        } catch (error) {
+          // Message might be deleted, ignore
+        }
+      }
+
       // Send confession to channel
-      await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
+      const sentMessage = await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
+      
+      // Track this confession
+      await confessionService.addConfession(interaction.guild.id, confessionId, sentMessage.id);
 
       // Confirm to user
+      const confirmEmbed = new EmbedBuilder()
+        .setColor(config.colors.success)
+        .setDescription(`${config.emojis.success} <@${interaction.user.id}>: Your **confession** has been submitted. Confession ID: ${confessionId}`);
+
       return interaction.reply({
-        content: `${config.emojis.success} <@${interaction.user.id}>: Your confession has been submitted anonymously! (ID: #${confessionId})`,
+        embeds: [confirmEmbed],
         ephemeral: true
       });
 
