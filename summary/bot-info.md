@@ -2083,6 +2083,67 @@ Usage: `,quickmute @user` → executes `,mute @user 1h Temporary mute`
 
 ---
 
+### Server Settings
+
+Manage various server-wide settings and configurations.
+
+**`,settings config`**
+- View all server configuration settings
+- Shows enabled modules and their status
+- Displays channel and role configurations
+- Shows prefix and other settings
+- Permission: Manage Server
+- Example: `,settings config`
+
+**What it shows:**
+- Server prefix
+- Enabled modules (Antinuke, Starboard, Level System, etc.)
+- NSFW Bypass status
+- Welcome/Goodbye/Boost message counts
+- Auto roles, auto react, auto responder counts
+- Jail role and channel
+- Starboard channel
+- Base role for booster roles
+- Level up channel
+- Ticket system configuration
+
+**`,settings baserole [@role]`**
+- Set or view the base role for booster role positioning
+- All booster roles will be positioned below this role
+- Permission: Manage Server
+- Examples:
+  - `,settings baserole` - View current base role
+  - `,settings baserole @Booster` - Set base role
+
+**`,settings bypass nsfw`**
+- Toggle NSFW bypass for the server
+- When enabled, NSFW commands can be used in any channel
+- When disabled, NSFW commands only work in NSFW-marked channels
+- Permission: Manage Server
+- Example: `,settings bypass nsfw`
+
+**NSFW Bypass Feature:**
+- **What it does:** Allows NSFW roleplay commands (fuck, cum, anal, etc.) to work in non-NSFW channels
+- **Why use it:** Some servers want to allow these commands without marking channels as NSFW
+- **Security:** Only server administrators with "Manage Server" permission can toggle this
+- **Default:** Disabled (NSFW commands require NSFW channels by default)
+- **Affected commands:** All NSFW roleplay commands in the bot
+
+**Use cases for NSFW bypass:**
+- Adult-only servers where all channels are appropriate
+- Servers that want roleplay commands without NSFW channel markers
+- Private servers with trusted members
+- Testing NSFW commands in development servers
+
+**Important notes:**
+- This is a server-wide setting
+- Affects all NSFW roleplay commands
+- Can be toggled on/off at any time
+- Changes take effect immediately
+- Shown in `,settings config` display
+
+---
+
 ## 💎 Premium Features
 
 - Personal prefix (`,selfprefix`)

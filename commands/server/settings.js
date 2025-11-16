@@ -125,10 +125,6 @@ module.exports = {
         example: '{guildprefix}settings baserole @Booster'
       };
 
-      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-        return embeds.deny(message, 'You need **Manage Server** permission to use this command');
-      }
-
       if (!args[1]) {
         // Show current base role
         const baseRoleId = await guildService.getBoosterRoleBaseRole(message.guild.id);
@@ -167,18 +163,16 @@ module.exports = {
 
       return embeds.success(message, `Set ${role} as the **Base role**`);
 
-    } else if (args[0] === 'nsfwbypass') {
+
+
+    } else if (args[0] === 'bypass' && args[1] === 'nsfw') {
       const subcommandInfo = {
         description: 'Toggle NSFW bypass to allow NSFW commands in non-NSFW channels',
-        usage: '{guildprefix}settings nsfwbypass',
+        usage: '{guildprefix}settings bypass nsfw',
         aliases: [],
         parameters: [],
-        example: '{guildprefix}settings nsfwbypass'
+        example: '{guildprefix}settings bypass nsfw'
       };
-
-      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-        return embeds.deny(message, 'You need **Manage Server** permission to use this command');
-      }
 
       const guildData = await guildService.ensureGuildData(message.guild.id);
       const currentStatus = guildData.NSFWBypass || false;

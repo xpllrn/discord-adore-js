@@ -38,7 +38,7 @@ module.exports = {
       const jailRoleResult = findRole(message.guild, 'jailed');
 
       if (!jailRoleResult.found) {
-        return embeds.deny(message, `Jail role not found! Please run \`,jailsetup\` first to set up the jail system.`);
+        return embeds.deny(message, `Jail role not found! Please run \`,setup\` first to set up the jail system.`);
       }
 
       const jailRole = jailRoleResult.role;
@@ -125,7 +125,7 @@ module.exports = {
     const jailRoleResult = findRole(message.guild, 'jailed');
 
     if (!jailRoleResult.found) {
-      return embeds.deny(message, `Jail role not found! Please run \`,jailsetup\` first to set up the jail system.`);
+      return embeds.deny(message, `Jail role not found! Please run \`,setup\` first to set up the jail system.`);
     }
 
     const jailRole = jailRoleResult.role;
@@ -137,7 +137,7 @@ module.exports = {
     const jailChannelResult = findChannel(message.guild, 'jail');
 
     if (!jailChannelResult.found) {
-      return embeds.deny(message, `Jail channel not found! Please run \`,jailsetup\` first to set up the jail system.`);
+      return embeds.deny(message, `Jail channel not found! Please run \`,setup\` first to set up the jail system.`);
     }
 
     const jailChannel = jailChannelResult.channel;

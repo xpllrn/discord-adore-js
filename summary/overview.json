@@ -1774,6 +1774,89 @@
           ]
         },
         {
+          "id": "server-settings",
+          "title": "Server Settings",
+          "description": "Manage server-wide settings and configurations.",
+          "commands": [
+            {
+              "name": "settings config",
+              "description": "View all server configuration settings",
+              "syntax": ",settings config",
+              "example": ",settings config",
+              "permission": "Manage Server",
+              "notes": [
+                "Shows enabled modules and their status",
+                "Displays channel and role configurations",
+                "Shows prefix and NSFW bypass status",
+                "Includes counts for welcome/goodbye/boost messages",
+                "Shows auto roles, auto react, and auto responder counts"
+              ]
+            },
+            {
+              "name": "settings baserole",
+              "description": "Set or view the base role for booster role positioning",
+              "syntax": ",settings baserole [@role]",
+              "examples": [
+                ",settings baserole",
+                ",settings baserole @Booster"
+              ],
+              "permission": "Manage Server",
+              "parameters": [
+                {
+                  "name": "role",
+                  "type": "mention",
+                  "required": false,
+                  "description": "Role to set as base role. Leave empty to view current base role."
+                }
+              ],
+              "notes": [
+                "All booster roles will be positioned below this role",
+                "Leave empty to view current base role"
+              ]
+            },
+            {
+              "name": "settings bypass nsfw",
+              "description": "Toggle NSFW bypass to allow NSFW commands in non-NSFW channels",
+              "syntax": ",settings bypass nsfw",
+              "example": ",settings bypass nsfw",
+              "permission": "Manage Server",
+              "notes": [
+                "When enabled, NSFW commands work in any channel",
+                "When disabled, NSFW commands only work in NSFW-marked channels",
+                "Affects all NSFW roleplay commands (fuck, cum, anal, etc.)",
+                "Default: Disabled",
+                "Changes take effect immediately",
+                "Status shown in ,settings config"
+              ],
+              "useCases": [
+                {
+                  "title": "Adult-Only Servers",
+                  "description": "Allow NSFW commands without marking channels as NSFW"
+                },
+                {
+                  "title": "Private Servers",
+                  "description": "Enable roleplay commands in trusted member servers"
+                },
+                {
+                  "title": "Testing Servers",
+                  "description": "Test NSFW commands without creating NSFW channels"
+                }
+              ],
+              "affectedCommands": [
+                "anal",
+                "blowjob",
+                "cum",
+                "fuck",
+                "pussylick",
+                "solo",
+                "threesome",
+                "yaoi",
+                "yuri"
+              ]
+            }
+          ]
+        },
+        {
           "id": "tickets",
           "title": "Tickets",
           "description": "Create a support ticket system.",
