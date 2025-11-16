@@ -215,8 +215,7 @@ module.exports = {
   premiumBypass: true,
   run: async (client, message, args) => {
     if (!args.length) {
-      return message.channel.send(
-sup, I am vleed
+      return message.channel.send( 'sup, I am vleed'
       );
     }
 

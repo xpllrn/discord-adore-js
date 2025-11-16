@@ -321,38 +321,38 @@ async function handleRemove(client, message, args) {
 
 async function handleList(client, message) {
   const guildService = getService('guild');
+  const { createPagination } = require('../../core/buttons');
   
   try {
     const loggingConfigs = await guildService.getLoggingConfig(message.guild.id);
 
     if (!loggingConfigs || loggingConfigs.length === 0) {
-      return embeds.info(message, 'No logging configurations found for this server.\n\nUse `logs add <#channel> <type>` to set up logging.');
+      return embeds.warn(message, 'No logging configurations found');
     }
 
-    const embed = new EmbedBuilder()
-      .setColor(config.colors.embed)
-      .setTitle('📋 Logging Configuration')
-      .setDescription('Current logging setup for this server')
-      .setTimestamp();
+    // Format page function for pagination
+    const formatPage = (pageConfigs, currentPage, totalPages) => {
+      const startIndex = (currentPage - 1) * 10;
 
-    for (const config of loggingConfigs) {
-      const channel = message.guild.channels.cache.get(config.channelId);
-      const channelName = channel ? `<#${channel.id}>` : `Unknown Channel (${config.channelId})`;
-      const status = config.enabled ? '✅ Enabled' : '❌ Disabled';
+      const configList = pageConfigs.map((config, index) => {
+        const number = (startIndex + index + 1).toString().padStart(2, '0');
+        const channel = message.guild.channels.cache.get(config.channelId);
+        const channelDisplay = channel ? `<#${channel.id}>` : `\`${config.channelId}\``;
+        const status = config.enabled !== false ? '✅' : '❌';
+        const types = config.logTypes.join(', ');
+        
+        return `\`${number}\` ${channelDisplay} ${status}\n**Types:** ${types}`;
+      }).join('\n\n');
 
-      embed.addFields({
-        name: channelName,
-        value: `**Status:** ${status}\n**Log Types:** ${config.logTypes.join(', ')}\n**Created:** <t:${Math.floor(config.createdAt.getTime() / 1000)}:F> (<t:${Math.floor(config.createdAt.getTime() / 1000)}:R>)`,
-        inline: true
-      });
-    }
+      return new EmbedBuilder()
+        .setColor(config.colors.embed)
+        .setTitle('Logging Configurations')
+        .setDescription(configList)
+        .setFooter({ text: `${loggingConfigs.length} configuration(s) • Page ${currentPage}/${totalPages}` });
+    };
 
-    embed.setFooter({
-      text: `${loggingConfigs.length} logging configuration(s)`,
-      iconURL: message.guild.iconURL({ dynamic: true })
-    });
-
-    message.reply({ embeds: [embed] });
+    // Use pagination system with 10 items per page
+    await createPagination(message, loggingConfigs, formatPage, 10, 'Logging Configurations');
 
   } catch (error) {
     // Send error to webhook instead of console

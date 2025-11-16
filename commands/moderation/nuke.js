@@ -53,6 +53,7 @@ module.exports = {
           const welcomeMsg = await guildService.getWelcomeMessageForChannel(message.guild.id, channelId);
           const leaveMsg = await guildService.getLeaveMessageForChannel(message.guild.id, channelId);
           const boostMsg = await guildService.getBoostMessage(message.guild.id, channelId);
+          const loggingConfig = await guildService.getLoggingConfigForChannel(message.guild.id, channelId);
 
           // Delete the confirmation message first
           try {
@@ -90,6 +91,17 @@ module.exports = {
           if (boostMsg) {
             await guildService.removeBoostMessage(message.guild.id, channelId);
             await guildService.addBoostMessage(message.guild.id, newChannel.id, boostMsg.message);
+          }
+
+          if (loggingConfig) {
+            await guildService.removeLoggingChannel(message.guild.id, channelId);
+            await guildService.setLoggingChannel(
+              message.guild.id,
+              newChannel.id,
+              loggingConfig.webhookUrl,
+              loggingConfig.logTypes,
+              loggingConfig.createdBy
+            );
           }
 
           // Send success message in the new channel
