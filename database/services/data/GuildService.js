@@ -31,19 +31,20 @@ class GuildService extends BaseService {
       const Model = this.getModel();
       const query = { [this.keyField]: key };
 
-      // Remove _id from data to prevent duplicate key errors
+      // Remove _id and __v from data to prevent duplicate key errors
       const updateData = { ...data };
       delete updateData._id;
+      delete updateData.__v;
+      delete updateData.createdAt;
+      delete updateData.updatedAt;
 
-      // CRITICAL: Remove undefined/null fields to prevent deleting existing data
-      // $set with undefined/null will DELETE the field in MongoDB
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] === undefined || updateData[key] === null) {
-          delete updateData[key];
-        }
-      });
-
-      await Model.updateOne(query, { $set: updateData }, { upsert: true });
+      // CRITICAL FIX: Use $set to update only provided fields
+      // This prevents accidentally overwriting fields that aren't in the update
+      await Model.updateOne(
+        query,
+        { $set: updateData },
+        { upsert: true }
+      );
       
     } catch (error) {
       throw new DatabaseWriteError(`Failed to write guild data for ${key}`, error);
@@ -113,6 +114,105 @@ class GuildService extends BaseService {
   // ===== GUILD DATA OPERATIONS =====
 
   /**
+   * Get default guild data structure
+   * @param {string} guildId - Guild ID
+   * @returns {Object} Default guild data
+   */
+  getDefaultGuildData(guildId) {
+    return {
+      GuildID: guildId,
+      Prefix: ',',
+      WelcomeChannel: null,
+      WelcomeMessage: null,
+      LeaveChannel: null,
+      LeaveMessage: null,
+      BoostChannel: null,
+      BoostMessage: null,
+      BoostRole: null,
+      Vanity: null,
+      VanityRoles: [],
+      VanityMessage: null,
+      VanityLogChannel: null,
+      JailRoleID: null,
+      JailChannelID: null,
+      AFK: [],
+      ForceNick: [],
+      AutoRoles: [],
+      AutoReact: [],
+      AutoResponder: [],
+      Moderation: [],
+      MessageStats: [],
+      SwearTracker: [],
+      Reminders: [],
+      GuildNameHistory: [],
+      StarboardChannel: null,
+      StarboardThreshold: 3,
+      StarboardEmoji: '⭐',
+      StarboardMessages: [],
+      VoiceManager: {
+        enabled: false,
+        categoryId: null,
+        joinChannelId: null,
+        mutedChannelId: null,
+        tempChannels: [],
+        inviteCooldowns: []
+      },
+      LastFMCrowns: [],
+      TicketSystem: {
+        enabled: false,
+        categoryId: null,
+        supportRoleId: null,
+        setupChannelId: null,
+        setupMessageId: null,
+        activeTickets: [],
+        ticketCounter: 0
+      },
+      LoggingConfig: [],
+      LevelSystem: {
+        enabled: false,
+        messageMode: 'context',
+        levelUpChannel: null,
+        levelRoles: [],
+        lastSyncTime: null,
+        xpRate: 1,
+        stackRoles: true
+      },
+      UserLevels: [],
+      VoiceStats: [],
+      WelcomeMessages: [],
+      LeaveMessages: [],
+      BoostMessages: [],
+      Giveaways: [],
+      BoosterRoleSystem: {
+        baseRoleId: null,
+        enabled: false
+      },
+      BoosterRoles: [],
+      BoostHistory: [],
+      VanityDisabled: false,
+      Counting: {
+        channelId: null,
+        currentCount: 0,
+        lastCounterId: null,
+        strict: true
+      },
+      ReactionRoles: [],
+      ButtonRoles: [],
+      Webhooks: [],
+      Sprints: [],
+      Antinuke: {
+        enabled: false,
+        whitelist: [],
+        admins: [],
+        modules: {},
+        logs: []
+      },
+      Aliases: [],
+      RoleRestore: []
+    };
+  }
+
+  /**
    * Ensure guild data exists with default values
    * @param {string} guildId - Guild ID
    * @returns {Promise<Object>} Guild data
@@ -128,87 +228,24 @@ class GuildService extends BaseService {
 
       if (!guildData) {
         // Create default guild data ONLY if truly doesn't exist in database
-        guildData = {
-          GuildID: guildId,
-          Prefix: ',', // Default prefix
-          // Initialize other default fields as needed
-          WelcomeChannel: null,
-          WelcomeMessage: null,
-          LeaveChannel: null,
-          LeaveMessage: null,
-          BoostChannel: null,
-          BoostMessage: null,
-          BoostRole: null,
-          Vanity: null,
-          VanityRoles: [],
-          VanityMessage: null,
-          VanityLogChannel: null,
-          JailRoleID: null,
-          JailChannelID: null,
-          AFK: [],
-          ForceNick: [],
-          AutoRoles: [],
-          AutoReact: [],
-          AutoResponder: [],
-          Moderation: [],
-          MessageStats: [],
-          SwearTracker: [],
-          Reminders: [],
-          GuildNameHistory: [],
-          StarboardChannel: null,
-          StarboardThreshold: 3,
-          StarboardEmoji: '⭐',
-          StarboardMessages: [],
-          VoiceManager: {
-            enabled: false,
-            categoryId: null,
-            joinChannelId: null,
-            mutedChannelId: null,
-            tempChannels: []
-          },
-          LastFMCrowns: [],
-          TicketSystem: {
-            enabled: false,
-            categoryId: null,
-            supportRoleId: null,
-            setupChannelId: null,
-            setupMessageId: null,
-            activeTickets: [],
-            ticketCounter: 0
-          },
-          LoggingConfig: [],
-          LevelSystem: {
-            enabled: false,
-            messageMode: 'context',
-            levelUpChannel: null,
-            levelRoles: [],
-            lastSyncTime: null,
-            xpRate: 1,
-            stackRoles: true
-          },
-          UserLevels: [],
-          WelcomeMessages: [],
-          LeaveMessages: [],
-          BoostMessages: [],
-          Giveaways: [],
-          BoosterRoleSystem: {
-            baseRoleId: null,
-            enabled: false
-          },
-          BoosterRoles: [],
-          BoostHistory: [],
-          VanityDisabled: false,
-          Counting: {
-            channelId: null,
-            currentNumber: 0,
-            lastUserId: null
-          },
-          ReactionRoles: [],
-          ButtonRoles: []
-        };
+        guildData = this.getDefaultGuildData(guildId);
 
         // Save to database and cache
         await this.set(guildId, guildData);
+      } else {
+        // CRITICAL FIX: Merge existing data with defaults to ensure all fields exist
+        // This prevents data loss when new fields are added to the schema
+        const defaults = this.getDefaultGuildData(guildId);
+        
+        // Deep merge: existing data takes precedence, but missing fields get defaults
+        for (const [key, defaultValue] of Object.entries(defaults)) {
+          if (guildData[key] === undefined) {
+            guildData[key] = defaultValue;
+          } else if (typeof defaultValue === 'object' && defaultValue !== null && !Array.isArray(defaultValue)) {
+            // Deep merge for nested objects
+            guildData[key] = { ...defaultValue, ...guildData[key] };
+          }
+        }
       }
 
       return guildData;

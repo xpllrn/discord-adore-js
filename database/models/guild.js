@@ -990,17 +990,19 @@ const guildSchema = new mongoose.Schema({
     },
     label: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
       maxlength: 80
     },
     style: {
       type: String,
       required: true,
-      enum: ['primary', 'secondary', 'success', 'danger']
+      enum: ['primary', 'blue', 'secondary', 'grey', 'gray', 'success', 'green', 'danger', 'red']
     },
     emoji: {
       type: String,
-      required: true
+      required: false,
+      default: null
     },
     createdAt: {
       type: Date,
