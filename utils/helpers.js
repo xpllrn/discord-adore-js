@@ -162,12 +162,19 @@ async function fetchNSFWGif(action) {
 }
 
 /**
- * Check if channel is NSFW
+ * Check if channel is NSFW or if guild has NSFW bypass enabled
  * @param {Object} channel - Discord channel object
- * @returns {boolean} Whether the channel is NSFW
+ * @param {Object} guildData - Guild data from database (optional)
+ * @returns {boolean} Whether the channel is NSFW or bypass is enabled
  */
-function isNSFWChannel(channel) {
-  return channel.nsfw === true;
+function isNSFWChannel(channel, guildData = null) {
+  // If channel is NSFW, always allow
+  if (channel.nsfw === true) return true;
+  
+  // If guild has NSFW bypass enabled, allow in any channel
+  if (guildData && guildData.NSFWBypass === true) return true;
+  
+  return false;
 }
 
 /**
@@ -179,7 +186,11 @@ function isNSFWChannel(channel) {
 function createNSFWRoleplayCommand(action, actionPastTense) {
   return async (client, message, args) => {
     try {
-      if (!isNSFWChannel(message.channel)) {
+      // Get guild data to check for NSFW bypass
+      const guildService = getService('guild');
+      const guildData = await guildService.ensureGuildData(message.guild.id);
+      
+      if (!isNSFWChannel(message.channel, guildData)) {
         return embeds.deny(message, 'This command can **only be used** in `NSFW` channels!');
       }
 

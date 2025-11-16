@@ -147,7 +147,6 @@ module.exports = {
           }
         )
         .setFooter({ text: `Guild ID: ${message.guild.id}` })
-        .setTimestamp();
 
       return message.channel.send({ embeds: [embed] });
 

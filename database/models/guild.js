@@ -1392,6 +1392,12 @@ const guildSchema = new mongoose.Schema({
         default: Date.now
       }
     }]
+  },
+
+  // NSFW Bypass - allows NSFW commands in non-NSFW channels
+  NSFWBypass: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

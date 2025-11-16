@@ -13,8 +13,12 @@ module.exports = {
   example: 'threesome @vee @josh',
   run: async (client, message, args) => {
     try {
-      // Check if channel is NSFW
-      if (!isNSFWChannel(message.channel)) {
+      // Get guild data to check for NSFW bypass
+      const guildService = getService('guild');
+      const guildData = await guildService.ensureGuildData(message.guild.id);
+      
+      // Check if channel is NSFW or bypass is enabled
+      if (!isNSFWChannel(message.channel, guildData)) {
         return embeds.deny(message, 'This command can only be used in `NSFW` channels!');
       }
 

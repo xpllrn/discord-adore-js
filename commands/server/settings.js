@@ -35,6 +35,7 @@ module.exports = {
       const levelSystemEnabled = guildData.LevelSystem?.enabled || false;
       const ticketSystemEnabled = guildData.TicketSystem?.enabled || false;
       const voiceManagerEnabled = guildData.VoiceManager?.enabled || false;
+      const nsfwBypassEnabled = guildData.NSFWBypass || false;
 
       // Get counts
       const welcomeMessagesCount = guildData.WelcomeMessages?.length || 0;
@@ -78,7 +79,8 @@ module.exports = {
               `Button Roles: ${buttonRolesCount > 0 ? config.emojis.success : config.emojis.error}`,
               `Level System: ${levelSystemEnabled ? config.emojis.success : config.emojis.error}`,
               `Ticket System: ${ticketSystemEnabled ? config.emojis.success : config.emojis.error}`,
-              `Voice Manager: ${voiceManagerEnabled ? config.emojis.success : config.emojis.error}`
+              `Voice Manager: ${voiceManagerEnabled ? config.emojis.success : config.emojis.error}`,
+              `NSFW Bypass: ${nsfwBypassEnabled ? config.emojis.success : config.emojis.error}`
             ].join('\n'),
             inline: true
           },
@@ -164,6 +166,33 @@ module.exports = {
       await guildService.setBoosterRoleBaseRole(message.guild.id, role.id);
 
       return embeds.success(message, `Set ${role} as the **Base role**`);
+
+    } else if (args[0] === 'nsfwbypass') {
+      const subcommandInfo = {
+        description: 'Toggle NSFW bypass to allow NSFW commands in non-NSFW channels',
+        usage: '{guildprefix}settings nsfwbypass',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}settings nsfwbypass'
+      };
+
+      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+        return embeds.deny(message, 'You need **Manage Server** permission to use this command');
+      }
+
+      const guildData = await guildService.ensureGuildData(message.guild.id);
+      const currentStatus = guildData.NSFWBypass || false;
+
+      // Toggle the setting
+      await guildService.updateGuildData(message.guild.id, {
+        NSFWBypass: !currentStatus
+      });
+
+      if (!currentStatus) {
+        return embeds.success(message, 'NSFW bypass **enabled**. NSFW commands can now be used in any channel.');
+      } else {
+        return embeds.success(message, 'NSFW bypass **disabled**. NSFW commands can only be used in NSFW channels.');
+      }
 
     } else {
       return false;

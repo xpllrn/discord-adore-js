@@ -91,7 +91,7 @@ module.exports = {
       // Confirm to user
       const confirmEmbed = new EmbedBuilder()
         .setColor(config.colors.success)
-        .setDescription(`${config.emojis.success} <@${interaction.user.id}>: Your **confession** has been submitted. Confession ID: ${confessionId}`);
+        .setDescription(`${config.emojis.success} <@${interaction.user.id}>: Your confession has **been submitted**. Confession ID: **${confessionId}**`);
 
       return interaction.reply({
         embeds: [confirmEmbed],
