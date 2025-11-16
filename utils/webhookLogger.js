@@ -225,7 +225,7 @@ class WebhookLogger {
       const beforeContent = oldMessage.content || '*No text content*';
       embed.addFields({
         name: '**Before**',
-        value: beforeContent.length > 1000 ? `\`\`\`${beforeContent.substring(0, 997)}...\`\`\`` : `\`\`\`${beforeContent}\`\`\``,
+        value: beforeContent.length > 1000 ? `${beforeContent.substring(0, 997)}...` : beforeContent,
         inline: false
       });
 
@@ -233,7 +233,7 @@ class WebhookLogger {
       const afterContent = message.content || '*No text content*';
       embed.addFields({
         name: '**After**',
-        value: afterContent.length > 1000 ? `\`\`\`${afterContent.substring(0, 997)}...\`\`\`` : `\`\`\`${afterContent}\`\`\``,
+        value: afterContent.length > 1000 ? `${afterContent.substring(0, 997)}...` : afterContent,
         inline: false
       });
 
