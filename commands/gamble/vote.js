@@ -131,7 +131,7 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(colors.info)
-          .setDescription(`**Vote for vleed and Claim Your Daily Vote Rewards**`)
+          .setDescription(`**Vote for adore and Claim Your Daily Vote Rewards**`)
           .addFields(
             { name: 'Reward', value: `\`${formatCurrency(VOTE_REWARD)}\``, inline: true },
             { name: 'Your Votes', value: `\`${totalVotes}\``, inline: true },

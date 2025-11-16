@@ -48,7 +48,7 @@ module.exports = {
   const endTime = Date.now();
   const startupTime = endTime - startTime;
   console.log('');
-  console.log(chalk.green(`vleed is active [${startupTime}ms]`));
+  console.log(chalk.green(`adore is active [${startupTime}ms]`));
   console.log('');
   console.log('');
 
@@ -152,7 +152,7 @@ async function loadBotStatusFromDatabase(client) {
     activities: [{ name: 'save 31$', type: ActivityType.Custom }],
     status: 'dnd'
   });
-  console.log(chalk.white('Instance: vleed | Status: save 31$'));
+  console.log(chalk.white('Instance: adore | Status: save 31$'));
 }
 
 /**

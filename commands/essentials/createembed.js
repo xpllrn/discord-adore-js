@@ -7,7 +7,7 @@ const logger = require('../../utils/logger');
 module.exports = {
   name: "createembed",
   aliases: ['ce'],
-  description: "Create your own embed, You can use [**embed website**](https://vleed.vly.site/embeds) to your own embeds",
+  description: "Create your own embed, You can use [**embed website**](https://adore.vly.site/embeds) to your own embeds",
   syntax: 'createembed (code)',
   example: 'createembed {title: Hello}',
   permission: "Manage Messages",

@@ -655,7 +655,7 @@ async function findRoleUserOrChannel(message, input) {
 async function getAutoModRule(guild) {
   try {
     const rules = await guild.autoModerationRules.fetch();
-    return rules.find(rule => rule.name === 'vleed AutoMod') || null;
+    return rules.find(rule => rule.name === 'adore AutoMod') || null;
   } catch (error) {
     return null;
   }
@@ -665,7 +665,7 @@ async function getAutoModRule(guild) {
 async function getInviteAutoModRule(guild) {
   try {
     const rules = await guild.autoModerationRules.fetch();
-    return rules.find(rule => rule.name === 'vleed Invites') || null;
+    return rules.find(rule => rule.name === 'adore Invites') || null;
   } catch (error) {
     return null;
   }
@@ -680,7 +680,7 @@ async function getOrCreateAutoModRule(guild) {
     if (!rule) {
       // Create new rule
       const ruleData = {
-        name: 'vleed AutoMod',
+        name: 'adore AutoMod',
         eventType: 1, // MESSAGE_SEND
         triggerType: AutoModerationRuleTriggerType.Keyword,
         triggerMetadata: {
@@ -690,7 +690,7 @@ async function getOrCreateAutoModRule(guild) {
           {
             type: AutoModerationActionType.BlockMessage,
             metadata: {
-              customMessage: 'The message is blocked by vleed automod'
+              customMessage: 'The message is blocked by adore automod'
             }
           }
         ],
@@ -721,7 +721,7 @@ async function getOrCreateAutoModRule(guild) {
 async function createInviteAutoModRule(guild) {
   try {
     const ruleData = {
-      name: 'vleed Invites',
+      name: 'adore Invites',
       eventType: 1, // MESSAGE_SEND
       triggerType: AutoModerationRuleTriggerType.Keyword,
       triggerMetadata: {
@@ -731,7 +731,7 @@ async function createInviteAutoModRule(guild) {
         {
           type: AutoModerationActionType.BlockMessage,
           metadata: {
-            customMessage: 'The message is blocked by vleed automod'
+            customMessage: 'The message is blocked by adore automod'
           }
         }
       ],

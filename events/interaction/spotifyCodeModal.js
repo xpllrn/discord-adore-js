@@ -125,10 +125,10 @@ module.exports = {
           // Show connection success with approval requirement
           if (profileName !== 'your Spotify account') {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!\n\n` +
-              `-# First time **vleed** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
+              `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
           } else {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `-# First time **vleed** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
+              `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
           }
 
           const successEmbed = new EmbedBuilder()
@@ -145,10 +145,10 @@ module.exports = {
           let successMessage;
           if (profileName !== 'your Spotify account') {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!\n\n` +
-              `-# First time **vleed** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
+              `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
           } else {
             successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `-# First time **vleed** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
+              `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
           }
 
           const successEmbed = new EmbedBuilder()
@@ -171,7 +171,7 @@ module.exports = {
           errorMessage += 'Redirect URI mismatch. Please contact the bot administrator.';
         } else {
           // Most likely the user is not in the Spotify Developer beta list
-          errorMessage = 'Your **Spotify account** is not approved for **vleed** yet.';
+          errorMessage = 'Your **Spotify account** is not approved for **adore** yet.';
           showTicketMessage = true;
         }
 

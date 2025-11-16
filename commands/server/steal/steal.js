@@ -203,7 +203,7 @@ module.exports = {
 
             // Clean the sticker name and create description
             const cleanName = removeInviteLinks(item.name);
-            const description = 'Sticker added using vleed bot';
+            const description = 'Sticker added using adore bot';
 
             // Steal sticker
             const sticker = await message.guild.stickers.create({

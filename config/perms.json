@@ -4,7 +4,7 @@
     "description": "Users with premium role in dev server",
     "roleId": "FROM_ENV",
     "checkFunction": "hasDevServerRole",
-    "customMessage": "You need to buy **premium/boost** vleed app server for this feature!"
+    "customMessage": "You need to buy **premium/boost** adore app server for this feature!"
   },
   "dev": {
     "name": "Developer",

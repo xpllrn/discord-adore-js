@@ -151,7 +151,7 @@ async function handleAdd(client, message, args) {
     // If no webhook URL provided, create one
     if (!finalWebhookUrl) {
       const webhook = await channel.createWebhook({
-        name: `vleed Audits`,
+        name: `adore Audits`,
         avatar: client.user.displayAvatarURL({ format: 'png' }),
         reason: `Logging setup by ${message.author.tag}`
       });

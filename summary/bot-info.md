@@ -1,7 +1,7 @@
-# vleed Bot - Ultra Detailed Documentation
+# adore Bot - Ultra Detailed Documentation
 
 ## 📋 Table of Contents
-1. [About vleed](#about-vleed)
+1. [About adore](#about-adore)
 2. [Moderation System](#moderation-system)
 3. [Antinuke System](#antinuke-system)
 4. [Customization](#customization)
@@ -17,19 +17,19 @@
 
 ---
 
-## About vleed
+## About adore
 
-**vleed** (always lowercase) is a comprehensive Discord bot designed for server owners who demand complete control, security, and customization. Built with advanced features that rival premium bots while remaining accessible.
+**adore** (always lowercase) is a comprehensive Discord bot designed for server owners who demand complete control, security, and customization. Built with advanced features that rival premium bots while remaining accessible.
 
 ### Core Information
-- **Bot Name:** vleed (NOT "bleed", "Vleed", or "VLEED")
+- **Bot Name:** adore (NOT "adore", "adore", or "adore")
 - **Default Prefix:** `,` (fully customizable per server)
 - **Support Server:** https://dsc.gg/s-invite
 - **Bot Type:** Traditional Discord bot with AI assistant feature
 - **Key Strength:** Security, moderation, and deep customization
 
-### What Makes vleed Different
-- **Not an AI bot** - vleed is a traditional Discord bot with an AI assistant command (`,ask`)
+### What Makes adore Different
+- **Not an AI bot** - adore is a traditional Discord bot with an AI assistant command (`,ask`)
 - **Security-first** - Advanced antinuke system prevents server destruction
 - **Fully customizable** - Custom avatar, banner, bio per server
 - **Rich embed system** - Powerful scripting with 50+ variables
@@ -338,7 +338,7 @@ This creates four roles:
 
 ## 🔒 Antinuke System - ULTRA DETAILED
 
-The antinuke system is vleed's most powerful security feature. It protects your server from malicious moderators, compromised accounts, and coordinated attacks.
+The antinuke system is adore's most powerful security feature. It protects your server from malicious moderators, compromised accounts, and coordinated attacks.
 
 ### Why You Need Antinuke
 
@@ -838,7 +838,7 @@ Every antinuke trigger creates detailed logs:
 
 ## 🎨 Customization System
 
-vleed allows complete per-server customization of the bot's appearance.
+adore allows complete per-server customization of the bot's appearance.
 
 ### Bot Appearance (Server Owner Only)
 
@@ -851,7 +851,7 @@ vleed allows complete per-server customization of the bot's appearance.
 **⚠️ IMPORTANT WARNING:**
 All customizations are actively monitored and logged. Uploading inappropriate content (NSFW, offensive, illegal) will result in:
 - Immediate bot removal from your server
-- Permanent ban from using vleed
+- Permanent ban from using adore
 - Report to Discord Trust & Safety
 - No appeals
 
@@ -861,7 +861,7 @@ All customizations are actively monitored and logged. Uploading inappropriate co
 
 **`,customize avatar [image URL]`** (aliases: `custom avatar`)
 
-**What it does:** Sets a custom avatar for vleed in your server only
+**What it does:** Sets a custom avatar for adore in your server only
 
 **How to use:**
 1. **With URL:**
@@ -913,7 +913,7 @@ All customizations are actively monitored and logged. Uploading inappropriate co
 
 **`,customize banner [image URL]`** (aliases: `custom banner`)
 
-**What it does:** Sets a custom banner for vleed's profile in your server
+**What it does:** Sets a custom banner for adore's profile in your server
 
 **How to use:**
 1. **With URL:**
@@ -955,7 +955,7 @@ All customizations are actively monitored and logged. Uploading inappropriate co
 
 **`,customize bio [text]`** (aliases: `custom bio`)
 
-**What it does:** Sets a custom "About Me" bio for vleed in your server
+**What it does:** Sets a custom "About Me" bio for adore in your server
 
 **How to use:**
 1. **Set bio:**
@@ -1055,7 +1055,7 @@ All customizations are actively monitored and logged. Uploading inappropriate co
 - Personal prefix works in addition to server prefix
 - Only you can use your personal prefix
 - Other members still use server prefix
-- Works across all servers with vleed
+- Works across all servers with adore
 
 **Use cases:**
 - Prefer different prefix than server
@@ -1067,7 +1067,7 @@ All customizations are actively monitored and logged. Uploading inappropriate co
 
 ## 📝 Embed System - COMPLETE GUIDE
 
-vleed's embed system is one of its most powerful features. Create rich, beautiful embeds with full variable support.
+adore's embed system is one of its most powerful features. Create rich, beautiful embeds with full variable support.
 
 ### What Are Embeds?
 
@@ -1309,7 +1309,7 @@ Embeds are rich message formats that display information in a structured, visual
 {author: {user.name}}
 {author: {user.name} && {user.avatar}}
 {author: {server.name} && {server.icon}}
-{author: vleed Bot && https://bot-icon.png && https://website.com}
+{author: adore Bot && https://bot-icon.png && https://website.com}
 ```
 
 **Character limits:**
@@ -1337,7 +1337,7 @@ Embeds are rich message formats that display information in a structured, visual
 {footer: Requested by {user.name}}
 {footer: {server.name} && {server.icon}}
 {footer: Page 1 of 5}
-{footer: vleed Bot && https://icon.png}
+{footer: adore Bot && https://icon.png}
 ```
 
 **Character limits:**
@@ -1838,7 +1838,7 @@ nage Roles permission
 
 ## 💰 Economy & Gambling System
 
-vleed includes a full economy system with gambling, earning, and trading features.
+adore includes a full economy system with gambling, earning, and trading features.
 
 ### Getting Started
 
@@ -1859,7 +1859,7 @@ Claim free coins every 24 hours.
 ```
 ,vote
 ```
-Vote for vleed and get coins every 12 hours.
+Vote for adore and get coins every 12 hours.
 
 ---
 
@@ -1983,9 +1983,9 @@ Vote for vleed and get coins every 12 hours.
 
 ---
 
-## 📊 Key Facts About vleed
+## 📊 Key Facts About adore
 
-1. **vleed is NOT an AI bot** - It's a traditional Discord bot with an AI assistant feature (`,ask` command)
+1. **adore is NOT an AI bot** - It's a traditional Discord bot with an AI assistant feature (`,ask` command)
 2. **Security-first design** - Antinuke system prevents server destruction
 3. **Fully customizable** - Custom avatar, banner, bio per server
 4. **50+ variables** - Rich embed system with dynamic content
@@ -2031,6 +2031,6 @@ Vote for vleed and get coins every 12 hours.
 
 ---
 
-**Remember:** vleed is always lowercase, never "Vleed", "VLEED", or "bleed"!
+**Remember:** adore is always lowercase, never "adore", "adore", or "adore"!
 
 

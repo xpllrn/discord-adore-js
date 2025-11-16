@@ -320,7 +320,7 @@ function handleSpotifyError(message, error) {
     const errorEmbed = new EmbedBuilder()
       .setColor(config.colors.error)
       .setDescription(
-        `❌ ${message.author}: Your **Spotify account** is not approved for **vleed** yet.\n\n` +
+        `❌ ${message.author}: Your **Spotify account** is not approved for **adore** yet.\n\n` +
         `**Create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) and provide your **Spotify email** to get added to the beta list.`
       );
     

@@ -1,8 +1,8 @@
 {
   "bot": {
-    "name": "vleed",
+    "name": "adore",
     "defaultPrefix": ",",
-    "description": "vleed is a powerful Discord bot with advanced moderation, customization, and utility features. Learn how to set up the bot in your server or enhance your everyday use with commands & more.",
+    "description": "adore is a powerful Discord bot with advanced moderation, customization, and utility features. Learn how to set up the bot in your server or enhance your everyday use with commands & more.",
     "supportServer": "https://dsc.gg/s-invite",
     "version": "1.0"
   },

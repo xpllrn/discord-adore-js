@@ -36,7 +36,7 @@ async function logGuildLeave(guild, client) {
 
     const embed = new EmbedBuilder()
       .setColor(colors.error)
-      .setDescription(`vleed **unlinked** with **${guild.name}**\n\n> **created on** : <t:${Math.floor(guild.createdTimestamp / 1000)}:F>\n> **created by** : ${ownerInfo}`)
+      .setDescription(`adore **unlinked** with **${guild.name}**\n\n> **created on** : <t:${Math.floor(guild.createdTimestamp / 1000)}:F>\n> **created by** : ${ownerInfo}`)
       .setAuthor({ 
         name: `${guild.name} (${guild.id})`, 
         iconURL: guild.iconURL({ dynamic: true }) 

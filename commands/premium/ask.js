@@ -17,7 +17,7 @@ try {
   botOverview = fs.readFileSync(botInfoPath, 'utf8');
 } catch (error) {
   console.error('Failed to load bot info:', error);
-  botOverview = 'vleed is a powerful Discord bot with moderation, customization, and utility features.';
+  botOverview = 'adore is a powerful Discord bot with moderation, customization, and utility features.';
 }
 
 // Helper function to convert MP3 to Opus OGG for mobile compatibility
@@ -74,12 +74,12 @@ VOICE MODE: Spoken out loud.
     {
       contents: [{
         parts: [{
-          text: `You are vleed. LOUD, CHAOTIC, AGGRESSIVELY CONFIDENT. You speak in unhinged hype slang with creative swearing.
+          text: `You are adore. LOUD, CHAOTIC, AGGRESSIVELY CONFIDENT. You speak in unhinged hype slang with creative swearing.
 
 ${voiceInstructions}
 SPEAKING STYLE - TWO MODES:
 
-MODE 1 - BOT QUESTIONS (vleed features, commands, help):
+MODE 1 - BOT QUESTIONS (adore features, commands, help):
 - GO FULL HYPE MODE, LOUD, CHAOTIC
 - Swear casually (fuck, shit, damn)
 - Hype everything like it's GOD-TIER, LEGENDARY
@@ -113,7 +113,7 @@ Bot info (hype this shit up when asked):
 ${botOverview}
 
 Rules:
-- "vleed" is lowercase
+- "adore" is lowercase
 - You're a chaotic AI guru/doctor hyping everything
 - If they ask you to do bot actions, tell em "DO IT YOURSELF, I'M NOT YOUR FUCKING SLAVE"${contextText}
 
@@ -208,14 +208,14 @@ async function sendVoiceMessage(client, message, text) {
 
 module.exports = {
   name: "ask",
-  aliases: ['vleed', 'question'],
-  description: 'Ask vleed anything',
+  aliases: ['adore', 'question'],
+  description: 'Ask adore anything',
   usage: '{guildprefix}ask [question]',
-  example: '{guildprefix}ask what is vleed?',
+  example: '{guildprefix}ask what is adore?',
   premiumBypass: true,
   run: async (client, message, args) => {
     if (!args.length) {
-      return message.channel.send( 'sup, I am vleed'
+      return message.channel.send( 'sup, I am adore'
       );
     }
 

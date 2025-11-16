@@ -16,14 +16,14 @@ module.exports = {
 
     try {
       const responses = [
-        'yes master, rebooting vleed now',
+        'yes master, rebooting adore now',
         'okay mommy, restarting right away',
-        'as you say daddy, rebooting vleed',
+        'as you say daddy, rebooting adore',
         'shh kitten, already done',
-        'on it boss, restarting vleed',
+        'on it boss, restarting adore',
         'right away master, rebooting now',
-        'bet, restarting vleed rn',
-        'aye aye captain, restarting vleed'
+        'bet, restarting adore rn',
+        'aye aye captain, restarting adore'
       ];
       const randomResponse = responses[Math.floor(Math.random() * responses.length)];
       await message.channel.send(randomResponse);
@@ -31,7 +31,7 @@ module.exports = {
       // Give time for message to send
       setTimeout(async () => {
         try {
-          await execAsync('pm2 restart vleed');
+          await execAsync('pm2 restart adore');
         } catch (error) {
           console.error('Failed to restart via PM2:', error.message);
           // Fallback: exit process (PM2 will restart automatically)

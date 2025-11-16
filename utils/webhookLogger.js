@@ -119,7 +119,7 @@ class WebhookLogger {
 
       // Create new webhook
       const newWebhook = await channel.createWebhook({
-        name: 'vleed Audits',
+        name: 'adore Audits',
         avatar: client.user.displayAvatarURL({ format: 'png' }),
         reason: 'Recreating deleted webhook for logging'
       });

@@ -176,7 +176,7 @@ module.exports = {
         try {
           // Create webhook for logging
           const webhook = await logsChannel.createWebhook({
-            name: `vleed Audits`,
+            name: `adore Audits`,
             avatar: client.user.displayAvatarURL({ format: 'png' }),
             reason: `Jail logging setup by ${message.author.tag}`
           });

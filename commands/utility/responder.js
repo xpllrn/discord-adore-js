@@ -694,9 +694,9 @@ class InstagramScraper {
 module.exports = {
     name: "responder",
     aliases: [],
-    description: 'Download content when "vleed" is mentioned with links',
-    syntax: 'vleed (link)',
-    example: 'vleed https://instagram.com/p/example',
+    description: 'Download content when "adore" is mentioned with links',
+    syntax: 'adore (link)',
+    example: 'adore https://instagram.com/p/example',
     run: async (client, message, args) => {
         // This function is called from message listener, not as a command
         // The actual logic is in the message event handler
@@ -706,7 +706,7 @@ module.exports = {
 async function handleVleedMention(client, message) {
     const content = message.content.toLowerCase();
 
-    if (!content.startsWith('vleed ')) {
+    if (!content.startsWith('adore ')) {
         return;
     }
 
@@ -730,8 +730,8 @@ async function handleVleedMention(client, message) {
         }
     } catch (error) {
         if (client.errorLogger) {
-            client.errorLogger.log(error, 'vleed Downloader', {
-                command: 'vleed',
+            client.errorLogger.log(error, 'adore Downloader', {
+                command: 'adore',
                 args: url,
                 user: message.author,
                 guild: message.guild,
@@ -749,7 +749,7 @@ async function handleInstagram(message, url, client) {
         if (!result.status) {
             if (client.errorLogger) {
                 client.errorLogger.log(`Instagram download failed: ${result.msg}`, 'Instagram Downloader', {
-                    command: 'vleed (Instagram)',
+                    command: 'adore (Instagram)',
                     args: url,
                     user: message.author,
                     guild: message.guild,
@@ -782,7 +782,7 @@ async function handleInstagram(message, url, client) {
             } catch (downloadError) {
                 if (client.errorLogger) {
                     client.errorLogger.log(`Instagram file download error: ${downloadError.message}`, 'Instagram File Download', {
-                        command: 'vleed (Instagram File)',
+                        command: 'adore (Instagram File)',
                         args: `${url} - File ${i + 1}`,
                         user: message.author,
                         guild: message.guild,
@@ -801,7 +801,7 @@ async function handleInstagram(message, url, client) {
     } catch (error) {
         if (client.errorLogger) {
             client.errorLogger.log(`Instagram download error: ${error.message}`, 'Instagram Download', {
-                command: 'vleed (Instagram)',
+                command: 'adore (Instagram)',
                 args: url,
                 user: message.author,
                 guild: message.guild,
@@ -867,7 +867,7 @@ async function handleTikTok(message, url, client) {
     } catch (error) {
         if (client.errorLogger) {
             client.errorLogger.log(`TikTok download error: ${error.message}`, 'TikTok Download', {
-                command: 'vleed (TikTok)',
+                command: 'adore (TikTok)',
                 args: url,
                 user: message.author,
                 guild: message.guild,
@@ -915,7 +915,7 @@ async function processTikTokVideo(message, videoData, client) {
         } catch (downloadError) {
             if (client.errorLogger) {
                 client.errorLogger.log(`TikTok video download error: ${downloadError.message}`, 'TikTok Video Download', {
-                    command: 'vleed (TikTok Video)',
+                    command: 'adore (TikTok Video)',
                     args: videoUrl,
                     user: message.author,
                     guild: message.guild,
@@ -928,7 +928,7 @@ async function processTikTokVideo(message, videoData, client) {
     } catch (error) {
         if (client.errorLogger) {
             client.errorLogger.log(`TikTok processing error: ${error.message}`, 'TikTok Processing', {
-                command: 'vleed (TikTok Processing)',
+                command: 'adore (TikTok Processing)',
                 args: 'Video data processing',
                 user: message.author,
                 guild: message.guild,

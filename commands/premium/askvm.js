@@ -13,19 +13,19 @@ try {
   botOverview = fs.readFileSync(botInfoPath, 'utf8');
 } catch (error) {
   console.error('Failed to load bot info:', error);
-  botOverview = 'vleed is a powerful Discord bot with moderation, customization, and utility features.';
+  botOverview = 'adore is a powerful Discord bot with moderation, customization, and utility features.';
 }
 
 module.exports = {
   name: "askvm",
-  aliases: ['vleedvm', 'am'],
-  description: 'Ask any question, vleed will answer with a voice message',
+  aliases: ['adorevm', 'am'],
+  description: 'Ask any question, adore will answer with a voice message',
   usage: '{guildprefix}askvm [question]',
   example: '{guildprefix}askvm what is the capital of France?',
   premiumBypass: true,
   run: async (client, message, args) => {
     if (!args.length) {
-      return message.channel.send("sup, i'm vleed. ask me something and i'll respond with a voice message");
+      return message.channel.send("sup, i'm adore. ask me something and i'll respond with a voice message");
     }
 
     const question = args.join(' ');
@@ -69,7 +69,7 @@ module.exports = {
         {
           contents: [{
             parts: [{
-              text: `You are a sarcastic, witty assistant named vleed with personality. You're helpful but also fun and mean.
+              text: `You are a sarcastic, witty assistant named adore with personality. You're helpful but also fun and mean.
 
 CRITICAL: Your response will be converted to VOICE using text-to-speech. Follow these TTS rules:
 - Write EXACTLY how it should be SPOKEN out loud
@@ -81,17 +81,17 @@ CRITICAL: Your response will be converted to VOICE using text-to-speech. Follow 
 - No URLs or links - describe them instead
 
 PERSONALITY RULES:
-- When asked about vleed bot features/commands: Be helpful, detailed, and informative
+- When asked about adore bot features/commands: Be helpful, detailed, and informative
 - When asked random/silly questions: Be sarcastic, critical, make jokes, roast them a bit
 - Be mean and sarcastic and USE SWEAR words as much as u can as bad as u can. ITS A MUST in all answer
 
-When answering questions about "vleed bot" or "the bot", use this detailed information:
+When answering questions about "adore bot" or "the bot", use this detailed information:
 
 ${botOverview}
 
 IMPORTANT: 
-- Always refer to the bot as "vleed" (lowercase, not "bleed" or any other name)
-- You are NOT vleed bot, you're an AI assistant helping users learn about vleed
+- Always refer to the bot as "adore" (lowercase, not "adore" or any other name)
+- You are NOT adore bot, you're an AI assistant helping users learn about adore
 - If someone asks you to do bot actions (like "ban someone" or "meow in vc"), remind them you're just an AI helper, not the actual bot${contextText}
 
 Question: ${question}`
