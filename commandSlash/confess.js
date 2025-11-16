@@ -56,8 +56,7 @@ module.exports = {
       const confessionEmbed = new EmbedBuilder()
         .setColor(roleColor)
         .setTitle(`Anonymous Confession (#${confessionId})`)
-        .setDescription(confessionContent)
-        .setTimestamp();
+        .setDescription(confessionContent);
 
       // Create buttons
       const row = new ActionRowBuilder()
@@ -90,7 +89,7 @@ module.exports = {
       const sentMessage = await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
       
       // Track this confession
-      await confessionService.addConfession(interaction.guild.id, confessionId, sentMessage.id);
+      await confessionService.addConfession(interaction.guild.id, confessionId, sentMessage.id, interaction.user.id);
 
       // Confirm to user
       const confirmEmbed = new EmbedBuilder()

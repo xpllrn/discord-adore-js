@@ -1,6 +1,9 @@
+const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { hasPermissionLevel } = require('../../utils/permissions');
+const { getService } = require('@services');
+const config = require('../../config/setup');
 const logger = require('../../utils/logger');
 
 module.exports = {
@@ -28,6 +31,15 @@ module.exports = {
         example: '{guildprefix}fetch invite 1234567890123456789'
       };
       await handleInvite(client, message, args);
+    } else if (subcommand === 'confession' || subcommand === 'confess') {
+      const subcommandInfo = {
+        description: 'Reveal who submitted a confession',
+        usage: '{guildprefix}fetch confession [server id] [confession id]',
+        aliases: ['confess'],
+        parameters: ['server id', 'confession id'],
+        example: '{guildprefix}fetch confession 1234567890123456789 5'
+      };
+      await handleConfession(client, message, args);
     } else {
       return runHelpCommand(message, 'fetch');
     }
@@ -101,5 +113,91 @@ async function handleInvite(client, message, args) {
   } catch (error) {
     logger.webhook.error(error, message);
     return embeds.deny(message, `An error occurred while processing the invite for server \`${serverId}\``);
+  }
+}
+
+
+async function handleConfession(client, message, args) {
+  if (!args[1] || !args[2]) {
+    return embeds.warn(message, 'Usage: `,fetch confession [server id] [confession id]`');
+  }
+
+  const guildId = args[1];
+  const confessionId = parseInt(args[2]);
+
+  if (isNaN(confessionId) || confessionId < 1) {
+    return embeds.deny(message, 'Invalid confession ID provided.');
+  }
+
+  // Validate guild ID
+  if (!/^\d{17,19}$/.test(guildId)) {
+    return embeds.deny(message, 'Invalid server ID provided.');
+  }
+
+  try {
+    // Check if bot is in the guild
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+      return embeds.deny(message, 'Bot is not in that server or server does not exist.');
+    }
+
+    const confessionService = getService('confession');
+    
+    // Get the confession
+    const confession = await confessionService.getConfessionById(guildId, confessionId);
+    
+    if (!confession) {
+      return embeds.deny(message, `Confession #${confessionId} not found in server **${guild.name}**.`);
+    }
+
+    // Fetch the user
+    let user;
+    try {
+      user = await client.users.fetch(confession.userId);
+    } catch (error) {
+      return embeds.deny(message, `Could not fetch user with ID: \`${confession.userId}\``);
+    }
+
+    // Create reveal embed
+    const revealEmbed = new EmbedBuilder()
+      .setColor(config.colors.info)
+      .setTitle(`Confession #${confessionId} Reveal`)
+      .addFields(
+        {
+          name: 'Server',
+          value: `**${guild.name}** (\`${guild.id}\`)`,
+          inline: false
+        },
+        {
+          name: 'Author',
+          value: `${user} (\`${user.id}\`)`,
+          inline: false
+        },
+        {
+          name: 'Submitted',
+          value: `<t:${Math.floor(confession.createdAt.getTime() / 1000)}:R>`,
+          inline: false
+        },
+        {
+          name: 'Message ID',
+          value: `\`${confession.messageId}\``,
+          inline: false
+        }
+      )
+      .setThumbnail(user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `Requested by ${message.author.username}` })
+      .setTimestamp();
+
+    return message.channel.send({ embeds: [revealEmbed] });
+
+  } catch (error) {
+    logger.webhook.error(error, 'Fetch Confession Command', {
+      user: message.author,
+      guild: message.guild,
+      channel: message.channel,
+      command: 'fetch confession',
+      args: `${guildId} ${confessionId}`
+    });
+    return embeds.deny(message, 'An error occurred while revealing the confession.');
   }
 }

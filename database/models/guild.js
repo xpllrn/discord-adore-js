@@ -1387,6 +1387,10 @@ const guildSchema = new mongoose.Schema({
         type: String,
         required: true
       },
+      userId: {
+        type: String,
+        required: true // Track who submitted the confession
+      },
       createdAt: {
         type: Date,
         default: Date.now
