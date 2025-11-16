@@ -270,7 +270,10 @@ module.exports = {
       // Remove from database
       await guildService.removeButtonRole(message.guild.id, messageId, role.id);
 
-      return embeds.success(message, `Removed button role: **${buttonRole.label}** → ${role}`);
+      const displayEmoji = buttonRole.emoji || '';
+      const displayLabel = buttonRole.label ? `\`${buttonRole.label}\`` : '';
+      const displayText = displayEmoji && displayLabel ? `${displayEmoji} ${displayLabel}` : (displayEmoji || displayLabel || 'button');
+      return embeds.success(message, `Removed ${displayText} from [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${channelId}/${messageId}) with ${role} unassigned`);
 
     } else if (args[0] === 'list') {
       const subcommandInfo = {
@@ -418,7 +421,7 @@ module.exports = {
             // Ignore errors when updating message
           }
 
-          const successEmbed = embeds.createSuccess(message, `Removed all button roles from the message`);
+          const successEmbed = embeds.createSuccess(message, `Removed all button roles from [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${channelId}/${messageId})`);
           await sentMessage.edit({ embeds: [successEmbed], components: [] });
         }
       );

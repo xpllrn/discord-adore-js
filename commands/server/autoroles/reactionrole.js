@@ -178,7 +178,7 @@ module.exports = {
       const role = message.guild.roles.cache.get(reactionRole.roleId);
       const roleMention = role ? `${role}` : '**Unknown Role**';
 
-      return embeds.success(message, `Removed reaction role: ${reaction} → ${roleMention}`);
+      return embeds.success(message, `Removed ${reaction} from [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${channelId}/${messageId}) with ${roleMention} unassigned`);
 
     } else if (args[0] === 'list') {
       const subcommandInfo = {
@@ -331,7 +331,7 @@ module.exports = {
             // Ignore errors when removing reactions
           }
 
-          const successEmbed = embeds.createSuccess(message, `Removed all reaction roles from the message`);
+          const successEmbed = embeds.createSuccess(message, `Removed all reaction roles from [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${channelId}/${messageId})`);
           await interaction.update({ embeds: [successEmbed], components: [] });
         }
       );
