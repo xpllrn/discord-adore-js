@@ -149,10 +149,10 @@ async function loadBotStatusFromDatabase(client) {
 
   // Set bot status
   client.user.setPresence({
-    activities: [{ name: 'save 31$', type: ActivityType.Custom }],
+    activities: [{ name: 'move to adore, save $30', type: ActivityType.Custom }],
     status: 'dnd'
   });
-  console.log(chalk.white('Instance: adore | Status: save 31$'));
+  console.log(chalk.white('Instance: adore | Status: cooked'));
 }
 
 /**
