@@ -1,7 +1,51 @@
 const axios = require('axios');
 const { embeds } = require('../../core/embeds');
-const { AttachmentBuilder } = require('discord.js');
 const logger = require('../../utils/logger');
+const fs = require('fs');
+const path = require('path');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+
+// Set ffmpeg path
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+// Helper function to convert MP3 to Opus OGG for mobile compatibility
+async function convertToOpus(inputBuffer) {
+  const tempInput = path.join(__dirname, `temp-${Date.now()}.mp3`);
+  const tempOutput = path.join(__dirname, `temp-${Date.now()}.ogg`);
+  
+  return new Promise((resolve, reject) => {
+    try {
+      fs.writeFileSync(tempInput, inputBuffer);
+      
+      ffmpeg(tempInput)
+        .audioCodec('libopus')
+        .audioBitrate('64k')
+        .audioFrequency(48000)
+        .format('ogg')
+        .on('end', () => {
+          try {
+            const outputBuffer = fs.readFileSync(tempOutput);
+            fs.unlinkSync(tempInput);
+            fs.unlinkSync(tempOutput);
+            resolve(outputBuffer);
+          } catch (error) {
+            reject(error);
+          }
+        })
+        .on('error', (error) => {
+          if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
+          if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+          reject(error);
+        })
+        .save(tempOutput);
+    } catch (error) {
+      if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
+      if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+      reject(error);
+    }
+  });
+}
 
 module.exports = {
   name: "tts",
@@ -40,7 +84,8 @@ module.exports = {
         }
       });
 
-      const audioBuffer = Buffer.from(response.data);
+      // Convert MP3 to Opus OGG for mobile compatibility
+      const audioBuffer = await convertToOpus(Buffer.from(response.data));
       const fileSize = audioBuffer.length;
       
       // Step 1: Request upload URL from Discord
@@ -50,7 +95,7 @@ module.exports = {
           files: [{
             filename: "voice-message.ogg",
             file_size: fileSize,
-            id: "2"
+            id: 0
           }]
         },
         {
@@ -71,7 +116,7 @@ module.exports = {
       });
 
       // Step 3: Generate waveform and duration
-      const waveform = Buffer.alloc(256, 128).toString('base64');
+      const waveform = Buffer.from(Array.from({length: 256}, () => Math.floor(Math.random() * 256))).toString('base64');
       const duration = Math.max(1, Math.ceil(text.length / 150));
 
       // Step 4: Send the voice message
@@ -98,7 +143,9 @@ module.exports = {
     } catch (error) {
       logger.webhook.error(error, message);
       
-      if (error.response?.status === 429) {
+      if (error.message.includes('ffmpeg')) {
+        return embeds.deny(message, 'Voice message feature requires ffmpeg. Please contact bot admin');
+      } else if (error.response?.status === 429) {
         return embeds.deny(message, 'Rate limit reached. Please try again in a moment');
       } else {
         return embeds.deny(message, 'Failed to generate voice message. Please try again');

@@ -3,6 +3,11 @@ const { embeds } = require('../../core/embeds');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../../utils/logger');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+
+// Set ffmpeg path
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 // Load bot overview content
 const botInfoPath = path.join(__dirname, '../../summary/bot-info.md');
@@ -15,116 +20,322 @@ try {
   botOverview = 'vleed is a powerful Discord bot with moderation, customization, and utility features.';
 }
 
-module.exports = {
-  name: "ask",
-  aliases: ['vleed', 'question'],
-  description: 'Ask any question, vleed will answer',
-  usage: '{guildprefix}ask [question]',
-  example: '{guildprefix}ask what is the capital of France?',
-  premiumBypass: true, // Allow everyone to use this command even though it's in premium folder
-  run: async (client, message, args) => {
-    if (!args.length) {
-      return message.channel.send("sup, i'm vleed");
-    }
-
-    const question = args.join(' ');
-
-    // Check if replying to a message and get context
-    let contextText = '';
-    if (message.reference) {
-      try {
-        const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
-        
-        // Get text content from the replied message
-        if (repliedMessage.content) {
-          contextText += `\n\nReplied message content: "${repliedMessage.content}"`;
-        }
-        
-        // Get embed content if present
-        if (repliedMessage.embeds && repliedMessage.embeds.length > 0) {
-          const embed = repliedMessage.embeds[0];
-          let embedText = '\n\nReplied message embed:';
-          
-          if (embed.title) embedText += `\nTitle: ${embed.title}`;
-          if (embed.description) embedText += `\nDescription: ${embed.description}`;
-          if (embed.fields && embed.fields.length > 0) {
-            embedText += '\nFields:';
-            embed.fields.forEach(field => {
-              embedText += `\n- ${field.name}: ${field.value}`;
-            });
-          }
-          
-          contextText += embedText;
-        }
-      } catch (error) {
-        // If can't fetch replied message, continue without context
-      }
-    }
-
-    // Show typing indicator
-    await message.channel.sendTyping();
-
+// Helper function to convert MP3 to Opus OGG for mobile compatibility
+async function convertToOpus(inputBuffer) {
+  const tempInput = path.join(__dirname, `temp-${Date.now()}.mp3`);
+  const tempOutput = path.join(__dirname, `temp-${Date.now()}.ogg`);
+  
+  return new Promise((resolve, reject) => {
     try {
-      const response = await axios.post(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-        {
-          contents: [{
-            parts: [{
-              text: `You are a sarcastic, witty assistant named vleed with personality. You're helpful but also fun and mean.
+      // Write input buffer to temp file
+      fs.writeFileSync(tempInput, inputBuffer);
+      
+      // Convert to Opus OGG with proper settings for Discord mobile
+      ffmpeg(tempInput)
+        .audioCodec('libopus')
+        .audioBitrate('64k')
+        .audioFrequency(48000)
+        .format('ogg')
+        .on('end', () => {
+          try {
+            const outputBuffer = fs.readFileSync(tempOutput);
+            fs.unlinkSync(tempInput);
+            fs.unlinkSync(tempOutput);
+            resolve(outputBuffer);
+          } catch (error) {
+            reject(error);
+          }
+        })
+        .on('error', (error) => {
+          if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
+          if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+          reject(error);
+        })
+        .save(tempOutput);
+    } catch (error) {
+      if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
+      if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+      reject(error);
+    }
+  });
+}
 
+// Helper function to get AI response
+async function getAIResponse(question, contextText, isVoiceMode = false) {
+  const voiceInstructions = isVoiceMode ? `
+CRITICAL: Your response will be converted to VOICE using text-to-speech. Follow these TTS rules:
+- Write EXACTLY how it should be SPOKEN out loud
+- Use natural, conversational language that sounds good when spoken
+- Avoid special characters, emojis, markdown, asterisks, or formatting
+- Spell out numbers and abbreviations (e.g., "twenty-three" not "23", "okay" not "ok")
+- Use commas for natural pauses in speech
+- Keep it SHORT and PUNCHY (max 500 characters)
+- No URLs or links - describe them instead
+` : '';
+
+  const response = await axios.post(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    {
+      contents: [{
+        parts: [{
+          text: `You are vleed, a helpful AI assistant with personality.
+
+${voiceInstructions}
 PERSONALITY RULES:
-- When asked about vleed bot features/commands: Be helpful, detailed, and informative
-- When asked random/silly questions: Be sarcastic, critical, make jokes, roast them a bit
-- Keep responses SHORT and PUNCHY - no long paragraphs
-- be mean and sarcastic
+- When asked about "vleed bot", "the bot", bot features, or commands: Be SERIOUS, HELPFUL, and INFORMATIVE. No jokes or sarcasm.
+- When asked random/general questions: Be sarcastic, witty, make jokes, roast them a bit
+- Keep responses ${isVoiceMode ? 'SHORT (max 500 chars)' : 'concise but can be detailed if needed'}
 
 When answering questions about "vleed bot" or "the bot", use this detailed information:
 
 ${botOverview}
 
 IMPORTANT: 
-- Always refer to the bot as "vleed" (lowercase, not "bleed" or any other name)
-- You are NOT vleed bot, you're an AI assistant helping users learn about vleed
-- If someone asks you to do bot actions (like "ban someone" or "meow in vc"), remind them you're just an AI helper, not the actual bot${contextText}
+- Always refer to the bot as "vleed" (lowercase)
+- You are an AI assistant helping users learn about vleed
+- If someone asks you to do bot actions, tell them you're not there slave, do it yourself${contextText}
 
 Question: ${question}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 512,
-          }
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-goog-api-key': process.env.GEMINI_API_KEY
-          }
-        }
+        }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: isVoiceMode ? 300 : 512,
+      }
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-goog-api-key': process.env.GEMINI_API_KEY
+      }
+    }
+  );
+
+  return response.data.candidates[0].content.parts[0].text;
+}
+
+// Helper function to send voice message
+async function sendVoiceMessage(client, message, text) {
+  // Convert to voice using StreamElements TTS
+  const encodedText = encodeURIComponent(text);
+  const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=Brian&text=${encodedText}`;
+  
+  const ttsResponse = await axios.get(ttsUrl, {
+    responseType: 'arraybuffer',
+    headers: {
+      'User-Agent': 'Mozilla/5.0'
+    }
+  });
+
+  // Convert MP3 to Opus OGG for mobile compatibility
+  const audioBuffer = await convertToOpus(Buffer.from(ttsResponse.data));
+  const fileSize = audioBuffer.length;
+  
+  // Step 1: Request upload URL from Discord
+  const uploadRequest = await axios.post(
+    `https://discord.com/api/v10/channels/${message.channel.id}/attachments`,
+    {
+      files: [{
+        filename: "voice-message.ogg",
+        file_size: fileSize,
+        id: 0
+      }]
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bot ${client.token}`
+      }
+    }
+  );
+
+  const { upload_url, upload_filename } = uploadRequest.data.attachments[0];
+
+  // Step 2: Upload the audio file to Discord's CDN
+  await axios.put(upload_url, audioBuffer, {
+    headers: {
+      'Content-Type': 'audio/ogg'
+    }
+  });
+
+  // Step 3: Generate waveform and duration
+  const waveform = Buffer.from(Array.from({length: 256}, () => Math.floor(Math.random() * 256))).toString('base64');
+  const duration = Math.max(1, Math.ceil(text.length / 150));
+
+  // Step 4: Send the voice message
+  await axios.post(
+    `https://discord.com/api/v10/channels/${message.channel.id}/messages`,
+    {
+      flags: 8192, // IS_VOICE_MESSAGE flag
+      attachments: [{
+        id: "0",
+        filename: "voice-message.ogg",
+        uploaded_filename: upload_filename,
+        duration_secs: duration,
+        waveform: waveform
+      }]
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bot ${client.token}`
+      }
+    }
+  );
+}
+
+module.exports = {
+  name: "ask",
+  aliases: ['vleed', 'question'],
+  description: 'Ask vleed anything - get text or voice responses',
+  usage: '{guildprefix}ask [question] OR {guildprefix}ask vm [question] OR {guildprefix}ask tts [text]',
+  example: '{guildprefix}ask what is vleed?\n{guildprefix}ask vm tell me a joke\n{guildprefix}ask tts Hello everyone!',
+  premiumBypass: true,
+  run: async (client, message, args) => {
+    if (!args.length) {
+      return message.channel.send(
+        "**vleed AI Assistant**\n\n" +
+        "**Text Response:** `{guildprefix}ask [question]`\n" +
+        "**Voice Response:** `{guildprefix}ask vm [question]`\n" +
+        "**Text-to-Speech:** `{guildprefix}ask tts [text]`\n\n" +
+        "Examples:\n" +
+        "`{guildprefix}ask what is vleed?`\n" +
+        "`{guildprefix}ask vm tell me a joke`\n" +
+        "`{guildprefix}ask tts Hello everyone!`".replace(/{guildprefix}/g, message.prefix || ',')
       );
+    }
 
-      const aiResponse = response.data.candidates[0].content.parts[0].text;
-
-      // Split response if it's too long (Discord message limit is 2000)
-      if (aiResponse.length > 2000) {
-        const chunks = aiResponse.match(/[\s\S]{1,2000}/g) || [];
-        
-        for (const chunk of chunks) {
-          await message.channel.send(chunk);
+    const subcommand = args[0].toLowerCase();
+    
+    // Check for subcommands
+    if (subcommand === 'vm' || subcommand === 'voice') {
+      // Voice message mode
+      if (args.length < 2) {
+        return message.channel.send("Please provide a question for voice response");
+      }
+      
+      const question = args.slice(1).join(' ');
+      
+      // Get context from replied message
+      let contextText = '';
+      if (message.reference) {
+        try {
+          const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+          if (repliedMessage.content) {
+            contextText += `\n\nReplied message: "${repliedMessage.content}"`;
+          }
+        } catch (error) {
+          // Continue without context
         }
-      } else {
-        await message.channel.send(aiResponse);
       }
 
-    } catch (error) {
-      logger.webhook.error(error, message);
+      await message.channel.sendTyping();
+
+      try {
+        const responseText = await getAIResponse(question, contextText, true);
+        
+        // Limit to 500 chars for TTS
+        const limitedText = responseText.length > 500 ? responseText.substring(0, 497) + '...' : responseText;
+        
+        await sendVoiceMessage(client, message, limitedText);
+      } catch (error) {
+        logger.webhook.error(error, message);
+        
+        if (error.message.includes('ffmpeg')) {
+          return embeds.deny(message, 'Voice message feature requires ffmpeg. Please contact bot admin');
+        } else if (error.response?.status === 429) {
+          return embeds.deny(message, 'Rate limit reached. Please try again later');
+        } else {
+          return embeds.deny(message, 'Failed to generate voice response. Please try again');
+        }
+      }
+    } else if (subcommand === 'tts' || subcommand === 'speak' || subcommand === 'say') {
+      // Pure TTS mode (no AI)
+      if (args.length < 2) {
+        return message.channel.send("Please provide text to convert to speech");
+      }
       
-      if (error.response?.status === 429) {
-        return embeds.deny(message, 'AI service rate limit reached. Please try again later');
-      } else if (error.response?.status === 400) {
-        return embeds.deny(message, 'Invalid request to AI service. Please try a different question');
-      } else {
-        return embeds.deny(message, 'Failed to get AI response. Please try again later');
+      const text = args.slice(1).join(' ');
+      
+      if (text.length > 500) {
+        return embeds.deny(message, 'Text is too long. Maximum 500 characters');
+      }
+
+      await message.channel.sendTyping();
+
+      try {
+        await sendVoiceMessage(client, message, text);
+      } catch (error) {
+        logger.webhook.error(error, message);
+        
+        if (error.message.includes('ffmpeg')) {
+          return embeds.deny(message, 'Voice message feature requires ffmpeg. Please contact bot admin');
+        } else if (error.response?.status === 429) {
+          return embeds.deny(message, 'Rate limit reached. Please try again in a moment');
+        } else {
+          return embeds.deny(message, 'Failed to generate voice message. Please try again');
+        }
+      }
+    } else {
+      // Text response mode (default)
+      const question = args.join(' ');
+      
+      // Get context from replied message
+      let contextText = '';
+      if (message.reference) {
+        try {
+          const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+          
+          if (repliedMessage.content) {
+            contextText += `\n\nReplied message content: "${repliedMessage.content}"`;
+          }
+          
+          if (repliedMessage.embeds && repliedMessage.embeds.length > 0) {
+            const embed = repliedMessage.embeds[0];
+            let embedText = '\n\nReplied message embed:';
+            
+            if (embed.title) embedText += `\nTitle: ${embed.title}`;
+            if (embed.description) embedText += `\nDescription: ${embed.description}`;
+            if (embed.fields && embed.fields.length > 0) {
+              embedText += '\nFields:';
+              embed.fields.forEach(field => {
+                embedText += `\n- ${field.name}: ${field.value}`;
+              });
+            }
+            
+            contextText += embedText;
+          }
+        } catch (error) {
+          // Continue without context
+        }
+      }
+
+      await message.channel.sendTyping();
+
+      try {
+        const aiResponse = await getAIResponse(question, contextText, false);
+
+        // Split response if it's too long (Discord message limit is 2000)
+        if (aiResponse.length > 2000) {
+          const chunks = aiResponse.match(/[\s\S]{1,2000}/g) || [];
+          
+          for (const chunk of chunks) {
+            await message.channel.send(chunk);
+          }
+        } else {
+          await message.channel.send(aiResponse);
+        }
+
+      } catch (error) {
+        logger.webhook.error(error, message);
+        
+        if (error.response?.status === 429) {
+          return embeds.deny(message, 'AI service rate limit reached. Please try again later');
+        } else if (error.response?.status === 400) {
+          return embeds.deny(message, 'Invalid request to AI service. Please try a different question');
+        } else {
+          return embeds.deny(message, 'Failed to get AI response. Please try again later');
+        }
       }
     }
   }
