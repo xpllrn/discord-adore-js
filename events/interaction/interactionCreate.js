@@ -1276,11 +1276,8 @@ async function handleButtonRole(interaction) {
  */
 async function handleConfessionSubmit(interaction) {
   try {
-    console.log('handleConfessionSubmit called for guild:', interaction.guild.id);
     const confessionService = getService('confession');
-    console.log('Got confession service:', !!confessionService);
     const config = await confessionService.getConfessionConfig(interaction.guild.id);
-    console.log('Got confession config:', config);
 
     if (!config.enabled || !config.channelId) {
       const embed = embeds.createDeny(

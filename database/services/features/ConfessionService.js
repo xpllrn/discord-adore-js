@@ -18,11 +18,14 @@ class ConfessionService extends BaseService {
    */
   async getConfessionConfig(guildId) {
     const guildData = await this.getGuildService().ensureGuildData(guildId);
-    return guildData.ConfessionSystem || {
-      enabled: false,
-      channelId: null,
-      ignoredUsers: [],
-      nextConfessionId: 1
+    const confessionSystem = guildData.ConfessionSystem || {};
+    
+    // Ensure all fields have default values
+    return {
+      enabled: confessionSystem.enabled || false,
+      channelId: confessionSystem.channelId || null,
+      ignoredUsers: confessionSystem.ignoredUsers || [],
+      nextConfessionId: confessionSystem.nextConfessionId || 1
     };
   }
 
