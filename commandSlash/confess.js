@@ -23,7 +23,7 @@ module.exports = {
       // Check if system is enabled
       if (!confessionConfig.enabled || !confessionConfig.channelId) {
         return interaction.reply({
-          content: `${config.emojis.error} <@${interaction.user.id}>: The confession system is not enabled on this server.`,
+          content: `${config.emojis.error} <@${interaction.user.id}>: The confession system is **not enabled** on this server.`,
           ephemeral: true
         });
       }
@@ -32,7 +32,7 @@ module.exports = {
       const isIgnored = await confessionService.isUserIgnored(interaction.guild.id, interaction.user.id);
       if (isIgnored) {
         return interaction.reply({
-          content: `${config.emojis.error} <@${interaction.user.id}>: You are not allowed to submit confessions in this server.`,
+          content: `${config.emojis.error} <@${interaction.user.id}>: You are **not allowed** to submit confessions in this server.`,
           ephemeral: true
         });
       }
@@ -48,9 +48,13 @@ module.exports = {
       const confessionContent = interaction.options.getString('confession');
       const confessionId = await confessionService.getNextConfessionId(interaction.guild.id);
 
+      // Get user's top role color
+      const member = await interaction.guild.members.fetch(interaction.user.id);
+      const roleColor = member.displayHexColor !== '#000000' ? member.displayHexColor : config.colors.embed;
+
       // Create confession embed
       const confessionEmbed = new EmbedBuilder()
-        .setColor(config.colors.embed)
+        .setColor(roleColor)
         .setTitle(`Anonymous Confession (#${confessionId})`)
         .setDescription(confessionContent)
         .setTimestamp();

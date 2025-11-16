@@ -6,7 +6,7 @@ module.exports = {
   name: 'count',
   aliases: ['counting'],
   description: 'Configure the counting game system.',
-  syntax: 'count (channel/strict) <value>',
+  syntax: 'count (config/channel/strict/enable/disable/ignore/unignore) <value>',
   example: 'count channel #counting',
   run: async (client, message, args) => {
     const guildService = getService('guild');
@@ -14,22 +14,98 @@ module.exports = {
       return embeds.permission(message, 'Manage Guild');
     }
 
-    // Show current settings
+    // Require subcommand
     if (!args[0]) {
+      return runHelpCommand(message, 'count');
+    }
+
+    const subcommand = args[0].toLowerCase();
+
+    // Show current settings
+    if (subcommand === 'config') {
       const countingData = await guildService.getCounting(message.guild.id);
       if (countingData.channelId) {
         const strictMode = countingData.strict !== false ? 'on' : 'off';
-        return embeds.info(message, `The counting channel is <#${countingData.channelId}>.\nStrict mode: **${strictMode}**\nCurrent count: **${countingData.currentCount}**`);
+        const status = countingData.enabled !== false ? 'enabled' : 'disabled';
+        return embeds.info(message, `The counting channel is <#${countingData.channelId}>.\nStatus: **${status}**\nStrict mode: **${strictMode}**\nCurrent count: **${countingData.currentCount}**`);
       } else {
         return embeds.info(message, `There is no counting channel set.`);
       }
     }
 
-    // Handle strict mode toggle
-    if (args[0].toLowerCase() === 'strict') {
+    // Handle enable
+    if (subcommand === 'enable') {
       const countingData = await guildService.getCounting(message.guild.id);
       if (!countingData.channelId) {
-        return embeds.deny(message, 'Please set a counting channel first.');
+        return embeds.deny(message, 'Please set a counting channel first using `count channel #channel`.');
+      }
+      countingData.enabled = true;
+      await guildService.setCounting(message.guild.id, countingData);
+      return embeds.success(message, 'Counting system has been enabled.');
+    }
+
+    // Handle disable
+    if (subcommand === 'disable') {
+      const countingData = await guildService.getCounting(message.guild.id);
+      if (!countingData.channelId) {
+        return embeds.deny(message, 'There is no counting channel set.');
+      }
+      countingData.enabled = false;
+      await guildService.setCounting(message.guild.id, countingData);
+      return embeds.success(message, 'Counting system has been disabled.');
+    }
+
+    // Handle ignore user
+    if (subcommand === 'ignore') {
+      const countingData = await guildService.getCounting(message.guild.id);
+      if (!countingData.channelId) {
+        return embeds.deny(message, 'Please set a counting channel first using `count channel #channel`.');
+      }
+
+      const user = message.mentions.users.first() || await message.client.users.fetch(args[1]).catch(() => null);
+      if (!user) {
+        return embeds.deny(message, 'Please mention a valid user or provide a user ID.');
+      }
+
+      if (!countingData.ignoredUsers) {
+        countingData.ignoredUsers = [];
+      }
+
+      if (countingData.ignoredUsers.includes(user.id)) {
+        return embeds.deny(message, `${user.tag} is already ignored in the counting system.`);
+      }
+
+      countingData.ignoredUsers.push(user.id);
+      await guildService.setCounting(message.guild.id, countingData);
+      return embeds.success(message, `${user.tag} will now be ignored in the counting system.`);
+    }
+
+    // Handle unignore user
+    if (subcommand === 'unignore') {
+      const countingData = await guildService.getCounting(message.guild.id);
+      if (!countingData.channelId) {
+        return embeds.deny(message, 'Please set a counting channel first using `count channel #channel`.');
+      }
+
+      const user = message.mentions.users.first() || await message.client.users.fetch(args[1]).catch(() => null);
+      if (!user) {
+        return embeds.deny(message, 'Please mention a valid user or provide a user ID.');
+      }
+
+      if (!countingData.ignoredUsers || !countingData.ignoredUsers.includes(user.id)) {
+        return embeds.deny(message, `${user.tag} is not currently ignored in the counting system.`);
+      }
+
+      countingData.ignoredUsers = countingData.ignoredUsers.filter(id => id !== user.id);
+      await guildService.setCounting(message.guild.id, countingData);
+      return embeds.success(message, `${user.tag} is no longer ignored in the counting system.`);
+    }
+
+    // Handle strict mode toggle
+    if (subcommand === 'strict') {
+      const countingData = await guildService.getCounting(message.guild.id);
+      if (!countingData.channelId) {
+        return embeds.deny(message, 'Please set a counting channel first using `count channel #channel`.');
       }
 
       const mode = args[1]?.toLowerCase();
@@ -47,19 +123,9 @@ module.exports = {
     }
 
     // Handle channel setting
-    if (args[0].toLowerCase() === 'channel') {
+    if (subcommand === 'channel') {
       if (!args[1]) {
         return runHelpCommand(message, 'count');
-      }
-
-      if (args[1].toLowerCase() === 'none' || args[1].toLowerCase() === 'off') {
-        await guildService.setCounting(message.guild.id, {
-          channelId: null,
-          currentCount: 0,
-          lastCounterId: null,
-          strict: true
-        });
-        return embeds.success(message, 'Counting channel has been disabled.');
       }
 
       const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[1]);
@@ -71,35 +137,13 @@ module.exports = {
         channelId: channel.id,
         currentCount: 0,
         lastCounterId: null,
-        strict: true
+        strict: true,
+        enabled: true
       });
 
-      return embeds.success(message, `Counting channel has been set to ${channel}. Start counting from **1**!`);
+      return embeds.success(message, `Counting channel has been set to ${channel} and enabled. Start counting from **1**!`);
     }
 
-    // Legacy support: direct channel mention or ID
-    if (args[0].toLowerCase() === 'off' || args[0].toLowerCase() === 'disable' || args[0].toLowerCase() === 'none') {
-      await guildService.setCounting(message.guild.id, {
-        channelId: null,
-        currentCount: 0,
-        lastCounterId: null,
-        strict: true
-      });
-      return embeds.success(message, 'Counting channel has been disabled.');
-    }
-
-    const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]);
-    if (!channel) {
-      return embeds.deny(message, 'Invalid channel provided. Use `count channel #channel` to set a counting channel.');
-    }
-
-    await guildService.setCounting(message.guild.id, {
-      channelId: channel.id,
-      currentCount: 0,
-      lastCounterId: null,
-      strict: true
-    });
-
-    return embeds.success(message, `Counting channel has been set to ${channel}. Start counting from **1**!`);
+    return runHelpCommand(message, 'count');
   }
 };

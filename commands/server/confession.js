@@ -1,6 +1,7 @@
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
+const { runHelpCommand } = require('../../utils/commandProcessor');
 const config = require('../../config/setup');
 
 module.exports = {
@@ -13,38 +14,19 @@ module.exports = {
     try {
       const confessionService = getService('confession');
 
-    // If no args or just "confess", show info embed
-    if (!args[0] || args[0] === 'confess') {
-      const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
-      
-      // Check if system is enabled
-      if (!confessionConfig.enabled || !confessionConfig.channelId) {
-        return embeds.deny(message, 'The confession system is not enabled on this server. An administrator needs to set a confession channel first using `,confession channel #channel`');
-      }
-
-      const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setTitle('Anonymous Confession System')
-        .setDescription('Please use the confess button below to create a confession');
-
-      const row = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('confession_submit')
-            .setLabel('Submit a Confession')
-            .setStyle(ButtonStyle.Secondary)
-            .setEmoji('📝')
-        );
-
-      return message.channel.send({ embeds: [embed], components: [row] });
-    }
-
-    // Check permissions for config commands
-    if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return embeds.deny(message, 'You need **Manage Server** permission to use this command');
-    }
-
     if (args[0] === 'channel') {
+      const subcommandInfo = {
+        description: 'Set or view the confession channel',
+        usage: '{guildprefix}confession channel [#channel]',
+        aliases: [],
+        parameters: ['channel (optional)'],
+        example: '{guildprefix}confession channel #confessions'
+      };
+
+      // Check permissions for config commands
+      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+        return embeds.deny(message, 'You need **Manage Server** permission to use this command');
+      }
       if (!args[1]) {
         const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
         if (!confessionConfig.channelId) {
@@ -91,6 +73,18 @@ module.exports = {
       return embeds.success(message, `Set ${channel} as the confession channel and sent the confession button`);
 
     } else if (args[0] === 'ignore') {
+      const subcommandInfo = {
+        description: 'Add or remove users from the confession ignore list',
+        usage: '{guildprefix}confession ignore [@user]',
+        aliases: [],
+        parameters: ['user (optional)'],
+        example: '{guildprefix}confession ignore @user'
+      };
+
+      // Check permissions for config commands
+      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+        return embeds.deny(message, 'You need **Manage Server** permission to use this command');
+      }
       if (!args[1]) {
         const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
         if (confessionConfig.ignoredUsers.length === 0) {
@@ -115,6 +109,18 @@ module.exports = {
       }
 
     } else if (args[0] === 'config') {
+      const subcommandInfo = {
+        description: 'View the confession system configuration',
+        usage: '{guildprefix}confession config',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}confession config'
+      };
+
+      // Check permissions for config commands
+      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+        return embeds.deny(message, 'You need **Manage Server** permission to use this command');
+      }
       const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
       
       const embed = new EmbedBuilder()
@@ -151,7 +157,7 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else {
-      return false;
+      return runHelpCommand(message, 'confession');
     }
     } catch (error) {
       console.error('Error in confession command:', error);

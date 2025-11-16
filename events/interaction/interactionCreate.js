@@ -1373,9 +1373,13 @@ async function handleConfessionModal(interaction) {
     const confessionContent = interaction.fields.getTextInputValue('confession_content');
     const confessionId = await confessionService.getNextConfessionId(interaction.guild.id);
 
+    // Get user's top role color
+    const member = await interaction.guild.members.fetch(interaction.user.id);
+    const roleColor = member.displayHexColor !== '#000000' ? member.displayHexColor : colors.embed;
+
     // Create confession embed
     const confessionEmbed = new EmbedBuilder()
-      .setColor(colors.embed)
+      .setColor(roleColor)
       .setTitle(`Anonymous Confession (#${confessionId})`)
       .setDescription(confessionContent)
       .setTimestamp();
@@ -1611,9 +1615,17 @@ async function handleConfessionReplyModal(interaction) {
       }
     }
 
-    // Send the reply in the thread
+    // Get user's top role color
+    const member = await interaction.guild.members.fetch(interaction.user.id);
+    const roleColor = member.displayHexColor !== '#000000' ? member.displayHexColor : colors.embed;
+
+    // Send the reply in the thread as an embed
+    const replyEmbed = new EmbedBuilder()
+      .setColor(roleColor)
+      .setDescription(confessionContent);
+
     await thread.send({
-      content: confessionContent
+      embeds: [replyEmbed]
     });
 
     // Confirm to user
