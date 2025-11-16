@@ -190,8 +190,10 @@ module.exports = {
         emoji: emoji || null
       });
 
-      const displayText = label || (emoji ? 'Button' : 'Role Button');
-      return embeds.success(message, `Added button role: **${displayText}** → ${role}`);
+      const displayEmoji = emoji || '';
+      const displayLabel = label ? `\`${label}\`` : '';
+      const displayText = displayEmoji && displayLabel ? `${displayEmoji} ${displayLabel}` : (displayEmoji || displayLabel);
+      return embeds.success(message, `Added ${displayText} to [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${channelId}/${messageId}) with ${role} assigned`);
 
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
@@ -314,27 +316,25 @@ module.exports = {
       }
 
       let description = '';
+      let count = 0;
 
       for (const [messageId, roles] of Object.entries(messageGroups)) {
-        const channel = message.guild.channels.cache.get(roles[0].channelId);
-        const channelMention = channel ? channel : 'Unknown Channel';
-        
-        description += `**Message:** [Jump to Message](https://discord.com/channels/${message.guild.id}/${roles[0].channelId}/${messageId}) in ${channelMention}\n`;
-        
         for (const roleData of roles) {
-          const displayEmoji = roleData.emoji || '';
-          const displayLabel = roleData.label || '';
-          const displayText = displayLabel ? `**${displayLabel}**` : (displayEmoji ? 'Button' : 'Role Button');
-          description += `${displayEmoji} ${displayText} (${roleData.style}) → ${roleData.role}\n`;
+          count++;
+          description += `\`${count}\` [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${roleData.channelId}/${messageId}) - ${roleData.role}\n`;
         }
-        description += '\n';
       }
+
+      const totalPages = 1;
+      const currentPage = 1;
+      const entryText = validButtonRoles.length === 1 ? 'entry' : 'entries';
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.embed)
+        .setAuthor({ name: 're.voro', iconURL: 'https://cdn.discordapp.com/embed/avatars/5.png' })
         .setTitle('Button Roles')
-        .setDescription(description)
-        .setFooter({ text: `${validButtonRoles.length}/100 button roles` });
+        .setDescription(description.trim())
+        .setFooter({ text: `Page ${currentPage}/${totalPages} (${validButtonRoles.length} ${entryText})` });
 
       return message.channel.send({ embeds: [embed] });
 

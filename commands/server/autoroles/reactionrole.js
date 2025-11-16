@@ -116,7 +116,7 @@ module.exports = {
         roleId: role.id
       });
 
-      return embeds.success(message, `Added reaction role: ${reaction} → ${role}`);
+      return embeds.success(message, `Added ${reaction} to [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${channelId}/${messageId}) with ${role} assigned`);
 
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
@@ -225,23 +225,22 @@ module.exports = {
       let count = 0;
 
       for (const [messageId, roles] of Object.entries(messageGroups)) {
-        const channel = message.guild.channels.cache.get(roles[0].channelId);
-        const channelMention = channel ? `<#${channel.id}>` : 'Unknown Channel';
-        
-        description += `**Message:** [Jump to Message](https://discord.com/channels/${message.guild.id}/${roles[0].channelId}/${messageId}) in ${channelMention}\n`;
-        
         for (const roleData of roles) {
           count++;
-          description += `${roleData.reaction} → ${roleData.role}\n`;
+          description += `\`${count}\` ${roleData.reaction} [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${roleData.channelId}/${messageId}) - ${roleData.role}\n`;
         }
-        description += '\n';
       }
+
+      const totalPages = 1;
+      const currentPage = 1;
+      const entryText = validReactionRoles.length === 1 ? 'entry' : 'entries';
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.embed)
+        .setAuthor({ name: 're.voro', iconURL: 'https://cdn.discordapp.com/embed/avatars/5.png' })
         .setTitle('Reaction Roles')
-        .setDescription(description)
-        .setFooter({ text: `${validReactionRoles.length}/50 reaction roles` });
+        .setDescription(description.trim())
+        .setFooter({ text: `Page ${currentPage}/${totalPages} (${validReactionRoles.length} ${entryText})` });
 
       return message.channel.send({ embeds: [embed] });
 
