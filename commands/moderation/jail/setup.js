@@ -27,7 +27,7 @@ module.exports = {
     }
 
     // Send loading embed
-    const loadingMessage = await embeds.loading(message, 'Setting up jail system for you, please wait!');
+    const loadingMessage = await embeds.loading(message, 'setting up the **moderation setup**, please wait..');
 
     try {
       // Check if jail role already exists using universal finder
