@@ -512,7 +512,7 @@ class WebhookLogger {
     } else if (action === 'emojiCreate') {
       description = `Emoji **:${target?.name || 'unknown'}:** created by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'emojiDelete') {
-      description = `Emoji **:${target?.name || 'unknown'}:** deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
+      description = `Emoji **${target?.name || 'unknown'}** deleted by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'emojiUpdate') {
       description = `Emoji **:${target?.name || 'unknown'}:** updated by ${executor ? `<@${executor.id}>` : '**Unknown**'}`;
     } else if (action === 'messageDelete') {

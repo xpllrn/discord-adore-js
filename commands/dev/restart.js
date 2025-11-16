@@ -10,8 +10,8 @@ module.exports = {
   syntax: 'bozo u can not use it',
   permission: 'dev',
   run: async (client, message, args) => {
-    // Check if user is the dev (by ID only)
-    if (message.author.id !== process.env.DEV_ID) return;
+    // Check if command is used in dev server
+    if (message.guild.id !== process.env.DEV_SERVER_ID) return;
 
     try {
       const responses = [

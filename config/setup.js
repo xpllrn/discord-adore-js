@@ -80,17 +80,17 @@ module.exports = {
 
   // Emojis Configuration
   emojis: {
-    cooldown: '<:cooldown:1431572324104278109>',
-    success: '<:approve:1431572311827288154>',
-    error: '<:deny:1431572328298450994>',
-    warn: '<:warning:1431572385726988388>',
-    left: '<:left:1431572343976624209>',
-    right: '<:right:1431572361399894016>',
-    cancel: '<:cancel:1431572321893613649>',
-    choose: '<:skipto:1431572370019188816>',
+    cooldown: '<:cooldown:1439546267884589177>',
+    success: '<:approve:1439540948450414592>',
+    error: '<:deny:1439540956515930112>',
+    warn: '<:warning:1439541009045524543>',
+    left: '<:left:1439540967215599768>',
+    right: '<:right:1439540986299551775>',
+    cancel: '<:cancel:1439546265733173299>',
+    choose: '<:skipto:1439540990783258735>',
     loading: '<a:loading:1431572348489699361>',
 
-    lastfm: '<:lastfm:1431572342018019348>',
+    lastfm: '<:lastfm:1439540983971840112>',
     join: '<:linked:1431572346216513639>',
     leave: '<:aired:1431572306777604187>',
     cross: '<:deny:1430425037004869682>',
@@ -98,39 +98,31 @@ module.exports = {
     ticket: '🎫',
 
     // Voice Manager Emojis
-    vmLock: '<:lock:1431572351799132302>',
-    vmUnlock: '<:unlock:1431572383118135316>',
-    vmHide: '<:ghost:1431572330345402419>',
-    vmUnhide: '<:unghost:1431572381322969178>',
-    vmIncrease: '<:increase:1431572334854279168>',
-    vmDecrease: '<:decrease:1431572326088183911>',
-    vmInfo: '<:info:1431572339354632193>',
+    vmLock: '<:lock:1439540969480519721>',
+    vmUnlock: '<:unlock:1439541004901548112>',
+    vmHide: '<:ghost:1439540961184321536>',
+    vmUnhide: '<:unghost:1439541002066202704>',
+    vmIncrease: '<:increase:1439540962954055791>',
+    vmDecrease: '<:decrease:1439540954607652924>',
+    vmInfo: '<:info:1439540965655445606>',
     vmRename: '<:rename:1431572358971261071>',
 
     // Level Progress Bar Emojis
-    blueLeftRounded: '<:blue_left_rounded:1431572315283525753>',
-    blue: '<:blue:1431572319595401266>',
-    blueRightRounded: '<:blue_right_rounded:1431572317359702188>',
-    whiteLeftRounded: '<:white_left_rounded:1431572393440186459>',
-    white: '<:white:1431572397341020243>',
-    whiteRightRounded: '<:white_right_rounded:1431572395340075028>',
+    blueLeftRounded: '<:blue_left_rounded:1439546259366215680>',
+    blue: '<:blue:1439546263669440562>',
+    blueRightRounded: '<:blue_right_rounded:1439546261517766747>',
+    whiteLeftRounded: '<:white_left_rounded:1439546284414603274>',
+    white: '<:white:1439546288562634944>',
+    whiteRightRounded: '<:white_right_rounded:1439546286180405289>',
 
     // Custom Emojis
-    google: '<:google:1431572332832489533>',
+    google: '<:google:1439546269847650345>',
     spotify: '<:spotify:1433468387824238712>',
 
-    // Spotify Control Emojis
-    spotifyPlay: '<:play:1432294396828848170>',
-    spotifyPause: '<:pause:1432294414457376848>',
-    spotifyPrevious: '<:previous:1432294387009851402>',
-    spotifyNext: '<:next:1432294327727554570>',
-    spotifyVolume: '<:volume:1432294374846496908>',
-    spotifyQueue: '<:queue:1432294322388074516>',
-    spotifyQueueAdd: '<:queueadd:1432294384799449170>',
-    spotifyRepeat: '<:repeat:1432294357465042944>',
-    spotifyShuffle: '<:shuffle:1432294336917143663>',
-    spotifyShare: '<:share:1432294350250971136>',
-    musicNote: '<:play:1432294396828848170>',
+    // Rank Emojis
+    bronze: '<:bronze:1439546272448118924>',
+    silver: '<:silver:1439546277221109841>',
+    gold: '<:gold:1439546274960380044>',
 
 
 
