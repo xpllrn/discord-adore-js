@@ -126,7 +126,11 @@ module.exports = {
       });
 
       // Update loading message to success
-      await embeds.approve(loadingMessage, `Successfully archived all **${downloaded}** emoji${downloaded === 1 ? '' : 's'}${failed > 0 ? ` (${failed} failed)` : ''} and sent`);
+      const successEmbed = new EmbedBuilder()
+        .setColor(colors.success)
+        .setDescription(`${emojis.success} <@${message.author.id}>: Successfully archived all **${downloaded}** emoji${downloaded === 1 ? '' : 's'}${failed > 0 ? ` (${failed} failed)` : ''} and sent`);
+      
+      await loadingMessage.edit({ embeds: [successEmbed] });
 
       // Clean up
       fs.rmSync(tempDir, { recursive: true, force: true });
