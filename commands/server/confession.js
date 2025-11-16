@@ -16,21 +16,22 @@ module.exports = {
     if (!args[0] || args[0] === 'confess') {
       const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
       
+      // Check if system is enabled
+      if (!confessionConfig.enabled || !confessionConfig.channelId) {
+        return embeds.deny(message, 'The confession system is not enabled on this server. An administrator needs to set a confession channel first using `,confession channel #channel`');
+      }
+
       const embed = new EmbedBuilder()
         .setColor(config.colors.embed)
-        .setAuthor({ 
-          name: message.author.username, 
-          iconURL: message.author.displayAvatarURL({ dynamic: true }) 
-        })
-        .setDescription('Please use the confess button below to create a confession')
-        .setFooter({ text: 'Anonymous Confession System' });
+        .setTitle('Anonymous Confession System')
+        .setDescription('Please use the confess button below to create a confession');
 
       const row = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
             .setCustomId('confession_submit')
             .setLabel('Submit a Confession')
-            .setStyle(ButtonStyle.Primary)
+            .setStyle(ButtonStyle.Secondary)
             .setEmoji('📝')
         );
 

@@ -49,6 +49,7 @@ const logger = require('./utils/logger');
 
 client.commands = new Collection();
 client.aliases = new Collection();
+client.slashCommands = new Collection();
 
 // Attach permissions utilities to client
 client.permissions = permissions;
@@ -115,6 +116,34 @@ const commandCount = commandResult.commandCount || commandResult;
 const failedCommands = commandResult.failedCommands || [];
 client.commandCount = commandCount;
 client.failedCommands = failedCommands;
+
+// Load slash commands
+const commandSlashPath = path.join(__dirname, 'commandSlash');
+let slashCommandCount = 0;
+try {
+  if (require('fs').existsSync(commandSlashPath)) {
+    const slashCommandFiles = readdirSync(commandSlashPath).filter(file => file.endsWith('.js'));
+    
+    for (const file of slashCommandFiles) {
+      try {
+        const filePath = path.join(commandSlashPath, file);
+        const command = require(filePath);
+        
+        if ('data' in command && 'execute' in command) {
+          client.slashCommands.set(command.data.name, command);
+          slashCommandCount++;
+        } else {
+          logger.console.warn(`⚠️  Slash command ${file} is missing 'data' or 'execute' property`);
+        }
+      } catch (error) {
+        logger.console.error(`❌ Failed to load slash command: ${file} - ${error.message}`);
+      }
+    }
+  }
+} catch (error) {
+  logger.console.warn('⚠️  No commandSlash directory found');
+}
+client.slashCommandCount = slashCommandCount;
 
 require('./handlers/events')(client);
 

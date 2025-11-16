@@ -21,7 +21,8 @@ module.exports = {
   // System initialization
   const guildCount = client.guilds.cache.size;
   const userCount = client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0);
-  console.log(chalk.white(`System: ${guildCount} servers, ${userCount.toLocaleString()} users, ${client.commands.size} commands, ${client.eventCount} events`));
+  const slashCommandInfo = client.slashCommandCount > 0 ? `, ${client.slashCommandCount} slash commands` : '';
+  console.log(chalk.white(`System: ${guildCount} servers, ${userCount.toLocaleString()} users, ${client.commands.size} commands${slashCommandInfo}, ${client.eventCount} events`));
   console.log('');
 
   // Set loading status while cache initializes

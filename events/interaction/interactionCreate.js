@@ -90,6 +90,43 @@ module.exports = {
         return;
       }
 
+      // Handle slash command interactions
+      if (interaction.isChatInputCommand()) {
+        const command = interaction.client.slashCommands.get(interaction.commandName);
+
+        if (!command) {
+          console.error(`No slash command matching ${interaction.commandName} was found.`);
+          return;
+        }
+
+        try {
+          await command.execute(interaction);
+        } catch (error) {
+          console.error(`Error executing slash command ${interaction.commandName}:`, error);
+          
+          if (interaction.client?.errorLogger) {
+            interaction.client.errorLogger.log(error, 'Slash Command Execution', {
+              command: interaction.commandName,
+              user: interaction.user,
+              guild: interaction.guild,
+              channel: interaction.channel
+            });
+          }
+
+          const errorMessage = {
+            content: '❌ There was an error while executing this command!',
+            flags: MessageFlags.Ephemeral
+          };
+
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(errorMessage).catch(() => {});
+          } else {
+            await interaction.reply(errorMessage).catch(() => {});
+          }
+        }
+        return;
+      }
+
       // Handle button interactions
       if (interaction.isButton()) {
         // Handle voice manager buttons, logic is in ./voiceManagerButtons.js
@@ -1348,7 +1385,7 @@ async function handleConfessionModal(interaction) {
         new ButtonBuilder()
           .setCustomId('confession_submit')
           .setLabel('Submit a Confession')
-          .setStyle(ButtonStyle.Primary)
+          .setStyle(ButtonStyle.Secondary)
           .setEmoji('📝'),
         new ButtonBuilder()
           .setCustomId(`confession_reply_${confessionId}`)
@@ -1519,7 +1556,7 @@ async function handleConfessionReplyModal(interaction) {
         new ButtonBuilder()
           .setCustomId('confession_submit')
           .setLabel('Submit a Confession')
-          .setStyle(ButtonStyle.Primary)
+          .setStyle(ButtonStyle.Secondary)
           .setEmoji('📝'),
         new ButtonBuilder()
           .setCustomId(`confession_reply_${confessionId}`)
