@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
-const { embeds } = require('../../../core/embeds');
-const { findUser } = require('../../../handlers/finder');
-const { colors } = require('../../../config/setup');
+const { embeds } = require('../../core/embeds');
+const { findUser } = require('../../handlers/finder');
+const { colors } = require('../../config/setup');
 
 module.exports = {
   name: "message",
@@ -25,8 +25,7 @@ module.exports = {
       }
 
       // Get message and voice statistics
-      const { getService } = require('@services');
-      const guildService = getService('guild');
+      const guildService = require('../../database/services').getService('guild');
       const messageStats = await guildService.getMessageStats(message.guild.id, targetUser.id);
       const voiceStats = await guildService.getVoiceStats(message.guild.id, targetUser.id);
 

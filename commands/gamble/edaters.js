@@ -15,8 +15,13 @@ module.exports = {
     try {
       const userService = getService('user');
 
-      // Get all members in the guild
-      const members = await message.guild.members.fetch();
+      // Get all members in the guild with timeout
+      let members;
+      try {
+        members = await message.guild.members.fetch({ time: 10000 });
+      } catch (fetchError) {
+        return embeds.deny(message, 'Failed to fetch server members. Please try again later.');
+      }
       
       // Find all married members in this server
       const marriages = [];
@@ -59,7 +64,7 @@ module.exports = {
       }
 
       if (marriages.length === 0) {
-        return embeds.warn(message, 'There are no married couples in this server!');
+        return embeds.warn(message, 'There are **no e-couples** in this server!');
       }
 
       // Sort by marriage date (oldest first)
@@ -74,8 +79,9 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor(colors.embed)
+        .setTitle(`Couples of ${message.guild.name}`)
         .setDescription(description)
-        .setFooter({ text: `${marriages.length} e-couple${marriages.length !== 1 ? 's' : ''} in ${message.guild.name}` });
+        .setFooter({ text: `${marriages.length} e-couple${marriages.length !== 1 ? 's' : ''}` });
 
       return message.channel.send({ embeds: [embed] });
 
