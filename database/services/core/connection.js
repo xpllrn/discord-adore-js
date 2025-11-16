@@ -194,26 +194,23 @@ class ConnectionManager {
       this.stats[type].lastConnected = new Date();
       this.stats[type].reconnectCount++;
       
-      // Clear service caches on reconnect to prevent stale data
-      try {
-        const { getService } = require('@services');
-        if (type === 'guild' || type === 'local') {
-          const guildService = getService('guild');
-          if (guildService) {
-            guildService.clearCache();
-            console.log(chalk.blue('Cleared guild service cache after reconnection'));
-          }
-        }
-        if (type === 'user' || type === 'global') {
-          const userService = getService('user');
-          if (userService) {
-            userService.clearCache();
-            console.log(chalk.blue('Cleared user service cache after reconnection'));
-          }
-        }
-      } catch (error) {
-        console.error(chalk.yellow('Failed to clear service caches on reconnect:'), error.message);
-      }
+      // ⚠️ CRITICAL BUG FIX (Nov 16, 2025 - Guild ID: 1439525673667657810):
+      // 
+      // ISSUE: Server settings were being reset after database reconnections
+      // 
+      // OLD BEHAVIOR: Cleared all service caches on reconnect
+      // PROBLEM: When cache was cleared, next ensureGuildData() call would fetch from DB,
+      //          then the merge logic would overwrite nested objects with defaults
+      // 
+      // NEW BEHAVIOR: Preserve cache on reconnect
+      // REASONING: 
+      //   - Write-through caching ensures DB and cache are always in sync
+      //   - Cache will naturally expire based on TTL (1 hour for guilds)
+      //   - Clearing cache was causing unnecessary data loss
+      //   - If DB data changes externally, TTL will handle it
+      // 
+      // NOTE: If you need to force cache refresh, use guildService.invalidateCache(guildId)
+      console.log(chalk.blue(`${type} database reconnected - cache preserved to prevent data loss`));
     });
   }
 

@@ -216,6 +216,28 @@ class GuildService extends BaseService {
    * Ensure guild data exists with default values
    * @param {string} guildId - Guild ID
    * @returns {Promise<Object>} Guild data
+   * 
+   * ⚠️ CRITICAL BUG FIX HISTORY (Guild ID: 1439525673667657810):
+   * 
+   * ISSUE: Server settings were being reset to defaults every few hours
+   * 
+   * ROOT CAUSE: The deep merge logic below was doing shallow merges on nested objects:
+   *   guildData[key] = { ...defaultValue, ...guildData[key] }
+   * 
+   * This caused nested objects like VoiceManager, LevelSystem, Antinuke, etc. to be
+   * partially overwritten with default values whenever ensureGuildData() was called.
+   * 
+   * ATTEMPTED FIX #1 (FAILED): Tried deep merge - still caused data loss
+   * ATTEMPTED FIX #2 (FAILED): Tried selective merge - inconsistent behavior
+   * 
+   * FINAL FIX (Nov 16, 2025): 
+   * - ONLY add fields that are completely undefined
+   * - NEVER touch existing fields, even if they're nested objects
+   * - Trust that existing data is correct and don't modify it
+   * - Let the schema defaults handle new fields on document creation
+   * 
+   * This function is called VERY frequently across the codebase, so any merge
+   * logic here must be extremely conservative to avoid data corruption.
    */
   async ensureGuildData(guildId) {
     if (!guildId) {
@@ -233,18 +255,19 @@ class GuildService extends BaseService {
         // Save to database and cache
         await this.set(guildId, guildData);
       } else {
-        // CRITICAL FIX: Merge existing data with defaults to ensure all fields exist
-        // This prevents data loss when new fields are added to the schema
+        // CRITICAL: Only add missing top-level fields, DO NOT merge nested objects
+        // This prevents data loss by not overwriting existing nested configurations
         const defaults = this.getDefaultGuildData(guildId);
         
-        // Deep merge: existing data takes precedence, but missing fields get defaults
+        // Only add fields that are completely missing (undefined)
+        // DO NOT touch existing fields, even if they're nested objects
         for (const [key, defaultValue] of Object.entries(defaults)) {
           if (guildData[key] === undefined) {
             guildData[key] = defaultValue;
-          } else if (typeof defaultValue === 'object' && defaultValue !== null && !Array.isArray(defaultValue)) {
-            // Deep merge for nested objects
-            guildData[key] = { ...defaultValue, ...guildData[key] };
           }
+          // ❌ REMOVED: Deep merge logic that was causing data loss
+          // ❌ OLD CODE: guildData[key] = { ...defaultValue, ...guildData[key] }
+          // ✅ NEW BEHAVIOR: If a field exists, we trust it's correct and don't modify it
         }
       }
 
