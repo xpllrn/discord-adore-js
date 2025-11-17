@@ -51,7 +51,7 @@ module.exports = {
 
     // Check if this is a reply to another message
     if (!message.reference || !message.reference.messageId) {
-      return embeds.warn(message, 'Please reply to a message containing stickers or emotes to steal them');
+      return embeds.warn(message, 'Please **reply to a message** containing stickers or emotes');
     }
 
     try {
@@ -59,7 +59,7 @@ module.exports = {
       const referencedMessage = await message.channel.messages.fetch(message.reference.messageId);
       
       if (!referencedMessage) {
-        return embeds.warn(message, 'Could not find the referenced message');
+        return embeds.warn(message, 'Could **not find** the referenced message');
       }
 
       const itemsToSteal = [];
@@ -97,7 +97,7 @@ module.exports = {
             failedItems.push({
               type: 'emoji',
               name: name,
-              reason: 'Already exists in this server'
+              reason: 'I think its **already** in this server'
             });
             continue;
           }
@@ -149,7 +149,7 @@ module.exports = {
                   failedItems.push({
                     type: 'emoji',
                     name: name,
-                    reason: 'Already exists in this server'
+                    reason: 'I think its **already** in this server'
                   });
                   continue;
                 }
@@ -167,7 +167,7 @@ module.exports = {
       }
 
       if (itemsToSteal.length === 0) {
-        return embeds.warn(message, 'No stickers or emotes found in the referenced message');
+        return embeds.warn(message, 'No **stickers or emotes found** in the referenced message');
       }
 
       // Start stealing process with loading message
@@ -222,7 +222,7 @@ module.exports = {
               failedItems.push({
                 type: 'emoji',
                 name: item.name,
-                reason: 'Server is at max slots for emotes'
+                reason: 'Server is at **max slots** for emotes'
               });
               continue;
             }
@@ -257,7 +257,7 @@ module.exports = {
             failedItems.push({
               type: item.type,
               name: item.name,
-              reason: `Rate limited - retry in ${timeString}`
+              reason: `Rate limited, Please **retry** in ${timeString}`
             });
 
             // Update status message with rate limit info if multiple items
@@ -265,7 +265,7 @@ module.exports = {
               const remaining = itemsToSteal.length - i - 1;
               if (remaining > 0) {
                 await statusMessage.edit({
-                  embeds: [embeds.createLoading(message, `Rate limited! Waiting ${timeString} before continuing with ${remaining} remaining items...`)]
+                  embeds: [embeds.createLoading(message, `Rate limited! Waiting ${timeString} **before continuing** with ${remaining} remaining items...`)]
                 }).catch(() => {});
               }
             }
@@ -277,7 +277,7 @@ module.exports = {
             failedItems.push({
               type: item.type,
               name: item.name,
-              reason: 'Insufficient permissions'
+              reason: 'Server is at **max slots** or someone **messed up** with my perms'
             });
           } else {
             // Other errors
