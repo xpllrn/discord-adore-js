@@ -336,6 +336,8 @@ module.exports = {
 
         } catch (error) {
           // Fall back to traditional embed on error
+          console.error('[HELP ERROR] Error in group command help:', error);
+          console.error('[HELP ERROR] Stack:', error.stack);
           const embed = createTraditionalEmbed(command, guildprefix);
           return message.channel.send({ embeds: [embed] });
         }

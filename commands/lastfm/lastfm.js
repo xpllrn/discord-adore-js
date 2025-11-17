@@ -146,7 +146,7 @@ module.exports = {
                 const fmuser = args[1];
 
                 if (!fmuser) {
-                    return runHelpCommand(message, 'lastfm');
+                    return runHelpCommand(message, 'lastfm', 'set');
                 }
 
                 if (String(args[1]).toLowerCase() === 'none') {
@@ -613,7 +613,7 @@ module.exports = {
                 };
 
                 if (!args[1]) {
-                    return runHelpCommand(message, 'lastfm');
+                    return runHelpCommand(message, 'lastfm', 'compare');
                 }
 
                 try {

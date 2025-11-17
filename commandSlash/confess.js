@@ -64,13 +64,11 @@ module.exports = {
           new ButtonBuilder()
             .setCustomId('confession_submit')
             .setLabel('Submit a Confession')
-            .setStyle(ButtonStyle.Secondary)
-            .setEmoji('📝'),
+            .setStyle(ButtonStyle.Secondary),
           new ButtonBuilder()
             .setCustomId('confession_reply')
             .setLabel('Reply')
             .setStyle(ButtonStyle.Secondary)
-            .setEmoji('💬')
         );
 
       // Remove buttons from previous confession if exists

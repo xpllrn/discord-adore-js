@@ -355,13 +355,15 @@ class InvalidUsageError extends Error {
  * Run help command for a specific command
  * @param {Message} message - Discord message object
  * @param {string} commandName - Name of command to show help for
+ * @param {string} subcommandName - Optional subcommand name to show help for
  */
-async function runHelpCommand(message, commandName) {
+async function runHelpCommand(message, commandName, subcommandName = null) {
   const client = message.client;
   const helpCommand = client.commands.get('help') || client.commands.get('h');
 
   if (helpCommand && helpCommand.run) {
-    await helpCommand.run(client, message, [commandName]);
+    const args = subcommandName ? [commandName, subcommandName] : [commandName];
+    await helpCommand.run(client, message, args);
   }
 }
 

@@ -252,15 +252,28 @@ class GuildService extends BaseService {
         // This prevents data loss by not overwriting existing nested configurations
         const defaults = this.getDefaultGuildData(guildId);
         
+        let hasChanges = false;
+        const addedFields = [];
+        
         // Only add fields that are completely missing (undefined)
         // DO NOT touch existing fields, even if they're nested objects
         for (const [key, defaultValue] of Object.entries(defaults)) {
           if (guildData[key] === undefined) {
             guildData[key] = defaultValue;
+            hasChanges = true;
+            addedFields.push(key);
           }
           // ❌ REMOVED: Deep merge logic that was causing data loss
           // ❌ OLD CODE: guildData[key] = { ...defaultValue, ...guildData[key] }
           // ✅ NEW BEHAVIOR: If a field exists, we trust it's correct and don't modify it
+        }
+        
+        // ⚠️ CRITICAL FIX (Nov 18, 2025): Save changes if we added missing fields!
+        // ISSUE: Missing fields were added to memory but never saved to database
+        // This caused fields to "randomly" disappear when cache expired or bot restarted
+        if (hasChanges) {
+          console.log(`[GuildService] Adding missing fields to guild ${guildId}: ${addedFields.join(', ')}`);
+          await this.set(guildId, guildData);
         }
       }
 

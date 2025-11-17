@@ -209,7 +209,7 @@ async function handleDelete(client, message, args, guildService) {
           }
 
           // Remove from database
-          await guildService.deleteWebhook(webhook.webhookId);
+          await guildService.deleteWebhook(message.guild.id, webhook.webhookId);
 
           // Edit the confirmation embed to show success message
           const successEmbed = embeds.createSuccess(message, `Deleted webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
@@ -265,7 +265,7 @@ async function handleSend(client, message, args, guildService) {
       channel: message.channel
     });
 
-    await guildService.updateLastUsed(webhook.webhookId);
+    await guildService.updateWebhookLastUsed(message.guild.id, webhook.webhookId);
 
     return embeds.success(message, `Message sent via webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 
@@ -352,7 +352,7 @@ async function handleEdit(client, message, args, guildService) {
     }
 
     await webhookClient.editMessage(messageId, payload);
-    await guildService.updateLastUsed(targetWebhook.webhookId);
+    await guildService.updateWebhookLastUsed(message.guild.id, targetWebhook.webhookId);
 
     return embeds.success(message, `Message edited via webhook **\`${targetWebhook.shortId}\`** (${targetWebhook.name})!`);
 
@@ -511,7 +511,7 @@ async function handleAvatar(client, message, args, guildService) {
     const webhookClient = new WebhookClient({ id: webhook.webhookId, token: webhook.webhookToken });
     await webhookClient.edit({ avatar: avatarUrl });
 
-    await guildService.updateLastUsed(webhook.webhookId);
+    await guildService.updateWebhookLastUsed(message.guild.id, webhook.webhookId);
 
     return embeds.success(message, `Updated avatar for webhook **\`${webhook.shortId}\`** (${webhook.name})!`);
 

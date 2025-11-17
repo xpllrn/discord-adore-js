@@ -58,7 +58,6 @@ module.exports = {
             .setCustomId('confession_submit')
             .setLabel('Submit a Confession')
             .setStyle(ButtonStyle.Secondary)
-            .setEmoji('📝')
         );
 
       const sentMessage = await channel.send({ embeds: [embed], components: [row] });
