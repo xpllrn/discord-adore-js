@@ -277,7 +277,23 @@ module.exports = {
             failedItems.push({
               type: item.type,
               name: item.name,
-              reason: 'Server is at **max slots** or someone **messed up** with my perms'
+              reason: 'Insufficient permissions'
+            });
+          } else if (error.code === 30008) {
+            // Maximum number of emojis reached
+            emojiSlotsFull = true;
+            failedItems.push({
+              type: item.type,
+              name: item.name,
+              reason: 'Server is at **max slots** for emotes'
+            });
+          } else if (error.code === 30039) {
+            // Maximum number of stickers reached
+            stickerSlotsFull = true;
+            failedItems.push({
+              type: item.type,
+              name: item.name,
+              reason: 'Server is at **max slots** for stickers'
             });
           } else {
             // Other errors

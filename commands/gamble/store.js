@@ -42,7 +42,7 @@ module.exports = {
         const categories = await storeService.getCategories();
         
         if (categories.length === 0) {
-          return embeds.warn(message, 'The store is currently empty. Check back later!');
+          return embeds.warn(message, 'The store is **currently empty**. Check back later!');
         }
 
         return await showCategoriesOverview(message, categories);
@@ -50,7 +50,7 @@ module.exports = {
       
     } catch (error) {
       logger.webhook.error(error, message);
-      return embeds.deny(message, 'There was an error executing that command. Please report this to here immediately.');
+      return embeds.deny(message, 'Store is **closed today**, happly holidays.');
     }
   }
 };
@@ -97,7 +97,7 @@ async function showCategoriesOverview(message, categories) {
   // Handle button interactions
   if (buttons.length > 0) {
     const collector = sentMessage.createMessageComponentCollector({
-      time: 60000 // 1 minute
+      time: 60000 // 1 minute timeout
     });
 
     collector.on('collect', async (interaction) => {
@@ -108,12 +108,38 @@ async function showCategoriesOverview(message, categories) {
         });
       }
 
+      // Handle back button
+      if (interaction.customId === 'store_back') {
+        const categoriesEmbed = new EmbedBuilder()
+          .setColor(colors.embed)
+          .setTitle('Gambling Store')
+          .setDescription(description)
+          .setFooter({ text: 'Use store <store name> to view items in a specific store' });
+        
+        // Reset collector timeout when going back
+        collector.resetTimer();
+        await interaction.update({ embeds: [categoriesEmbed], components: [actionRow] });
+        return;
+      }
+
       const categoryName = interaction.customId.replace('store_category_', '');
       const storeService = getService('store');
       const items = await storeService.getItemsByCategory(categoryName);
       
       const categoryEmbed = await createCategoryEmbed(categoryName, items);
-      await interaction.update({ embeds: [categoryEmbed], components: [] });
+      
+      // Create back button
+      const backButton = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('store_back')
+          .setLabel('Back')
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji(emojis.left)
+      );
+      
+      // Reset collector timeout when viewing category
+      collector.resetTimer();
+      await interaction.update({ embeds: [categoryEmbed], components: [backButton] });
     });
 
     collector.on('end', () => {
@@ -142,7 +168,7 @@ async function createCategoryEmbed(categoryName, items) {
   
   items.forEach((item) => {
     const itemNumber = String(item.id).padStart(2, '0');
-    description += `**${itemNumber}** **${item.name}** — **${formatCurrency(item.price)}** coins\n`;
+    description += `\`${itemNumber}\` **${item.name}** — **${formatCurrency(item.price)}** coins\n`;
     description += `-# ${item.description}\n\n`;
   });
   

@@ -133,6 +133,13 @@ async function handleSteal(client, message, args) {
             name: sticker.name,
             reason: 'Insufficient permissions'
           });
+        } else if (error.code === 30039) {
+          // Maximum number of stickers reached
+          stickerSlotsFull = true;
+          failedStickers.push({
+            name: sticker.name,
+            reason: 'Server is at **max slots** for stickers'
+          });
         } else {
           failedStickers.push({
             name: sticker.name,

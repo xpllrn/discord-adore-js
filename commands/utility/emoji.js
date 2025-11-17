@@ -204,6 +204,13 @@ async function handleSteal(client, message, args) {
             name: emoji.name,
             reason: 'Insufficient permissions'
           });
+        } else if (error.code === 30008) {
+          // Maximum number of emojis reached
+          emojiSlotsFull = true;
+          failedEmojis.push({
+            name: emoji.name,
+            reason: 'Server is at **max slots** for emojis'
+          });
         } else {
           failedEmojis.push({
             name: emoji.name,

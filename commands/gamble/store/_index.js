@@ -3,11 +3,11 @@
 // Prefixed with _ to prevent command loader from trying to load it
 
 module.exports = {
-  banknotes: require('./banknotes'),
   items: require('./items')
 };
 
-// Store categories available:
+// Store categories available (all managed through items.js command):
 // - banknotes: Bank limit increase items
-// - items: General consumables and tools
-// - Add new store categories here as needed
+// - items: General consumables and tools (e.g., Padlock)
+// - rings: Marriage rings
+// All items are defined in database/services/features/StoreService.js
