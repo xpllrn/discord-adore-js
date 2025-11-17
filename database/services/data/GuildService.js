@@ -8585,6 +8585,422 @@ class GuildService extends BaseService {
   async getModerationHistoryByModerator(guildId, moderatorId, action = null) {
     return this.getModeratorCases(guildId, moderatorId, action);
   }
+
+  // ===== MESSAGE STATISTICS =====
+
+  /**
+   * Track a message for statistics
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async trackMessage(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const messageStats = guildData.MessageStats || [];
+
+      // Get today's date (start of day)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Find existing stat for this user today
+      const existingStat = messageStats.find(stat => 
+        stat.userId === userId && 
+        new Date(stat.date).toDateString() === today.toDateString()
+      );
+
+      if (existingStat) {
+        // Increment count
+        existingStat.count = (existingStat.count || 0) + 1;
+      } else {
+        // Create new stat entry
+        messageStats.push({
+          userId,
+          date: today,
+          count: 1
+        });
+      }
+
+      guildData.MessageStats = messageStats;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      console.error(`Error tracking message for user ${userId} in guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get message statistics for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} Message statistics (today, week, month, total)
+   */
+  async getMessageStats(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const messageStats = guildData.MessageStats || [];
+
+      // Filter stats for this user
+      const userStats = messageStats.filter(stat => stat.userId === userId);
+
+      // Calculate time ranges
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Calculate totals
+      let today = 0;
+      let week = 0;
+      let month = 0;
+      let total = 0;
+
+      for (const stat of userStats) {
+        const statDate = new Date(stat.date);
+        const count = stat.count || 0;
+
+        total += count;
+
+        if (statDate >= todayStart) {
+          today += count;
+        }
+
+        if (statDate >= weekStart) {
+          week += count;
+        }
+
+        if (statDate >= monthStart) {
+          month += count;
+        }
+      }
+
+      return {
+        today,
+        week,
+        month,
+        total
+      };
+    } catch (error) {
+      console.error(`Error getting message stats for user ${userId} in guild ${guildId}:`, error.message);
+      return {
+        today: 0,
+        week: 0,
+        month: 0,
+        total: 0
+      };
+    }
+  }
+
+  // ===== VOICE STATISTICS =====
+
+  /**
+   * Track voice time for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @param {number} minutes - Minutes spent in voice
+   * @returns {Promise<boolean>} Success status
+   */
+  async trackVoiceTime(guildId, userId, minutes) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (typeof minutes !== 'number' || minutes <= 0) {
+      return false; // Skip invalid values
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const voiceStats = guildData.VoiceStats || [];
+
+      // Get today's date (start of day)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Find existing stat for this user today
+      const existingStat = voiceStats.find(stat => 
+        stat.userId === userId && 
+        new Date(stat.date).toDateString() === today.toDateString()
+      );
+
+      if (existingStat) {
+        // Add minutes
+        existingStat.minutes = (existingStat.minutes || 0) + minutes;
+      } else {
+        // Create new stat entry
+        voiceStats.push({
+          userId,
+          date: today,
+          minutes
+        });
+      }
+
+      guildData.VoiceStats = voiceStats;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      console.error(`Error tracking voice time for user ${userId} in guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Set voice join time for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @param {Date} joinTime - Join time
+   * @returns {Promise<boolean>} Success status
+   */
+  async setVoiceJoinTime(guildId, userId, joinTime) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const userLevels = guildData.UserLevels || [];
+
+      // Find or create user level data
+      let userData = userLevels.find(u => u.userId === userId);
+      if (!userData) {
+        userData = {
+          userId,
+          level: 1,
+          experience: 0,
+          lastMessageTime: null,
+          voiceJoinTime: null,
+          lastVoiceXPTime: null
+        };
+        userLevels.push(userData);
+      }
+
+      userData.voiceJoinTime = joinTime;
+      guildData.UserLevels = userLevels;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      console.error(`Error setting voice join time for user ${userId} in guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get voice join time for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Date|null>} Join time or null
+   */
+  async getVoiceJoinTime(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const userLevels = guildData.UserLevels || [];
+      const userData = userLevels.find(u => u.userId === userId);
+      return userData?.voiceJoinTime || null;
+    } catch (error) {
+      console.error(`Error getting voice join time for user ${userId} in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Clear voice join time for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearVoiceJoinTime(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const userLevels = guildData.UserLevels || [];
+      const userData = userLevels.find(u => u.userId === userId);
+      
+      if (userData) {
+        userData.voiceJoinTime = null;
+        guildData.UserLevels = userLevels;
+        await this.set(guildId, guildData);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`Error clearing voice join time for user ${userId} in guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get last voice XP time for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Date|null>} Last XP time or null
+   */
+  async getLastVoiceXPTime(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const userLevels = guildData.UserLevels || [];
+      const userData = userLevels.find(u => u.userId === userId);
+      return userData?.lastVoiceXPTime || null;
+    } catch (error) {
+      console.error(`Error getting last voice XP time for user ${userId} in guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Update last voice XP time for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @param {Date} time - XP time
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateLastVoiceXPTime(guildId, userId, time) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const userLevels = guildData.UserLevels || [];
+      
+      let userData = userLevels.find(u => u.userId === userId);
+      if (!userData) {
+        userData = {
+          userId,
+          level: 1,
+          experience: 0,
+          lastMessageTime: null,
+          voiceJoinTime: null,
+          lastVoiceXPTime: null
+        };
+        userLevels.push(userData);
+      }
+
+      userData.lastVoiceXPTime = time;
+      guildData.UserLevels = userLevels;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      console.error(`Error updating last voice XP time for user ${userId} in guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get voice statistics for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} Voice statistics in minutes (today, week, month)
+   */
+  async getVoiceStats(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const voiceStats = guildData.VoiceStats || [];
+
+      // Filter stats for this user
+      const userStats = voiceStats.filter(stat => stat.userId === userId);
+
+      // Calculate time ranges
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Calculate totals in minutes
+      let today = 0;
+      let week = 0;
+      let month = 0;
+
+      for (const stat of userStats) {
+        const statDate = new Date(stat.date);
+        const minutes = stat.minutes || 0;
+
+        if (statDate >= todayStart) {
+          today += minutes;
+        }
+
+        if (statDate >= weekStart) {
+          week += minutes;
+        }
+
+        if (statDate >= monthStart) {
+          month += minutes;
+        }
+      }
+
+      return {
+        today,
+        week,
+        month
+      };
+    } catch (error) {
+      console.error(`Error getting voice stats for user ${userId} in guild ${guildId}:`, error.message);
+      return {
+        today: 0,
+        week: 0,
+        month: 0
+      };
+    }
+  }
 }
 
 module.exports = GuildService;

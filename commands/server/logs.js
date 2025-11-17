@@ -112,7 +112,7 @@ async function handleAdd(client, message, args) {
   const channelResult = findChannel(message.guild, channelInput);
 
   if (!channelResult.found) {
-    return embeds.warn(message, `Channel not found! ${channelResult.error}\n\nPlease use a channel mention like <#1234567890> or the exact channel name.`);
+    return embeds.warn(message, `Channel not found! ${channelResult.error}.`);
   }
 
   const channel = channelResult.channel;
@@ -338,21 +338,22 @@ async function handleList(client, message) {
         const number = (startIndex + index + 1).toString().padStart(2, '0');
         const channel = message.guild.channels.cache.get(config.channelId);
         const channelDisplay = channel ? `<#${channel.id}>` : `\`${config.channelId}\``;
-        const status = config.enabled !== false ? '✅' : '❌';
-        const types = config.logTypes.join(', ');
+        const types = config.logTypes.map(type => `**${type}**`).join(', ');
         
-        return `\`${number}\` ${channelDisplay} ${status}\n**Types:** ${types}`;
-      }).join('\n\n');
+        return `\`${number}\` ${types} - ${channelDisplay}`;
+      }).join('\n');
+
+      const entryText = loggingConfigs.length === 1 ? 'entry' : 'entries';
 
       return new EmbedBuilder()
         .setColor(config.colors.embed)
-        .setTitle('Logging Configurations')
+        .setTitle('Log Channels')
         .setDescription(configList)
-        .setFooter({ text: `${loggingConfigs.length} configuration(s) • Page ${currentPage}/${totalPages}` });
+        .setFooter({ text: `page ${currentPage}/${totalPages} (${loggingConfigs.length} ${entryText})` });
     };
 
     // Use pagination system with 10 items per page
-    await createPagination(message, loggingConfigs, formatPage, 10, 'Logging Configurations');
+    await createPagination(message, loggingConfigs, formatPage, 10, 'Log Channels');
 
   } catch (error) {
     // Send error to webhook instead of console
