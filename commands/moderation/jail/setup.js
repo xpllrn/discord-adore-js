@@ -167,24 +167,29 @@ module.exports = {
         return embeds.deny(message, `Jail system was **created but failed** to save to database.`);
       }
 
-      // Set up moderator logging in mod-logs channel if it was created
-      if (logsChannel && logsChannelCreated) {
+      // Set up moderator logging in mod-logs channel
+      if (logsChannel) {
         try {
-          // Create webhook for logging
-          const webhook = await logsChannel.createWebhook({
-            name: `adore Audits`,
-            avatar: client.user.displayAvatarURL({ format: 'png' }),
-            reason: `Jail logging setup by ${message.author.tag}`
-          });
+          // Check if logging is already configured for this channel
+          const existingConfig = await guildService.getLoggingConfigForChannel(message.guild.id, logsChannel.id);
+          
+          if (!existingConfig) {
+            // Create webhook for logging
+            const webhook = await logsChannel.createWebhook({
+              name: `adore Audits`,
+              avatar: client.user.displayAvatarURL({ format: 'png' }),
+              reason: `Jail logging setup by ${message.author.tag}`
+            });
 
-          // Set up moderator logging
-          await guildService.setLoggingChannel(
-            message.guild.id,
-            logsChannel.id,
-            webhook.url,
-            ['moderator'],
-            message.author.id
-          );
+            // Set up moderator logging
+            await guildService.setLoggingChannel(
+              message.guild.id,
+              logsChannel.id,
+              webhook.url,
+              ['moderator'],
+              message.author.id
+            );
+          }
         } catch (error) {
           // Log error but don't fail the entire setup
           logger.webhook.error(error, message);

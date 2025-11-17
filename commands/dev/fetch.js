@@ -161,7 +161,7 @@ async function handleConfession(client, message, args) {
     // Create reveal embed
     const revealEmbed = new EmbedBuilder()
       .setColor(config.colors.info)
-      .setTitle(`Confession #${confessionId} Reveal`)
+      .setTitle(`Confession #${confessionId} Reveal${confession.replyTo ? ' (Reply)' : ''}`)
       .addFields(
         {
           name: 'Server',
@@ -186,7 +186,15 @@ async function handleConfession(client, message, args) {
       )
       .setThumbnail(user.displayAvatarURL({ dynamic: true }))
       .setFooter({ text: `Requested by ${message.author.username}` })
-      .setTimestamp();
+
+    // Add reply info if this is a reply
+    if (confession.replyTo) {
+      revealEmbed.addFields({
+        name: 'Reply To',
+        value: `Confession #${confession.replyTo}`,
+        inline: false
+      });
+    }
 
     return message.channel.send({ embeds: [revealEmbed] });
 

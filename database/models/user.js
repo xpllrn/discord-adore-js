@@ -66,23 +66,7 @@ const userSchema = new mongoose.Schema({
       default: null
     }
   },
-  // Last.fm custom settings
-  LastFMSettings: {
-    customMode: {
-      type: String,
-      default: null
-    },
-    reactions: {
-      upvote: {
-        type: String,
-        default: null
-      },
-      downvote: {
-        type: String,
-        default: null
-      }
-    }
-  },
+
   TicTacToe: {
     wins: {
       type: Number,
@@ -131,10 +115,6 @@ const userSchema = new mongoose.Schema({
       default: null
     },
     begCooldown: {
-      type: Date,
-      default: null
-    },
-    lastInterestClaim: {
       type: Date,
       default: null
     },
@@ -346,10 +326,6 @@ const userSchema = new mongoose.Schema({
     },
     guildId: {
       type: String,
-      default: null
-    },
-    createdAt: {
-      type: Date,
       default: null
     }
   },

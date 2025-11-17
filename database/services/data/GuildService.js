@@ -122,13 +122,6 @@ class GuildService extends BaseService {
     return {
       GuildID: guildId,
       Prefix: ',',
-      WelcomeChannel: null,
-      WelcomeMessage: null,
-      LeaveChannel: null,
-      LeaveMessage: null,
-      BoostChannel: null,
-      BoostMessage: null,
-      BoostRole: null,
       Vanity: null,
       VanityRoles: [],
       VanityMessage: null,
@@ -624,79 +617,6 @@ class GuildService extends BaseService {
   }
 
   /**
-   * Remove welcome settings
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<boolean>} Success status
-   */
-  async removeWelcomeSettings(guildId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      const hadChannel = guildData.WelcomeChannel;
-      const hadMessage = guildData.WelcomeMessage;
-      
-      guildData.WelcomeChannel = null;
-      guildData.WelcomeMessage = null;
-
-      await this.set(guildId, guildData);
-      
-      return true;
-    } catch (error) {
-      throw new DatabaseWriteError(`Failed to remove welcome settings for guild ${guildId}`, error);
-    }
-  }
-
-  /**
-   * Get welcome channel (legacy method for backward compatibility)
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<string|null>} Welcome channel ID or null
-   */
-  async getWelcomeChannel(guildId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      return guildData.WelcomeChannel || null;
-    } catch (error) {
-      console.error(`Error getting welcome channel for guild ${guildId}:`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Get welcome message (legacy method for backward compatibility)
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<string|null>} Welcome message or null
-   */
-  async getWelcomeMessage(guildId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      return guildData.WelcomeMessage || null;
-    } catch (error) {
-      console.error(`Error getting welcome message for guild ${guildId}:`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Remove welcome (legacy method for backward compatibility)
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<boolean>} Success status
-   */
-  async removeWelcome(guildId) {
-    return this.removeWelcomeSettings(guildId);
-  }
-
-  /**
    * Get welcome messages (multi-message system)
    * @param {string} guildId - Guild ID
    * @returns {Promise<Object[]>} Array of welcome messages
@@ -1006,53 +926,6 @@ class GuildService extends BaseService {
     } catch (error) {
       throw new DatabaseWriteError(`Failed to remove leave settings for guild ${guildId}`, error);
     }
-  }
-
-  /**
-   * Get leave channel (legacy method for backward compatibility)
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<string|null>} Leave channel ID or null
-   */
-  async getLeaveChannel(guildId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      return guildData.LeaveChannel || null;
-    } catch (error) {
-      console.error(`Error getting leave channel for guild ${guildId}:`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Get leave message (legacy method for backward compatibility - returns string not object)
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<string|null>} Leave message or null
-   */
-  async getLeaveMessage(guildId) {
-    if (!guildId) {
-      throw new ValidationError('Guild ID is required', 'guildId', guildId);
-    }
-
-    try {
-      const guildData = await this.ensureGuildData(guildId);
-      return guildData.LeaveMessage || null;
-    } catch (error) {
-      console.error(`Error getting leave message for guild ${guildId}:`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Remove leave (legacy method for backward compatibility)
-   * @param {string} guildId - Guild ID
-   * @returns {Promise<boolean>} Success status
-   */
-  async removeLeave(guildId) {
-    return this.removeLeaveSettings(guildId);
   }
 
   /**

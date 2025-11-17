@@ -10,16 +10,7 @@ const guildSchema = new mongoose.Schema({
     type: String,
     default: ','
   },
-  // Welcome system (legacy fields for backward compatibility)
-  WelcomeChannel: {
-    type: String,
-    default: null
-  },
-  WelcomeMessage: {
-    type: String,
-    default: null
-  },
-  // Welcome system (new multi-message support)
+  // Welcome system (multi-message support)
   WelcomeMessages: [{
     channelId: {
       type: String,
@@ -36,15 +27,7 @@ const guildSchema = new mongoose.Schema({
     }
   }],
   // Leave system (legacy fields for backward compatibility)
-  LeaveChannel: {
-    type: String,
-    default: null
-  },
-  LeaveMessage: {
-    type: String,
-    default: null
-  },
-  // Leave system (new multi-message support)
+  // Leave system (multi-message support)
   LeaveMessages: [{
     channelId: {
       type: String,
@@ -61,20 +44,7 @@ const guildSchema = new mongoose.Schema({
     }
   }],
 
-  // Boost system (legacy fields for backward compatibility)
-  BoostChannel: {
-    type: String,
-    default: null
-  },
-  BoostMessage: {
-    type: String,
-    default: null
-  },
-  BoostRole: {
-    type: String,
-    default: null
-  },
-  // Boost system (new multi-message support)
+  // Boost system (multi-message support)
   BoostMessages: [{
     channelId: {
       type: String,
@@ -124,10 +94,6 @@ const guildSchema = new mongoose.Schema({
     type: String,
     default: null,
     maxlength: 500
-  },
-  VanityLastDisabled: {
-    type: Date,
-    default: null
   },
   // Auto roles
   AutoRoles: {
@@ -257,14 +223,6 @@ const guildSchema = new mongoose.Schema({
     ruleId: {
       type: String,
       default: null
-    },
-    keywords: {
-      type: [String],
-      default: []
-    },
-    bypassRoles: {
-      type: [String],
-      default: []
     },
     action: {
       type: String,
@@ -662,11 +620,7 @@ const guildSchema = new mongoose.Schema({
         type: String,
         required: true
       }
-    }],
-    lastSyncTime: {
-      type: Date,
-      default: null
-    }
+    }]
   },
 
   // User level data (guild-specific)
@@ -1498,10 +1452,7 @@ guildSchema.index({ 'Moderation.action': 1 });
 guildSchema.index({ 'Moderation.timestamp': -1 }); // Recent cases first
 guildSchema.index({ 'Moderation.userId': 1, 'Moderation.action': 1 }); // User action history
 
-// Welcome/Leave system indexes (for message management)
-guildSchema.index({ WelcomeChannel: 1 });
-guildSchema.index({ LeaveChannel: 1 });
-guildSchema.index({ BoostChannel: 1 });
+// Welcome/Leave/Boost system indexes
 guildSchema.index({ 'WelcomeMessages.channelId': 1 });
 guildSchema.index({ 'LeaveMessages.channelId': 1 });
 guildSchema.index({ 'BoostMessages.channelId': 1 });

@@ -1614,23 +1614,31 @@ async function handleConfessionReplyModal(interaction) {
       }
     }
 
+    // Get next confession ID for the reply
+    const replyConfessionId = await confessionService.getNextConfessionId(interaction.guild.id);
+
     // Get user's top role color
     const member = await interaction.guild.members.fetch(interaction.user.id);
     const roleColor = member.displayHexColor !== '#000000' ? member.displayHexColor : colors.embed;
 
-    // Send the reply in the thread as an embed
+    // Send the reply in the thread as an embed with confession ID
     const replyEmbed = new EmbedBuilder()
       .setColor(roleColor)
-      .setDescription(confessionContent);
+      .setTitle(`Anonymous Reply (#${replyConfessionId})`)
+      .setDescription(confessionContent)
+      .setFooter({ text: `Reply to #${replyToId}` });
 
-    await thread.send({
+    const replyMessage = await thread.send({
       embeds: [replyEmbed]
     });
+
+    // Track this reply as a confession
+    await confessionService.addConfessionReply(interaction.guild.id, replyConfessionId, replyToId, replyMessage.id, interaction.user.id);
 
     // Confirm to user
     const embed = embeds.createSuccess(
       { author: { id: interaction.user.id } },
-      `Your **reply** has been submitted to confession #${replyToId}.`
+      `Your **reply** has been submitted to confession #${replyToId}. Reply ID: **${replyConfessionId}**`
     );
     return await interaction.editReply({ embeds: [embed] });
 

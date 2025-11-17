@@ -36,13 +36,11 @@ async function processWelcomeMessages(member) {
   try {
     const guildService = getService('guild');
     
-    // Get welcome messages from new multi-channel system
+    // Get welcome messages from multi-channel system
     const welcomeMessages = await guildService.getWelcomeMessages(member.guild.id) || [];
 
     if (welcomeMessages.length === 0) {
-      // Check for legacy welcome message system
-      await processLegacyWelcome(member);
-      return;
+      return; // No welcome messages configured
     }
 
     // Process each welcome message
@@ -78,53 +76,6 @@ async function processWelcomeMessages(member) {
     }
   } catch (error) {
     // Silent fail for welcome system
-  }
-}
-
-async function processLegacyWelcome(member) {
-  try {
-    const guildService = getService('guild');
-    
-    // Check for old single-channel welcome system
-    const welcomeChannel = await guildService.getWelcomeChannel(member.guild.id);
-    const welcomeMessage = await guildService.getWelcomeMessage(member.guild.id);
-
-    if (!welcomeChannel || !welcomeMessage) {
-      return; // No legacy welcome configured
-    }
-
-    // Get the welcome channel
-    const channel = member.guild.channels.cache.get(welcomeChannel);
-    if (!channel) {
-      // Channel no longer exists, clean up legacy data
-      await guildService.removeWelcome(member.guild.id);
-      return;
-    }
-
-    // Check if bot has permission to send messages
-    if (!channel.permissionsFor(member.guild.members.me)?.has(['SendMessages', 'EmbedLinks'])) {
-      return;
-    }
-
-    // Migrate to new system
-    await guildService.addWelcomeMessage(member.guild.id, welcomeChannel, welcomeMessage);
-
-    // Clean up legacy data
-    await guildService.removeWelcome(member.guild.id);
-
-    // Process and send the welcome message with variables
-    try {
-      EmbedVariableProcessor.process(channel, welcomeMessage, {
-        user: member.user,
-        guild: member.guild,
-        channel: channel
-      });
-    } catch (error) {
-      // Fallback to simple text message
-      channel.send(`Welcome ${member}!`);
-    }
-  } catch (error) {
-    // Silent fail for legacy welcome system
   }
 }
 

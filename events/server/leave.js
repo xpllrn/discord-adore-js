@@ -23,13 +23,11 @@ async function processLeaveMessages(member) {
   try {
     const guildService = getService('guild');
     
-    // Get leave messages from new multi-channel system
+    // Get leave messages from multi-channel system
     const leaveMessages = await guildService.getLeaveMessages(member.guild.id) || [];
 
     if (leaveMessages.length === 0) {
-      // Check for legacy leave message system
-      await processLegacyLeave(member);
-      return;
+      return; // No leave messages configured
     }
 
     // Process each leave message
@@ -65,53 +63,6 @@ async function processLeaveMessages(member) {
     }
   } catch (error) {
     // Silent fail for leave system
-  }
-}
-
-async function processLegacyLeave(member) {
-  try {
-    const guildService = getService('guild');
-    
-    // Check for old single-channel leave system
-    const leaveChannel = await guildService.getLeaveChannel(member.guild.id);
-    const leaveMessage = await guildService.getLeaveMessage(member.guild.id);
-
-    if (!leaveChannel || !leaveMessage) {
-      return; // No legacy leave configured
-    }
-
-    // Get the leave channel
-    const channel = member.guild.channels.cache.get(leaveChannel);
-    if (!channel) {
-      // Channel no longer exists, clean up legacy data
-      await guildService.removeLeave(member.guild.id);
-      return;
-    }
-
-    // Check if bot has permission to send messages
-    if (!channel.permissionsFor(member.guild.members.me)?.has(['SendMessages', 'EmbedLinks'])) {
-      return;
-    }
-
-    // Migrate to new system
-    await guildService.addLeaveMessage(member.guild.id, leaveChannel, leaveMessage);
-
-    // Clean up legacy data
-    await guildService.removeLeave(member.guild.id);
-
-    // Process and send the leave message with variables
-    try {
-      EmbedVariableProcessor.process(channel, leaveMessage, {
-        user: member.user,
-        guild: member.guild,
-        channel: channel
-      });
-    } catch (error) {
-      // Fallback to simple text message
-      channel.send(`Goodbye ${member.user.username}!`);
-    }
-  } catch (error) {
-    // Silent fail for legacy leave system
   }
 }
 

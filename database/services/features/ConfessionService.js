@@ -126,6 +126,27 @@ class ConfessionService extends BaseService {
   }
 
   /**
+   * Add a confession reply record
+   * @param {string} guildId - Guild ID
+   * @param {number} confessionId - Confession ID (for the reply itself)
+   * @param {number} replyToId - Original confession ID being replied to
+   * @param {string} messageId - Message ID
+   * @param {string} userId - User ID who submitted the reply
+   * @returns {Promise<void>}
+   */
+  async addConfessionReply(guildId, confessionId, replyToId, messageId, userId) {
+    const config = await this.getConfessionConfig(guildId);
+    config.confessions.push({
+      id: confessionId,
+      messageId: messageId,
+      userId: userId,
+      replyTo: replyToId,
+      createdAt: new Date()
+    });
+    await this.getGuildService().setGuildField(guildId, 'ConfessionSystem.confessions', config.confessions);
+  }
+
+  /**
    * Get guild service instance
    * @returns {Object} GuildService
    */
