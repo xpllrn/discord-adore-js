@@ -9,16 +9,19 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 
 async function repairMissingFields() {
+  // Create a separate connection instance to avoid conflicts
+  const connection = mongoose.createConnection();
+
   try {
     console.log('🔧 Connecting to database...\n');
     
-    await mongoose.connect(process.env.GUILD_DATABASE, {
+    await connection.openUri(process.env.GUILD_DATABASE, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
 
-    // Check if model already exists to avoid overwrite error
-    const Guild = mongoose.models.Guild || mongoose.model('Guild', new mongoose.Schema({}, { strict: false }), 'guilds');
+    // Use the connection-specific model
+    const Guild = connection.model('Guild', new mongoose.Schema({}, { strict: false }), 'guilds');
     
     console.log('✅ Connected! Starting repair...\n');
     console.log('='.repeat(80));
@@ -173,7 +176,7 @@ async function repairMissingFields() {
   } catch (error) {
     console.error('❌ Error during repair:', error);
   } finally {
-    await mongoose.disconnect();
+    await connection.close();
     console.log('\n🔌 Disconnected from database');
   }
 }

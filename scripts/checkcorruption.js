@@ -26,17 +26,20 @@ async function checkDataCorruption() {
     logLines.push(message);
   };
 
+  // Create a separate connection instance to avoid conflicts
+  const connection = mongoose.createConnection();
+
   try {
     log(`🔍 Corruption Check - ${new Date().toISOString()}\n`);
     log('='.repeat(80));
     
-    await mongoose.connect(process.env.GUILD_DATABASE, {
+    await connection.openUri(process.env.GUILD_DATABASE, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
 
-    // Check if model already exists to avoid overwrite error
-    const Guild = mongoose.models.Guild || mongoose.model('Guild', guildSchema, 'guilds');
+    // Use the connection-specific model
+    const Guild = connection.model('Guild', guildSchema, 'guilds');
     
     const allGuilds = await Guild.find({}).lean();
     const corruptedGuilds = [];
@@ -106,7 +109,7 @@ async function checkDataCorruption() {
   } catch (error) {
     log(`\n❌ Error: ${error.message}`);
   } finally {
-    await mongoose.disconnect();
+    await connection.close();
     log('🔌 Disconnected\n');
   }
 }

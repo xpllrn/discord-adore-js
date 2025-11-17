@@ -25,6 +25,9 @@ async function autoCheckCorruption() {
     logLines.push(message);
   };
 
+  // Create a separate connection instance to avoid conflicts
+  const connection = mongoose.createConnection();
+
   try {
     log(`[${new Date().toISOString()}] Auto Corruption Check Started`);
     
@@ -34,13 +37,13 @@ async function autoCheckCorruption() {
       return;
     }
 
-    await mongoose.connect(dbUrl, {
+    await connection.openUri(dbUrl, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
 
-    // Check if model already exists to avoid overwrite error
-    const Guild = mongoose.models.Guild || mongoose.model('Guild', guildSchema, 'guilds');
+    // Use the connection-specific model
+    const Guild = connection.model('Guild', guildSchema, 'guilds');
     const allGuilds = await Guild.find({}).lean();
     const corruptedGuilds = [];
     
@@ -79,7 +82,7 @@ async function autoCheckCorruption() {
       console.log('✅ [Corruption Check] Database healthy');
     }
     
-    await mongoose.disconnect();
+    await connection.close();
     log('Check completed\n');
     
     // Save to file
