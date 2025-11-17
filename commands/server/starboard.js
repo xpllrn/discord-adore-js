@@ -13,6 +13,7 @@ module.exports = {
   syntax: 'starboard (set/threshold/emoji/check/unset) <value>',
   example: 'starboard set #starboard',
   permission: "Manage Guild",
+  isGroupCommand: true,
 
   run: async(client, message, args) => {
     const { getService } = require('@services');
@@ -26,6 +27,14 @@ module.exports = {
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'set') {
+      const subcommandInfo = {
+        name: 'set',
+        description: 'Set the starboard channel',
+        usage: '{guildprefix}starboard set <channel>',
+        aliases: [],
+        parameters: ['channel'],
+        example: '{guildprefix}starboard set #starboard'
+      };
 
       const channelInput = args[1];
       if (!channelInput) return false;
@@ -51,6 +60,14 @@ module.exports = {
       return embeds.success(message, `**Starboard enabled!** Set starboard channel to ${starboardChannel}`);
 
     } else if (args[0] === 'threshold') {
+      const subcommandInfo = {
+        name: 'threshold',
+        description: 'Set the minimum number of reactions needed for a message to appear on the starboard',
+        usage: '{guildprefix}starboard threshold <number>',
+        aliases: [],
+        parameters: ['number'],
+        example: '{guildprefix}starboard threshold 5'
+      };
 
       const thresholdInput = args[1];
       if (!thresholdInput) return false;
@@ -64,6 +81,14 @@ module.exports = {
       return embeds.success(message, `Set **starboard threshold** to **${threshold}** reactions`);
 
     } else if (args[0] === 'emoji') {
+      const subcommandInfo = {
+        name: 'emoji',
+        description: 'Set the emoji used for starboard reactions',
+        usage: '{guildprefix}starboard emoji <emoji>',
+        aliases: [],
+        parameters: ['emoji'],
+        example: '{guildprefix}starboard emoji ⭐'
+      };
 
       const emojiInput = args[1];
       if (!emojiInput) return false;
@@ -94,6 +119,14 @@ module.exports = {
       return embeds.success(message, `Set **starboard emoji** to ${emoji}`);
 
     } else if (args[0] === 'check') {
+      const subcommandInfo = {
+        name: 'check',
+        description: 'View the current starboard configuration',
+        usage: '{guildprefix}starboard check',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}starboard check'
+      };
 
       const starboardChannel = await guildService.getStarboardChannel(message.guild.id);
       const starboardThreshold = await guildService.getStarboardThreshold(message.guild.id);
@@ -120,6 +153,14 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } else if (args[0] === 'unset') {
+      const subcommandInfo = {
+        name: 'unset',
+        description: 'Disable the starboard system',
+        usage: '{guildprefix}starboard unset',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}starboard unset'
+      };
 
       const starboardChannel = await guildService.getStarboardChannel(message.guild.id);
       if (!starboardChannel) {

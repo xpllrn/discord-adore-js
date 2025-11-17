@@ -1,8 +1,8 @@
 # Critical Bug Fix: Guild Settings Reset Issue
 
 **Date:** November 16, 2025  
-**Guild ID Affected:** 1439525673667657810  
-**Severity:** CRITICAL - Complete Data Loss  
+**Guild ID Affected:** 1439525673667657810
+**Severity:** CRITICAL - Complete Data Loss
 
 ## Problem
 
