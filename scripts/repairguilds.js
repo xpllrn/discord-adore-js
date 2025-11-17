@@ -17,7 +17,8 @@ async function repairMissingFields() {
       useUnifiedTopology: true
     });
 
-    const Guild = mongoose.model('Guild', new mongoose.Schema({}, { strict: false }), 'guilds');
+    // Check if model already exists to avoid overwrite error
+    const Guild = mongoose.models.Guild || mongoose.model('Guild', new mongoose.Schema({}, { strict: false }), 'guilds');
     
     console.log('✅ Connected! Starting repair...\n');
     console.log('='.repeat(80));

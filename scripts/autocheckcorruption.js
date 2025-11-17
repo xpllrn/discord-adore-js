@@ -39,7 +39,8 @@ async function autoCheckCorruption() {
       useUnifiedTopology: true
     });
 
-    const Guild = mongoose.model('Guild', guildSchema, 'guilds');
+    // Check if model already exists to avoid overwrite error
+    const Guild = mongoose.models.Guild || mongoose.model('Guild', guildSchema, 'guilds');
     const allGuilds = await Guild.find({}).lean();
     const corruptedGuilds = [];
     
