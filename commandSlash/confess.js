@@ -20,7 +20,7 @@ module.exports = {
       const confessionService = getService('confession');
       const confessionConfig = await confessionService.getConfessionConfig(interaction.guild.id);
       
-      // Check if system is enabled
+      // Check if system is enabled1
       if (!confessionConfig.enabled || !confessionConfig.channelId) {
         return interaction.reply({
           content: `${config.emojis.error} <@${interaction.user.id}>: The confession system is **not enabled** on this server.`,

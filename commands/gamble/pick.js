@@ -14,7 +14,7 @@ function formatCurrency(amount) {
 
 module.exports = {
   name: "pick",
-  aliases: ['beg', 'grab'],
+  aliases: ['beg'],
   description: 'Pick up coins from the streets with a cooldown',
   syntax: 'pick',
   example: 'pick',

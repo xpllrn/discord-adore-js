@@ -15,7 +15,7 @@ module.exports = {
 
     if (roles.length === 0) {
       const { embeds } = require('../../../core/embeds');
-      return embeds.info(message, 'This server has no roles.');
+      return embeds.info(message, 'This server has **no roles**.');
     }
 
     // Format page function for pagination
@@ -29,9 +29,10 @@ module.exports = {
       return new EmbedBuilder()
         .setColor(colors.embed)
         .setAuthor({ 
-          name: `${message.guild.name} Roles`, 
-          iconURL: message.guild.iconURL({ dynamic: true }) 
+          name: `${message.author.tag}`, 
+          iconURL: message.author.displayAvatarURL({ dynamic: true }) 
         })
+        .setTitle(`Roles in ${message.guild.name}`)
         .setDescription(description)
         .setFooter({ text: `Page ${currentPage}/${totalPages} • ${roles.length} roles` });
     };

@@ -12,7 +12,7 @@ function formatCurrency(amount) {
 
 module.exports = {
   name: "crime",
-  aliases: ['work', 'job'],
+  aliases: ['blacked'],
   description: 'Commit crimes to earn coins with a cooldown',
   syntax: 'crime',
   example: 'crime',

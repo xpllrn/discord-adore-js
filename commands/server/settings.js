@@ -165,27 +165,31 @@ module.exports = {
 
 
 
-    } else if (args[0] === 'bypass' && args[1] === 'nsfw') {
+    } else if (args[0] === 'bypass') {
       const subcommandInfo = {
         description: 'Toggle NSFW bypass to allow NSFW commands in non-NSFW channels',
         usage: '{guildprefix}settings bypass nsfw',
         aliases: [],
-        parameters: [],
+        parameters: ['nsfw'],
         example: '{guildprefix}settings bypass nsfw'
       };
 
-      const guildData = await guildService.ensureGuildData(message.guild.id);
-      const currentStatus = guildData.NSFWBypass || false;
+      if (args[1] === 'nsfw') {
+        const guildData = await guildService.ensureGuildData(message.guild.id);
+        const currentStatus = guildData.NSFWBypass || false;
 
-      // Toggle the setting
-      await guildService.updateGuildData(message.guild.id, {
-        NSFWBypass: !currentStatus
-      });
+        // Toggle the setting
+        await guildService.updateGuildData(message.guild.id, {
+          NSFWBypass: !currentStatus
+        });
 
-      if (!currentStatus) {
-        return embeds.success(message, 'NSFW bypass **enabled**. NSFW commands can now be used in any channel.');
+        if (!currentStatus) {
+          return embeds.success(message, 'NSFW bypass **enabled**. NSFW commands can now be used in any channel.');
+        } else {
+          return embeds.success(message, 'NSFW bypass **disabled**. NSFW commands can only be used in NSFW channels.');
+        }
       } else {
-        return embeds.success(message, 'NSFW bypass **disabled**. NSFW commands can only be used in NSFW channels.');
+        return embeds.deny(message, 'Invalid bypass option. Use: `settings bypass nsfw`');
       }
 
     } else {

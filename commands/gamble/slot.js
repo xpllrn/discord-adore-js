@@ -107,20 +107,20 @@ module.exports = {
       await userService.updateWallet(message.author.id, -amount);
 
       // Slot machine outcomes with updated probabilities
-      // 💎 Triple Diamond: 1% chance, 10x multiplier
-      // 💸 Triple Money Bag: 3% chance, 5x multiplier  
-      // 🍒 Triple Cherry: 10% chance, 3x multiplier
-      // 🍓 Triple Strawberry: 16% chance, 2x multiplier
-      // 🍌 Triple Banana: 20% chance, 1x multiplier (break-even)
-      // ❌ No Match: 50% chance, 0x multiplier
+      // 💎 Triple Diamond: 2% chance, 10x multiplier
+      // 💸 Triple Money Bag: 5% chance, 5x multiplier  
+      // 🍒 Triple Cherry: 15% chance, 3x multiplier
+      // 🍓 Triple Strawberry: 23% chance, 2x multiplier
+      // 🍌 Triple Banana: 25% chance, 1x multiplier (break-even)
+      // ❌ No Match: 30% chance, 0x multiplier
 
       const outcomes = [
-        { type: 'triple', emoji: '💎', weight: 1, multiplier: 10 },    // 1% - Triple Diamond (JACKPOT!)
-        { type: 'triple', emoji: '💸', weight: 3, multiplier: 5 },     // 3% - Triple Money Bag
-        { type: 'triple', emoji: '🍒', weight: 10, multiplier: 3 },    // 10% - Triple Cherry
-        { type: 'triple', emoji: '🍓', weight: 16, multiplier: 2 },    // 16% - Triple Strawberry
-        { type: 'triple', emoji: '🍌', weight: 20, multiplier: 1 },    // 20% - Triple Banana (break-even)
-        { type: 'nomatch', emoji: null, weight: 50, multiplier: 0 }    // 50% - No match
+        { type: 'triple', emoji: '💎', weight: 2, multiplier: 10 },    // 2% - Triple Diamond (JACKPOT!)
+        { type: 'triple', emoji: '💸', weight: 5, multiplier: 5 },     // 5% - Triple Money Bag
+        { type: 'triple', emoji: '🍒', weight: 15, multiplier: 3 },    // 15% - Triple Cherry
+        { type: 'triple', emoji: '🍓', weight: 23, multiplier: 2 },    // 23% - Triple Strawberry
+        { type: 'triple', emoji: '🍌', weight: 25, multiplier: 1 },    // 25% - Triple Banana (break-even)
+        { type: 'nomatch', emoji: null, weight: 30, multiplier: 0 }    // 30% - No match
       ];
 
       // Create weighted array for outcome selection
@@ -193,7 +193,7 @@ module.exports = {
         // Generate three matching symbols
         finalSlot1 = finalSlot2 = finalSlot3 = selectedOutcome.emoji;
       } else {
-        // Generate non-matching symbols (40% case)
+        // Generate non-matching symbols (30% case)
         // 30% chance to create "near miss" effect (2 matching symbols)
         const createNearMiss = Math.random() < 0.30;
 
