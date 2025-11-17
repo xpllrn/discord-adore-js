@@ -329,13 +329,14 @@ function main() {
     return a.name.localeCompare(b.name);
   });
 
-  // Generate JSON
-  const output = {
-    generated: new Date().toISOString(),
-    totalCommands: filteredCommands.length,
-    categories: [...new Set(filteredCommands.map(c => c.category))].sort(),
-    commands: filteredCommands
-  };
+  // Generate JSON in the requested format
+  const output = filteredCommands.map(cmd => ({
+    name: cmd.name,
+    category: cmd.category,
+    description: cmd.description,
+    syntax: cmd.usage,
+    permission: cmd.permission || 'none'
+  }));
 
   // Write to file
   fs.writeFileSync(outputFile, JSON.stringify(output, null, 2), 'utf8');
@@ -346,7 +347,7 @@ function main() {
 
   console.log(`${colors.green}✓ Processed: ${processed} commands${colors.reset}`);
   console.log(`${colors.yellow}⚠ Skipped: ${skipped} files${colors.reset}`);
-  console.log(`${colors.blue}📁 Categories: ${output.categories.length}${colors.reset}`);
+  console.log(`${colors.blue}📁 Total commands in output: ${output.length}${colors.reset}`);
   
   if (skippedFiles.length > 0 && skippedFiles.length <= 20) {
     console.log(`\n${colors.yellow}Skipped files:${colors.reset}`);
@@ -362,8 +363,9 @@ function main() {
   }
   
   console.log(`\n${colors.bright}Categories:${colors.reset}`);
-  output.categories.forEach(cat => {
-    const count = commands.filter(c => c.category === cat).length;
+  const categories = [...new Set(filteredCommands.map(c => c.category))].sort();
+  categories.forEach(cat => {
+    const count = filteredCommands.filter(c => c.category === cat).length;
     console.log(`  ${colors.cyan}•${colors.reset} ${cat}: ${count} command(s)`);
   });
 
