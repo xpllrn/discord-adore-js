@@ -184,9 +184,9 @@ module.exports = {
         });
 
         if (!currentStatus) {
-          return embeds.success(message, 'NSFW bypass **enabled**. NSFW commands can now be used in any channel.');
+          return embeds.success(message, 'NSFW bypass **enabled**.');
         } else {
-          return embeds.success(message, 'NSFW bypass **disabled**. NSFW commands can only be used in NSFW channels.');
+          return embeds.success(message, 'NSFW bypass **disabled**.');
         }
       } else {
         return embeds.deny(message, 'Invalid bypass option. Use: `settings bypass nsfw`');
