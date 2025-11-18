@@ -88,18 +88,65 @@ module.exports = {
         // Send challenge
         await message.channel.send(`:dart: <@${currentPlayer.id}>, your word must contain: **${letterCombo}**. You have **10 seconds** to respond!`);
 
-
-        // Wait for response
+        // Wait for response with 10 second window for unlimited tries
         const filter = m => m.author.id === currentPlayer.id;
-        const collected = await message.channel.awaitMessages({ 
-          filter, 
-          max: 1, 
-          time: 10000, 
-          errors: ['time'] 
-        }).catch(() => null);
+        const startTime = Date.now();
+        const timeLimit = 10000;
+        let correctAnswer = false;
+        const gameWords = usedWords.get(gameId);
 
-        if (!collected || collected.size === 0) {
-          // Player failed - timeout, lose a life
+        while (!correctAnswer && (Date.now() - startTime) < timeLimit) {
+          const remainingTime = timeLimit - (Date.now() - startTime);
+          
+          const collected = await message.channel.awaitMessages({ 
+            filter, 
+            max: 1, 
+            time: remainingTime, 
+            errors: ['time'] 
+          }).catch(() => null);
+
+          if (!collected || collected.size === 0) {
+            // Timeout - lose a life
+            const newLives = currentLives - 1;
+            playerLives.set(currentPlayer.id, newLives);
+
+            await message.channel.send(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`);
+
+            if (newLives <= 0) {
+              await message.channel.send(`:skull: <@${currentPlayer.id}> has been eliminated!`);
+              
+              playerLives.delete(currentPlayer.id);
+              playersArray.splice(currentPlayerIndex, 1);
+              
+              if (currentPlayerIndex >= playersArray.length && playersArray.length > 0) {
+                currentPlayerIndex = 0;
+              }
+            } else {
+              currentPlayerIndex = (currentPlayerIndex + 1) % playersArray.length;
+            }
+            break;
+          }
+
+          const userAnswer = collected.first().content.toLowerCase().trim().replace(/[^a-z]/g, '');
+          
+          // Validate word
+          const containsLetters = userAnswer.includes(letterCombo);
+          const isNotUsed = !gameWords.has(userAnswer);
+          const isLongEnough = userAnswer.length >= 3;
+          const validWord = isValidWord(userAnswer);
+
+          if (containsLetters && validWord && isNotUsed && isLongEnough) {
+            // Correct answer!
+            gameWords.add(userAnswer);
+            await collected.first().react('✅');
+            correctAnswer = true;
+            currentPlayerIndex = (currentPlayerIndex + 1) % playersArray.length;
+          }
+          // Wrong answer - no reaction, let them try again
+        }
+
+        // If time ran out without correct answer, lose a life
+        if (!correctAnswer && (Date.now() - startTime) >= timeLimit) {
           const newLives = currentLives - 1;
           playerLives.set(currentPlayer.id, newLives);
 
@@ -116,49 +163,6 @@ module.exports = {
             }
           } else {
             currentPlayerIndex = (currentPlayerIndex + 1) % playersArray.length;
-          }
-        } else {
-          const userAnswer = collected.first().content.toLowerCase().trim().replace(/[^a-z]/g, '');
-          const gameWords = usedWords.get(gameId);
-          
-          // Validate word
-          const containsLetters = userAnswer.includes(letterCombo);
-          const isNotUsed = !gameWords.has(userAnswer);
-          const isLongEnough = userAnswer.length >= 3;
-          
-          // Check if valid word
-          const validWord = isValidWord(userAnswer);
-
-          if (containsLetters && validWord && isNotUsed && isLongEnough) {
-            // Correct answer - no lives lost
-            gameWords.add(userAnswer);
-            await message.channel.send(`:white_check_mark: <@${currentPlayer.id}> answered correctly with **"${userAnswer}"**!`);
-            currentPlayerIndex = (currentPlayerIndex + 1) % playersArray.length;
-          } else {
-            // Wrong answer - lose a life
-            let reason = '';
-            if (!isLongEnough) reason = 'word is too short (min 3 letters)';
-            else if (!containsLetters) reason = `word doesn't contain "${letterCombo}"`;
-            else if (!validWord) reason = 'not a valid English word';
-            else if (!isNotUsed) reason = 'word already used';
-
-            const newLives = currentLives - 1;
-            playerLives.set(currentPlayer.id, newLives);
-
-            await message.channel.send(`:boom: <@${currentPlayer.id}> lost a life (**"${userAnswer}"** - ${reason}). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`);
-
-            if (newLives <= 0) {
-              await message.channel.send(`:skull: <@${currentPlayer.id}> has been eliminated!`);
-              
-              playerLives.delete(currentPlayer.id);
-              playersArray.splice(currentPlayerIndex, 1);
-              
-              if (currentPlayerIndex >= playersArray.length && playersArray.length > 0) {
-                currentPlayerIndex = 0;
-              }
-            } else {
-              currentPlayerIndex = (currentPlayerIndex + 1) % playersArray.length;
-            }
           }
         }
 
