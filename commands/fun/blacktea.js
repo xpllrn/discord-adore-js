@@ -99,6 +99,7 @@ module.exports = {
       
       let currentPlayerIndex = 0;
       let roundsPlayed = 0;
+      const minRounds = 10;
 
       while (playersArray.length > 0) {
         const currentPlayer = playersArray[currentPlayerIndex];
@@ -182,8 +183,13 @@ module.exports = {
 
         roundsPlayed++;
         
-        // Check if only one player remains
-        if (playersArray.length === 1) {
+        // Check if only one player remains AND minimum rounds have been played
+        if (playersArray.length === 1 && roundsPlayed >= minRounds) {
+          break;
+        }
+        
+        // If all players eliminated before min rounds, end game
+        if (playersArray.length === 0) {
           break;
         }
         
