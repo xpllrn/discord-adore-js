@@ -42,8 +42,8 @@ module.exports = {
       .setColor(colors.base || '#808080')
       .setDescription(
         isSolo 
-          ? `**${message.author.username}** is playing against the bot\n\nChoose your move`
-          : `**${message.author.username}** vs **${opponent.username}**\n\nBoth players choose your move`
+          ? `<@${message.author.id}>, **choose** your move`
+          : `<@${message.author.id}> vs <@${opponent.id}>, **choose** your move`
       );
 
     // Create buttons
@@ -104,7 +104,7 @@ module.exports = {
         
         const result = determineWinner(choice, botChoice);
         
-        await endGame(interaction, gameMessage, message.author.username, 'Bot', choice, botChoice, result);
+        await endGame(interaction, gameMessage, message.author.username, 'Bot', choice, botChoice, result, message.author.id, 'bot');
         collector.stop();
         activeGames.delete(gameKey);
 
@@ -153,7 +153,9 @@ module.exports = {
             gameState.player2.username,
             gameState.player1.choice,
             gameState.player2.choice,
-            result
+            result,
+            gameState.player1.id,
+            gameState.player2.id
           );
           
           collector.stop();
@@ -161,13 +163,10 @@ module.exports = {
           activeGames.delete(`${message.channel.id}-${opponent.id}`);
         } else {
           // Update embed to show someone has chosen
-          const waitingPlayer = gameState.player1.choice ? gameState.player2.username : gameState.player1.username;
+          const waitingPlayerId = gameState.player1.choice ? gameState.player2.id : gameState.player1.id;
           const updatedEmbed = new EmbedBuilder()
             .setColor(colors.base || '#808080')
-            .setDescription(
-              `**${gameState.player1.username}** vs **${gameState.player2.username}**\n\n` +
-              `Waiting for **${waitingPlayer}** to choose`
-            );
+            .setDescription(`<@${gameState.player1.id}> vs <@${gameState.player2.id}>, waiting for <@${waitingPlayerId}> to choose`);
 
           await gameMessage.edit({ embeds: [updatedEmbed] });
         }
@@ -221,28 +220,24 @@ function getChoiceEmoji(choice) {
   return emojis[choice] || choice;
 }
 
-async function endGame(interaction, gameMessage, player1Name, player2Name, choice1, choice2, result) {
+async function endGame(interaction, gameMessage, player1Name, player2Name, choice1, choice2, result, player1Id, player2Id) {
   let resultText = '';
   let resultColor = colors.base || '#808080';
 
   if (result === 'draw') {
-    resultText = `It's a draw! Both chose **${choice1}**`;
+    resultText = `It's a draw, both chose **${choice1}**`;
     resultColor = colors.warn || '#ffaa00';
   } else if (result === 'player1') {
-    resultText = `**${player1Name}** wins! **${choice1}** beats **${choice2}**`;
+    resultText = `<@${player1Id}> won **with ${choice1}** against <@${player2Id}>'s **${choice2}**`;
     resultColor = colors.success || '#00ff00';
   } else {
-    resultText = `**${player2Name}** wins! **${choice2}** beats **${choice1}**`;
+    resultText = `<@${player2Id}> won **with ${choice2}** against <@${player1Id}>'s **${choice1}**`;
     resultColor = colors.success || '#00ff00';
   }
 
   const finalEmbed = new EmbedBuilder()
     .setColor(resultColor)
-    .setDescription(
-      `**${player1Name}** chose **${choice1}**\n` +
-      `**${player2Name}** chose **${choice2}**\n\n` +
-      resultText
-    );
+    .setDescription(resultText);
 
   if (interaction) {
     await interaction.update({
