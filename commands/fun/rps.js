@@ -40,28 +40,26 @@ module.exports = {
     // Create game embed
     const gameEmbed = new EmbedBuilder()
       .setColor(colors.base || '#808080')
-      .setTitle('🪨 Rock Paper Scissors')
       .setDescription(
         isSolo 
-          ? `**${message.author.username}** is playing against the bot!\n\nChoose your move:`
-          : `**${message.author.username}** vs **${opponent.username}**\n\nBoth players choose your move:`
-      )
-      .setTimestamp();
+          ? `**${message.author.username}** is playing against the bot\n\nChoose your move`
+          : `**${message.author.username}** vs **${opponent.username}**\n\nBoth players choose your move`
+      );
 
     // Create buttons
     const row = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
           .setCustomId('rps_rock')
-          .setLabel('🪨 Rock')
+          .setLabel('Rock')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('rps_paper')
-          .setLabel('📄 Paper')
+          .setLabel('Paper')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('rps_scissors')
-          .setLabel('✂️ Scissors')
+          .setLabel('Scissors')
           .setStyle(ButtonStyle.Secondary)
       );
 
@@ -166,12 +164,10 @@ module.exports = {
           const waitingPlayer = gameState.player1.choice ? gameState.player2.username : gameState.player1.username;
           const updatedEmbed = new EmbedBuilder()
             .setColor(colors.base || '#808080')
-            .setTitle('🪨 Rock Paper Scissors')
             .setDescription(
               `**${gameState.player1.username}** vs **${gameState.player2.username}**\n\n` +
-              `Waiting for **${waitingPlayer}** to choose...`
-            )
-            .setTimestamp();
+              `Waiting for **${waitingPlayer}** to choose`
+            );
 
           await gameMessage.edit({ embeds: [updatedEmbed] });
         }
@@ -183,9 +179,7 @@ module.exports = {
         try {
           const timeoutEmbed = new EmbedBuilder()
             .setColor(colors.error || '#ff0000')
-            .setTitle('🪨 Rock Paper Scissors')
-            .setDescription('Game timed out!')
-            .setTimestamp();
+            .setDescription('Game timed out');
 
           await gameMessage.edit({
             embeds: [timeoutEmbed],
@@ -232,25 +226,23 @@ async function endGame(interaction, gameMessage, player1Name, player2Name, choic
   let resultColor = colors.base || '#808080';
 
   if (result === 'draw') {
-    resultText = `It's a draw! Both chose ${getChoiceEmoji(choice1)} **${choice1}**`;
+    resultText = `It's a draw! Both chose **${choice1}**`;
     resultColor = colors.warn || '#ffaa00';
   } else if (result === 'player1') {
-    resultText = `**${player1Name}** wins!\n\n${getChoiceEmoji(choice1)} **${choice1}** beats ${getChoiceEmoji(choice2)} **${choice2}**`;
+    resultText = `**${player1Name}** wins! **${choice1}** beats **${choice2}**`;
     resultColor = colors.success || '#00ff00';
   } else {
-    resultText = `**${player2Name}** wins!\n\n${getChoiceEmoji(choice2)} **${choice2}** beats ${getChoiceEmoji(choice1)} **${choice1}**`;
+    resultText = `**${player2Name}** wins! **${choice2}** beats **${choice1}**`;
     resultColor = colors.success || '#00ff00';
   }
 
   const finalEmbed = new EmbedBuilder()
     .setColor(resultColor)
-    .setTitle('🪨 Rock Paper Scissors - Results')
     .setDescription(
-      `**${player1Name}** chose ${getChoiceEmoji(choice1)} **${choice1}**\n` +
-      `**${player2Name}** chose ${getChoiceEmoji(choice2)} **${choice2}**\n\n` +
+      `**${player1Name}** chose **${choice1}**\n` +
+      `**${player2Name}** chose **${choice2}**\n\n` +
       resultText
-    )
-    .setTimestamp();
+    );
 
   if (interaction) {
     await interaction.update({
