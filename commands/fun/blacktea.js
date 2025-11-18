@@ -180,37 +180,6 @@ module.exports = {
           // Wrong answer - no reaction, let them try again
         }
 
-        // If time ran out without correct answer, lose a life
-        if (!correctAnswer && (Date.now() - startTime) >= timeLimit) {
-          const newLives = currentLives - 1;
-          playerLives.set(currentPlayer.id, newLives);
-
-          const lostLifeEmbed = new EmbedBuilder()
-            .setColor(colors.error || '#ff0000')
-            .setDescription(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`)
-            .setTimestamp();
-          
-          await message.channel.send({ embeds: [lostLifeEmbed] });
-
-          if (newLives <= 0) {
-            const eliminatedEmbed = new EmbedBuilder()
-              .setColor('#000000')
-              .setDescription(`:skull: <@${currentPlayer.id}> has been eliminated!`)
-              .setTimestamp();
-            
-            await message.channel.send({ embeds: [eliminatedEmbed] });
-            
-            playerLives.delete(currentPlayer.id);
-            playersArray.splice(currentPlayerIndex, 1);
-            
-            if (currentPlayerIndex >= playersArray.length && playersArray.length > 0) {
-              currentPlayerIndex = 0;
-            }
-          } else {
-            currentPlayerIndex = (currentPlayerIndex + 1) % playersArray.length;
-          }
-        }
-
         roundsPlayed++;
         
         // Check if only one player remains
