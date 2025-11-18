@@ -104,7 +104,7 @@ module.exports = {
         
         const result = determineWinner(choice, botChoice);
         
-        await endGame(interaction, gameMessage, message.author.username, 'Bot', choice, botChoice, result, message.author.id, 'bot');
+        await endGame(interaction, gameMessage, message.author.username, 'Bot', choice, botChoice, result, message.author.id, client.user.id);
         collector.stop();
         activeGames.delete(gameKey);
 

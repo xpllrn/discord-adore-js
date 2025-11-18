@@ -1,4 +1,6 @@
 const { embeds } = require('../../core/embeds');
+const { EmbedBuilder } = require('discord.js');
+const { colors } = require('../../config/setup');
 const fs = require('fs');
 const path = require('path');
 
@@ -48,7 +50,14 @@ module.exports = {
 
     try {
       // Send join message
-      const joinMessage = await message.channel.send('**BlackTea Matchmaking**\n\nReact to join the game!\n\nEach player will take turns guessing words containing specific letters.\nRun out of time or make incorrect guesses, and you lose lives. The last player standing wins!');
+      const joinEmbed = new EmbedBuilder()
+        .setColor(colors.info || '#7985cd')
+        .setTitle('🍵 BlackTea Matchmaking')
+        .setDescription('React with ✅ to join the game!\n\nEach player will take turns guessing words containing specific letters.\nRun out of time or make incorrect guesses, and you lose lives. The last player standing wins!')
+        .setFooter({ text: 'Game starts in 30 seconds' })
+        .setTimestamp();
+
+      const joinMessage = await message.channel.send({ embeds: [joinEmbed] });
       await joinMessage.react('✅');
 
       // Wait 30 seconds for players to join
@@ -61,11 +70,22 @@ module.exports = {
 
       if (players.size === 0) {
         activeGames.delete(message.channel.id);
-        return joinMessage.edit('**BlackTea Matchmaking** - No one joined! Game cancelled.');
+        const cancelEmbed = new EmbedBuilder()
+          .setColor(colors.error || '#ff0000')
+          .setTitle('🍵 BlackTea Matchmaking')
+          .setDescription('No one joined! Game cancelled.')
+          .setTimestamp();
+        return joinMessage.edit({ embeds: [cancelEmbed] });
       }
 
       // Start the game
-      await joinMessage.edit(`**BlackTea Match Started!**\n\n**${players.size}** player(s) joined! Good luck!`);
+      const startEmbed = new EmbedBuilder()
+        .setColor(colors.success || '#00ff00')
+        .setTitle('🍵 BlackTea Match Started!')
+        .setDescription(`**${players.size}** player(s) joined! Good luck!`)
+        .setTimestamp();
+      
+      await joinMessage.edit({ embeds: [startEmbed] });
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Game loop with point system
@@ -86,7 +106,12 @@ module.exports = {
         const currentLives = playerLives.get(currentPlayer.id);
 
         // Send challenge
-        await message.channel.send(`:dart: <@${currentPlayer.id}>, your word must contain: **${letterCombo}**. You have **10 seconds** to respond!`);
+        const challengeEmbed = new EmbedBuilder()
+          .setColor('#7985cd')
+          .setDescription(`:dart: <@${currentPlayer.id}>, your word must contain: **${letterCombo}**\n\nYou have **10 seconds** to respond!`)
+          .setTimestamp();
+        
+        await message.channel.send({ embeds: [challengeEmbed] });
 
         // Wait for response with 10 second window for unlimited tries
         const filter = m => m.author.id === currentPlayer.id;
@@ -110,10 +135,20 @@ module.exports = {
             const newLives = currentLives - 1;
             playerLives.set(currentPlayer.id, newLives);
 
-            await message.channel.send(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`);
+            const lostLifeEmbed = new EmbedBuilder()
+              .setColor(colors.error || '#ff0000')
+              .setDescription(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`)
+              .setTimestamp();
+            
+            await message.channel.send({ embeds: [lostLifeEmbed] });
 
             if (newLives <= 0) {
-              await message.channel.send(`:skull: <@${currentPlayer.id}> has been eliminated!`);
+              const eliminatedEmbed = new EmbedBuilder()
+                .setColor('#000000')
+                .setDescription(`:skull: <@${currentPlayer.id}> has been eliminated!`)
+                .setTimestamp();
+              
+              await message.channel.send({ embeds: [eliminatedEmbed] });
               
               playerLives.delete(currentPlayer.id);
               playersArray.splice(currentPlayerIndex, 1);
@@ -150,10 +185,20 @@ module.exports = {
           const newLives = currentLives - 1;
           playerLives.set(currentPlayer.id, newLives);
 
-          await message.channel.send(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`);
+          const lostLifeEmbed = new EmbedBuilder()
+            .setColor(colors.error || '#ff0000')
+            .setDescription(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`)
+            .setTimestamp();
+          
+          await message.channel.send({ embeds: [lostLifeEmbed] });
 
           if (newLives <= 0) {
-            await message.channel.send(`:skull: <@${currentPlayer.id}> has been eliminated!`);
+            const eliminatedEmbed = new EmbedBuilder()
+              .setColor('#000000')
+              .setDescription(`:skull: <@${currentPlayer.id}> has been eliminated!`)
+              .setTimestamp();
+            
+            await message.channel.send({ embeds: [eliminatedEmbed] });
             
             playerLives.delete(currentPlayer.id);
             playersArray.splice(currentPlayerIndex, 1);
@@ -187,9 +232,21 @@ module.exports = {
         const winner = playersArray[0];
         const finalLives = playerLives.get(winner.id);
         
-        await message.channel.send(`:trophy: **BlackTea Champion!**\n\n<@${winner.id}> wins with **${finalLives}** ${finalLives === 1 ? 'life' : 'lives'} remaining!`);
+        const winnerEmbed = new EmbedBuilder()
+          .setColor('#FFD700')
+          .setTitle(':trophy: BlackTea Champion!')
+          .setDescription(`<@${winner.id}> wins with **${finalLives}** ${finalLives === 1 ? 'life' : 'lives'} remaining!`)
+          .setTimestamp();
+        
+        await message.channel.send({ embeds: [winnerEmbed] });
       } else {
-        await message.channel.send(':skull: **Game Over!** - Everyone was eliminated! No winner this time.');
+        const gameOverEmbed = new EmbedBuilder()
+          .setColor('#000000')
+          .setTitle(':skull: Game Over!')
+          .setDescription('Everyone was eliminated! No winner this time.')
+          .setTimestamp();
+        
+        await message.channel.send({ embeds: [gameOverEmbed] });
       }
 
     } catch (error) {
