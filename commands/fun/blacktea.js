@@ -55,7 +55,6 @@ module.exports = {
         .setTitle('🍵 BlackTea Matchmaking')
         .setDescription('React with ✅ to join the game!\n\nEach player will take turns guessing words containing specific letters.\nRun out of time or make incorrect guesses, and you lose lives. The last player standing wins!')
         .setFooter({ text: 'Game starts in 30 seconds' })
-        .setTimestamp();
 
       const joinMessage = await message.channel.send({ embeds: [joinEmbed] });
       await joinMessage.react('✅');
@@ -74,7 +73,6 @@ module.exports = {
           .setColor(colors.error || '#ff0000')
           .setTitle('🍵 BlackTea Matchmaking')
           .setDescription('No one joined! Game cancelled.')
-          .setTimestamp();
         return joinMessage.edit({ embeds: [cancelEmbed] });
       }
 
@@ -83,7 +81,6 @@ module.exports = {
         .setColor(colors.success || '#00ff00')
         .setTitle('🍵 BlackTea Match Started!')
         .setDescription(`**${players.size}** player(s) joined! Good luck!`)
-        .setTimestamp();
       
       await joinMessage.edit({ embeds: [startEmbed] });
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -110,7 +107,6 @@ module.exports = {
         const challengeEmbed = new EmbedBuilder()
           .setColor('#7985cd')
           .setDescription(`:dart: <@${currentPlayer.id}>, your word must contain: **${letterCombo}**\n\nYou have **10 seconds** to respond!`)
-          .setTimestamp();
         
         await message.channel.send({ embeds: [challengeEmbed] });
 
@@ -139,7 +135,6 @@ module.exports = {
             const lostLifeEmbed = new EmbedBuilder()
               .setColor(colors.error || '#ff0000')
               .setDescription(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`)
-              .setTimestamp();
             
             await message.channel.send({ embeds: [lostLifeEmbed] });
 
@@ -147,7 +142,6 @@ module.exports = {
               const eliminatedEmbed = new EmbedBuilder()
                 .setColor('#000000')
                 .setDescription(`:skull: <@${currentPlayer.id}> has been eliminated!`)
-                .setTimestamp();
               
               await message.channel.send({ embeds: [eliminatedEmbed] });
               
@@ -211,7 +205,6 @@ module.exports = {
           .setColor('#FFD700')
           .setTitle(':trophy: BlackTea Champion!')
           .setDescription(`<@${winner.id}> wins with **${finalLives}** ${finalLives === 1 ? 'life' : 'lives'} remaining!`)
-          .setTimestamp();
         
         await message.channel.send({ embeds: [winnerEmbed] });
       } else {
@@ -219,7 +212,6 @@ module.exports = {
           .setColor('#000000')
           .setTitle(':skull: Game Over!')
           .setDescription('Everyone was eliminated! No winner this time.')
-          .setTimestamp();
         
         await message.channel.send({ embeds: [gameOverEmbed] });
       }
