@@ -18,54 +18,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  // Last.fm library data
-  LastFMLibrary: {
-    artists: [{
-      name: {
-        type: String,
-        required: true
-      },
-      plays: {
-        type: Number,
-        required: true,
-        default: 0
-      }
-    }],
-    albums: [{
-      name: {
-        type: String,
-        required: true
-      },
-      artist: {
-        type: String,
-        required: true
-      },
-      plays: {
-        type: Number,
-        required: true,
-        default: 0
-      }
-    }],
-    tracks: [{
-      name: {
-        type: String,
-        required: true
-      },
-      artist: {
-        type: String,
-        required: true
-      },
-      plays: {
-        type: Number,
-        required: true,
-        default: 0
-      }
-    }],
-    lastUpdated: {
-      type: Date,
-      default: null
-    }
-  },
 
   TicTacToe: {
     wins: {
@@ -414,13 +366,6 @@ userSchema.index({ UserID: 1 });
 
 // Last.fm indexes
 userSchema.index({ LastFMUsername: 1 });
-userSchema.index({ 'LastFMLibrary.artists.name': 1 });
-userSchema.index({ 'LastFMLibrary.artists.plays': -1 }); // Top artists by plays
-userSchema.index({ 'LastFMLibrary.albums.name': 1, 'LastFMLibrary.albums.artist': 1 });
-userSchema.index({ 'LastFMLibrary.albums.plays': -1 }); // Top albums by plays
-userSchema.index({ 'LastFMLibrary.tracks.name': 1, 'LastFMLibrary.tracks.artist': 1 });
-userSchema.index({ 'LastFMLibrary.tracks.plays': -1 }); // Top tracks by plays
-userSchema.index({ 'LastFMLibrary.lastUpdated': -1 }); // Recent library updates
 
 // Spotify indexes
 userSchema.index({ SpotifyUserId: 1 });

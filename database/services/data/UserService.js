@@ -151,11 +151,6 @@ class UserService extends BaseService {
             items: []
           },
           LastFMUsername: null,
-          LastFMLibrary: {
-            artists: [],
-            albums: [],
-            tracks: []
-          },
           LastFMSettings: {},
           Roleplay: {
             given: [],
@@ -1772,54 +1767,6 @@ class UserService extends BaseService {
         throw error;
       }
       throw new DatabaseWriteError(`Failed to set Last.fm username for user ${userId}`, error);
-    }
-  }
-
-  /**
-   * Get Last.fm library
-   * @param {string} userId - User ID
-   * @returns {Promise<Object|null>} Last.fm library data or null
-   */
-  async getLastFMLibrary(userId) {
-    if (!userId) {
-      throw new ValidationError('User ID is required', 'userId', userId);
-    }
-
-    try {
-      const userData = await this.ensureUserData(userId);
-      return userData.LastFMLibrary || null;
-    } catch (error) {
-      console.error(`Error getting Last.fm library for user ${userId}:`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Set Last.fm library
-   * @param {string} userId - User ID
-   * @param {Object|null} library - Last.fm library data or null to clear
-   * @returns {Promise<boolean>} Success status
-   */
-  async setLastFMLibrary(userId, library) {
-    if (!userId) {
-      throw new ValidationError('User ID is required', 'userId', userId);
-    }
-
-    if (library !== null && typeof library !== 'object') {
-      throw new ValidationError('Library must be an object or null', 'library', library);
-    }
-
-    try {
-      const userData = await this.ensureUserData(userId);
-      userData.LastFMLibrary = library;
-
-      await this.set(userId, userData);
-      return true;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw error;
-      }
-      throw new DatabaseWriteError(`Failed to set Last.fm library for user ${userId}`, error);
     }
   }
 

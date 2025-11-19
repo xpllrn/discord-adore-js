@@ -235,26 +235,6 @@ const guildSchema = new mongoose.Schema({
     }
   },
 
-  // Last.fm crowns system
-  LastFMCrowns: [{
-    artist: {
-      type: String,
-      required: true
-    },
-    userId: {
-      type: String,
-      required: true
-    },
-    plays: {
-      type: Number,
-      required: true
-    },
-    claimedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-
   // Swear tracking system (per server)
   SwearTracker: [{
     userId: {
@@ -1397,11 +1377,6 @@ guildSchema.pre('validate', function () {
 
 // Create indexes for better performance
 guildSchema.index({ GuildID: 1 });
-
-// Last.fm crowns indexes
-guildSchema.index({ 'LastFMCrowns.artist': 1 });
-guildSchema.index({ 'LastFMCrowns.userId': 1 });
-guildSchema.index({ 'LastFMCrowns.artist': 1, 'LastFMCrowns.userId': 1 }); // Compound index for crown queries
 
 // Logging system indexes
 guildSchema.index({ 'LoggingConfig.channelId': 1 });

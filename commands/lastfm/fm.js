@@ -37,7 +37,7 @@ module.exports = {
       const isOwnProfile = targetUserId === message.author.id;
       const pronoun = isOwnProfile ? 'You' : `**${targetUser.displayName || targetUser.username || 'User'}**`;
       const verb = isOwnProfile ? "don't" : "doesn't";
-      return embeds.warn(message, `${pronoun} ${verb} have a **Last.fm** linked, use \`${guildprefix}lastfm set [username]\``);
+      return embeds.warn(message, `${pronoun} ${verb} have a **Last.fm** username set`);
     }
 
     try {
@@ -54,7 +54,7 @@ module.exports = {
 
       if (recentData.error) {
         if (recentData.error === 6) {
-          return embeds.warn(message, `The **Last.fm** user **${fmuser}** doesn't exist, use \`${guildprefix}lastfm set [username]\` to change it`);
+          return embeds.warn(message, `The **Last.fm** user **${fmuser}** doesn't exist`);
         }
         throw new Error(`Last.fm API error: ${recentData.message}`);
       }
@@ -140,7 +140,7 @@ module.exports = {
 
 
       if (error.message.includes('doesn\'t exist')) {
-        return embeds.warn(message, `The **Last.fm** user **${fmuser}** doesn't exist, use \`${guildprefix}lastfm set [username]\` to change it`);
+        return embeds.warn(message, `The **Last.fm** user **${fmuser}** doesn't exist`);
       }
 
       return embeds.warn(message, `**Last.fm** service is currently unavailable, please try again later. For updates, check [@lastfmstatus](https://twitter.com/lastfmstatus)`);
