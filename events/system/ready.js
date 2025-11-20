@@ -36,14 +36,12 @@ module.exports = {
   try {
     await initializeDatabaseConnection(client, loader);
     
-    // Complete
-    loader.complete();
-    
     // Show startup time
     const endTime = Date.now();
     const startupTime = endTime - startTime;
-    console.log('');
-    console.log(chalk.green(`   ✓ adore is ready [${startupTime}ms]`));
+    
+    // Complete with startup time
+    loader.complete(`adore is ready [${startupTime}ms]`);
     console.log('');
   } catch (error) {
     loader.fail('Initialization failed');
@@ -73,7 +71,7 @@ module.exports = {
  * Create a loading bar with progress updates
  */
 function createLoadingBar() {
-  const barLength = 30;
+  const barLength = 50;
   let currentStep = 0;
   const totalSteps = 5;
   let currentMessage = 'Initializing...';
@@ -95,9 +93,9 @@ function createLoadingBar() {
     process.stdout.write(`\r   ${bar} ${percentage}% ${chalk.gray(currentMessage)}`);
   };
   
-  const complete = () => {
+  const complete = (message = 'Complete!') => {
     const bar = chalk.green('█'.repeat(barLength));
-    process.stdout.write(`\r   ${bar} 100% ${chalk.green('Complete!')}\n`);
+    process.stdout.write(`\r   ${bar} 100% ${chalk.green(message)}\n`);
   };
   
   const fail = (message) => {
