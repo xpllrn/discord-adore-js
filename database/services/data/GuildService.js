@@ -281,55 +281,31 @@ class GuildService extends BaseService {
         // CRITICAL: Check if guild exists in database before creating new data
         // This prevents overwriting existing guild data when cache is empty
         const Model = this.getModel();
-        
-        console.log(`[GuildService] Guild ${guildId} not in cache, checking database...`);
         const existsInDb = await Model.exists({ GuildID: guildId });
-        console.log(`[GuildService] Database check result for ${guildId}: ${existsInDb ? 'EXISTS' : 'NOT FOUND'}`);
         
         if (existsInDb) {
           // Guild exists in database but not in cache - this is a cache miss
           // Force read from database and populate cache
-          console.log(`⚠️  [GuildService] Cache miss for guild ${guildId}, reading from database`);
           guildData = await this.readFromDatabase(guildId);
           
           if (guildData) {
             // Cache the data
             this.cache.set(guildId, guildData);
-            console.log(`✅ [GuildService] Successfully recovered guild ${guildId} from database`);
           } else {
             // This should never happen - exists() returned true but findOne returned null
             console.error(`🚨 [GuildService] CRITICAL: Guild ${guildId} exists but couldn't be read!`);
             throw new Error(`Failed to read existing guild data for ${guildId}`);
           }
         } else {
-          // Guild doesn't exist in database
-          // CRITICAL: Check if this is a real Discord guild before creating
-          const discordClient = global.discordClient;
-          const discordGuild = discordClient?.guilds?.cache?.get(guildId);
+          // Guild doesn't exist in database - create new data
+          // Send webhook alert
+          const stackTrace = new Error().stack;
+          this.sendGuildAlert('NEW_GUILD_CREATED', guildId, stackTrace);
           
-          if (discordGuild) {
-            // This is a real Discord guild but not in database
-            // This should only happen for truly new guilds the bot just joined
-            console.log(`🚨 [GuildService] CREATING NEW GUILD DATA for ${guildId} (${discordGuild.name})`);
-            
-            // Send webhook alert
-            const stackTrace = new Error().stack;
-            this.sendGuildAlert('NEW_GUILD_CREATED', guildId, stackTrace);
-            
-            guildData = this.getDefaultGuildData(guildId);
-            guildData._guildName = discordGuild.name; // Add metadata
+          guildData = this.getDefaultGuildData(guildId);
 
-            // Save to database and cache
-            await this.set(guildId, guildData);
-            console.log(`✅ [GuildService] New guild data saved for ${guildId}`);
-          } else {
-            // Guild doesn't exist in Discord - this is an error
-            console.error(`🚨 [GuildService] CRITICAL: Attempted to create data for non-existent guild ${guildId}`);
-            console.error(`🚨 [GuildService] Bot is not in this guild! Returning default data without saving.`);
-            
-            // Return default data but DON'T save it
-            guildData = this.getDefaultGuildData(guildId);
-          }
+          // Save to database and cache
+          await this.set(guildId, guildData);
         }
       } else {
         // CRITICAL: Only add missing top-level fields, DO NOT merge nested objects

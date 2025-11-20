@@ -16,27 +16,39 @@ module.exports = {
   console.log(chalk.cyan('██║  ██║██████╔╝╚██████╔╝██║  ██║███████╗██╗███████╗██╔╝ ██╗███████╗'));
   console.log(chalk.cyan('╚═╝  ╚═╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚═╝  ╚═╝╚══════╝'));
   console.log('');
-  console.log('');
-
-  // System initialization
+  
+  // System info
   const guildCount = client.guilds.cache.size;
   const userCount = client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0);
-  const slashCommandInfo = client.slashCommandCount > 0 ? `, ${client.slashCommandCount} slash commands` : '';
-  console.log(chalk.white(`System: ${guildCount} servers, ${userCount.toLocaleString()} users, ${client.commands.size} commands${slashCommandInfo}, ${client.eventCount} events`));
+  const slashCommandInfo = client.slashCommandCount > 0 ? `, ${client.slashCommandCount} slash` : '';
+  console.log(chalk.gray(`   ${guildCount} servers • ${userCount.toLocaleString()} users • ${client.commands.size} commands${slashCommandInfo} • ${client.eventCount} events`));
   console.log('');
 
-  // Set loading status while cache initializes
+  // Set loading status
   client.user.setPresence({
-    activities: [{ name: 'Loading cache...', type: ActivityType.Custom }],
+    activities: [{ name: 'Starting up...', type: ActivityType.Custom }],
     status: 'idle'
   });
 
+  // Create loading bar
+  const loader = createLoadingBar();
+  
   try {
-    await initializeDatabaseConnection(client);
+    await initializeDatabaseConnection(client, loader);
+    
+    // Complete
+    loader.complete();
+    
+    // Show startup time
+    const endTime = Date.now();
+    const startupTime = endTime - startTime;
+    console.log('');
+    console.log(chalk.green(`   ✓ adore is ready [${startupTime}ms]`));
+    console.log('');
   } catch (error) {
-    console.log(chalk.red('Database initialization failed:', error.message));
+    loader.fail('Initialization failed');
+    console.log(chalk.red(`   ✖ ${error.message}`));
 
-    // Log error if error logger is available
     if (client.errorLogger) {
       client.errorLogger.log(error, 'Database Initialization', {
         command: 'Database Connection',
@@ -44,14 +56,6 @@ module.exports = {
       });
     }
   }
-
-  // Show startup time
-  const endTime = Date.now();
-  const startupTime = endTime - startTime;
-  console.log('');
-  console.log(chalk.green(`adore is active [${startupTime}ms]`));
-  console.log('');
-  console.log('');
 
 
     // Show environment validation results only if there are issues
@@ -66,10 +70,53 @@ module.exports = {
 };
 
 /**
+ * Create a loading bar with progress updates
+ */
+function createLoadingBar() {
+  const barLength = 30;
+  let currentStep = 0;
+  const totalSteps = 5;
+  let currentMessage = 'Initializing...';
+  
+  const update = (step, message) => {
+    currentStep = step;
+    currentMessage = message;
+    render();
+  };
+  
+  const render = () => {
+    const progress = currentStep / totalSteps;
+    const filled = Math.floor(barLength * progress);
+    const empty = barLength - filled;
+    
+    const bar = chalk.cyan('█'.repeat(filled)) + chalk.gray('░'.repeat(empty));
+    const percentage = Math.floor(progress * 100);
+    
+    process.stdout.write(`\r   ${bar} ${percentage}% ${chalk.gray(currentMessage)}`);
+  };
+  
+  const complete = () => {
+    const bar = chalk.green('█'.repeat(barLength));
+    process.stdout.write(`\r   ${bar} 100% ${chalk.green('Complete!')}\n`);
+  };
+  
+  const fail = (message) => {
+    const bar = chalk.red('█'.repeat(barLength));
+    process.stdout.write(`\r   ${bar} ${chalk.red(message)}\n`);
+  };
+  
+  // Initial render
+  render();
+  
+  return { update, complete, fail };
+}
+
+/**
  * Initialize database connection and services after Discord is ready
  * @param {Client} client - Discord client instance
+ * @param {Object} loader - Loading bar instance
  */
-async function initializeDatabaseConnection(client) {
+async function initializeDatabaseConnection(client, loader) {
   const { initializeDatabase } = require('../../database');
   const { initializeServices, getServiceHealth } = require('@services');
   
@@ -85,7 +132,7 @@ async function initializeDatabaseConnection(client) {
     return;
   }
 
-  console.log(chalk.white('Database: Connecting...'));
+  loader.update(1, 'Connecting to database...');
 
   // Database setup with separate databases
   const connectionConfig = {
@@ -94,43 +141,38 @@ async function initializeDatabaseConnection(client) {
   };
 
   if (!userConnection && !guildConnection) {
-    throw new Error('No database connection strings found - please set USER_DATABASE and/or GUILD_DATABASE');
+    throw new Error('No database connection strings found');
   }
 
   const dbSuccess = await initializeDatabase(connectionConfig);
   if (dbSuccess) {
-    // Initialize new service layer
+    loader.update(2, 'Initializing services...');
+    
+    // Initialize services
     try {
       await initializeServices();
-      
-      // Check service health
-      const health = getServiceHealth();
-      if (health.overall) {
-        console.log(chalk.green('Database: Connected (user, guild, services)'));
-      } else {
-        console.log(chalk.yellow('Database: Connected with warnings'));
-      }
+      getServiceHealth();
     } catch (error) {
-      console.log(chalk.yellow('Database: Connected with warnings -', error.message));
+      // Continue anyway
     }
     
-    console.log('');
-
-    // Load and set bot status from database
+    loader.update(3, 'Warming up cache...');
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    loader.update(4, 'Loading configuration...');
     await loadBotStatusFromDatabase(client);
 
-    // Mark services as ready for command processing
+    // Mark as ready
     client.cacheReady = true;
     
-    // Wait a moment for database connections to fully stabilize
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    loader.update(5, 'Starting background tasks...');
     
-    // Resume active sprints
+    // Resume background tasks
     try {
       const { resumeActiveSprints } = require('./backgroundTasks');
       await resumeActiveSprints(client);
     } catch (error) {
-      console.log(chalk.yellow('Sprint system warning:', error.message));
+      // Silent fail
     }
     
     // Emit ready events
@@ -153,7 +195,6 @@ async function loadBotStatusFromDatabase(client) {
     activities: [{ name: 'move to adore, save $30', type: ActivityType.Custom }],
     status: 'dnd'
   });
-  console.log(chalk.white('Instance: adore | Status: cooked'));
 }
 
 /**
