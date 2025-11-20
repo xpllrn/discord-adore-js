@@ -22,7 +22,6 @@ class CacheWarmer {
     // Only warm once on startup
     setTimeout(() => {
       this.startupComplete = true;
-      console.log('Starting cache warming...');
       this.warmSystemCache(services, client);
     }, 30000); // Wait 30 seconds after startup
   }
@@ -60,7 +59,6 @@ class CacheWarmer {
       }
       
       this.lastWarmTime = new Date();
-      console.log('✓ Cache warming complete - cache will now manage itself (LRU + TTL)');
     } catch (error) {
       console.error('Cache warmer error:', error.message);
     } finally {
@@ -84,8 +82,6 @@ class CacheWarmer {
       
       // Get blacklist info to ensure it's cached
       await systemService.getBlacklistInfo();
-      
-      console.log('✓ Warmed system cache (blacklists)');
     } catch (error) {
       console.error('Error warming system data:', error.message);
     }
@@ -109,18 +105,23 @@ class CacheWarmer {
       }
 
       // Batch load guild data (just prefix and basic info)
-      let warmedCount = 0;
       for (const guildId of guildIds) {
         try {
-          // This will load and cache the guild data
-          await guildService.getPrefix(guildId);
-          warmedCount++;
+          const guild = client.guilds.cache.get(guildId);
+          
+          // Get guild data and add guild name as metadata
+          let guildData = await guildService.get(guildId);
+          if (!guildData) {
+            guildData = guildService.getDefaultGuildData(guildId);
+            if (guild) {
+              guildData._guildName = guild.name; // Add metadata for logging
+            }
+            await guildService.set(guildId, guildData);
+          }
         } catch (error) {
           // Skip guilds that fail to load
         }
       }
-      
-      console.log(`✓ Warmed ${warmedCount}/${guildIds.length} guild prefixes`);
     } catch (error) {
       console.error('Error warming guild prefixes:', error.message);
     }

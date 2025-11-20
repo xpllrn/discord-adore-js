@@ -133,14 +133,6 @@ async function initializeDatabaseConnection(client) {
       console.log(chalk.yellow('Sprint system warning:', error.message));
     }
     
-    // Run auto corruption check
-    try {
-      const { autoCheckCorruption } = require('../../scripts/autocheckcorruption');
-      await autoCheckCorruption();
-    } catch (error) {
-      console.log(chalk.yellow('Corruption check warning:', error.message));
-    }
-    
     // Emit ready events
     client.emit('databaseReady');
     client.emit('cacheReady');

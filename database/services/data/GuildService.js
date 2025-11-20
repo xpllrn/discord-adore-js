@@ -53,8 +53,11 @@ class GuildService extends BaseService {
       
       if (!exists) {
         // Document doesn't exist - this should only happen for truly new guilds
-        // Log this for monitoring
-        console.warn(`[GuildService] Creating new guild document for ${key} - ensure this is intentional`);
+        // Get guild name if available from metadata
+        const guildName = data._guildName || 'Unknown';
+        delete updateData._guildName; // Remove metadata before saving
+        
+        console.log(`New guild added for ${key} (${guildName})`);
         
         // Create with full data including timestamps
         await Model.create({
@@ -63,6 +66,9 @@ class GuildService extends BaseService {
         });
       } else {
         // Document exists - safe to update
+        // Remove metadata if present
+        delete updateData._guildName;
+        
         await Model.updateOne(
           query,
           { $set: updateData }
