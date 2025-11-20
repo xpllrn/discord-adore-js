@@ -43,6 +43,7 @@ module.exports = {
     await processCounting(message);
 
     // Process commands last
+    console.log(`[MESSAGE-CREATE] Processing message from ${message.author.tag}: "${message.content.substring(0, 50)}"`);
     await processCommand(message, false);
   },
 };

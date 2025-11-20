@@ -110,7 +110,13 @@ module.exports = {
   permission: 'Manage Server',
   isGroupCommand: true,
   run: async (client, message, args) => {
+    console.log(`[CONFESSION] ===== RUN FUNCTION CALLED =====`);
+    console.log(`[CONFESSION] Client:`, !!client);
+    console.log(`[CONFESSION] Message:`, !!message);
+    console.log(`[CONFESSION] Args:`, args);
+    
     try {
+      console.log(`[CONFESSION] Inside try block`);
       console.log(`[CONFESSION] Command triggered by ${message.author.tag}`);
       console.log(`[CONFESSION] Args:`, args);
       

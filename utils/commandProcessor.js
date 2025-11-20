@@ -128,15 +128,20 @@ async function processCommand(message, isEdit = false) {
     // Execute command (support both execute and run methods)
     let commandResult;
     if (command.execute) {
+      console.log(`[CMD-PROCESSOR] Executing via execute() method`);
       commandResult = await command.execute(message, args, client);
     } else if (command.run) {
+      console.log(`[CMD-PROCESSOR] Executing via run() method`);
       commandResult = await command.run(client, message, args);
     } else {
       throw new Error(`Command ${command.name} has no execute or run method`);
     }
 
+    console.log(`[CMD-PROCESSOR] Command result:`, commandResult);
+
     // If command has autoHelp enabled (default: true) and returned false (indicating invalid usage)
     if (command.autoHelp !== false && commandResult === false) {
+      console.log(`[CMD-PROCESSOR] Command returned false, showing help`);
       await runHelpCommand(message, command.name);
     }
 
