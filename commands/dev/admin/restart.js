@@ -28,9 +28,7 @@ module.exports = {
       const steps = [
         { progress: 20, text: 'saving state...' },
         { progress: 40, text: 'closing connections...' },
-        { progress: 60, text: 'shutting down...' },
-        { progress: 80, text: 'restarting process...' },
-        { progress: 100, text: 'adore is up!' }
+        { progress: 101, text: 'cya, adore is coming back up...' },
       ];
       
       let currentStep = 0;
@@ -45,7 +43,7 @@ module.exports = {
         const empty = 20 - filled;
         const bar = '█'.repeat(filled) + '░'.repeat(empty);
         
-        embed.setDescription(`\`\`\`\n[${bar}] ${step.progress}%\n${step.text}\n\`\`\``);
+        embed.setDescription(`\`\`\`\n[${bar}] ${step.progress}% ${step.text}\n\`\`\``);
         
         try {
           await msg.edit({ embeds: [embed] });
