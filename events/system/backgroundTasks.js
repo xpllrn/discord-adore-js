@@ -595,9 +595,7 @@ async function cleanupExpiredRoleRestore(client) {
       { $pull: { RoleRestore: { expiresAt: { $lte: now } } } }
     );
 
-    if (result.modifiedCount > 0) {
-      logger.console.log(`Cleaned up expired role restore data from ${result.modifiedCount} guild(s)`);
-    }
+    // Silent cleanup - no need to log
   } catch (error) {
     const now = Date.now();
     if (now - roleRestoreLastErrorTime > ERROR_COOLDOWN) {
