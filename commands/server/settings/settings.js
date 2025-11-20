@@ -34,7 +34,6 @@ module.exports = {
       const buttonRolesCount = guildData.ButtonRoles?.length || 0;
       const levelSystemEnabled = guildData.LevelSystem?.enabled || false;
       const ticketSystemEnabled = guildData.TicketSystem?.enabled || false;
-      const voiceManagerEnabled = guildData.VoiceManager?.enabled || false;
       const nsfwBypassEnabled = guildData.NSFWBypass || false;
 
       // Get counts
@@ -46,16 +45,13 @@ module.exports = {
       const autoResponderCount = guildData.AutoResponder?.length || 0;
 
       // Get channels and roles
-      const jailRole = guildData.JailRoleID ? `<@&${guildData.JailRoleID}>` : 'N/A';
-      const jailChannel = guildData.JailChannelID ? `<#${guildData.JailChannelID}>` : 'N/A';
-      const starboardChannel = guildData.StarboardChannel ? `<#${guildData.StarboardChannel}>` : 'N/A';
-      const baseRole = guildData.BoosterRoleSystem?.baseRoleId ? `<@&${guildData.BoosterRoleSystem.baseRoleId}>` : 'N/A';
-      const levelUpChannel = guildData.LevelSystem?.levelUpChannel ? `<#${guildData.LevelSystem.levelUpChannel}>` : 'N/A';
-      const ticketCategory = guildData.TicketSystem?.categoryId ? `<#${guildData.TicketSystem.categoryId}>` : 'N/A';
-      const supportRole = guildData.TicketSystem?.supportRoleId ? `<@&${guildData.TicketSystem.supportRoleId}>` : 'N/A';
-
-      // Get jail message
-      const jailMessage = guildData.JailMessage || 'N/A';
+      const jailRole = guildData.JailRoleID ? `<@&${guildData.JailRoleID}>` : 'None';
+      const jailChannel = guildData.JailChannelID ? `<#${guildData.JailChannelID}>` : 'None';
+      const starboardChannel = guildData.StarboardChannel ? `<#${guildData.StarboardChannel}>` : 'None';
+      const baseRole = guildData.BoosterRoleSystem?.baseRoleId ? `<@&${guildData.BoosterRoleSystem.baseRoleId}>` : 'None';
+      const levelUpChannel = guildData.LevelSystem?.levelUpChannel ? `<#${guildData.LevelSystem.levelUpChannel}>` : 'None';
+      const ticketCategory = guildData.TicketSystem?.categoryId ? `<#${guildData.TicketSystem.categoryId}>` : 'None';
+      const supportRole = guildData.TicketSystem?.supportRoleId ? `<@&${guildData.TicketSystem.supportRoleId}>` : 'None';
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.embed)
@@ -67,7 +63,7 @@ module.exports = {
         .addFields(
           {
             name: 'Prefix',
-            value: `Prefix for your server is \'${prefix}\``,
+            value: `Prefix for your server is \`${prefix}\``,
             inline: false
           },
           {
@@ -79,7 +75,6 @@ module.exports = {
               `Button Roles: ${buttonRolesCount > 0 ? config.emojis.success : config.emojis.error}`,
               `Level System: ${levelSystemEnabled ? config.emojis.success : config.emojis.error}`,
               `Ticket System: ${ticketSystemEnabled ? config.emojis.success : config.emojis.error}`,
-              `Voice Manager: ${voiceManagerEnabled ? config.emojis.success : config.emojis.error}`,
               `NSFW Bypass: ${nsfwBypassEnabled ? config.emojis.success : config.emojis.error}`
             ].join('\n'),
             inline: true
@@ -87,7 +82,6 @@ module.exports = {
           {
             name: 'General',
             value: [
-              `Jail Message: ${jailMessage.length > 30 ? jailMessage.substring(0, 30) + '...' : jailMessage}`,
               `Welcome Messages: ${welcomeMessagesCount}`,
               `Goodbye Messages: ${goodbyeMessagesCount}`,
               `Boost Messages: ${boostMessagesCount}`,
@@ -112,7 +106,6 @@ module.exports = {
           }
         )
         .setFooter({ text: `Guild ID: ${message.guild.id}` })
-        .setTimestamp();
 
       return message.channel.send({ embeds: [embed] });
 
