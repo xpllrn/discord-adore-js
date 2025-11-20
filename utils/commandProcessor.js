@@ -138,6 +138,11 @@ async function processCommand(message, isEdit = false) {
       return await runHelpCommand(message, command.name);
     }
 
+    // Handle permission errors with fallback chain
+    if (error.code === 50013) {
+      return await handlePermissionError(message, 'There was an error executing that command due to missing permissions.');
+    }
+
     // Log error to Discord webhook if error logger is available
     if (client.errorLogger) {
       client.errorLogger.log(error, `Command Execution: ${command.name}`, {
@@ -149,7 +154,14 @@ async function processCommand(message, isEdit = false) {
       });
     }
 
-    embeds.deny(message, 'There was an error **executing** that command, Please report this to [**here**](https://discord.gg/uW7ETHXu4k) immediately.');
+    // Try to send error message with fallback chain
+    try {
+      await embeds.deny(message, 'There was an error **executing** that command, Please report this to [**here**](https://discord.gg/uW7ETHXu4k) immediately.');
+    } catch (embedError) {
+      if (embedError.code === 50013) {
+        await handlePermissionError(message, 'There was an error executing that command.');
+      }
+    }
   }
 }
 
@@ -367,6 +379,50 @@ async function runHelpCommand(message, commandName, subcommandName = null) {
   }
 }
 
+/**
+ * Handle permission errors with fallback chain:
+ * 1. Try to send as plain text (if embed permission missing)
+ * 2. Try to DM the user
+ * 3. Try to react to the message
+ * 4. Fail silently
+ * 
+ * @param {Message} message - Discord message object
+ * @param {string} errorText - The error message to send (unused, using fixed message)
+ */
+async function handlePermissionError(message, errorText) {
+  let missingPermType = 'embed';
+  
+  // Fallback 1: Try to send as plain text (if only embed permission is missing)
+  try {
+    const permissionMessage = `I do **NOT** have perms to type **${missingPermType}** in the server, Please **check** adore role perms.`;
+    await message.channel.send(`<@${message.author.id}>: ${permissionMessage}`);
+    return;
+  } catch (textError) {
+    // Text message failed, means we can't send messages at all
+    missingPermType = 'send';
+  }
+
+  // Fallback 2: Try to DM the user
+  try {
+    const permissionMessage = `I do **NOT** have perms to **${missingPermType}** in the server, Please **check** adore role perms.`;
+    await message.author.send(permissionMessage);
+    return;
+  } catch (dmError) {
+    // DM failed, continue to next fallback
+  }
+
+  // Fallback 3: Try to react to the message
+  try {
+    await message.react('❌');
+    return;
+  } catch (reactionError) {
+    // Reaction failed, continue to silent fallback
+  }
+
+  // Fallback 4: Fail silently
+  // No action needed
+}
+
 module.exports = {
   processCommand,
   getGuildPrefix,
@@ -375,5 +431,6 @@ module.exports = {
   setUserPrefix,
   clearUserPrefix,
   runHelpCommand,
+  handlePermissionError,
   InvalidUsageError
 };

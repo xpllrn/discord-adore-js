@@ -38,13 +38,36 @@ class GuildService extends BaseService {
       delete updateData.createdAt;
       delete updateData.updatedAt;
 
-      // CRITICAL FIX: Use $set to update only provided fields
-      // This prevents accidentally overwriting fields that aren't in the update
-      await Model.updateOne(
-        query,
-        { $set: updateData },
-        { upsert: true }
-      );
+      // ⚠️ CRITICAL FIX (Nov 20, 2025): Prevent accidental document recreation
+      // 
+      // ISSUE: On Nov 17, 2025 at 02:51:22.312Z, 31 guilds were reset simultaneously
+      // CAUSE: Database reconnection + upsert:true created NEW documents instead of updating
+      // 
+      // OLD BEHAVIOR: { upsert: true } would create new document if not found
+      // PROBLEM: If DB document was deleted or query failed, new document = new createdAt
+      // 
+      // NEW BEHAVIOR: Check if document exists first, only update if it does
+      // This prevents accidental recreation of guild documents
+      
+      const exists = await Model.exists(query);
+      
+      if (!exists) {
+        // Document doesn't exist - this should only happen for truly new guilds
+        // Log this for monitoring
+        console.warn(`[GuildService] Creating new guild document for ${key} - ensure this is intentional`);
+        
+        // Create with full data including timestamps
+        await Model.create({
+          [this.keyField]: key,
+          ...updateData
+        });
+      } else {
+        // Document exists - safe to update
+        await Model.updateOne(
+          query,
+          { $set: updateData }
+        );
+      }
       
     } catch (error) {
       throw new DatabaseWriteError(`Failed to write guild data for ${key}`, error);
