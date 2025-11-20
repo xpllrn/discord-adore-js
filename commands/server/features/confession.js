@@ -111,12 +111,18 @@ module.exports = {
   isGroupCommand: true,
   run: async (client, message, args) => {
     try {
+      console.log(`[CONFESSION] Command triggered by ${message.author.tag}`);
+      console.log(`[CONFESSION] Args:`, args);
+      
       const confessionService = getService('confession');
       
       // Normalize subcommand to lowercase
       const subcommand = args[0]?.toLowerCase();
+      console.log(`[CONFESSION] Subcommand:`, subcommand);
 
     if (subcommand === 'channel') {
+      console.log(`[CONFESSION] Entering channel subcommand`);
+      
       const subcommandInfo = {
         description: 'Set or view the confession channel',
         usage: '{guildprefix}confession channel [#channel]',
