@@ -52,8 +52,11 @@ async function processCommand(message, isEdit = false) {
   if (!prefixResult) return;
 
   const { prefix, content } = prefixResult;
+  console.log(`[CMD-PROCESSOR] Prefix detected: "${prefix}", Content: "${content}"`);
+  
   let args = content.trim().split(/ +/);
   let commandName = args.shift().toLowerCase();
+  console.log(`[CMD-PROCESSOR] Command name: "${commandName}", Args:`, args);
 
   // Check for guild aliases first
   const guildService = getService('guild');
@@ -90,7 +93,12 @@ async function processCommand(message, isEdit = false) {
   const command = client.commands.get(commandName) ||
                  client.commands.get(client.aliases.get(commandName));
 
-  if (!command) return;
+  if (!command) {
+    console.log(`[CMD-PROCESSOR] Command not found: ${commandName}`);
+    return;
+  }
+  
+  console.log(`[CMD-PROCESSOR] Found command: ${command.name}, executing...`);
 
 
 
