@@ -52,11 +52,8 @@ async function processCommand(message, isEdit = false) {
   if (!prefixResult) return;
 
   const { prefix, content } = prefixResult;
-  console.log(`[CMD-PROCESSOR] Prefix detected: "${prefix}", Content: "${content}"`);
-  
   let args = content.trim().split(/ +/);
   let commandName = args.shift().toLowerCase();
-  console.log(`[CMD-PROCESSOR] Command name: "${commandName}", Args:`, args);
 
   // Check for guild aliases first
   const guildService = getService('guild');
@@ -93,12 +90,7 @@ async function processCommand(message, isEdit = false) {
   const command = client.commands.get(commandName) ||
                  client.commands.get(client.aliases.get(commandName));
 
-  if (!command) {
-    console.log(`[CMD-PROCESSOR] Command not found: ${commandName}`);
-    return;
-  }
-  
-  console.log(`[CMD-PROCESSOR] Found command: ${command.name}, executing...`);
+  if (!command) return;
 
 
 
@@ -129,20 +121,15 @@ async function processCommand(message, isEdit = false) {
     // Prioritize run() for prefix commands (execute() is for slash commands)
     let commandResult;
     if (command.run) {
-      console.log(`[CMD-PROCESSOR] Executing via run() method`);
       commandResult = await command.run(client, message, args);
     } else if (command.execute) {
-      console.log(`[CMD-PROCESSOR] Executing via execute() method`);
       commandResult = await command.execute(message, args, client);
     } else {
       throw new Error(`Command ${command.name} has no execute or run method`);
     }
 
-    console.log(`[CMD-PROCESSOR] Command result:`, commandResult);
-
     // If command has autoHelp enabled (default: true) and returned false (indicating invalid usage)
     if (command.autoHelp !== false && commandResult === false) {
-      console.log(`[CMD-PROCESSOR] Command returned false, showing help`);
       await runHelpCommand(message, command.name);
     }
 

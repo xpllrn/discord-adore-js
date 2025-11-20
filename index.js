@@ -87,13 +87,9 @@ function loadCommandsFromDirectory(dirPath, relativePath = '') {
         if (command.name && command.run) {
           client.commands.set(command.name, command);
           commandCount++;
-          console.log(`✅ Loaded prefix command: ${command.name} (${relativePath}/${item})`);
           
           if (command.aliases && Array.isArray(command.aliases)) {
-            command.aliases.forEach(alias => {
-              client.aliases.set(alias, command.name);
-              console.log(`   ↳ Alias: ${alias} -> ${command.name}`);
-            });
+            command.aliases.forEach(alias => client.aliases.set(alias, command.name));
           }
         }
 

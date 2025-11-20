@@ -179,6 +179,14 @@ class GuildService extends BaseService {
         tempChannels: [],
         inviteCooldowns: []
       },
+      ConfessionSystem: {
+        enabled: false,
+        channelId: null,
+        ignoredUsers: [],
+        nextConfessionId: 1,
+        lastMessageId: null,
+        confessions: []
+      },
       TicketSystem: {
         enabled: false,
         categoryId: null,
@@ -270,11 +278,39 @@ class GuildService extends BaseService {
       let guildData = await this.get(guildId);
 
       if (!guildData) {
-        // Create default guild data ONLY if truly doesn't exist in database
-        guildData = this.getDefaultGuildData(guildId);
+        // CRITICAL: Check if guild exists in database before creating new data
+        // This prevents overwriting existing guild data when cache is empty
+        const Model = this.getModel();
+        const existsInDb = await Model.exists({ GuildID: guildId });
+        
+        if (existsInDb) {
+          // Guild exists in database but not in cache - this is a cache miss
+          // Force read from database and populate cache
+          console.log(`⚠️  [GuildService] Cache miss for guild ${guildId}, reading from database`);
+          guildData = await this.readFromDatabase(guildId);
+          
+          if (guildData) {
+            // Cache the data
+            this.cache.set(guildId, guildData);
+          } else {
+            // This should never happen - exists() returned true but findOne returned null
+            console.error(`🚨 [GuildService] CRITICAL: Guild ${guildId} exists but couldn't be read!`);
+            throw new Error(`Failed to read existing guild data for ${guildId}`);
+          }
+        } else {
+          // Guild truly doesn't exist - create new data
+          console.log(`🚨 [GuildService] CREATING NEW GUILD DATA for ${guildId}`);
+          
+          // Send webhook alert
+          const stackTrace = new Error().stack;
+          this.sendGuildAlert('NEW_GUILD_CREATED', guildId, stackTrace);
+          
+          guildData = this.getDefaultGuildData(guildId);
 
-        // Save to database and cache
-        await this.set(guildId, guildData);
+          // Save to database and cache
+          await this.set(guildId, guildData);
+          console.log(`✅ [GuildService] New guild data saved for ${guildId}`);
+        }
       } else {
         // CRITICAL: Only add missing top-level fields, DO NOT merge nested objects
         // This prevents data loss by not overwriting existing nested configurations
@@ -300,7 +336,12 @@ class GuildService extends BaseService {
         // ISSUE: Missing fields were added to memory but never saved to database
         // This caused fields to "randomly" disappear when cache expired or bot restarted
         if (hasChanges) {
-          console.log(`[GuildService] Adding missing fields to guild ${guildId}: ${addedFields.join(', ')}`);
+          console.log(`⚠️  [GuildService] Adding missing fields to guild ${guildId}: ${addedFields.join(', ')}`);
+          
+          // Send webhook alert
+          const stackTrace = new Error().stack;
+          this.sendGuildAlert('MISSING_FIELDS_ADDED', guildId, stackTrace, addedFields);
+          
           await this.set(guildId, guildData);
         }
       }
@@ -8739,6 +8780,44 @@ class GuildService extends BaseService {
         week: 0,
         month: 0
       };
+    }
+  }
+
+  /**
+   * Send guild alert to webhook
+   * @param {string} type - Alert type (NEW_GUILD_CREATED or MISSING_FIELDS_ADDED)
+   * @param {string} guildId - Guild ID
+   * @param {string} stackTrace - Stack trace
+   * @param {Array} fields - Added fields (optional)
+   */
+  sendGuildAlert(type, guildId, stackTrace, fields = []) {
+    try {
+      const logger = require('../../../utils/logger');
+      
+      if (type === 'NEW_GUILD_CREATED') {
+        logger.webhook.error(
+          new Error('New guild data created'),
+          `🚨 NEW GUILD DATA CREATED`,
+          {
+            command: 'GuildService.ensureGuildData',
+            args: `Guild ID: ${guildId}`,
+            error: `A new guild document was created. This should only happen for truly new guilds.\n\nStack trace:\n${stackTrace}`
+          }
+        );
+      } else if (type === 'MISSING_FIELDS_ADDED') {
+        logger.webhook.warn(
+          `⚠️ Missing fields added to guild ${guildId}`,
+          `Missing Fields Added`,
+          {
+            command: 'GuildService.ensureGuildData',
+            args: `Guild ID: ${guildId}\nFields: ${fields.join(', ')}`,
+            error: `Missing fields were added to an existing guild.\n\nStack trace:\n${stackTrace}`
+          }
+        );
+      }
+    } catch (error) {
+      // Silent fail - don't let webhook errors break the service
+      console.error('Failed to send guild alert webhook:', error.message);
     }
   }
 }
