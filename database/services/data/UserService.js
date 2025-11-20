@@ -2271,6 +2271,9 @@ class UserService extends BaseService {
       if (!userData.Inventory) {
         userData.Inventory = { items: [] };
       }
+      if (!userData.Inventory.items) {
+        userData.Inventory.items = [];
+      }
 
       // Check if item already exists (for stackable items)
       const existingItem = userData.Inventory.items.find(i => i.id === item.id);

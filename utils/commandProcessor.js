@@ -126,13 +126,14 @@ async function processCommand(message, isEdit = false) {
     }
 
     // Execute command (support both execute and run methods)
+    // Prioritize run() for prefix commands (execute() is for slash commands)
     let commandResult;
-    if (command.execute) {
-      console.log(`[CMD-PROCESSOR] Executing via execute() method`);
-      commandResult = await command.execute(message, args, client);
-    } else if (command.run) {
+    if (command.run) {
       console.log(`[CMD-PROCESSOR] Executing via run() method`);
       commandResult = await command.run(client, message, args);
+    } else if (command.execute) {
+      console.log(`[CMD-PROCESSOR] Executing via execute() method`);
+      commandResult = await command.execute(message, args, client);
     } else {
       throw new Error(`Command ${command.name} has no execute or run method`);
     }
