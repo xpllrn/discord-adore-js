@@ -281,21 +281,20 @@ class GuildService extends BaseService {
         // CRITICAL: Check if guild exists in database before creating new data
         // This prevents overwriting existing guild data when cache is empty
         const Model = this.getModel();
-        const existsInDb = await Model.exists({ GuildID: guildId });
         
-        if (existsInDb) {
+        // Use findOne instead of exists() to avoid false negatives
+        // exists() can return null on connection issues, causing data loss
+        const existingDoc = await Model.findOne({ GuildID: guildId }).lean().maxTimeMS(10000);
+        
+        if (existingDoc) {
           // Guild exists in database but not in cache - this is a cache miss
-          // Force read from database and populate cache
-          guildData = await this.readFromDatabase(guildId);
+          // Use the document we just fetched instead of reading again
+          guildData = existingDoc;
           
-          if (guildData) {
-            // Cache the data
-            this.cache.set(guildId, guildData);
-          } else {
-            // This should never happen - exists() returned true but findOne returned null
-            console.error(`🚨 [GuildService] CRITICAL: Guild ${guildId} exists but couldn't be read!`);
-            throw new Error(`Failed to read existing guild data for ${guildId}`);
-          }
+          // Cache the data
+          this.cache.set(guildId, guildData);
+          
+          console.log(`[GuildService] Cache miss for guild ${guildId} - loaded from database`);
         } else {
           // Guild doesn't exist in database - create new data
           // Send webhook alert
@@ -8791,25 +8790,19 @@ class GuildService extends BaseService {
       const logger = require('../../../utils/logger');
       
       if (type === 'NEW_GUILD_CREATED') {
-        logger.webhook.error(
-          new Error('New guild data created'),
-          `🚨 NEW GUILD DATA CREATED`,
-          {
-            command: 'GuildService.ensureGuildData',
-            args: `Guild ID: ${guildId}`,
-            error: `A new guild document was created. This should only happen for truly new guilds.\n\nStack trace:\n${stackTrace}`
-          }
-        );
+        // Format error message with all details
+        const errorMsg = `🚨 NEW GUILD DATA CREATED\n\nGuild ID: ${guildId}\n\nA new guild document was created. This should only happen for truly new guilds.\n\nStack trace:\n${stackTrace}`;
+        
+        // Use console.error for immediate logging
+        console.error(errorMsg);
+        
+        // Send to webhook (async, non-blocking)
+        logger.webhook.error(errorMsg).catch(() => {});
       } else if (type === 'MISSING_FIELDS_ADDED') {
-        logger.webhook.warn(
-          `⚠️ Missing fields added to guild ${guildId}`,
-          `Missing Fields Added`,
-          {
-            command: 'GuildService.ensureGuildData',
-            args: `Guild ID: ${guildId}\nFields: ${fields.join(', ')}`,
-            error: `Missing fields were added to an existing guild.\n\nStack trace:\n${stackTrace}`
-          }
-        );
+        const warnMsg = `⚠️ Missing fields added to guild ${guildId}\n\nFields: ${fields.join(', ')}\n\nStack trace:\n${stackTrace}`;
+        
+        console.warn(warnMsg);
+        logger.webhook.warn(warnMsg).catch(() => {});
       }
     } catch (error) {
       // Silent fail - don't let webhook errors break the service
