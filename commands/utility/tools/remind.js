@@ -18,7 +18,50 @@ module.exports = {
     // Ensure user data exists in the database
     await ensureUserData(message.author.id);
 
-    if (args[0] === 'list' || !args[0]) {
+    if (args[0] === 'add') {
+      const subcommandInfo = {
+        description: 'Create a new reminder',
+        usage: '{guildprefix}remind add (duration) (content) (--daily)',
+        aliases: [],
+        parameters: ['duration (optional)', 'content', '--daily (optional)'],
+        example: '{guildprefix}remind add 1h Take a break --daily'
+      };
+
+      // Handle "add" subcommand - shift args and process normally
+      args.shift(); // Remove "add" from args
+      // Fall through to the reminder creation logic below
+
+    } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
+      const subcommandInfo = {
+        description: 'Remove a specific reminder',
+        usage: '{guildprefix}remind remove [id]',
+        aliases: ['delete', 'rm', 'del'],
+        parameters: ['id'],
+        example: '{guildprefix}remind remove 1'
+      };
+
+      // Remove a specific reminder
+      const reminderId = parseInt(args[1]);
+
+      if (!reminderId || isNaN(reminderId)) {
+        return runHelpCommand(message, 'remind');
+      }
+
+      try {
+        const userService = getService('user');
+        const removedReminder = await userService.removeReminder(message.author.id, reminderId);
+
+        if (removedReminder) {
+          return embeds.success(message, `Removed reminder **#${reminderId}**`);
+        } else {
+          return embeds.warn(message, `No reminder found with ID **#${reminderId}**`);
+        }
+      } catch (error) {
+        logger.webhook.error(error, message);
+        return embeds.deny(message, 'Failed to remove reminder');
+      }
+
+    } else if (args[0] === 'list' || !args[0]) {
       const subcommandInfo = {
         description: 'List all your reminders',
         usage: '{guildprefix}remind list',
@@ -64,36 +107,6 @@ module.exports = {
         return embeds.deny(message, 'Failed to retrieve reminders');
       }
 
-    } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
-      const subcommandInfo = {
-        description: 'Remove a specific reminder',
-        usage: '{guildprefix}remind remove [id]',
-        aliases: ['delete', 'rm', 'del'],
-        parameters: ['id'],
-        example: '{guildprefix}remind remove 1'
-      };
-
-      // Remove a specific reminder
-      const reminderId = parseInt(args[1]);
-
-      if (!reminderId || isNaN(reminderId)) {
-        return runHelpCommand(message, 'remind');
-      }
-
-      try {
-        const userService = getService('user');
-        const removedReminder = await userService.removeReminder(message.author.id, reminderId);
-
-        if (removedReminder) {
-          return embeds.success(message, `Removed reminder **#${reminderId}**`);
-        } else {
-          return embeds.warn(message, `No reminder found with ID **#${reminderId}**`);
-        }
-      } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to remove reminder');
-      }
-
     } else if (args[0] === 'reset' || args[0] === 'clear') {
       const subcommandInfo = {
         description: 'Clear all your reminders',
@@ -126,19 +139,6 @@ module.exports = {
         logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to clear reminders');
       }
-
-    } else if (args[0] === 'add') {
-      const subcommandInfo = {
-        description: 'Create a new reminder',
-        usage: '{guildprefix}remind add [duration] [content] [--daily]',
-        aliases: [],
-        parameters: ['duration (optional)', 'content', '--daily (optional)'],
-        example: '{guildprefix}remind add 1h Take a break --daily'
-      };
-
-      // Handle "add" subcommand - shift args and process normally
-      args.shift(); // Remove "add" from args
-      // Fall through to the reminder creation logic below
     }
 
     // Create a new reminder (handles both direct usage and "add" subcommand)

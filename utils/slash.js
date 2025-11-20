@@ -8,6 +8,7 @@
  *   node utils/slash.js              - Clear and deploy to dev server (instant, default)
  *   node utils/slash.js --global     - Deploy globally (takes up to 1 hour)
  *   node utils/slash.js --clear      - Clear dev server commands only
+ *   node utils/slash.js --clear-all  - Clear ALL commands (dev server + global) - removes duplicates
  */
 
 // Initialize module aliases first (required for slash commands that use @services, etc.)
@@ -21,6 +22,7 @@ const config = require('../config/setup');
 const args = process.argv.slice(2);
 const isGlobalDeploy = args.includes('--global');
 const isClearOnly = args.includes('--clear');
+const isClearAll = args.includes('--clear-all');
 const isGuildDeploy = !isGlobalDeploy; // Default to guild deploy
 
 const commands = [];
@@ -95,12 +97,50 @@ const rest = new REST().setToken(config.bot.token);
 (async () => {
   try {
     // Validate dev server ID for guild operations
-    if (isGuildDeploy && !config.bot.devServerId) {
+    if ((isGuildDeploy || isClearOnly || isClearAll) && !config.bot.devServerId) {
       console.error('❌ SERVER_ID is not set in environment variables');
       process.exit(1);
     }
 
-    // If --clear flag is used, only clear and exit
+    // If --clear-all flag is used, clear everything multiple times to remove duplicates
+    if (isClearAll) {
+      console.log('\n🗑️  Clearing ALL commands (this will remove duplicates)...\n');
+      
+      // Clear dev server commands multiple times
+      console.log('Clearing dev server commands (pass 1/3)...');
+      await rest.put(
+        Routes.applicationGuildCommands(config.bot.clientId, config.bot.devServerId),
+        { body: [] }
+      );
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Clearing dev server commands (pass 2/3)...');
+      await rest.put(
+        Routes.applicationGuildCommands(config.bot.clientId, config.bot.devServerId),
+        { body: [] }
+      );
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Clearing dev server commands (pass 3/3)...');
+      await rest.put(
+        Routes.applicationGuildCommands(config.bot.clientId, config.bot.devServerId),
+        { body: [] }
+      );
+      
+      // Also clear global commands
+      console.log('\nClearing global commands...');
+      await rest.put(
+        Routes.applicationCommands(config.bot.clientId),
+        { body: [] }
+      );
+      
+      console.log('\n✅ Successfully cleared all commands (dev server + global).');
+      console.log('💡 All duplicate commands should now be removed.\n');
+      console.log('Run "node utils/slash.js" to deploy fresh commands.\n');
+      return;
+    }
+
+    // If --clear flag is used, only clear dev server and exit
     if (isClearOnly) {
       console.log('\n🗑️  Clearing dev server commands...');
       await rest.put(
