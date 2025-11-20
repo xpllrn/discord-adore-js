@@ -48,17 +48,17 @@ class GuildService extends BaseService {
       // 
       // NEW BEHAVIOR: Check if document exists first, only update if it does
       // This prevents accidental recreation of guild documents
-      
+
       const exists = await Model.exists(query);
-      
+
       if (!exists) {
         // Document doesn't exist - this should only happen for truly new guilds
         // Get guild name if available from metadata
         const guildName = data._guildName || 'Unknown';
         delete updateData._guildName; // Remove metadata before saving
-        
+
         console.log(`New guild added for ${key} (${guildName})`);
-        
+
         // Create with full data including timestamps
         await Model.create({
           [this.keyField]: key,
@@ -68,13 +68,13 @@ class GuildService extends BaseService {
         // Document exists - safe to update
         // Remove metadata if present
         delete updateData._guildName;
-        
+
         await Model.updateOne(
           query,
           { $set: updateData }
         );
       }
-      
+
     } catch (error) {
       throw new DatabaseWriteError(`Failed to write guild data for ${key}`, error);
     }
@@ -281,26 +281,70 @@ class GuildService extends BaseService {
         // CRITICAL: Check if guild exists in database before creating new data
         // This prevents overwriting existing guild data when cache is empty
         const Model = this.getModel();
-        
-        // Use findOne instead of exists() to avoid false negatives
-        // exists() can return null on connection issues, causing data loss
-        const existingDoc = await Model.findOne({ GuildID: guildId }).lean().maxTimeMS(10000);
-        
+
+        // ⚠️ CRITICAL FIX (Nov 21, 2025): Properly handle database query failures
+        // 
+        // ISSUE: Database timeouts/connection errors were returning null, causing
+        // the system to treat existing guilds as "new" and recreate them.
+        // 
+        // ROOT CAUSE: findOne() can return null in TWO scenarios:
+        //   1. Guild genuinely doesn't exist (CORRECT - create new data)
+        //   2. Query timed out or database connection failed (INCORRECT - should throw error)
+        // 
+        // FIX: Wrap query in try-catch to distinguish between these scenarios
+        let existingDoc = null;
+        let queryFailed = false;
+
+        try {
+          // Use findOne instead of exists() to avoid false negatives
+          // exists() can return null on connection issues, causing data loss
+          existingDoc = await Model.findOne({ GuildID: guildId }).lean().maxTimeMS(10000);
+        } catch (queryError) {
+          queryFailed = true;
+
+          // Check if this is a timeout or connection error
+          const isTimeoutError =
+            queryError.name === 'MongooseError' && queryError.message.includes('timed out') ||
+            queryError.name === 'MongoTimeoutError' ||
+            queryError.message?.toLowerCase().includes('timeout');
+
+          const isConnectionError =
+            queryError.name === 'MongoNetworkError' ||
+            queryError.message?.toLowerCase().includes('connection') ||
+            queryError.code === 'ECONNREFUSED' ||
+            queryError.code === 'ETIMEDOUT';
+
+          if (isTimeoutError || isConnectionError) {
+            // Database is unreachable - DO NOT create new data
+            console.error(`[GuildService] Database query failed for guild ${guildId}: ${queryError.message}`);
+            throw new DatabaseWriteError(
+              `Database query failed for guild ${guildId}. Cannot safely determine if guild exists.`,
+              queryError
+            );
+          }
+
+          // For other errors, rethrow to be handled by outer catch
+          throw queryError;
+        }
+
         if (existingDoc) {
           // Guild exists in database but not in cache - this is a cache miss
           // Use the document we just fetched instead of reading again
           guildData = existingDoc;
-          
+
           // Cache the data
           this.cache.set(guildId, guildData);
-          
+
           console.log(`[GuildService] Cache miss for guild ${guildId} - loaded from database`);
         } else {
-          // Guild doesn't exist in database - create new data
+          // Query succeeded AND returned null - guild genuinely doesn't exist
+          // This is the ONLY case where we should create new data
+          console.log(`[GuildService] Guild ${guildId} not found in database - creating new data`);
+
           // Send webhook alert
           const stackTrace = new Error().stack;
           this.sendGuildAlert('NEW_GUILD_CREATED', guildId, stackTrace);
-          
+
           guildData = this.getDefaultGuildData(guildId);
 
           // Save to database and cache
@@ -310,10 +354,10 @@ class GuildService extends BaseService {
         // CRITICAL: Only add missing top-level fields, DO NOT merge nested objects
         // This prevents data loss by not overwriting existing nested configurations
         const defaults = this.getDefaultGuildData(guildId);
-        
+
         let hasChanges = false;
         const addedFields = [];
-        
+
         // Only add fields that are completely missing (undefined)
         // DO NOT touch existing fields, even if they're nested objects
         for (const [key, defaultValue] of Object.entries(defaults)) {
@@ -326,17 +370,17 @@ class GuildService extends BaseService {
           // ❌ OLD CODE: guildData[key] = { ...defaultValue, ...guildData[key] }
           // ✅ NEW BEHAVIOR: If a field exists, we trust it's correct and don't modify it
         }
-        
+
         // ⚠️ CRITICAL FIX (Nov 18, 2025): Save changes if we added missing fields!
         // ISSUE: Missing fields were added to memory but never saved to database
         // This caused fields to "randomly" disappear when cache expired or bot restarted
         if (hasChanges) {
           console.log(`⚠️  [GuildService] Adding missing fields to guild ${guildId}: ${addedFields.join(', ')}`);
-          
+
           // Send webhook alert
           const stackTrace = new Error().stack;
           this.sendGuildAlert('MISSING_FIELDS_ADDED', guildId, stackTrace, addedFields);
-          
+
           await this.set(guildId, guildData);
         }
       }
@@ -678,12 +722,12 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const oldChannel = guildData.WelcomeChannel;
       const oldMessage = guildData.WelcomeMessage;
-      
+
       guildData.WelcomeChannel = channelId;
       guildData.WelcomeMessage = message.trim();
 
       await this.set(guildId, guildData);
-      
+
       return true;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -1651,7 +1695,7 @@ class GuildService extends BaseService {
       const beforeCount = autoRoles.length;
 
       guildData.AutoRoles = autoRoles.filter(id => id !== roleId);
-      
+
       await this.set(guildId, guildData);
 
       return true;
@@ -3341,7 +3385,7 @@ class GuildService extends BaseService {
           'UserLevels.userId': userId
         },
         {
-          $set: { 
+          $set: {
             'UserLevels.$.voiceJoinTime': joinTime,
             'UserLevels.$.lastVoiceXPTime': joinTime
           }
@@ -3403,7 +3447,7 @@ class GuildService extends BaseService {
           'UserLevels.userId': userId
         },
         {
-          $set: { 
+          $set: {
             'UserLevels.$.voiceJoinTime': null
           }
         }
@@ -3500,7 +3544,7 @@ class GuildService extends BaseService {
           'UserLevels.userId': userId
         },
         {
-          $set: { 
+          $set: {
             'UserLevels.$.lastVoiceXPTime': time
           }
         }
@@ -6950,13 +6994,13 @@ class GuildService extends BaseService {
         if (br.deleted === true || !br.userId) {
           return true;
         }
-        
+
         // Check if role hasn't been used recently
         const lastUsed = br.lastUsed || br.lastModified || br.createdAt;
         if (!lastUsed) {
           return true; // No usage data, consider it unused
         }
-        
+
         return new Date(lastUsed) < cutoffDate;
       });
     } catch (error) {
@@ -7580,7 +7624,7 @@ class GuildService extends BaseService {
       const reactionRoles = guildData.ReactionRoles || [];
       const initialLength = reactionRoles.length;
 
-      guildData.ReactionRoles = reactionRoles.filter(rr => 
+      guildData.ReactionRoles = reactionRoles.filter(rr =>
         !(rr.messageId === messageId && rr.reaction === reaction)
       );
 
@@ -7716,7 +7760,7 @@ class GuildService extends BaseService {
       const buttonRoles = guildData.ButtonRoles || [];
       const initialLength = buttonRoles.length;
 
-      guildData.ButtonRoles = buttonRoles.filter(br => 
+      guildData.ButtonRoles = buttonRoles.filter(br =>
         !(br.messageId === messageId && br.roleId === roleId)
       );
 
@@ -7990,8 +8034,8 @@ class GuildService extends BaseService {
       }
 
       const nameLower = name.toLowerCase();
-      return guildData.Webhooks.some(w => 
-        w.name.toLowerCase() === nameLower && 
+      return guildData.Webhooks.some(w =>
+        w.name.toLowerCase() === nameLower &&
         (!excludeId || w.webhookId !== excludeId)
       );
     } catch (error) {
@@ -8388,8 +8432,8 @@ class GuildService extends BaseService {
       today.setHours(0, 0, 0, 0);
 
       // Find existing stat for this user today
-      const existingStat = messageStats.find(stat => 
-        stat.userId === userId && 
+      const existingStat = messageStats.find(stat =>
+        stat.userId === userId &&
         new Date(stat.date).toDateString() === today.toDateString()
       );
 
@@ -8515,8 +8559,8 @@ class GuildService extends BaseService {
       today.setHours(0, 0, 0, 0);
 
       // Find existing stat for this user today
-      const existingStat = voiceStats.find(stat => 
-        stat.userId === userId && 
+      const existingStat = voiceStats.find(stat =>
+        stat.userId === userId &&
         new Date(stat.date).toDateString() === today.toDateString()
       );
 
@@ -8630,13 +8674,13 @@ class GuildService extends BaseService {
       const guildData = await this.ensureGuildData(guildId);
       const userLevels = guildData.UserLevels || [];
       const userData = userLevels.find(u => u.userId === userId);
-      
+
       if (userData) {
         userData.voiceJoinTime = null;
         guildData.UserLevels = userLevels;
         await this.set(guildId, guildData);
       }
-      
+
       return true;
     } catch (error) {
       console.error(`Error clearing voice join time for user ${userId} in guild ${guildId}:`, error.message);
@@ -8689,7 +8733,7 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
       const userLevels = guildData.UserLevels || [];
-      
+
       let userData = userLevels.find(u => u.userId === userId);
       if (!userData) {
         userData = {
@@ -8788,21 +8832,21 @@ class GuildService extends BaseService {
   sendGuildAlert(type, guildId, stackTrace, fields = []) {
     try {
       const logger = require('../../../utils/logger');
-      
+
       if (type === 'NEW_GUILD_CREATED') {
-        // Format error message with all details
-        const errorMsg = `🚨 NEW GUILD DATA CREATED\n\nGuild ID: ${guildId}\n\nA new guild document was created. This should only happen for truly new guilds.\n\nStack trace:\n${stackTrace}`;
-        
-        // Use console.error for immediate logging
-        console.error(errorMsg);
-        
+        // Format log message with all details
+        const logMsg = `🚨 NEW GUILD DATA CREATED - Guild ID: ${guildId}\n\nA new guild document was created. This should only happen for truly new guilds.\n\nStack trace:\n${stackTrace}`;
+
+        // Use console.log instead of console.error to avoid confusion
+        console.log(logMsg);
+
         // Send to webhook (async, non-blocking)
-        logger.webhook.error(errorMsg).catch(() => {});
+        logger.webhook.error(logMsg).catch(() => { });
       } else if (type === 'MISSING_FIELDS_ADDED') {
         const warnMsg = `⚠️ Missing fields added to guild ${guildId}\n\nFields: ${fields.join(', ')}\n\nStack trace:\n${stackTrace}`;
-        
+
         console.warn(warnMsg);
-        logger.webhook.warn(warnMsg).catch(() => {});
+        logger.webhook.warn(warnMsg).catch(() => { });
       }
     } catch (error) {
       // Silent fail - don't let webhook errors break the service
