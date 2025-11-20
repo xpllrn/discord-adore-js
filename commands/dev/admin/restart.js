@@ -14,29 +14,59 @@ module.exports = {
     if (!await hasPermissionLevel(message, 'dev')) return;
 
     try {
-      const responses = [
-        'yes master, rebooting adore now',
-        'okay mommy, restarting right away',
-        'as you say daddy, rebooting adore',
-        'shh kitten, already done',
-        'on it boss, restarting adore',
-        'right away master, rebooting now',
-        'bet, restarting adore rn',
-        'aye aye captain, restarting adore'
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      await message.channel.send(randomResponse);
+      const { EmbedBuilder } = require('discord.js');
+      const config = require('../../../config/setup');
       
-      // Give time for message to send
-      setTimeout(async () => {
-        try {
-          await execAsync('pm2 restart adore');
-        } catch (error) {
-          console.error('Failed to restart via PM2:', error.message);
-          // Fallback: exit process (PM2 will restart automatically)
-          process.exit(0);
+      // Create initial embed
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.embed)
+        .setDescription('```\n[░░░░░░░░░░░░░░░░░░░░] 0%\nInitializing restart...\n```');
+      
+      const msg = await message.channel.send({ embeds: [embed] });
+      
+      // Update progress (safe rate: 1 edit per 2 seconds)
+      const steps = [
+        { progress: 20, text: 'Saving state...' },
+        { progress: 40, text: 'Closing connections...' },
+        { progress: 60, text: 'Shutting down...' },
+        { progress: 80, text: 'Restarting process...' },
+        { progress: 100, text: 'Complete!' }
+      ];
+      
+      let currentStep = 0;
+      const updateInterval = setInterval(async () => {
+        if (currentStep >= steps.length) {
+          clearInterval(updateInterval);
+          return;
         }
-      }, 1000);
+        
+        const step = steps[currentStep];
+        const filled = Math.floor(20 * (step.progress / 100));
+        const empty = 20 - filled;
+        const bar = '█'.repeat(filled) + '░'.repeat(empty);
+        
+        embed.setDescription(`\`\`\`\n[${bar}] ${step.progress}%\n${step.text}\n\`\`\``);
+        
+        try {
+          await msg.edit({ embeds: [embed] });
+        } catch (error) {
+          // Ignore rate limit errors
+        }
+        
+        currentStep++;
+        
+        // Trigger restart at 60%
+        if (step.progress === 60) {
+          setTimeout(async () => {
+            try {
+              await execAsync('pm2 restart adore');
+            } catch (error) {
+              console.error('Failed to restart via PM2:', error.message);
+              process.exit(0);
+            }
+          }, 500);
+        }
+      }, 1500); // Update every 1.5 seconds (safe for rate limits)
       
     } catch (error) {
       return message.channel.send('I **failed** master, I am sorry');
