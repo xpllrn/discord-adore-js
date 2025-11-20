@@ -20,17 +20,17 @@ module.exports = {
       // Create initial embed
       const embed = new EmbedBuilder()
         .setColor(config.colors.embed)
-        .setDescription('```\n[░░░░░░░░░░░░░░░░░░░░] 0%\nInitializing restart...\n```');
+        .setDescription('```\n[░░░░░░░░░░░░░░░░░░░░] 0% Initializing restart... ```');
       
       const msg = await message.channel.send({ embeds: [embed] });
       
       // Update progress (safe rate: 1 edit per 2 seconds)
       const steps = [
-        { progress: 20, text: 'Saving state...' },
-        { progress: 40, text: 'Closing connections...' },
-        { progress: 60, text: 'Shutting down...' },
-        { progress: 80, text: 'Restarting process...' },
-        { progress: 100, text: 'Complete!' }
+        { progress: 20, text: 'saving state...' },
+        { progress: 40, text: 'closing connections...' },
+        { progress: 60, text: 'shutting down...' },
+        { progress: 80, text: 'restarting process...' },
+        { progress: 100, text: 'adore is up!' }
       ];
       
       let currentStep = 0;
