@@ -23,23 +23,52 @@ const isGuildDeploy = args.includes('--guild');
 const isClear = args.includes('--clear');
 
 const commands = [];
-const commandSlashPath = path.join(__dirname, '../commandSlash');
+const commandsPath = path.join(__dirname, '../commands');
+
+// Recursively load all slash command files from commands folder
+function loadSlashCommands(dirPath, relativePath = '') {
+  const { statSync } = require('fs');
+  const items = readdirSync(dirPath);
+
+  for (const item of items) {
+    const fullPath = path.join(dirPath, item);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      loadSlashCommands(fullPath, path.join(relativePath, item));
+    } else if (item.endsWith('.js') && !item.startsWith('_')) {
+      try {
+        const command = require(fullPath);
+        
+        if ('data' in command && 'execute' in command) {
+          const commandPath = relativePath ? `${relativePath}/${item}` : item;
+          
+          // Support both single command and array of commands
+          if (Array.isArray(command.data)) {
+            command.data.forEach(slashData => {
+              commands.push(slashData.toJSON());
+              console.log(`✅ Loaded slash command: ${slashData.name} (${commandPath})`);
+            });
+          } else {
+            commands.push(command.data.toJSON());
+            console.log(`✅ Loaded slash command: ${command.data.name} (${commandPath})`);
+          }
+        }
+      } catch (error) {
+        console.error(`⚠️  Error loading ${relativePath}/${item}:`, error.message);
+      }
+    }
+  }
+}
 
 // Load all slash command files
 if (!isClear) {
   try {
-    const commandFiles = readdirSync(commandSlashPath).filter(file => file.endsWith('.js'));
-
-    for (const file of commandFiles) {
-      const filePath = path.join(commandSlashPath, file);
-      const command = require(filePath);
-      
-      if ('data' in command && 'execute' in command) {
-        commands.push(command.data.toJSON());
-        console.log(`✅ Loaded slash command: ${command.data.name}`);
-      } else {
-        console.log(`⚠️  Skipped ${file}: missing 'data' or 'execute' property`);
-      }
+    loadSlashCommands(commandsPath);
+    
+    if (commands.length === 0) {
+      console.log('⚠️  No slash commands found in commands folder.');
+      console.log('💡 Make sure your commands export both "data" and "execute" properties.');
     }
   } catch (error) {
     console.error('Error loading slash commands:', error);

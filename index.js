@@ -64,6 +64,7 @@ const path = require('path');
 function loadCommandsFromDirectory(dirPath, relativePath = '') {
   const items = readdirSync(dirPath);
   let commandCount = 0;
+  let slashCommandCount = 0;
   let failedCommands = [];
 
   for (const item of items) {
@@ -72,28 +73,49 @@ function loadCommandsFromDirectory(dirPath, relativePath = '') {
 
     if (stat.isDirectory()) {
       const result = loadCommandsFromDirectory(fullPath, path.join(relativePath, item));
-      commandCount += result.commandCount || result;
+      commandCount += result.commandCount || 0;
+      slashCommandCount += result.slashCommandCount || 0;
       if (result.failedCommands) {
         failedCommands = failedCommands.concat(result.failedCommands);
       }
     } else if (item.endsWith('.js') && !item.startsWith('_')) {
       try {
         const commandPath = path.resolve(fullPath);
-        let pull = require(commandPath);
+        let command = require(commandPath);
 
-        if (pull.name) {
-          client.commands.set(pull.name, pull);
+        // Load PREFIX command
+        if (command.name && command.run) {
+          client.commands.set(command.name, command);
           commandCount++;
-        } else {
-          // Command file exists but has no name property
-          const errorMsg = `Command file ${relativePath}/${item} has no name property`;
-          logger.console.warn(`⚠️  ${errorMsg}`);
-          failedCommands.push(`${relativePath}/${item} - No name property`);
+          
+          if (command.aliases && Array.isArray(command.aliases)) {
+            command.aliases.forEach(alias => client.aliases.set(alias, command.name));
+          }
         }
 
-        if (pull.aliases && Array.isArray(pull.aliases)) {
-          pull.aliases.forEach(alias => client.aliases.set(alias, pull.name));
+        // Load SLASH command (same file can have both!)
+        // Support both single command and array of commands
+        if (command.data && command.execute) {
+          if (Array.isArray(command.data)) {
+            // Multiple slash commands in one file
+            command.data.forEach(slashData => {
+              client.slashCommands.set(slashData.name, { data: slashData, execute: command.execute });
+              slashCommandCount++;
+            });
+          } else {
+            // Single slash command
+            client.slashCommands.set(command.data.name, command);
+            slashCommandCount++;
+          }
         }
+
+        // Warn if file has neither format
+        if (!command.name && !command.data) {
+          const errorMsg = `Command file ${relativePath}/${item} has no name or data property`;
+          logger.console.warn(`⚠️  ${errorMsg}`);
+          failedCommands.push(`${relativePath}/${item} - No command properties`);
+        }
+
       } catch (error) {
         const errorMsg = `Failed to load command: ${relativePath}/${item} - ${error.message}`;
         logger.console.error(`❌ ${errorMsg}`);
@@ -108,42 +130,16 @@ function loadCommandsFromDirectory(dirPath, relativePath = '') {
     }
   }
 
-  return { commandCount, failedCommands };
+  return { commandCount, slashCommandCount, failedCommands };
 }
 
 const commandResult = loadCommandsFromDirectory('./commands/');
-const commandCount = commandResult.commandCount || commandResult;
+const commandCount = commandResult.commandCount || 0;
+const slashCommandCount = commandResult.slashCommandCount || 0;
 const failedCommands = commandResult.failedCommands || [];
 client.commandCount = commandCount;
-client.failedCommands = failedCommands;
-
-// Load slash commands
-const commandSlashPath = path.join(__dirname, 'commandSlash');
-let slashCommandCount = 0;
-try {
-  if (require('fs').existsSync(commandSlashPath)) {
-    const slashCommandFiles = readdirSync(commandSlashPath).filter(file => file.endsWith('.js'));
-    
-    for (const file of slashCommandFiles) {
-      try {
-        const filePath = path.join(commandSlashPath, file);
-        const command = require(filePath);
-        
-        if ('data' in command && 'execute' in command) {
-          client.slashCommands.set(command.data.name, command);
-          slashCommandCount++;
-        } else {
-          logger.console.warn(`⚠️  Slash command ${file} is missing 'data' or 'execute' property`);
-        }
-      } catch (error) {
-        logger.console.error(`❌ Failed to load slash command: ${file} - ${error.message}`);
-      }
-    }
-  }
-} catch (error) {
-  logger.console.warn('⚠️  No commandSlash directory found');
-}
 client.slashCommandCount = slashCommandCount;
+client.failedCommands = failedCommands;
 
 require('./handlers/events')(client);
 
