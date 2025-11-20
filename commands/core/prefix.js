@@ -10,7 +10,10 @@ module.exports = {
   isGroupCommand: true,
 
   run: async (_, message, args) => {
-    if (!args[0]) {
+    // Normalize subcommand to lowercase
+    const subcommand = args[0]?.toLowerCase();
+
+    if (!subcommand) {
       const subcommandInfo = {
         description: 'Shows the current server prefix',
         usage: '{guildprefix}prefix',
@@ -30,7 +33,7 @@ module.exports = {
     }
 
     // Handle subcommands
-    if (args[0] === 'set') {
+    if (subcommand === 'set') {
       const subcommandInfo = {
         description: 'Sets a new prefix for the server',
         usage: '{guildprefix}prefix set [prefix]',
@@ -41,7 +44,7 @@ module.exports = {
 
       return handleSetGuildPrefix(message, args[1]);
       
-    } else if (args[0] === 'remove' || args[0] === 'reset' || args[0] === 'default') {
+    } else if (subcommand === 'remove' || subcommand === 'reset' || subcommand === 'default') {
       const subcommandInfo = {
         description: 'Removes the custom prefix and resets to default',
         usage: '{guildprefix}prefix remove',

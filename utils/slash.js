@@ -5,9 +5,9 @@
  * Run this whenever you add/modify/remove slash commands.
  * 
  * Usage:
- *   node utils/slash.js              - Deploy globally (takes up to 1 hour)
- *   node utils/slash.js --guild      - Deploy to dev server (instant)
- *   node utils/slash.js --clear      - Clear all commands
+ *   node utils/slash.js              - Clear and deploy to dev server (instant, default)
+ *   node utils/slash.js --global     - Deploy globally (takes up to 1 hour)
+ *   node utils/slash.js --clear      - Clear dev server commands only
  */
 
 // Initialize module aliases first (required for slash commands that use @services, etc.)
@@ -19,8 +19,9 @@ const path = require('path');
 const config = require('../config/setup');
 
 const args = process.argv.slice(2);
-const isGuildDeploy = args.includes('--guild');
-const isClear = args.includes('--clear');
+const isGlobalDeploy = args.includes('--global');
+const isClearOnly = args.includes('--clear');
+const isGuildDeploy = !isGlobalDeploy; // Default to guild deploy
 
 const commands = [];
 const commandsPath = path.join(__dirname, '../commands');
@@ -62,7 +63,7 @@ function loadSlashCommands(dirPath, relativePath = '') {
 }
 
 // Load all slash command files
-if (!isClear) {
+if (!isClearOnly) {
   try {
     loadSlashCommands(commandsPath);
     
@@ -93,35 +94,37 @@ const rest = new REST().setToken(config.bot.token);
 // Deploy commands
 (async () => {
   try {
-    if (isClear) {
-      console.log('\n🗑️  Clearing all application (/) commands...');
-      
-      if (isGuildDeploy) {
-        await rest.put(
-          Routes.applicationGuildCommands(config.bot.clientId, config.bot.devServerId),
-          { body: [] }
-        );
-        console.log('✅ Successfully cleared guild commands.\n');
-      } else {
-        await rest.put(
-          Routes.applicationCommands(config.bot.clientId),
-          { body: [] }
-        );
-        console.log('✅ Successfully cleared global commands.\n');
-      }
+    // Validate dev server ID for guild operations
+    if (isGuildDeploy && !config.bot.devServerId) {
+      console.error('❌ SERVER_ID is not set in environment variables');
+      process.exit(1);
+    }
+
+    // If --clear flag is used, only clear and exit
+    if (isClearOnly) {
+      console.log('\n🗑️  Clearing dev server commands...');
+      await rest.put(
+        Routes.applicationGuildCommands(config.bot.clientId, config.bot.devServerId),
+        { body: [] }
+      );
+      console.log('✅ Successfully cleared dev server commands.\n');
       return;
     }
 
-    console.log(`\n🚀 Started refreshing ${commands.length} application (/) commands.`);
+    // Step 1: Clear old commands from dev server
+    console.log('\n🗑️  Clearing old dev server commands...');
+    await rest.put(
+      Routes.applicationGuildCommands(config.bot.clientId, config.bot.devServerId),
+      { body: [] }
+    );
+    console.log('✅ Cleared old commands.\n');
+
+    // Step 2: Deploy new commands
+    console.log(`🚀 Started refreshing ${commands.length} application (/) commands.`);
     
     let data;
     if (isGuildDeploy) {
-      if (!config.bot.devServerId) {
-        console.error('❌ SERVER_ID is not set in environment variables');
-        process.exit(1);
-      }
-      
-      console.log(`📍 Deploying to guild: ${config.bot.devServerId} (instant)`);
+      console.log(`📍 Deploying to dev server: ${config.bot.devServerId} (instant)`);
       
       // Deploy to specific guild (instant)
       data = await rest.put(
@@ -148,9 +151,9 @@ const rest = new REST().setToken(config.bot.token);
     
     console.log('\n✨ Slash commands are now live!\n');
     
-    if (!isGuildDeploy) {
+    if (isGlobalDeploy) {
       console.log('⏰ Note: Global commands may take up to 1 hour to appear in all servers.');
-      console.log('💡 Tip: Use --guild flag for instant deployment to dev server during testing.\n');
+      console.log('💡 Tip: Run without --global flag for instant deployment to dev server.\n');
     }
   } catch (error) {
     console.error('❌ Error deploying slash commands:', error);

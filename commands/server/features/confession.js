@@ -105,15 +105,18 @@ async function submitConfession(context, confessionText) {
 module.exports = {
   // PREFIX COMMAND
   name: "confession",
-  aliases: ['confess'],
-  description: "Manage the confession system or submit a confession",
+  aliases: [],
+  description: "Manage the confession system",
   permission: 'Manage Server',
   isGroupCommand: true,
   run: async (client, message, args) => {
     try {
       const confessionService = getService('confession');
+      
+      // Normalize subcommand to lowercase
+      const subcommand = args[0]?.toLowerCase();
 
-    if (args[0] === 'channel') {
+    if (subcommand === 'channel') {
       const subcommandInfo = {
         description: 'Set or view the confession channel',
         usage: '{guildprefix}confession channel [#channel]',
@@ -170,7 +173,7 @@ module.exports = {
       
       return embeds.success(message, `Set ${channel} as the confession channel and sent the confession button`);
 
-    } else if (args[0] === 'ignore') {
+    } else if (subcommand === 'ignore') {
       const subcommandInfo = {
         description: 'Add or remove users from the confession ignore list',
         usage: '{guildprefix}confession ignore [@user]',
@@ -206,7 +209,7 @@ module.exports = {
         return embeds.success(message, `Added ${user} to the confession ignore list`);
       }
 
-    } else if (args[0] === 'config') {
+    } else if (subcommand === 'config') {
       const subcommandInfo = {
         description: 'View the confession system configuration',
         usage: '{guildprefix}confession config',
@@ -254,12 +257,21 @@ module.exports = {
 
       return message.channel.send({ embeds: [embed] });
 
-    } else {
-      // If no subcommand, treat as confession submission
-      if (args.length > 0) {
-        const confessionText = args.join(' ');
-        return submitConfession(message, confessionText);
+    } else if (subcommand === 'toggle' || subcommand === 'enable' || subcommand === 'disable') {
+      // Check permissions for config commands
+      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+        return embeds.deny(message, 'You need **Manage Server** permission to use this command');
       }
+      
+      const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
+      const newStatus = subcommand === 'disable' ? false : !confessionConfig.enabled;
+      
+      await confessionService.setConfessionEnabled(message.guild.id, newStatus);
+      
+      return embeds.success(message, `Confession system ${newStatus ? 'enabled' : 'disabled'}`);
+
+    } else {
+      // Show help for invalid subcommand
       return runHelpCommand(message, 'confession');
     }
     } catch (error) {
