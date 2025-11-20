@@ -1,0 +1,573 @@
+================================================================================
+DETAILED COMMAND REORGANIZATION - SUBFOLDER STRUCTURE
+================================================================================
+Generated: 2025-11-20
+Purpose: Highly organized subfolder structure for all 137+ commands
+
+================================================================================
+PROPOSED NEW STRUCTURE (With Deep Subfolders)
+================================================================================
+
+commands/
+│
+├── core/                           # Essential bot commands (5 files)
+│   ├── help.js
+│   ├── ping.js
+│   ├── prefix.js
+│   ├── botinfo.js
+│   └── invite.js
+│
+├── moderation/                     # All moderation commands (20 files)
+│   ├── ban/
+│   │   ├── ban.js
+│   │   └── unban.js
+│   ├── kick/
+│   │   └── kick.js
+│   ├── mute/
+│   │   ├── mute.js                # Regular mute (timeout)
+│   │   ├── unmute.js
+│   │   ├── imute.js               # Image mute
+│   │   ├── iunmute.js
+│   │   ├── rmute.js               # Reaction mute
+│   │   └── runmute.js
+│   ├── warn/
+│   │   ├── warn.js
+│   │   └── unwarn.js
+│   ├── jail/
+│   │   ├── jail.js
+│   │   ├── unjail.js
+│   │   └── setup.js
+│   ├── purge/
+│   │   ├── purge.js
+│   │   └── cleanup.js
+│   ├── history/
+│   │   ├── history.js             # User mod history
+│   │   └── modhistory.js          # Moderator action history
+│   ├── filter.js                  # Automod/filter
+│   └── nuke.js
+│
+├── fun/                            # Fun, games & economy (43 files)
+│   ├── economy/                   # All economy/gambling
+│   │   ├── balance/
+│   │   │   ├── bal.js
+│   │   │   ├── deposit.js
+│   │   │   ├── withdraw.js
+│   │   │   ├── transfer.js
+│   │   │   └── leaderboard.js
+│   │   ├── earning/
+│   │   │   ├── daily.js
+│   │   │   ├── crime.js
+│   │   │   ├── slut.js
+│   │   │   ├── rob.js
+│   │   │   ├── pray.js
+│   │   │   ├── curse.js
+│   │   │   ├── pick.js
+│   │   │   └── vote.js
+│   │   ├── gambling/
+│   │   │   ├── coinflip.js
+│   │   │   ├── slot.js
+│   │   │   └── ttt.js             # Tic-tac-toe
+│   │   ├── shop/
+│   │   │   ├── store.js
+│   │   │   ├── buy.js
+│   │   │   ├── sell.js
+│   │   │   ├── use.js
+│   │   │   ├── inventory.js
+│   │   │   ├── _index.js          # Store index
+│   │   │   └── items.js           # Store items
+│   │   └── marriage/
+│   │       ├── marry.js
+│   │       ├── divorce.js
+│   │       ├── married.js
+│   │       └── edaters.js
+│   ├── games/
+│   │   ├── rps.js                 # Rock paper scissors
+│   │   └── 8ball.js
+│   ├── random/
+│   │   ├── advice.js
+│   │   ├── yomama.js
+│   │   ├── quote.js
+│   │   └── blacktea.js
+│   └── search/
+│       ├── define.js
+│       ├── urban.js
+│       ├── youtube.js
+│       └── img.js
+│
+├── profiles/                       # User & server profiles (16 files)
+│   ├── user/
+│   │   ├── avatar.js              # Global avatar
+│   │   ├── banner.js              # Global banner
+│   │   ├── savatar.js             # Server avatar
+│   │   ├── sbanner.js             # Server banner
+│   │   └── userinfo.js
+│   ├── server/
+│   │   ├── guildicon.js
+│   │   ├── guildbanner.js
+│   │   ├── guildsplash.js
+│   │   ├── seticon.js
+│   │   ├── setbanner.js
+│   │   └── setsplash.js
+│   └── expressions/
+│       ├── emoji.js
+│       ├── enlarge.js
+│       ├── sticker.js
+│       ├── steal.js               # Steal emoji
+│       └── stealsticker.js
+│
+├── information/                    # Info & tracking (7 files)
+│   ├── user/
+│   │   ├── userinfo.js            # (moved from profiles)
+│   │   ├── afk.js
+│   │   ├── birthday.js
+│   │   └── timezone.js
+│   └── history/
+│       ├── names.js               # User name history
+│       ├── servernames.js
+│       └── guildnamehistory.js
+│
+├── server/                         # Server management (40+ files)
+│   ├── roles/
+│   │   ├── role.js                # Role management
+│   │   ├── roles.js               # List roles
+│   │   ├── inrole.js              # Users in role
+│   │   ├── autorole.js            # Auto role on join
+│   │   ├── buttonrole.js
+│   │   ├── reactionrole.js
+│   │   └── boostrole.js
+│   ├── channels/
+│   │   ├── lock.js
+│   │   ├── unlock.js
+│   │   ├── hide.js
+│   │   ├── unhide.js
+│   │   ├── pin.js
+│   │   ├── topic.js
+│   │   ├── firstmessage.js
+│   │   └── naughty.js
+│   ├── members/
+│   │   ├── forcenick.js
+│   │   └── rename.js
+│   ├── levels/
+│   │   └── levels.js
+│   ├── boost/
+│   │   ├── boost.js
+│   │   ├── boostlost.js
+│   │   └── boostrole.js           # (duplicate from roles?)
+│   ├── automation/
+│   │   ├── autoreact.js
+│   │   ├── autoresponder.js
+│   │   ├── alias.js
+│   │   └── message.js
+│   ├── features/
+│   │   ├── confession.js
+│   │   ├── ticket.js
+│   │   ├── starboard.js
+│   │   ├── voicemaster.js
+│   │   ├── giveaways.js
+│   │   └── vanity.js
+│   ├── events/
+│   │   ├── welcome.js
+│   │   └── leave.js
+│   ├── settings/
+│   │   ├── settings.js
+│   │   ├── logs.js
+│   │   ├── customize.js
+│   │   └── webhook.js
+│   └── antinuke/
+│       └── antinuke.js
+│
+├── music/                          # Music & listening (2 files)
+│   ├── spotify/
+│   │   └── spotify.js
+│   └── lastfm/
+│       └── fm.js
+│
+├── social/                         # Social media (2 files)
+│   ├── tiktok.js
+│   └── valorant.js
+│
+├── social/                         # Social media (2 files)
+│   ├── tiktok.js
+│   └── valorant.js
+│
+├── roleplay/                       # Roleplay commands (29 files)
+│   ├── sfw/
+│   │   ├── hug.js
+│   │   ├── kiss.js
+│   │   ├── cuddle.js
+│   │   ├── pat.js
+│   │   ├── headpat.js
+│   │   ├── glomp.js
+│   │   ├── poke.js
+│   │   ├── bonk.js
+│   │   ├── bully.js
+│   │   ├── slap.js
+│   │   ├── bite.js
+│   │   ├── lick.js
+│   │   ├── nom.js
+│   │   ├── yeet.js
+│   │   ├── wave.js
+│   │   ├── wink.js
+│   │   ├── highfive.js
+│   │   ├── dance.js
+│   │   ├── blush.js
+│   │   ├── cry.js
+│   │   └── kill.js
+│   └── nsfw/
+│       ├── anal.js
+│       ├── blowjob.js
+│       ├── cum.js
+│       ├── fuck.js
+│       ├── pussylick.js
+│       ├── solo.js
+│       ├── threesome.js
+│       ├── yaoi.js
+│       └── yuri.js
+│
+├── fun/                            # Fun & games (12 files)
+│   ├── games/
+│   │   ├── rps.js                 # Rock paper scissors
+│   │   ├── ttt.js                 # Tic-tac-toe (duplicate from economy?)
+│   │   └── 8ball.js
+│   ├── random/
+│   │   ├── advice.js
+│   │   ├── yomama.js
+│   │   ├── quote.js
+│   │   └── blacktea.js
+│   └── search/
+│       ├── define.js
+│       ├── urban.js
+│       ├── youtube.js
+│       └── img.js
+│
+├── utility/                        # Utility commands (11 files)
+│   ├── messages/
+│   │   ├── say.js
+│   │   ├── quote.js               # (duplicate from fun?)
+│   │   └── responder.js
+│   ├── embeds/
+│   │   ├── copyembed.js
+│   │   └── createembed.js
+│   ├── snipes/
+│   │   ├── snipe.js
+│   │   ├── editsnipe.js
+│   │   ├── reactionsnipe.js
+│   │   └── clearsnipe.js
+│   ├── tools/
+│   │   ├── translate.js
+│   │   ├── remind.js
+│   │   ├── count.js
+│   │   ├── note.js
+│   │   └── swear.js
+│   └── misc/
+│       └── sprint.js
+│
+├── premium/                        # Premium features (4 files)
+│   ├── ai/
+│   │   ├── ask.js
+│   │   └── askvm.js
+│   ├── voice/
+│   │   └── tts.js
+│   └── selfprefix.js
+│
+└── dev/                            # Developer commands (5 files)
+    ├── admin/
+    │   ├── blacklist.js
+    │   ├── clear.js
+    │   ├── eco.js
+    │   └── restart.js
+    └── debug/
+        └── fetch.js
+
+================================================================================
+MIGRATION MAP - WHERE EACH FILE GOES
+================================================================================
+
+FROM → TO
+
+CORE (5 files)
+------------------------------------------------------------
+commands/essentials/help.js                 → commands/core/help.js
+commands/essentials/ping.js                 → commands/core/ping.js
+commands/essentials/prefix.js               → commands/core/prefix.js
+commands/service/botinfo.js                 → commands/core/botinfo.js
+commands/service/invite.js                  → commands/core/invite.js
+
+MODERATION (20 files)
+------------------------------------------------------------
+commands/moderation/ban/ban.js              → commands/moderation/ban/ban.js ✓
+commands/moderation/ban/unban.js            → commands/moderation/ban/unban.js ✓
+commands/moderation/kick/kick.js            → commands/moderation/kick/kick.js ✓
+commands/moderation/mute/mute.js            → commands/moderation/mute/mute.js ✓
+commands/moderation/mute/unmute.js          → commands/moderation/mute/unmute.js ✓
+commands/moderation/mute/imute.js           → commands/moderation/mute/imute.js ✓
+commands/moderation/mute/iunmute.js         → commands/moderation/mute/iunmute.js ✓
+commands/moderation/mute/rmute.js           → commands/moderation/mute/rmute.js ✓
+commands/moderation/mute/runmute.js         → commands/moderation/mute/runmute.js ✓
+commands/moderation/warn/warn.js            → commands/moderation/warn/warn.js ✓
+commands/moderation/warn/unwarn.js          → commands/moderation/warn/unwarn.js ✓
+commands/moderation/jail/jail.js            → commands/moderation/jail/jail.js ✓
+commands/moderation/jail/unjail.js          → commands/moderation/jail/unjail.js ✓
+commands/moderation/jail/setup.js           → commands/moderation/jail/setup.js ✓
+commands/purge/purge.js                     → commands/moderation/purge/purge.js
+commands/purge/cleanup.js                   → commands/moderation/purge/cleanup.js
+commands/moderation/history/history.js      → commands/moderation/history/history.js ✓
+commands/moderation/history/modhistory.js   → commands/moderation/history/modhistory.js ✓
+commands/moderation/filter.js               → commands/moderation/filter.js ✓
+commands/moderation/nuke.js                 → commands/moderation/nuke.js ✓
+
+FUN/ECONOMY (43 files)
+------------------------------------------------------------
+commands/gamble/bal.js                      → commands/fun/economy/balance/bal.js
+commands/gamble/deposit.js                  → commands/fun/economy/balance/deposit.js
+commands/gamble/withdraw.js                 → commands/fun/economy/balance/withdraw.js
+commands/gamble/transfer.js                 → commands/fun/economy/balance/transfer.js
+commands/gamble/leaderboard.js              → commands/fun/economy/balance/leaderboard.js
+commands/gamble/daily.js                    → commands/fun/economy/earning/daily.js
+commands/gamble/crime.js                    → commands/fun/economy/earning/crime.js
+commands/gamble/slut.js                     → commands/fun/economy/earning/slut.js
+commands/gamble/rob.js                      → commands/fun/economy/earning/rob.js
+commands/gamble/pray.js                     → commands/fun/economy/earning/pray.js
+commands/gamble/curse.js                    → commands/fun/economy/earning/curse.js
+commands/gamble/pick.js                     → commands/fun/economy/earning/pick.js
+commands/gamble/vote.js                     → commands/fun/economy/earning/vote.js
+commands/gamble/coinflip.js                 → commands/fun/economy/gambling/coinflip.js
+commands/gamble/slot.js                     → commands/fun/economy/gambling/slot.js
+commands/gamble/ttt.js                      → commands/fun/economy/gambling/ttt.js
+commands/gamble/store.js                    → commands/fun/economy/shop/store.js
+commands/gamble/buy.js                      → commands/fun/economy/shop/buy.js
+commands/gamble/sell.js                     → commands/fun/economy/shop/sell.js
+commands/gamble/use.js                      → commands/fun/economy/shop/use.js
+commands/gamble/inventory.js                → commands/fun/economy/shop/inventory.js
+commands/gamble/store/_index.js             → commands/fun/economy/shop/_index.js
+commands/gamble/store/items.js              → commands/fun/economy/shop/items.js
+commands/gamble/marry.js                    → commands/fun/economy/marriage/marry.js
+commands/gamble/divorce.js                  → commands/fun/economy/marriage/divorce.js
+commands/gamble/married.js                  → commands/fun/economy/marriage/married.js
+commands/gamble/edaters.js                  → commands/fun/economy/marriage/edaters.js
+commands/fun/rps.js                         → commands/fun/games/rps.js
+commands/miscellaneous/8ball.js             → commands/fun/games/8ball.js
+commands/miscellaneous/advice.js            → commands/fun/random/advice.js
+commands/miscellaneous/yomama.js            → commands/fun/random/yomama.js
+commands/miscellaneous/quote.js             → commands/fun/random/quote.js
+commands/fun/blacktea.js                    → commands/fun/random/blacktea.js
+commands/miscellaneous/define.js            → commands/fun/search/define.js
+commands/miscellaneous/urban.js             → commands/fun/search/urban.js
+commands/miscellaneous/youtube.js           → commands/fun/search/youtube.js
+commands/miscellaneous/img.js               → commands/fun/search/img.js
+
+PROFILES (16 files)
+------------------------------------------------------------
+commands/server/profiles/avatar.js          → commands/profiles/user/avatar.js
+commands/server/profiles/banner.js          → commands/profiles/user/banner.js
+commands/server/profiles/savatar.js         → commands/profiles/user/savatar.js
+commands/server/profiles/sbanner.js         → commands/profiles/user/sbanner.js
+commands/information/userinfo.js            → commands/profiles/user/userinfo.js
+commands/server/profiles/guildicon.js       → commands/profiles/server/guildicon.js
+commands/server/profiles/guildbanner.js     → commands/profiles/server/guildbanner.js
+commands/server/profiles/guildsplash.js     → commands/profiles/server/guildsplash.js
+commands/server/theme/seticon.js            → commands/profiles/server/seticon.js
+commands/server/theme/setbanner.js          → commands/profiles/server/setbanner.js
+commands/server/theme/setsplash.js          → commands/profiles/server/setsplash.js
+commands/utility/emoji.js                   → commands/profiles/expressions/emoji.js
+commands/utility/enlarge.js                 → commands/profiles/expressions/enlarge.js
+commands/utility/sticker.js                 → commands/profiles/expressions/sticker.js
+commands/server/steal/steal.js              → commands/profiles/expressions/steal.js
+commands/server/steal/sticker.js            → commands/profiles/expressions/stealsticker.js
+
+INFORMATION (7 files)
+------------------------------------------------------------
+commands/information/userinfo.js            → commands/profiles/user/userinfo.js (moved to profiles)
+commands/information/afk.js                 → commands/information/user/afk.js
+commands/information/birthday.js            → commands/information/user/birthday.js
+commands/information/timezone.js            → commands/information/user/timezone.js
+commands/information/names.js               → commands/information/history/names.js
+commands/information/servernames.js         → commands/information/history/servernames.js
+commands/information/guildnamehistory.js    → commands/information/history/guildnamehistory.js
+
+SERVER (40+ files)
+------------------------------------------------------------
+commands/server/roles/role.js               → commands/server/roles/role.js ✓
+commands/server/roles/roles.js              → commands/server/roles/roles.js ✓
+commands/server/roles/inrole.js             → commands/server/roles/inrole.js ✓
+commands/server/autoroles/autorole.js       → commands/server/roles/autorole.js
+commands/server/autoroles/buttonrole.js     → commands/server/roles/buttonrole.js
+commands/server/autoroles/reactionrole.js   → commands/server/roles/reactionrole.js
+commands/server/boostrole.js                → commands/server/roles/boostrole.js
+commands/server/channel/lock.js             → commands/server/channels/lock.js
+commands/server/channel/unlock.js           → commands/server/channels/unlock.js
+commands/server/channel/hide.js             → commands/server/channels/hide.js
+commands/server/channel/unhide.js           → commands/server/channels/unhide.js
+commands/server/channel/pin.js              → commands/server/channels/pin.js
+commands/server/channel/topic.js            → commands/server/channels/topic.js
+commands/server/channel/firstmessage.js     → commands/server/channels/firstmessage.js
+commands/server/channel/naughty.js          → commands/server/channels/naughty.js
+commands/server/names/forcenick.js          → commands/server/members/forcenick.js
+commands/server/names/rename.js             → commands/server/members/rename.js
+commands/server/levels/levels.js            → commands/server/levels/levels.js ✓
+commands/server/boost.js                    → commands/server/boost/boost.js
+commands/server/boostlost.js                → commands/server/boost/boostlost.js
+commands/server/autoreact.js                → commands/server/automation/autoreact.js
+commands/server/autoresponder.js            → commands/server/automation/autoresponder.js
+commands/server/alias.js                    → commands/server/automation/alias.js
+commands/server/message.js                  → commands/server/automation/message.js
+commands/server/confession.js               → commands/server/features/confession.js
+commands/server/ticket.js                   → commands/server/features/ticket.js
+commands/server/starboard.js                → commands/server/features/starboard.js
+commands/server/voicemaster.js              → commands/server/features/voicemaster.js
+commands/server/giveaways.js                → commands/server/features/giveaways.js
+commands/server/vanity.js                   → commands/server/features/vanity.js
+commands/server/welcome.js                  → commands/server/events/welcome.js
+commands/server/leave.js                    → commands/server/events/leave.js
+commands/server/settings.js                 → commands/server/settings/settings.js
+commands/server/logs.js                     → commands/server/settings/logs.js
+commands/server/customize.js                → commands/server/settings/customize.js
+commands/server/webhook.js                  → commands/server/settings/webhook.js
+commands/antinuke/antinuke.js               → commands/server/antinuke/antinuke.js
+
+MUSIC (2 files)
+------------------------------------------------------------
+commands/spotify/spotify.js                 → commands/music/spotify/spotify.js
+commands/lastfm/fm.js                       → commands/music/lastfm/fm.js
+
+SOCIAL (2 files)
+------------------------------------------------------------
+commands/socials/tiktok.js                  → commands/social/tiktok.js
+commands/socials/valorant.js                → commands/social/valorant.js
+
+ROLEPLAY (29 files)
+------------------------------------------------------------
+commands/roleplay/sfw/hug.js                → commands/roleplay/sfw/hug.js ✓
+commands/roleplay/sfw/kiss.js               → commands/roleplay/sfw/kiss.js ✓
+commands/roleplay/sfw/cuddle.js             → commands/roleplay/sfw/cuddle.js ✓
+commands/roleplay/sfw/pat.js                → commands/roleplay/sfw/pat.js ✓
+commands/roleplay/sfw/headpat.js            → commands/roleplay/sfw/headpat.js ✓
+commands/roleplay/sfw/glomp.js              → commands/roleplay/sfw/glomp.js ✓
+commands/roleplay/sfw/poke.js               → commands/roleplay/sfw/poke.js ✓
+commands/roleplay/sfw/bonk.js               → commands/roleplay/sfw/bonk.js ✓
+commands/roleplay/sfw/bully.js              → commands/roleplay/sfw/bully.js ✓
+commands/roleplay/sfw/slap.js               → commands/roleplay/sfw/slap.js ✓
+commands/roleplay/sfw/bite.js               → commands/roleplay/sfw/bite.js ✓
+commands/roleplay/sfw/lick.js               → commands/roleplay/sfw/lick.js ✓
+commands/roleplay/sfw/nom.js                → commands/roleplay/sfw/nom.js ✓
+commands/roleplay/sfw/yeet.js               → commands/roleplay/sfw/yeet.js ✓
+commands/roleplay/sfw/wave.js               → commands/roleplay/sfw/wave.js ✓
+commands/roleplay/sfw/wink.js               → commands/roleplay/sfw/wink.js ✓
+commands/roleplay/sfw/highfive.js           → commands/roleplay/sfw/highfive.js ✓
+commands/roleplay/sfw/dance.js              → commands/roleplay/sfw/dance.js ✓
+commands/roleplay/sfw/blush.js              → commands/roleplay/sfw/blush.js ✓
+commands/roleplay/sfw/cry.js                → commands/roleplay/sfw/cry.js ✓
+commands/roleplay/sfw/kill.js               → commands/roleplay/sfw/kill.js ✓
+commands/roleplay/nsfw/anal.js              → commands/roleplay/nsfw/anal.js ✓
+commands/roleplay/nsfw/blowjob.js           → commands/roleplay/nsfw/blowjob.js ✓
+commands/roleplay/nsfw/cum.js               → commands/roleplay/nsfw/cum.js ✓
+commands/roleplay/nsfw/fuck.js              → commands/roleplay/nsfw/fuck.js ✓
+commands/roleplay/nsfw/pussylick.js         → commands/roleplay/nsfw/pussylick.js ✓
+commands/roleplay/nsfw/solo.js              → commands/roleplay/nsfw/solo.js ✓
+commands/roleplay/nsfw/threesome.js         → commands/roleplay/nsfw/threesome.js ✓
+commands/roleplay/nsfw/yaoi.js              → commands/roleplay/nsfw/yaoi.js ✓
+commands/roleplay/nsfw/yuri.js              → commands/roleplay/nsfw/yuri.js ✓
+
+UTILITY (11 files)
+------------------------------------------------------------
+(Note: Fun commands moved to FUN/ECONOMY section above)
+
+UTILITY (15 files)
+------------------------------------------------------------
+commands/miscellaneous/say.js               → commands/utility/messages/say.js
+commands/miscellaneous/quote.js             → commands/utility/messages/quote.js (duplicate from fun)
+commands/utility/responder.js               → commands/utility/messages/responder.js
+commands/essentials/copyembed.js            → commands/utility/embeds/copyembed.js
+commands/essentials/createembed.js          → commands/utility/embeds/createembed.js
+commands/snipes/snipe.js                    → commands/utility/snipes/snipe.js
+commands/snipes/editsnipe.js                → commands/utility/snipes/editsnipe.js
+commands/snipes/reactionsnipe.js            → commands/utility/snipes/reactionsnipe.js
+commands/snipes/clearsnipe.js               → commands/utility/snipes/clearsnipe.js
+commands/utility/translate.js               → commands/utility/tools/translate.js
+commands/utility/remind.js                  → commands/utility/tools/remind.js
+commands/utility/count.js                   → commands/utility/tools/count.js
+commands/service/note.js                    → commands/utility/tools/note.js
+commands/service/swear.js                   → commands/utility/tools/swear.js
+commands/miscellaneous/sprint.js            → commands/utility/misc/sprint.js
+
+PREMIUM (4 files)
+------------------------------------------------------------
+commands/premium/ask.js                     → commands/premium/ai/ask.js
+commands/premium/askvm.js                   → commands/premium/ai/askvm.js
+commands/premium/tts.js                     → commands/premium/voice/tts.js
+commands/premium/selfprefix.js              → commands/premium/selfprefix.js ✓
+
+DEV (5 files)
+------------------------------------------------------------
+commands/dev/blacklist.js                   → commands/dev/admin/blacklist.js
+commands/dev/clear.js                       → commands/dev/admin/clear.js
+commands/dev/eco.js                         → commands/dev/admin/eco.js
+commands/dev/restart.js                     → commands/dev/admin/restart.js
+commands/dev/fetch.js                       → commands/dev/debug/fetch.js
+
+================================================================================
+SUMMARY STATISTICS
+================================================================================
+
+Total Files: 137+
+
+By Category:
+- Core: 5 files
+- Moderation: 20 files (6 subfolders)
+- Fun: 43 files (8 subfolders - includes economy, games, random, search)
+- Profiles: 16 files (3 subfolders - user, server, expressions)
+- Information: 7 files (2 subfolders)
+- Server: 40+ files (8 subfolders)
+- Music: 2 files (2 subfolders)
+- Social: 2 files
+- Roleplay: 29 files (2 subfolders - sfw, nsfw)
+- Utility: 15 files (5 subfolders)
+- Premium: 4 files (2 subfolders)
+- Dev: 5 files (2 subfolders)
+
+Total Subfolders: 44 subfolders
+Maximum Depth: 4 levels (e.g., commands/roleplay/sfw/affection/hug.js)
+
+================================================================================
+BENEFITS OF THIS STRUCTURE
+================================================================================
+
+✓ Highly organized - easy to find any command
+✓ Logical grouping - related commands together
+✓ Scalable - easy to add new commands
+✓ Clear hierarchy - understand command relationships
+✓ Reduced clutter - no more 20+ files in one folder
+✓ Better navigation - IDE folder tree is cleaner
+✓ Easier maintenance - know exactly where to look
+✓ Team-friendly - new developers can navigate easily
+
+================================================================================
+POTENTIAL ISSUES TO CONSIDER
+================================================================================
+
+⚠ Deeper folder structure = longer relative import paths
+  Solution: Use module aliases (@config, @core, @utils, etc.)
+
+⚠ More folders to navigate when developing
+  Solution: Use IDE search (Ctrl+P) to find files quickly
+
+⚠ Help command may need category updates
+  Solution: Update help.js to reflect new structure
+
+⚠ Some commands appear in multiple places (quote, ttt)
+  Solution: Decide on single location or create aliases
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Review this structure and confirm it matches your vision
+2. Identify any duplicates or misplaced commands
+3. Decide on module alias strategy
+4. Create migration script to move files
+5. Update imports in moved files
+6. Test thoroughly
+
+================================================================================
+END OF DETAILED STRUCTURE
+================================================================================

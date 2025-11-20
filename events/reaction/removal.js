@@ -70,7 +70,7 @@ async function processStarboardRemoval(reaction, user) {
         await guildService.removeStarboardMessage(guild.id, message.id);
       } else {
         // Update the embed with new reaction count
-        const starboardCommand = require('../../commands/server/starboard');
+        const starboardCommand = require('../../commands/server/features/starboard');
         const updatedEmbed = starboardCommand.createStarboardEmbed(message, reactionCount, starboardEmoji);
         const button = starboardCommand.createJumpButton(message);
 

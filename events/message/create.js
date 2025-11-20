@@ -391,7 +391,7 @@ async function processSwearTracking(message) {
 
 
     // Import swear detection function
-    const { detectSwears } = require('../../commands/service/swear');
+    const { detectSwears } = require('../../commands/utility/tools/swear');
 
     // Detect swears in the message
     const foundSwears = detectSwears(message.content);
@@ -426,7 +426,7 @@ async function processVleedMention(message) {
     // Check if message starts with "adore" (case insensitive)
     const content = message.content.toLowerCase();
     if (content.startsWith('adore ')) {
-      const { handleVleedMention } = require('../../commands/utility/responder');
+      const { handleVleedMention } = require('../../commands/utility/messages/responder');
       await handleVleedMention(message.client, message);
     }
   } catch (error) {

@@ -1,0 +1,320 @@
+================================================================================
+FINAL COMMAND STRUCTURE - VISUAL TREE
+================================================================================
+Generated: 2025-11-20
+
+commands/
+│
+├── 📦 core/ (5 files)
+│   ├── help.js
+│   ├── ping.js
+│   ├── prefix.js
+│   ├── botinfo.js
+│   └── invite.js
+│
+├── 🛡️ moderation/ (20 files)
+│   ├── ban/
+│   │   ├── ban.js
+│   │   └── unban.js
+│   ├── kick/
+│   │   └── kick.js
+│   ├── mute/
+│   │   ├── mute.js
+│   │   ├── unmute.js
+│   │   ├── imute.js
+│   │   ├── iunmute.js
+│   │   ├── rmute.js
+│   │   └── runmute.js
+│   ├── warn/
+│   │   ├── warn.js
+│   │   └── unwarn.js
+│   ├── jail/
+│   │   ├── jail.js
+│   │   ├── unjail.js
+│   │   └── setup.js
+│   ├── purge/
+│   │   ├── purge.js
+│   │   └── cleanup.js
+│   ├── history/
+│   │   ├── history.js
+│   │   └── modhistory.js
+│   ├── filter.js
+│   └── nuke.js
+│
+├── 🎮 fun/ (43 files) ⭐ INCLUDES ECONOMY
+│   ├── economy/
+│   │   ├── balance/
+│   │   │   ├── bal.js
+│   │   │   ├── deposit.js
+│   │   │   ├── withdraw.js
+│   │   │   ├── transfer.js
+│   │   │   └── leaderboard.js
+│   │   ├── earning/
+│   │   │   ├── daily.js
+│   │   │   ├── crime.js
+│   │   │   ├── slut.js
+│   │   │   ├── rob.js
+│   │   │   ├── pray.js
+│   │   │   ├── curse.js
+│   │   │   ├── pick.js
+│   │   │   └── vote.js
+│   │   ├── gambling/
+│   │   │   ├── coinflip.js
+│   │   │   ├── slot.js
+│   │   │   └── ttt.js
+│   │   ├── shop/
+│   │   │   ├── store.js
+│   │   │   ├── buy.js
+│   │   │   ├── sell.js
+│   │   │   ├── use.js
+│   │   │   ├── inventory.js
+│   │   │   ├── _index.js
+│   │   │   └── items.js
+│   │   └── marriage/
+│   │       ├── marry.js
+│   │       ├── divorce.js
+│   │       ├── married.js
+│   │       └── edaters.js
+│   ├── games/
+│   │   ├── rps.js
+│   │   └── 8ball.js
+│   ├── random/
+│   │   ├── advice.js
+│   │   ├── yomama.js
+│   │   ├── quote.js
+│   │   └── blacktea.js
+│   └── search/
+│       ├── define.js
+│       ├── urban.js
+│       ├── youtube.js
+│       └── img.js
+│
+├── 👤 profiles/ (16 files)
+│   ├── user/
+│   │   ├── avatar.js
+│   │   ├── banner.js
+│   │   ├── savatar.js
+│   │   ├── sbanner.js
+│   │   └── userinfo.js
+│   ├── server/
+│   │   ├── guildicon.js
+│   │   ├── guildbanner.js
+│   │   ├── guildsplash.js
+│   │   ├── seticon.js
+│   │   ├── setbanner.js
+│   │   └── setsplash.js
+│   └── expressions/ ⭐ RENAMED FROM MEDIA
+│       ├── emoji.js
+│       ├── enlarge.js
+│       ├── sticker.js
+│       ├── steal.js
+│       └── stealsticker.js
+│
+├── ℹ️ information/ (7 files)
+│   ├── user/
+│   │   ├── afk.js
+│   │   ├── birthday.js
+│   │   └── timezone.js
+│   └── history/
+│       ├── names.js
+│       ├── servernames.js
+│       └── guildnamehistory.js
+│
+├── ⚙️ server/ (40+ files)
+│   ├── roles/
+│   │   ├── role.js
+│   │   ├── roles.js
+│   │   ├── inrole.js
+│   │   ├── autorole.js
+│   │   ├── buttonrole.js
+│   │   ├── reactionrole.js
+│   │   └── boostrole.js
+│   ├── channels/
+│   │   ├── lock.js
+│   │   ├── unlock.js
+│   │   ├── hide.js
+│   │   ├── unhide.js
+│   │   ├── pin.js
+│   │   ├── topic.js
+│   │   ├── firstmessage.js
+│   │   └── naughty.js
+│   ├── members/
+│   │   ├── forcenick.js
+│   │   └── rename.js
+│   ├── levels/
+│   │   └── levels.js
+│   ├── boost/
+│   │   ├── boost.js
+│   │   └── boostlost.js
+│   ├── automation/
+│   │   ├── autoreact.js
+│   │   ├── autoresponder.js
+│   │   ├── alias.js
+│   │   └── message.js
+│   ├── features/
+│   │   ├── confession.js
+│   │   ├── ticket.js
+│   │   ├── starboard.js
+│   │   ├── voicemaster.js
+│   │   ├── giveaways.js
+│   │   └── vanity.js
+│   ├── events/
+│   │   ├── welcome.js
+│   │   └── leave.js
+│   ├── settings/
+│   │   ├── settings.js
+│   │   ├── logs.js
+│   │   ├── customize.js
+│   │   └── webhook.js
+│   └── antinuke/
+│       └── antinuke.js
+│
+├── 🎵 music/ (2 files)
+│   ├── spotify/
+│   │   └── spotify.js
+│   └── lastfm/
+│       └── fm.js
+│
+├── 🌐 social/ (2 files)
+│   ├── tiktok.js
+│   └── valorant.js
+│
+├── 💬 roleplay/ (29 files)
+│   ├── sfw/
+│   │   ├── hug.js
+│   │   ├── kiss.js
+│   │   ├── cuddle.js
+│   │   ├── pat.js
+│   │   ├── headpat.js
+│   │   ├── glomp.js
+│   │   ├── poke.js
+│   │   ├── bonk.js
+│   │   ├── bully.js
+│   │   ├── slap.js
+│   │   ├── bite.js
+│   │   ├── lick.js
+│   │   ├── nom.js
+│   │   ├── yeet.js
+│   │   ├── wave.js
+│   │   ├── wink.js
+│   │   ├── highfive.js
+│   │   ├── dance.js
+│   │   ├── blush.js
+│   │   ├── cry.js
+│   │   └── kill.js
+│   └── nsfw/
+│       ├── anal.js
+│       ├── blowjob.js
+│       ├── cum.js
+│       ├── fuck.js
+│       ├── pussylick.js
+│       ├── solo.js
+│       ├── threesome.js
+│       ├── yaoi.js
+│       └── yuri.js
+│
+├── 🔧 utility/ (15 files)
+│   ├── messages/
+│   │   ├── say.js
+│   │   ├── quote.js
+│   │   └── responder.js
+│   ├── embeds/
+│   │   ├── copyembed.js
+│   │   └── createembed.js
+│   ├── snipes/
+│   │   ├── snipe.js
+│   │   ├── editsnipe.js
+│   │   ├── reactionsnipe.js
+│   │   └── clearsnipe.js
+│   ├── tools/
+│   │   ├── translate.js
+│   │   ├── remind.js
+│   │   ├── count.js
+│   │   ├── note.js
+│   │   └── swear.js
+│   └── misc/
+│       └── sprint.js
+│
+├── 💎 premium/ (4 files)
+│   ├── ai/
+│   │   ├── ask.js
+│   │   └── askvm.js
+│   ├── voice/
+│   │   └── tts.js
+│   └── selfprefix.js
+│
+└── 🔨 dev/ (5 files)
+    ├── admin/
+    │   ├── blacklist.js
+    │   ├── clear.js
+    │   ├── eco.js
+    │   └── restart.js
+    └── debug/
+        └── fetch.js
+
+================================================================================
+KEY CHANGES FROM ORIGINAL PROPOSAL
+================================================================================
+
+✅ Economy moved inside fun/ folder
+   - fun/economy/balance/
+   - fun/economy/earning/
+   - fun/economy/gambling/
+   - fun/economy/shop/
+   - fun/economy/marriage/
+
+✅ Media renamed to expressions/
+   - profiles/expressions/emoji.js
+   - profiles/expressions/enlarge.js
+   - profiles/expressions/sticker.js
+   - profiles/expressions/steal.js
+   - profiles/expressions/stealsticker.js
+
+✅ All fun commands grouped together
+   - fun/games/ (rps, 8ball)
+   - fun/random/ (advice, yomama, quote, blacktea)
+   - fun/search/ (define, urban, youtube, img)
+
+================================================================================
+STATISTICS
+================================================================================
+
+Total Files: 188 files
+Total Folders: 12 main categories
+Total Subfolders: 43 subfolders
+Maximum Depth: 5 levels (commands/fun/economy/balance/bal.js)
+
+Largest Category: Server (40+ files)
+Second Largest: Fun (43 files including economy)
+Third Largest: Roleplay (29 files)
+
+================================================================================
+FOLDER BREAKDOWN
+================================================================================
+
+📦 core/          →  5 files,  0 subfolders
+🛡️ moderation/    → 20 files,  6 subfolders
+🎮 fun/           → 43 files,  8 subfolders ⭐
+👤 profiles/      → 16 files,  3 subfolders
+ℹ️ information/   →  7 files,  2 subfolders
+⚙️ server/        → 40 files,  8 subfolders
+🎵 music/         →  2 files,  2 subfolders
+🌐 social/        →  2 files,  0 subfolders
+💬 roleplay/      → 29 files,  2 subfolders
+🔧 utility/       → 15 files,  5 subfolders
+💎 premium/       →  4 files,  2 subfolders
+🔨 dev/           →  5 files,  2 subfolders
+
+================================================================================
+READY FOR MIGRATION?
+================================================================================
+
+This structure is now ready to implement. Would you like me to:
+
+1. Create a migration script to move all files automatically?
+2. Create a detailed step-by-step migration guide?
+3. Make any other adjustments to the structure?
+
+Let me know and I'll proceed!
+
+================================================================================

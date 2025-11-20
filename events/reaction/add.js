@@ -1,4 +1,4 @@
-const starboardCommand = require('../../commands/server/starboard');
+const starboardCommand = require('../../commands/server/features/starboard');
 
 module.exports = {
   name: 'messageReactionAdd',
