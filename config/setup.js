@@ -73,8 +73,8 @@ module.exports = {
     success: '#51e395',
     error: '#f44336',
     warn: '#f29c1e',
-    info: '#e1d4da',
-    embed: '#e1d4da',
+    info: '#242429',
+    embed: '#242429',
     spotify: '#1cdc64'
   },
 
