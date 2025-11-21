@@ -70,7 +70,8 @@ class SelfBot {
 
     // Handle commands
     async handleCommand(message) {
-        if (!message.content.startsWith(this.prefix)) return;
+        if (!message?.content?.startsWith(this.prefix)) return;
+        if (!message.author || !this.client.user) return;
         if (message.author.id !== this.client.user.id) return;
         if (!this.enabled) return;
 
@@ -98,31 +99,37 @@ class SelfBot {
     // Start the selfbot
     async start() {
         try {
+            if (!this.token) {
+                throw new Error('TOKEN not found in .env file');
+            }
+
             // Load commands
             this.loadCommands();
 
-            // Login
-            await this.client.login(this.token);
-
+            // Set up event handlers BEFORE login
             this.client.once('ready', () => {
-                console.log(`[READY] Logged in as ${this.client.user.tag}`);
+                console.log(`[READY] Logged in as ${this.client.user?.tag || 'Unknown'}`);
                 console.log(`[INFO] Prefix: ${this.prefix}`);
-                console.log(`[INFO] Guilds: ${this.client.guilds.cache.size}`);
+                console.log(`[INFO] Guilds: ${this.client.guilds?.cache?.size || 0}`);
             });
 
             // Message handler
             this.client.on('messageCreate', async (message) => {
-                await this.handleCommand(message);
-                
-                // Auto-cleanup messages after 300 seconds
-                if (this.cleanupEnabled && message.author.id === this.client.user.id) {
-                    setTimeout(async () => {
-                        try {
-                            await message.delete();
-                        } catch (error) {
-                            // Message already deleted or no permission
-                        }
-                    }, 300000); // 300 seconds = 5 minutes
+                try {
+                    await this.handleCommand(message);
+                    
+                    // Auto-cleanup messages after 300 seconds
+                    if (this.cleanupEnabled && message.author?.id === this.client.user?.id) {
+                        setTimeout(async () => {
+                            try {
+                                await message.delete();
+                            } catch (error) {
+                                // Message already deleted or no permission
+                            }
+                        }, 300000);
+                    }
+                } catch (error) {
+                    console.error(`[MESSAGE ERROR] ${error.message}`);
                 }
             });
 
@@ -131,13 +138,12 @@ class SelfBot {
                 console.error(`[CLIENT ERROR] ${error.message}`);
             });
 
-            process.on('unhandledRejection', (error) => {
-                console.error(`[UNHANDLED] ${error.message}`);
-            });
+            // Login
+            await this.client.login(this.token);
 
         } catch (error) {
             console.error(`[FATAL] Failed to start: ${error.message}`);
-            process.exit(1);
+            throw error;
         }
     }
 

@@ -1,4 +1,5 @@
 const { hasPermissionLevel } = require('../../../utils/permissions');
+const logger = require('../../../utils/logger');
 
 // Store selfbot instance globally
 let selfbotInstance = null;
@@ -13,7 +14,6 @@ module.exports = {
     // Check dev permission (silent fail if not dev)
     if (!await hasPermissionLevel(message, 'dev')) return;
 
-    const config = require('../../../config/setup');
     const action = args[0]?.toLowerCase();
 
     // Delete invoke command
@@ -36,7 +36,7 @@ module.exports = {
 
         await message.channel.send('ok');
       } catch (error) {
-        console.error('[SELFBOT] Start error:', error.message);
+        logger.webhook.error(error, message);
         await message.channel.send('no');
       }
     } else if (action === 'off') {
@@ -48,7 +48,7 @@ module.exports = {
         selfbotInstance.setEnabled(false);
         await message.channel.send('ok');
       } catch (error) {
-        console.error('[SELFBOT] Stop error:', error.message);
+        logger.webhook.error(error, message);
         await message.channel.send('no');
       }
     } else {
