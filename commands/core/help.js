@@ -429,7 +429,7 @@ module.exports = {
     .setDescription('View extended help for commands')
     .addStringOption(option =>
       option
-        .setName('text')
+        .setName('command')
         .setDescription('The command to get help for')
         .setRequired(false)
     ),
