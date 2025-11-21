@@ -8,28 +8,28 @@ async function handleSetSelfPrefix(context, newPrefix) {
   const user = context.user || context.author;
 
   if (!newPrefix) {
-    return embeds.warn(context, "Please provide a prefix to set!");
+    return embeds.warn(context, "Please provide a prefix to set!", false);
   }
 
   if (newPrefix.length > 3) {
-    return embeds.warn(context, "Prefix **can't** be over 3 characters.");
+    return embeds.warn(context, "Prefix **can't** be over 3 characters.", false);
   }
 
   if (newPrefix.includes(' ')) {
-    return embeds.warn(context, "Prefix **can't** contain spaces.");
+    return embeds.warn(context, "Prefix **can't** contain spaces.", false);
   }
 
   try {
     const prefixService = getService('prefix');
     const success = await prefixService.setUserPrefix(user.id, newPrefix);
     if (success) {
-      return embeds.success(context, `Your self prefix has been **set** to \`${newPrefix}\``);
+      return embeds.success(context, `Your self prefix has been **set** to \`${newPrefix}\``, false);
     } else {
-      return embeds.warn(context, "Failed to set self prefix. Please try again.");
+      return embeds.warn(context, "Failed to set self prefix. Please try again.", false);
     }
   } catch (error) {
     logger.webhook.error(error, context.message || context);
-    return embeds.warn(context, "An error occurred while setting your prefix. Please try again.");
+    return embeds.warn(context, "An error occurred while setting your prefix. Please try again.", false);
   }
 }
 
@@ -40,13 +40,13 @@ async function handleRemoveSelfPrefix(context) {
     const prefixService = getService('prefix');
     const success = await prefixService.clearUserPrefix(user.id);
     if (success) {
-      return embeds.success(context, "Your self prefix has been **removed**!");
+      return embeds.success(context, "Your self prefix has been **removed**!", false);
     } else {
-      return embeds.warn(context, "Failed to remove self prefix. Please try again.");
+      return embeds.warn(context, "Failed to remove self prefix. Please try again.", false);
     }
   } catch (error) {
     logger.webhook.error(error, context.message || context);
-    return embeds.warn(context, "An error occurred while removing your prefix. Please try again.");
+    return embeds.warn(context, "An error occurred while removing your prefix. Please try again.", false);
   }
 }
 
@@ -61,10 +61,10 @@ async function handleViewSelfPrefix(context) {
       ? `**Your self prefix:** \`${userPrefix}\``
       : `**Your self prefix:** **none**`;
 
-    return embeds.info(context, description);
+    return embeds.info(context, description, false);
   } catch (error) {
     logger.webhook.error(error, context.message || context);
-    return embeds.warn(context, 'Failed to retrieve your self prefix. Please try again.');
+    return embeds.warn(context, 'Failed to retrieve your self prefix. Please try again.', false);
   }
 }
 

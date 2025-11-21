@@ -10,23 +10,23 @@ async function handleSetGuildPrefix(context, newPrefix) {
 
   // Check if user has Administrator permission
   if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
-    return embeds.deny(context, 'You need **Administrator** permission to use this command.');
+    return embeds.deny(context, 'You need **Administrator** permission to use this command.', false);
   }
 
   if (!newPrefix) {
-    return embeds.warn(context, "Please provide a prefix to set!");
+    return embeds.warn(context, "Please provide a prefix to set!", false);
   }
 
   if (newPrefix.toLowerCase() === 'none') {
-    return embeds.warn(context, "Server prefix cannot be removed!");
+    return embeds.warn(context, "Server prefix cannot be removed!", false);
   }
 
   if (newPrefix.length > 3) {
-    return embeds.warn(context, "Prefix **can't** be over 3 characters.");
+    return embeds.warn(context, "Prefix **can't** be over 3 characters.", false);
   }
 
   if (newPrefix.includes(' ')) {
-    return embeds.warn(context, "Prefix **can't** contain spaces.");
+    return embeds.warn(context, "Prefix **can't** contain spaces.", false);
   }
 
   try {
@@ -34,12 +34,12 @@ async function handleSetGuildPrefix(context, newPrefix) {
     const success = await prefixService.setGuildPrefix(context.guild.id, newPrefix);
 
     if (success) {
-      return embeds.success(context, `Server prefix has been **changed** to \`${newPrefix}\``);
+      return embeds.success(context, `Server prefix has been **changed** to \`${newPrefix}\``, false);
     } else {
-      return embeds.warn(context, "Failed to update server prefix. Please try again.");
+      return embeds.warn(context, "Failed to update server prefix. Please try again.", false);
     }
   } catch (error) {
-    return embeds.warn(context, "An error occurred while updating the prefix. Please try again.");
+    return embeds.warn(context, "An error occurred while updating the prefix. Please try again.", false);
   }
 }
 
@@ -49,7 +49,7 @@ async function handleRemoveGuildPrefix(context) {
 
   // Check if user has Administrator permission
   if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
-    return embeds.deny(context, 'You need **Administrator** permission to use this command.');
+    return embeds.deny(context, 'You need **Administrator** permission to use this command.', false);
   }
 
   try {
@@ -60,12 +60,12 @@ async function handleRemoveGuildPrefix(context) {
     const success = await prefixService.setGuildPrefix(context.guild.id, defaultPrefix);
 
     if (success) {
-      return embeds.success(context, `Server prefix has been **reset** to default \`${defaultPrefix}\``);
+      return embeds.success(context, `Server prefix has been **reset** to default \`${defaultPrefix}\``, false);
     } else {
-      return embeds.warn(context, "Failed to reset server prefix. Please try again.");
+      return embeds.warn(context, "Failed to reset server prefix. Please try again.", false);
     }
   } catch (error) {
-    return embeds.warn(context, "An error occurred while resetting the prefix. Please try again.");
+    return embeds.warn(context, "An error occurred while resetting the prefix. Please try again.", false);
   }
 }
 
@@ -74,9 +74,9 @@ async function handleViewGuildPrefix(context) {
     const prefixService = getService('prefix');
     const guildPrefix = await prefixService.getGuildPrefix(context.guild.id);
     const description = `Your Server **prefix:** \`${guildPrefix}\``;
-    return embeds.info(context, description);
+    return embeds.info(context, description, false);
   } catch (error) {
-    return embeds.warn(context, 'Failed to retrieve server prefix. Please try again.');
+    return embeds.warn(context, 'Failed to retrieve server prefix. Please try again.', false);
   }
 }
 

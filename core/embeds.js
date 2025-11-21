@@ -4,7 +4,7 @@ const { colors, emojis } = require('../config/setup');
 // Pre-built embed system with user's preferred format
 // Supports both prefix commands (messages) and slash commands (interactions)
 const embeds = {
-    success: (context, text) => {
+    success: (context, text, ephemeral = true) => {
         const user = context.user || context.author;
         const isInteraction = !!context.user;
 
@@ -13,13 +13,16 @@ const embeds = {
             .setDescription(`${emojis.success} <@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed], ephemeral: true });
+            if (context.deferred || context.replied) {
+                return context.editReply({ embeds: [embed] });
+            }
+            return context.reply({ embeds: [embed], ephemeral: ephemeral });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
     },
 
-    deny: (context, text) => {
+    deny: (context, text, ephemeral = true) => {
         const user = context.user || context.author;
         const isInteraction = !!context.user;
 
@@ -28,13 +31,16 @@ const embeds = {
             .setDescription(`${emojis.error} <@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed], ephemeral: true });
+            if (context.deferred || context.replied) {
+                return context.editReply({ embeds: [embed] });
+            }
+            return context.reply({ embeds: [embed], ephemeral: ephemeral });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
     },
 
-    warn: (context, text) => {
+    warn: (context, text, ephemeral = true) => {
         const user = context.user || context.author;
         const isInteraction = !!context.user;
 
@@ -43,13 +49,16 @@ const embeds = {
             .setDescription(`${emojis.warn} <@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed], ephemeral: true });
+            if (context.deferred || context.replied) {
+                return context.editReply({ embeds: [embed] });
+            }
+            return context.reply({ embeds: [embed], ephemeral: ephemeral });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
     },
 
-    info: (context, text) => {
+    info: (context, text, ephemeral = true) => {
         const user = context.user || context.author;
         const isInteraction = !!context.user;
 
@@ -58,13 +67,16 @@ const embeds = {
             .setDescription(`<@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed], ephemeral: true });
+            if (context.deferred || context.replied) {
+                return context.editReply({ embeds: [embed] });
+            }
+            return context.reply({ embeds: [embed], ephemeral: ephemeral });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
     },
 
-    cooldown: (context, text) => {
+    cooldown: (context, text, ephemeral = true) => {
         const user = context.user || context.author;
         const isInteraction = !!context.user;
 
@@ -73,13 +85,16 @@ const embeds = {
             .setDescription(`${emojis.cooldown} <@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed], ephemeral: true });
+            if (context.deferred || context.replied) {
+                return context.editReply({ embeds: [embed] });
+            }
+            return context.reply({ embeds: [embed], ephemeral: ephemeral });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
     },
 
-    loading: (context, text) => {
+    loading: (context, text, ephemeral = true) => {
         const user = context.user || context.author;
         const isInteraction = !!context.user;
 
@@ -88,7 +103,10 @@ const embeds = {
             .setDescription(`${emojis.loading} <@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed] });
+            if (context.deferred || context.replied) {
+                return context.editReply({ embeds: [embed] });
+            }
+            return context.reply({ embeds: [embed], ephemeral: ephemeral });
         } else {
             return context.channel.send({ embeds: [embed] });
         }

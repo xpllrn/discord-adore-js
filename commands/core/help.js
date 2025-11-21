@@ -277,7 +277,10 @@ async function showHelpShared(context, client, commandQuery) {
           // Fall back to traditional embed
           const embed = createTraditionalEmbed(command, guildprefix);
           if (isInteraction) {
-            return context.reply({ embeds: [embed] });
+            if (context.deferred || context.replied) {
+              return context.editReply({ embeds: [embed] });
+            }
+            return context.reply({ embeds: [embed], ephemeral: false });
           } else {
             return context.channel.send({ embeds: [embed] });
           }
@@ -290,7 +293,10 @@ async function showHelpShared(context, client, commandQuery) {
           // Fall back to traditional embed
           const embed = createTraditionalEmbed(command, guildprefix);
           if (isInteraction) {
-            return context.reply({ embeds: [embed] });
+            if (context.deferred || context.replied) {
+              return context.editReply({ embeds: [embed] });
+            }
+            return context.reply({ embeds: [embed], ephemeral: false });
           } else {
             return context.channel.send({ embeds: [embed] });
           }
@@ -327,7 +333,10 @@ async function showHelpShared(context, client, commandQuery) {
         console.error('[HELP ERROR] Stack:', error.stack);
         const embed = createTraditionalEmbed(command, guildprefix);
         if (isInteraction) {
-          return context.reply({ embeds: [embed] });
+          if (context.deferred || context.replied) {
+            return context.editReply({ embeds: [embed] });
+          }
+          return context.reply({ embeds: [embed], ephemeral: false });
         } else {
           return context.channel.send({ embeds: [embed] });
         }
@@ -336,7 +345,10 @@ async function showHelpShared(context, client, commandQuery) {
       // Traditional single-embed help for commands without subcommands
       const embed = createTraditionalEmbed(command, guildprefix);
       if (isInteraction) {
-        return context.reply({ embeds: [embed] });
+        if (context.deferred || context.replied) {
+          return context.editReply({ embeds: [embed] });
+        }
+        return context.reply({ embeds: [embed], ephemeral: false });
       } else {
         return context.channel.send({ embeds: [embed] });
       }
@@ -344,15 +356,21 @@ async function showHelpShared(context, client, commandQuery) {
 
   } else if (commandQuery) {
     if (isInteraction) {
-      return context.reply({ content: `Command \`${commandQuery}\` does not exist` });
+      if (context.deferred || context.replied) {
+        return context.editReply({ content: `Command \`${commandQuery}\` does not exist` });
+      }
+      return context.reply({ content: `Command \`${commandQuery}\` does not exist`, ephemeral: false });
     } else {
-      return embeds.warn(message, `Command \`${commandQuery}\` does not exist`);
+      return embeds.warn(message, `Command \`${commandQuery}\` does not exist`, false);
     }
 
   } else {
     const msg = `website will be added soon, use [**support server**](https://discord.gg/8XajeEMH) for now`;
     if (isInteraction) {
-      return context.reply({ content: msg });
+      if (context.deferred || context.replied) {
+        return context.editReply({ content: msg });
+      }
+      return context.reply({ content: msg, ephemeral: false });
     } else {
       return context.channel.send(msg);
     }
@@ -435,6 +453,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    await interaction.deferReply();
     const commandQuery = interaction.options.getString('command');
     return showHelpShared(interaction, interaction.client, commandQuery);
   }

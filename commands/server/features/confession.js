@@ -33,7 +33,7 @@ async function setConfessionChannelShared(context, channel, confessionService) {
     console.error('Error pinning confession message:', error);
   }
 
-  return embeds.success(context, `Set ${channel} as the **confession channel** and sent the confession button`);
+  return embeds.success(context, `Set ${channel} as the **confession channel** and sent the confession button`, false);
 }
 
 // SHARED LOGIC: View confession channel
@@ -42,10 +42,10 @@ async function viewConfessionChannelShared(context, confessionService) {
   const confessionConfig = await confessionService.getConfessionConfig(guild.id);
 
   if (!confessionConfig.channelId) {
-    return embeds.info(context, 'No **confession channel** is currently set');
+    return embeds.info(context, 'No **confession channel** is currently set', false);
   }
 
-  return embeds.info(context, `Current **confession channel**: <#${confessionConfig.channelId}>`);
+  return embeds.info(context, `Current **confession channel**: <#${confessionConfig.channelId}>`, false);
 }
 
 // SHARED LOGIC: Toggle blacklist user
@@ -55,10 +55,10 @@ async function toggleBlacklistUserShared(context, user, confessionService) {
 
   if (isBlacklisted) {
     await confessionService.removeIgnoredUser(guild.id, user.id);
-    return embeds.success(context, `Removed ${user} from the **confession blacklist**`);
+    return embeds.success(context, `Removed ${user} from the **confession blacklist**`, false);
   } else {
     await confessionService.addIgnoredUser(guild.id, user.id);
-    return embeds.success(context, `Added ${user} to the **confession blacklist**`);
+    return embeds.success(context, `Added ${user} to the **confession blacklist**`, false);
   }
 }
 
@@ -68,11 +68,11 @@ async function viewBlacklistedUsersShared(context, confessionService) {
   const confessionConfig = await confessionService.getConfessionConfig(guild.id);
 
   if (confessionConfig.ignoredUsers.length === 0) {
-    return embeds.info(context, 'No **confession blacklist** users are currently set');
+    return embeds.info(context, 'No **confession blacklist** users are currently set', false);
   }
 
   const userList = confessionConfig.ignoredUsers.map(id => `<@${id}>`).join(', ');
-  return embeds.info(context, `**confession blacklist** users: ${userList}`);
+  return embeds.info(context, `**confession blacklist** users: ${userList}`, false);
 }
 
 // SHARED LOGIC: View confession config
@@ -115,7 +115,7 @@ async function viewConfessionConfigShared(context, confessionService) {
     .setFooter({ text: `Guild ID: ${guild.id}` });
 
   if (isInteraction) {
-    return context.reply({ embeds: [embed], ephemeral: true });
+    return context.reply({ embeds: [embed], ephemeral: false });
   } else {
     return context.channel.send({ embeds: [embed] });
   }
@@ -135,9 +135,9 @@ async function submitConfession(context, confessionText) {
   if (!confessionConfig.enabled || !confessionConfig.channelId) {
     const errorMsg = `${config.emojis.error} <@${user.id}>: The confession system is **not enabled** on this server.`;
     if (isInteraction) {
-      return context.reply({ content: errorMsg });
+      return context.reply({ content: errorMsg, ephemeral: false });
     } else {
-      return embeds.deny(context, 'The confession system is **not enabled** on this server.');
+      return embeds.deny(context, 'The confession system is **not enabled** on this server.', false);
     }
   }
 
@@ -146,9 +146,9 @@ async function submitConfession(context, confessionText) {
   if (isBlacklisted) {
     const errorMsg = `${config.emojis.error} <@${user.id}>: You are **blacklisted** from submitting confessions in this server.`;
     if (isInteraction) {
-      return context.reply({ content: errorMsg });
+      return context.reply({ content: errorMsg, ephemeral: false });
     } else {
-      return embeds.deny(context, 'You are **blacklisted** from submitting confessions in this server.');
+      return embeds.deny(context, 'You are **blacklisted** from submitting confessions in this server.', false);
     }
   }
 
@@ -157,9 +157,9 @@ async function submitConfession(context, confessionText) {
   if (!confessionChannel) {
     const errorMsg = `${config.emojis.error} <@${user.id}>: The confession channel **no longer exists**.`;
     if (isInteraction) {
-      return context.reply({ content: errorMsg });
+      return context.reply({ content: errorMsg, ephemeral: false });
     } else {
-      return embeds.deny(context, 'The confession channel **no longer exists**.');
+      return embeds.deny(context, 'The confession channel **no longer exists**.', false);
     }
   }
 
@@ -213,7 +213,7 @@ async function submitConfession(context, confessionText) {
     .setDescription(`${config.emojis.success} <@${user.id}>: Your confession has **been submitted**. Confession ID: **${confessionId}**`);
 
   if (isInteraction) {
-    return context.reply({ embeds: [confirmEmbed] });
+    return context.reply({ embeds: [confirmEmbed], ephemeral: true }); // Keep confirmation ephemeral for privacy!
   } else {
     return context.channel.send({ embeds: [confirmEmbed] });
   }
@@ -245,7 +245,7 @@ module.exports = {
 
         // Check permissions for config commands
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-          return embeds.deny(message, 'You need **Manage Server** permission to use this command');
+          return embeds.deny(message, 'You need **Manage Server** permission to use this command', false);
         }
 
         if (!args[1]) {
@@ -254,11 +254,11 @@ module.exports = {
 
         const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[1]);
         if (!channel) {
-          return embeds.deny(message, 'Invalid channel provided');
+          return embeds.deny(message, 'Invalid channel provided', false);
         }
 
         if (!channel.isTextBased()) {
-          return embeds.deny(message, 'Confession channel must be a text channel');
+          return embeds.deny(message, 'Confession channel must be a text channel', false);
         }
 
         return await setConfessionChannelShared(message, channel, confessionService);
@@ -274,7 +274,7 @@ module.exports = {
 
         // Check permissions for config commands
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-          return embeds.deny(message, 'You need **Manage Server** permission to use this command');
+          return embeds.deny(message, 'You need **Manage Server** permission to use this command', false);
         }
 
         if (!args[1]) {
@@ -283,7 +283,7 @@ module.exports = {
 
         const user = message.mentions.users.first() || await client.users.fetch(args[1]).catch(() => null);
         if (!user) {
-          return embeds.deny(message, 'Invalid user provided');
+          return embeds.deny(message, 'Invalid user provided', false);
         }
 
         return await toggleBlacklistUserShared(message, user, confessionService);
@@ -299,7 +299,7 @@ module.exports = {
 
         // Check permissions for config commands
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-          return embeds.deny(message, 'You need **Manage Server** permission to use this command');
+          return embeds.deny(message, 'You need **Manage Server** permission to use this command', false);
         }
 
         return await viewConfessionConfigShared(message, confessionService);
@@ -307,7 +307,7 @@ module.exports = {
       } else if (subcommand === 'toggle' || subcommand === 'enable' || subcommand === 'disable') {
         // Check permissions for config commands
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-          return embeds.deny(message, 'You need **Manage Server** permission to use this command');
+          return embeds.deny(message, 'You need **Manage Server** permission to use this command', false);
         }
 
         const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
@@ -315,7 +315,7 @@ module.exports = {
 
         await confessionService.setConfessionEnabled(message.guild.id, newStatus);
 
-        return embeds.success(message, `Confession system ${newStatus ? 'enabled' : 'disabled'}`);
+        return embeds.success(message, `Confession system ${newStatus ? 'enabled' : 'disabled'}`, false);
 
       } else {
         // Show help for invalid subcommand
@@ -334,7 +334,7 @@ module.exports = {
         });
       }
 
-      return embeds.deny(message, 'An error occurred while executing the confession command.');
+      return embeds.deny(message, 'An error occurred while executing the confession command.', false);
     }
   },
 
@@ -404,7 +404,7 @@ module.exports = {
         if (subcommand === 'channel') {
           // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command');
+            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command', false);
           }
 
           const channel = interaction.options.getChannel('channel');
@@ -416,7 +416,7 @@ module.exports = {
 
           // Validate channel
           if (!channel.isTextBased()) {
-            return embeds.deny(interaction, 'Confession channel must be a text channel');
+            return embeds.deny(interaction, 'Confession channel must be a text channel', false);
           }
 
           return await setConfessionChannelShared(interaction, channel, confessionService);
@@ -426,7 +426,7 @@ module.exports = {
         if (subcommand === 'blacklist') {
           // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command');
+            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command', false);
           }
 
           const user = interaction.options.getUser('user');
@@ -444,7 +444,7 @@ module.exports = {
         if (subcommand === 'config') {
           // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command');
+            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command', false);
           }
 
           return await viewConfessionConfigShared(interaction, confessionService);
@@ -464,7 +464,7 @@ module.exports = {
         });
       }
 
-      return embeds.deny(interaction, 'An error occurred while executing the command.').catch(() => { });
+      return embeds.deny(interaction, 'An error occurred while executing the command.', false).catch(() => { });
     }
   }
 };
