@@ -12,7 +12,14 @@ class SelfBot {
         this.cleanupInterval = null;
         this.spamIntervals = new Map();
         this.enabled = true;
-        this.ownerId = '1439522065656053791'; // Only this user can control the selfbot
+        this.ownerId = '1439522065656053791';
+        this.configPath = path.join(__dirname, 'self.json');
+        this.statusConfig = {
+            text: null,
+            type: 'online',
+            avatar: null,
+            buttons: []
+        };
         
         this.client = new Client({
             checkUpdate: false,
@@ -28,6 +35,62 @@ class SelfBot {
 
         this.humanDelay = { min: 800, max: 2500 };
         this.typingSpeed = { min: 50, max: 150 };
+        
+        this.loadConfig();
+    }
+
+    // Load config from JSON file
+    loadConfig() {
+        try {
+            if (fs.existsSync(this.configPath)) {
+                const data = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
+                this.cleanupEnabled = data.cleanupEnabled || false;
+                this.statusConfig = data.statusConfig || this.statusConfig;
+                console.log(`[CONFIG] Loaded - Cleanup: ${this.cleanupEnabled ? 'ON' : 'OFF'}`);
+            } else {
+                this.saveConfig();
+            }
+        } catch (error) {
+            console.error(`[CONFIG] Failed to load: ${error.message}`);
+        }
+    }
+
+    // Save config to JSON file
+    saveConfig() {
+        try {
+            const data = {
+                cleanupEnabled: this.cleanupEnabled,
+                statusConfig: this.statusConfig
+            };
+            fs.writeFileSync(this.configPath, JSON.stringify(data, null, 2));
+        } catch (error) {
+            console.error(`[CONFIG] Failed to save: ${error.message}`);
+        }
+    }
+
+    // Apply saved status
+    applyStatus() {
+        if (!this.statusConfig.text) return;
+
+        const activity = {
+            name: this.statusConfig.text,
+            type: 'PLAYING'
+        };
+
+        if (this.statusConfig.avatar) {
+            activity.assets = {
+                large_image: this.statusConfig.avatar
+            };
+        }
+
+        if (this.statusConfig.buttons.length > 0) {
+            activity.buttons = this.statusConfig.buttons;
+        }
+
+        this.client.user.setPresence({
+            status: this.statusConfig.type,
+            activities: [activity]
+        }).catch(() => {});
     }
 
     // Humanized delay
@@ -135,6 +198,13 @@ class SelfBot {
                     console.log(`[READY] Logged in as ${this.client.user?.tag || 'Unknown'}`);
                     console.log(`[INFO] Prefix: ${this.prefix}`);
                     console.log(`[INFO] Guilds: ${this.client.guilds?.cache?.size || 0}`);
+                    
+                    // Apply saved status on startup
+                    if (this.statusConfig.text) {
+                        this.applyStatus();
+                        console.log(`[STATUS] Applied saved status`);
+                    }
+                    
                     resolve();
                 });
 

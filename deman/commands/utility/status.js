@@ -4,6 +4,52 @@ module.exports = {
     async execute(message, args, bot) {
         if (args.length === 0) return;
 
+        const subcommand = args[0]?.toLowerCase();
+
+        // Reset status
+        if (subcommand === 'reset') {
+            bot.statusConfig = {
+                text: null,
+                type: 'online',
+                avatar: null,
+                buttons: []
+            };
+            bot.saveConfig();
+            await bot.client.user.setPresence({
+                status: 'online',
+                activities: []
+            }).catch(() => {});
+            return;
+        }
+
+        // Set avatar for activity
+        if (subcommand === 'av') {
+            const imageUrl = args[1] || message.attachments.first()?.url;
+            if (!imageUrl) return;
+            
+            bot.statusConfig.avatar = imageUrl;
+            bot.saveConfig();
+            bot.applyStatus();
+            return;
+        }
+
+        // Add button to status
+        if (subcommand === 'button') {
+            const buttonText = args.slice(1).join(' ');
+            const urlMatch = buttonText.match(/--(.+)/);
+            
+            if (!urlMatch) return;
+            
+            const name = buttonText.replace(/--(.+)/, '').trim();
+            const url = urlMatch[1].trim();
+            
+            bot.statusConfig.buttons.push({ label: name, url: url });
+            bot.saveConfig();
+            bot.applyStatus();
+            return;
+        }
+
+        // Set status text
         let statusType = 'online';
         let statusText = args.join(' ');
 
@@ -21,12 +67,9 @@ module.exports = {
             statusText = statusText.replace('--online', '').trim();
         }
 
-        await bot.client.user.setPresence({
-            status: statusType,
-            activities: [{
-                name: statusText,
-                type: 'PLAYING'
-            }]
-        }).catch(() => {});
+        bot.statusConfig.text = statusText;
+        bot.statusConfig.type = statusType;
+        bot.saveConfig();
+        bot.applyStatus();
     }
 };

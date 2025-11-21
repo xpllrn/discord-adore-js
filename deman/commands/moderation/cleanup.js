@@ -6,8 +6,10 @@ module.exports = {
 
         if (subcommand === 'on') {
             bot.cleanupEnabled = true;
+            bot.saveConfig();
         } else if (subcommand === 'off') {
             bot.cleanupEnabled = false;
+            bot.saveConfig();
         }
     }
 };
