@@ -71,7 +71,7 @@ module.exports = {
     // Check subcommand-specific cooldown
     const cooldownCheck = checkSubcommandCooldown(message.author.id, subcommand);
     if (cooldownCheck) {
-      return embeds.warn(message, `Please wait **${cooldownCheck.timeString}** before using \`customize ${subcommand}\` again.`);
+      return embeds.cooldown(message, `Please wait **${cooldownCheck.timeString}** before using \`customize ${subcommand}\` again.`);
     }
 
     // Handle avatar customization

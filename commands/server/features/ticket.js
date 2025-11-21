@@ -17,7 +17,7 @@ module.exports = {
   description: "Manage the ticket system for your server",
   permission: "Manage Guild",
   isGroupCommand: true,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
 
     await ensureGuildData(message.guild.id);
 
@@ -169,7 +169,7 @@ async function handleSetup(client, message, args) {
 
     // Check for custom message
     const customMessage = await guildService.getTicketCustomMessage(message.guild.id);
-    
+
     let embed;
     let content = null;
 
@@ -565,10 +565,10 @@ async function handleMessage(client, message, args) {
 
     if (ticketMessageCooldowns.has(cooldownKey)) {
       const expirationTime = ticketMessageCooldowns.get(cooldownKey) + cooldownAmount;
-      
+
       if (now < expirationTime) {
         const timeLeft = Math.ceil((expirationTime - now) / 1000);
-        return embeds.deny(message, `Please wait **${timeLeft}** seconds before using this command again.`);
+        return embeds.cooldown(message, `Please wait **${timeLeft}** seconds before using this command again.`);
       }
     }
 
@@ -589,12 +589,12 @@ async function handleMessage(client, message, args) {
     // Handle remove/none command
     if (customMessage.toLowerCase() === 'remove' || customMessage.toLowerCase() === 'none') {
       await guildService.removeTicketCustomMessage(message.guild.id);
-      
+
       // Update the setup message if it exists
       if (ticketSystem.setupMessageId && ticketSystem.setupChannelId) {
         await updateTicketSetupMessage(client, message.guild, ticketSystem, null);
       }
-      
+
       // Set cooldown
       ticketMessageCooldowns.set(cooldownKey, now);
 
@@ -602,7 +602,7 @@ async function handleMessage(client, message, args) {
       setTimeout(() => {
         ticketMessageCooldowns.delete(cooldownKey);
       }, cooldownAmount);
-      
+
       return embeds.success(message, "Custom ticket message has been removed. The default message will now be used.");
     }
 
@@ -644,7 +644,7 @@ async function updateTicketSetupMessage(client, guild, ticketSystem, customMessa
     if (customMessage) {
       // Use EmbedVariableProcessor to handle custom message
       const { EmbedVariableProcessor } = require('../../../utils/embeds/embedbuilder');
-      
+
       // Check if it's an embed or text message
       if (customMessage.trim().startsWith('{embed}')) {
         // Process as embed - create a temporary channel to process the embed
@@ -705,7 +705,7 @@ async function processCustomTicketMessage(customMessage, guild, client) {
   // This is a helper function to process custom embed messages
   // We'll simulate the EmbedVariableProcessor without actually sending a message
   const { EmbedVariableProcessor } = require('../../../utils/embeds/embedbuilder');
-  
+
   // Replace variables first
   const processedContent = EmbedVariableProcessor.replaceVariables(customMessage, {
     guild: guild,
@@ -715,25 +715,25 @@ async function processCustomTicketMessage(customMessage, guild, client) {
   // Parse the embed content manually since we can't use the actual processor
   if (processedContent.trim().startsWith('{embed}')) {
     const embedContent = processedContent.replace(/^\s*{embed}\s*\$v\s*/, '');
-    
+
     // Create a basic embed and try to parse the content
     const embed = new EmbedBuilder().setColor(colors.info);
     let content = null;
 
     // Split by $v to get individual parameters
     const parts = embedContent.split('$v');
-    
+
     for (const part of parts) {
       const trimmed = part.trim();
       if (!trimmed || !trimmed.startsWith('{') || !trimmed.endsWith('}')) continue;
-      
+
       const paramContent = trimmed.slice(1, -1);
       const colonIndex = paramContent.indexOf(':');
       if (colonIndex === -1) continue;
-      
+
       const paramName = paramContent.substring(0, colonIndex).trim();
       const paramValue = paramContent.substring(colonIndex + 1).trim();
-      
+
       switch (paramName) {
         case 'title':
           embed.setTitle(paramValue);

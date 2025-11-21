@@ -37,7 +37,7 @@ async function processCommand(message, isEdit = false) {
     if (!client.cacheNotReadyMessageSent) {
       console.log(`⏳ Cache not ready, skipping command from ${message.author.tag}`);
       client.cacheNotReadyMessageSent = true;
-      
+
       // Clear the flag after 30 seconds to allow occasional status updates
       setTimeout(() => {
         client.cacheNotReadyMessageSent = false;
@@ -59,19 +59,19 @@ async function processCommand(message, isEdit = false) {
   const guildService = getService('guild');
   const guildData = await guildService.get(message.guild.id);
   const guildAliases = guildData?.Aliases || [];
-  
+
   // Find matching alias
   const guildAlias = guildAliases.find(a => a.shortcut === commandName);
-  
+
   if (guildAlias) {
     // Check if alias contains {0} placeholder
     if (guildAlias.command.includes('{0}')) {
       // Get the first argument to replace {0}
       const placeholderValue = args.shift() || '';
-      
+
       // Replace {0} with the first argument
       const expandedCommand = guildAlias.command.replace(/\{0\}/g, placeholderValue);
-      
+
       // Parse the expanded command
       const aliasCommand = expandedCommand.split(' ');
       commandName = aliasCommand.shift().toLowerCase();
@@ -88,7 +88,7 @@ async function processCommand(message, isEdit = false) {
 
   // Find command
   const command = client.commands.get(commandName) ||
-                 client.commands.get(client.aliases.get(commandName));
+    client.commands.get(client.aliases.get(commandName));
 
   if (!command) return;
 
@@ -113,7 +113,7 @@ async function processCommand(message, isEdit = false) {
     if (!isEdit) { // Don't apply cooldowns to edited messages
       const cooldownResult = handleCooldown(message, command);
       if (cooldownResult) {
-        return embeds.warn(message, cooldownResult);
+        return embeds.cooldown(message, cooldownResult);
       }
     }
 
@@ -295,7 +295,7 @@ async function getUserPrefix(userId) {
  */
 async function setGuildPrefix(guildId, prefix) {
   console.log(`🔄 [PREFIX-PROCESSOR] Setting prefix for guild ${guildId} to "${prefix}"`);
-  
+
   try {
     const prefixService = getService('prefix');
     const result = await prefixService.setGuildPrefix(guildId, prefix);
@@ -392,7 +392,7 @@ async function runHelpCommand(message, commandName, subcommandName = null) {
  */
 async function handlePermissionError(message, errorText) {
   let missingPermType = 'embed';
-  
+
   // Fallback 1: Try to send as plain text (if only embed permission is missing)
   try {
     const permissionMessage = `I do **NOT** have perms to type **${missingPermType}** in the server, Please **check** adore role perms.`;

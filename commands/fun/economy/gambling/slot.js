@@ -4,9 +4,6 @@ const { getService } = require('@services');
 const { getGuildPrefix } = require('../../../../utils/commandProcessor');
 const logger = require('../../../../utils/logger');
 
-// Cooldown map to track user cooldowns
-const cooldowns = new Map();
-
 // Utility functions embedded within the command
 function formatCurrency(amount) {
   return Math.floor(amount).toLocaleString();
@@ -32,10 +29,10 @@ function parseAmount(input, balance) {
     if (parts.length === 2) {
       const beforeK = parseFloat(parts[0]);
       const afterK = parseFloat(parts[1]) || 0;
-      
+
       if (isNaN(beforeK) || beforeK < 0) return null;
       if (isNaN(afterK) || afterK < 0) return null;
-      
+
       const amount = Math.floor(beforeK * 1000 + afterK);
       return amount;
     }
@@ -54,24 +51,8 @@ module.exports = {
   description: 'Play the slot machine! Match symbols to win big!',
   syntax: 'slot (amount)',
   example: 'slot 999',
+  cooldown: 5000, // 5 seconds - handled automatically by command handler
   run: async (client, message, args) => {
-    // Check cooldown
-    const cooldownTime = 5000; // 5 seconds
-    const now = Date.now();
-    const userId = message.author.id;
-
-    if (cooldowns.has(userId)) {
-      const expirationTime = cooldowns.get(userId) + cooldownTime;
-      if (now < expirationTime) {
-        const timeLeft = ((expirationTime - now) / 1000).toFixed(1);
-        return embeds.warn(message, `Please wait **${timeLeft}** seconds before playing slots again`);
-      }
-    }
-
-    // Set cooldown
-    cooldowns.set(userId, now);
-    setTimeout(() => cooldowns.delete(userId), cooldownTime);
-
     if (!args[0]) {
       return embeds.warn(message, 'You must give an **amount** to bet!');
     }
@@ -201,13 +182,13 @@ module.exports = {
           // Pick a random high-value symbol for near-miss
           const nearMissSymbols = ['💎', '💸', '🍒'];
           const nearMissSymbol = nearMissSymbols[Math.floor(Math.random() * nearMissSymbols.length)];
-          
+
           // Create 2 matching + 1 different
           const differentSymbol = allSymbols.find(s => s !== nearMissSymbol);
-          
+
           // Randomly place the different symbol (position 1, 2, or 3)
           const differentPosition = Math.floor(Math.random() * 3);
-          
+
           if (differentPosition === 0) {
             finalSlot1 = differentSymbol;
             finalSlot2 = nearMissSymbol;
@@ -247,7 +228,7 @@ module.exports = {
       if (selectedOutcome.type === 'triple') {
         // Calculate gross winnings (payout)
         const grossWinnings = Math.floor(amount * selectedOutcome.multiplier);
-        
+
         if (selectedOutcome.multiplier === 1) {
           // Triple bananas - break even (return bet, no tax)
           winnings = grossWinnings;
@@ -259,13 +240,13 @@ module.exports = {
           const profit = grossWinnings - amount; // profit = payout - bet
           const taxRate = Math.random() * 0.15 + 0.05; // Random tax between 5% and 20%
           taxAmount = Math.floor(profit * taxRate);
-          
+
           // Final winnings after tax
           winnings = grossWinnings - taxAmount;
-          
+
           await userService.updateWallet(message.author.id, winnings);
           await userService.updateGamblingStats(message.author.id, amount, winnings - amount, 0);
-          
+
           if (selectedOutcome.multiplier === 10) {
             resultText = `JACKPOT! You won ${formatCurrency(profit)} coins but paid ${formatCurrency(taxAmount)} in taxes (${Math.floor(taxRate * 100)}%). Net profit: ${formatCurrency(winnings - amount)} coins! 💎💎💎`;
           } else {
@@ -290,11 +271,11 @@ module.exports = {
             { name: '​', value: `> **Bet:** ${formatCurrency(amount)}`, inline: true },
             { name: '​', value: `> **Payout:** ${formatCurrency(winAmount)}`, inline: true }
           );
-        
+
         if (tax > 0) {
           embed.addFields({ name: '​', value: `> **Tax:** ${formatCurrency(tax)}`, inline: true });
         }
-        
+
         embed.setFooter({ text: result });
         return embed;
       };

@@ -13,7 +13,7 @@ const embeds = {
             .setDescription(`${emojis.success} <@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed] });
+            return context.reply({ embeds: [embed], ephemeral: true });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
@@ -28,7 +28,7 @@ const embeds = {
             .setDescription(`${emojis.error} <@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed] });
+            return context.reply({ embeds: [embed], ephemeral: true });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
@@ -43,7 +43,7 @@ const embeds = {
             .setDescription(`${emojis.warn} <@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed] });
+            return context.reply({ embeds: [embed], ephemeral: true });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
@@ -58,7 +58,22 @@ const embeds = {
             .setDescription(`<@${user.id}>: ${text}`)
 
         if (isInteraction) {
-            return context.reply({ embeds: [embed] });
+            return context.reply({ embeds: [embed], ephemeral: true });
+        } else {
+            return context.channel.send({ embeds: [embed] });
+        }
+    },
+
+    cooldown: (context, text) => {
+        const user = context.user || context.author;
+        const isInteraction = !!context.user;
+
+        const embed = new EmbedBuilder()
+            .setColor(colors.cooldown)
+            .setDescription(`${emojis.cooldown} <@${user.id}>: ${text}`)
+
+        if (isInteraction) {
+            return context.reply({ embeds: [embed], ephemeral: true });
         } else {
             return context.channel.send({ embeds: [embed] });
         }
