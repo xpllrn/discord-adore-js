@@ -16,6 +16,7 @@ class SelfBot {
         
         this.client = new Client({
             checkUpdate: false,
+            readyStatus: false,
             ws: {
                 properties: {
                     browser: 'Discord Client',
