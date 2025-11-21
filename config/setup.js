@@ -69,10 +69,10 @@ module.exports = {
 
   // Colors Configuration
   colors: {
-    cooldown: '#a5eb78',
-    success: '#a4ec7c',
-    error: '#fc6464',
-    warn: '#fbd03b',
+    cooldown: '#a5cae9',
+    success: '#51e395',
+    error: '#f44336',
+    warn: '#f29c1e',
     info: '#e1d4da',
     embed: '#e1d4da',
     spotify: '#1cdc64'
@@ -80,10 +80,10 @@ module.exports = {
 
   // Emojis Configuration
   emojis: {
-    cooldown: '<:cooldown:1439546267884589177>',
-    success: '<:approve:1439540948450414592>',
-    error: '<:deny:1439540956515930112>',
-    warn: '<:warning:1439541009045524543>',
+    cooldown: '<:cooldown:1441274869789622304>',
+    success: '<:approve:1441260467514511461>',
+    error: '<:error:1441260303559032933>',
+    warn: '<:warning:1441260398681653381>',
     left: '<:left:1439540967215599768>',
     right: '<:right:1439540986299551775>',
     cancel: '<:cancel:1439546265733173299>',
