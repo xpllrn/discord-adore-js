@@ -17,6 +17,9 @@ module.exports = {
     if (!reaction.message.guild) return;
 
     try {
+      // Process no self-react functionality
+      await processNoSelfReact(reaction, user);
+
       // Process starboard functionality
       await processStarboard(reaction, user);
 
@@ -30,6 +33,40 @@ module.exports = {
     }
   },
 };
+
+async function processNoSelfReact(reaction, user) {
+  try {
+    // Skip if user is a bot
+    if (user.bot) return;
+
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+    const message = reaction.message;
+    const guild = message.guild;
+
+    // Get no self-react configuration
+    const guildData = await guildService.ensureGuildData(guild.id);
+    const noSelfReact = guildData.NoSelfReact;
+
+    // Skip if no self-react is not enabled
+    if (!noSelfReact || !noSelfReact.enabled) return;
+
+    // Skip if user is in bypass list
+    if (noSelfReact.bypassUsers && noSelfReact.bypassUsers.includes(user.id)) return;
+
+    // Check if user is reacting to their own message
+    if (message.author.id === user.id) {
+      // Remove the reaction
+      try {
+        await reaction.users.remove(user.id);
+      } catch (error) {
+        console.error('Error removing self-reaction:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error in no self-react processing:', error);
+  }
+}
 
 async function processStarboard(reaction, user) {
   try {

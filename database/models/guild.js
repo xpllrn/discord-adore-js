@@ -1336,6 +1336,17 @@ const guildSchema = new mongoose.Schema({
   NSFWBypass: {
     type: Boolean,
     default: false
+  },
+
+  // No Self React - prevents members from reacting to their own messages
+  NoSelfReact: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    bypassUsers: [{
+      type: String // User IDs who can self-react
+    }]
   }
 }, {
   timestamps: true
