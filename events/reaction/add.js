@@ -39,10 +39,24 @@ async function processNoSelfReact(reaction, user) {
     // Skip if user is a bot
     if (user.bot) return;
 
+    // Only check for specific emojis to reduce load
+    const targetEmojis = ['😭', '💀'];
+    if (!targetEmojis.includes(reaction.emoji.name)) return;
+
     const { getService } = require('@services');
     const guildService = getService('guild');
     const message = reaction.message;
     const guild = message.guild;
+
+    // Fetch message if partial to ensure we have author data
+    if (message.partial) {
+      try {
+        await message.fetch();
+      } catch (error) {
+        console.error('[NSR] Failed to fetch partial message:', error);
+        return;
+      }
+    }
 
     // Get no self-react configuration
     const guildData = await guildService.ensureGuildData(guild.id);
@@ -55,16 +69,18 @@ async function processNoSelfReact(reaction, user) {
     if (noSelfReact.bypassUsers && noSelfReact.bypassUsers.includes(user.id)) return;
 
     // Check if user is reacting to their own message
-    if (message.author.id === user.id) {
+    if (message.author && message.author.id === user.id) {
       // Remove the reaction
       try {
         await reaction.users.remove(user.id);
+        console.log(`[NSR] Removed ${reaction.emoji.name} self-reaction from ${user.tag} in ${guild.name}`);
       } catch (error) {
-        console.error('Error removing self-reaction:', error);
+        console.error('[NSR] Error removing self-reaction:', error);
+        console.error('[NSR] Bot needs MANAGE_MESSAGES permission to remove reactions');
       }
     }
   } catch (error) {
-    console.error('Error in no self-react processing:', error);
+    console.error('[NSR] Error in no self-react processing:', error);
   }
 }
 

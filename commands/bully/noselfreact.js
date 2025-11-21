@@ -8,9 +8,14 @@ module.exports = {
   aliases: ["noselfreact"],
   description: "Prevent members from reacting to their own messages",
   permission: "Manage Server",
+  isGroupCommand: true,
   run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) return;
+
+    if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageMessages)) {
+      return embeds.deny(message, 'I need **Manage Messages** permission to remove self-reactions');
+    }
 
     const guildService = getService('guild');
     const subcommand = args[0]?.toLowerCase();
@@ -20,6 +25,13 @@ module.exports = {
     }
 
     if (subcommand === 'on') {
+      const subcommandInfo = {
+        description: 'Enable no self-react',
+        usage: '{guildprefix}nsr on',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}nsr on'
+      };
       const guildData = await guildService.ensureGuildData(message.guild.id);
       
       if (guildData.NoSelfReact?.enabled) {
@@ -30,10 +42,17 @@ module.exports = {
         'NoSelfReact.enabled': true
       });
 
-      return embeds.success(message, 'No self-react has been **enabled**');
+      return embeds.success(message, '**No selfreact** has been **enabled**');
     }
 
     if (subcommand === 'off') {
+      const subcommandInfo = {
+        description: 'Disable no self-react',
+        usage: '{guildprefix}nsr off',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}nsr off'
+      }; 
       const guildData = await guildService.ensureGuildData(message.guild.id);
       
       if (!guildData.NoSelfReact?.enabled) {
@@ -44,14 +63,21 @@ module.exports = {
         'NoSelfReact.enabled': false
       });
 
-      return embeds.success(message, 'No self-react has been **disabled**');
+      return embeds.success(message, 'No selfreact** has been **disabled**');
     }
 
     if (subcommand === 'bypass') {
+      const subcommandInfo = {
+        description: 'Toggle bypass for a user',
+        usage: '{guildprefix}nsr bypass [@user]',
+        aliases: [],
+        parameters: ['user'],
+        example: '{guildprefix}nsr bypass @user'
+      };
       const targetUser = message.mentions.users.first();
       
       if (!targetUser) {
-        return embeds.deny(message, 'Please mention a user to toggle bypass');
+        return embeds.deny(message, 'Please **mention a user** to bypass');
       }
 
       const guildData = await guildService.ensureGuildData(message.guild.id);
@@ -64,14 +90,14 @@ module.exports = {
           'NoSelfReact.bypassUsers': bypassUsers
         });
 
-        return embeds.success(message, `Removed ${targetUser} from bypass list`);
+        return embeds.success(message, `Removed ${targetUser} from **bypass list**`);
       } else {
         bypassUsers.push(targetUser.id);
         await guildService.updateGuildData(message.guild.id, {
           'NoSelfReact.bypassUsers': bypassUsers
         });
 
-        return embeds.success(message, `Added ${targetUser} to bypass list`);
+        return embeds.success(message, `Added ${targetUser} to **bypass list**`);
       }
     }
 
