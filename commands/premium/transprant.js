@@ -25,8 +25,8 @@ async function removeBg(blob) {
 module.exports = {
     name: "transprant",
     aliases: ['tp'],
-    description: 'Remove background from an image to make it transparent',
-    usage: '{guildprefix}transprant [attach image or reply to message with image]',
+    description: 'Remove background from an image',
+    usage: '{guildprefix}transprant [attach image]',
     example: '{guildprefix}transprant',
     premiumBypass: false,
     run: async (client, message, args) => {
@@ -57,7 +57,7 @@ module.exports = {
 
         // No image found
         if (!imageUrl) {
-            return embeds.deny(message, 'Please attach an image or reply to a message with an image to remove its background');
+            return embeds.deny(message, 'Please **attach** an image or **reply** to a message with an image');
         }
 
         await message.channel.sendTyping();
@@ -92,16 +92,7 @@ module.exports = {
 
         } catch (error) {
             logger.webhook.error(error, message);
-
-            if (error.response?.status === 429) {
-                return embeds.deny(message, 'Rate limit reached. Please try again later');
-            } else if (error.response?.status === 403) {
-                return embeds.deny(message, 'Invalid API key. Please contact bot admin');
-            } else if (error.response?.status === 400) {
-                return embeds.deny(message, 'Invalid image format. Please try a different image');
-            } else {
-                return embeds.deny(message, 'Failed to remove background. Please try again later');
-            }
+            return embeds.deny(message, 'Failed to run this service, **contact** the admin');
         }
     }
 };
