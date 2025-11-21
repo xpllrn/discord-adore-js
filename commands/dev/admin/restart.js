@@ -14,60 +14,12 @@ module.exports = {
     if (!await hasPermissionLevel(message, 'dev')) return;
 
     try {
-      const { EmbedBuilder } = require('discord.js');
       const config = require('../../../config/setup');
-
-      // Create initial embed
-      const embed = new EmbedBuilder()
-        .setColor(config.colors.embed)
-        .setDescription('```\n[░░░░░░░░░░░░░░░░░░░░] 0% Initializing restart... ```');
-
-      const msg = await message.channel.send({ embeds: [embed] });
-
-      // Update progress (safe rate: 1 edit per 2 seconds)
-      const steps = [
-        { progress: 20, text: 'saving state...' },
-        { progress: 40, text: 'closing connections...' },
-        { progress: 100, text: 'adore.exe' },
-      ];
-
-      let currentStep = 0;
-      const updateInterval = setInterval(async () => {
-        if (currentStep >= steps.length) {
-          clearInterval(updateInterval);
-          return;
-        }
-
-        const step = steps[currentStep];
-        const filled = Math.floor(20 * (step.progress / 100));
-        const empty = 20 - filled;
-        const bar = '█'.repeat(filled) + '░'.repeat(empty);
-
-        embed.setDescription(`\`\`\`\n[${bar}] ${step.progress}% ${step.text}\n\`\`\``);
-
-        try {
-          await msg.edit({ embeds: [embed] });
-        } catch (error) {
-          // Ignore rate limit errors
-        }
-
-        currentStep++;
-
-        // Trigger restart at 100%
-        if (step.progress === 100) {
-          setTimeout(async () => {
-            try {
-              await execAsync('pm2 restart adore');
-            } catch (error) {
-              console.error('Failed to restart via PM2:', error.message);
-              process.exit(0);
-            }
-          }, 500);
-        }
-      }, 1500); // Update every 1.5 seconds (safe for rate limits)
-
+      await message.react(config.emojis.success);
+      await execAsync('pm2 restart adore');
     } catch (error) {
-      return message.channel.send('I **failed** master, I am sorry');
+      console.error('Failed to restart via PM2:', error.message);
+      process.exit(0);
     }
   }
 };
