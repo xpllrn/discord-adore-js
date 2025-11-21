@@ -1,8 +1,8 @@
 const { PermissionFlagsBits } = require('discord.js');
-const { embeds } = require('../../core/embeds');
-const { hasDiscordPermission } = require('../../utils/permissions');
+const { embeds } = require('../../../core/embeds');
+const { hasDiscordPermission } = require('../../../utils/permissions');
 const { getService } = require('@services');
-const { createConfirmation } = require('../../core/buttons');
+const { createConfirmation } = require('../../../core/buttons');
 
 module.exports = {
   name: "nuke",

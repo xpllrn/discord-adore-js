@@ -1,8 +1,8 @@
 const { PermissionFlagsBits, EmbedBuilder, AutoModerationRuleTriggerType, AutoModerationActionType } = require('discord.js');
-const { embeds } = require('../../core/embeds');
-const { hasDiscordPermission } = require('../../utils/permissions');
-const { colors, emojis } = require('../../config/setup');
-const logger = require('../../utils/logger');
+const { embeds } = require('../../../core/embeds');
+const { hasDiscordPermission } = require('../../../utils/permissions');
+const { colors, emojis } = require('../../../config/setup');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "automod",

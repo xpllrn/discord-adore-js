@@ -1,10 +1,10 @@
 const { PermissionFlagsBits, EmbedBuilder, AutoModerationRuleTriggerType, AutoModerationActionType } = require('discord.js');
-const { embeds } = require('../../core/embeds');
-const { hasDiscordPermission } = require('../../utils/permissions');
-const { runHelpCommand } = require('../../utils/commandProcessor');
-const { findRole, findUser } = require('../../handlers/finder');
-const { colors, emojis } = require('../../config/setup');
-const logger = require('../../utils/logger');
+const { embeds } = require('../../../core/embeds');
+const { hasDiscordPermission } = require('../../../utils/permissions');
+const { runHelpCommand } = require('../../../utils/commandProcessor');
+const { findRole, findUser } = require('../../../handlers/finder');
+const { colors, emojis } = require('../../../config/setup');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "filter",
