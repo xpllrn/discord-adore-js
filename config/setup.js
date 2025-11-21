@@ -80,7 +80,7 @@ module.exports = {
 
   // Emojis Configuration
   emojis: {
-    cooldown: '<:cooldown:1441274869789622304>',
+    cooldown: '<:cooldown:1441276341986005126>',
     success: '<:approve:1441260467514511461>',
     error: '<:error:1441260303559032933>',
     warn: '<:warning:1441260398681653381>',
