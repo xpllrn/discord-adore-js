@@ -4,7 +4,7 @@ const { colors, emojis } = require('../config/setup');
 
 /**
  * Creates pagination buttons for lists
- * @param {Object} message - Discord message object
+ * @param {Object} message - Discord message OR Interaction object
  * @param {Array} items - Array of items to paginate
  * @param {Function} formatPage - Function to format each page (receives items, currentPage, totalPages)
  * @param {Number} itemsPerPage - Number of items per page (default: 10)
@@ -12,8 +12,12 @@ const { colors, emojis } = require('../config/setup');
  * @returns {Promise} - Promise that resolves when pagination is complete
  */
 async function createPagination(message, items, formatPage, itemsPerPage = 10, title = 'List') {
+    // Determine if input is an interaction or message
+    const isInteraction = !!message.user;
+    const user = isInteraction ? message.user : message.author;
+
     if (items.length === 0) {
-        return embeds.info.send(message, `There's NO items to display.`);
+        return embeds.info(message, `There's NO items to display.`, false);
     }
 
     const totalPages = Math.ceil(items.length / itemsPerPage);
@@ -59,10 +63,28 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
     // Send initial message
     const embed = createEmbed(currentPage);
     const buttons = createButtons(currentPage);
-    const sentMessage = await message.channel.send({
-        embeds: [embed],
-        components: [buttons]
-    });
+
+    let sentMessage;
+    if (isInteraction) {
+        if (message.deferred || message.replied) {
+            sentMessage = await message.editReply({
+                embeds: [embed],
+                components: [buttons]
+            });
+        } else {
+            sentMessage = await message.reply({
+                embeds: [embed],
+                components: [buttons],
+                fetchReply: true,
+                ephemeral: false
+            });
+        }
+    } else {
+        sentMessage = await message.channel.send({
+            embeds: [embed],
+            components: [buttons]
+        });
+    }
 
     // Only create collector if there are multiple pages
     if (totalPages === 1) {
@@ -81,7 +103,7 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                 return;
             }
 
-            if (interaction.user.id !== message.author.id) {
+            if (interaction.user.id !== user.id) {
                 const warnEmbed = new EmbedBuilder()
                     .setColor(colors.warn)
                     .setDescription(`${emojis.warn} <@${interaction.user.id}>: You are **NOT** the author of this embed`);
@@ -105,7 +127,6 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                     });
                 } catch (error) {
                     if (error.code === 10062) {
-
                         await sentMessage.edit({ embeds: [newEmbed], components: [newButtons] });
                     } else {
                         throw error;
@@ -125,7 +146,6 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                     });
                 } catch (error) {
                     if (error.code === 10062) {
-
                         await sentMessage.edit({ embeds: [newEmbed], components: [newButtons] });
                     } else {
                         throw error;
@@ -135,17 +155,13 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
             } else if (interaction.customId === 'pagination_cancel') {
                 try {
                     await interaction.deferUpdate();
-                    await sentMessage.delete();
-                } catch (error) {
-                    if (error.code === 10062) {
-                        // Message already deleted or interaction expired
-                        try {
-                            await sentMessage.delete();
-                        } catch (deleteError) {
-                            // Ignore deletion errors
-                        }
+                    if (isInteraction) {
+                        await message.deleteReply();
+                    } else {
+                        await sentMessage.delete();
                     }
-                    // Ignore other deletion errors
+                } catch (error) {
+                    // Ignore deletion errors
                 }
                 collector.stop();
 
@@ -161,7 +177,7 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
 
                 // Create message collector for page number
                 const messageCollector = message.channel.createMessageCollector({
-                    filter: (msg) => msg.author.id === message.author.id,
+                    filter: (msg) => msg.author.id === user.id,
                     time: 10000, // 10 seconds
                     max: 1
                 });
@@ -173,11 +189,10 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                     try {
                         await msg.delete();
                     } catch (error) {
-                        // Ignore if we can't delete the message
+                        // Ignore
                     }
 
                     if (isNaN(pageNumber) || pageNumber < 1 || pageNumber > totalPages) {
-                        // Silently ignore invalid page numbers
                         return;
                     }
 
@@ -192,11 +207,10 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                 });
 
                 messageCollector.on('end', async () => {
-                    // Delete the "choose page" message after timeout or collection
                     try {
                         await interaction.deleteReply();
                     } catch (error) {
-                        // Ignore if we can't delete the reply
+                        // Ignore
                     }
                 });
             }
@@ -223,13 +237,17 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
 
 /**
  * Creates approve/decline confirmation buttons
- * @param {Object} message - Discord message object
+ * @param {Object} message - Discord message OR Interaction object
  * @param {String} confirmationText - Text to display in the warning embed
  * @param {Function} onApprove - Function to execute when approved
  * @param {Function} onDecline - Function to execute when declined (optional)
  * @returns {Promise} - Promise that resolves when confirmation is complete
  */
 async function createConfirmation(message, confirmationText, onApprove, onDecline = null) {
+    // Determine if input is an interaction or message
+    const isInteraction = !!message.user;
+    const user = isInteraction ? message.user : message.author;
+
     // Create approve/decline buttons
     const createButtons = (disabled = false) => {
         const row = new ActionRowBuilder()
@@ -252,12 +270,29 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
 
     const confirmEmbed = new EmbedBuilder()
         .setColor(colors.warn)
-        .setDescription(`${emojis.warn} <@${message.author.id}>: ${confirmationText}`);
+        .setDescription(`${emojis.warn} <@${user.id}>: ${confirmationText}`);
 
-    const sentMessage = await message.channel.send({
-        embeds: [confirmEmbed],
-        components: [buttons]
-    });
+    let sentMessage;
+    if (isInteraction) {
+        if (message.deferred || message.replied) {
+            sentMessage = await message.editReply({
+                embeds: [confirmEmbed],
+                components: [buttons]
+            });
+        } else {
+            sentMessage = await message.reply({
+                embeds: [confirmEmbed],
+                components: [buttons],
+                fetchReply: true,
+                ephemeral: false
+            });
+        }
+    } else {
+        sentMessage = await message.channel.send({
+            embeds: [confirmEmbed],
+            components: [buttons]
+        });
+    }
 
     // Create collector
     const collector = sentMessage.createMessageComponentCollector({
@@ -267,13 +302,11 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
     return new Promise((resolve) => {
         collector.on('collect', async (interaction) => {
             try {
-                // Check if interaction is still valid
                 if (!interaction.isRepliable()) {
                     return;
                 }
 
-                // Check if the user is the author of the command
-                if (interaction.user.id !== message.author.id) {
+                if (interaction.user.id !== user.id) {
                     const warnEmbed = new EmbedBuilder()
                         .setColor(colors.warn)
                         .setDescription(`${emojis.warn} <@${interaction.user.id}>: You are **NOT** the author of this embed`);
@@ -285,10 +318,8 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                 }
 
                 if (interaction.customId === 'confirm_approve') {
-                    // Defer the interaction so onApprove can use editReply
                     await interaction.deferUpdate();
-                    
-                    // Execute approve function and pass interaction for editing
+
                     if (onApprove) {
                         await onApprove(interaction, sentMessage);
                     }
@@ -297,25 +328,18 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                     resolve('approved');
 
                 } else if (interaction.customId === 'confirm_decline') {
-                    // Delete both the original command message and confirmation message
                     try {
                         await interaction.deferUpdate();
-                        await sentMessage.delete();
-                        await message.delete();
-                    } catch (error) {
-                        if (error.code === 10062) {
-
-                            try {
-                                await sentMessage.delete();
-                                await message.delete();
-                            } catch (deleteError) {
-                                // Ignore deletion errors
-                            }
+                        if (isInteraction) {
+                            await message.deleteReply();
+                        } else {
+                            await sentMessage.delete();
+                            await message.delete();
                         }
-                        // Ignore other deletion errors
+                    } catch (error) {
+                        // Ignore
                     }
 
-                    // Execute decline function if provided
                     if (onDecline) {
                         await onDecline(interaction);
                     }
@@ -324,18 +348,21 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                     resolve('declined');
                 }
             } catch (error) {
-
+                // Ignore
             }
         });
 
         collector.on('end', async (collected, reason) => {
             if (reason === 'time') {
                 try {
-                    // Delete both the original command message and confirmation message on timeout
-                    await sentMessage.delete();
-                    await message.delete();
+                    if (isInteraction) {
+                        await message.deleteReply();
+                    } else {
+                        await sentMessage.delete();
+                        await message.delete();
+                    }
                 } catch (error) {
-                    // Ignore deletion errors
+                    // Ignore
                 }
                 resolve('timeout');
             }
