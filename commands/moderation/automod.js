@@ -25,19 +25,27 @@ module.exports = {
     const rulesCreated = [];
     const rulesFailed = [];
 
+    // Rule configurations: 3 preset rules + 3 keyword rules
+    const ruleConfigs = [
+      { name: 'Profanity Filter', type: AutoModerationRuleTriggerType.KeywordPreset, metadata: { presets: [1] }, desc: 'Profanity' },
+      { name: 'Sexual Content Filter', type: AutoModerationRuleTriggerType.KeywordPreset, metadata: { presets: [2] }, desc: 'Sexual Content' },
+      { name: 'Slurs Filter', type: AutoModerationRuleTriggerType.KeywordPreset, metadata: { presets: [3] }, desc: 'Slurs' },
+      { name: 'Keyword Filter 1', type: AutoModerationRuleTriggerType.Keyword, metadata: { keywordFilter: [badWords[0], badWords[1]] }, desc: `${badWords[0]}, ${badWords[1]}` },
+      { name: 'Keyword Filter 2', type: AutoModerationRuleTriggerType.Keyword, metadata: { keywordFilter: [badWords[2], badWords[3]] }, desc: `${badWords[2]}, ${badWords[3]}` },
+      { name: 'Keyword Filter 3', type: AutoModerationRuleTriggerType.Keyword, metadata: { keywordFilter: [badWords[4], badWords[5]] }, desc: `${badWords[4]}, ${badWords[5]}` }
+    ];
+
     // Create rules one by one
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < ruleConfigs.length; i++) {
+      const config = ruleConfigs[i];
       try {
-        const rule = await message.guild.autoModerationRules.create({
-          name: `AutoMod Rule ${i + 1}`,
+        await message.guild.autoModerationRules.create({
+          name: config.name,
           creatorId: creatorId,
           enabled: true,
           eventType: 1, // MESSAGE_SEND
-          triggerType: 5, // KEYWORD_PRESET
-          triggerMetadata: {
-            presets: [1, 2, 3], // Profanity, Sexual Content, Slurs
-            keywordFilter: [badWords[i]]
-          },
+          triggerType: config.type,
+          triggerMetadata: config.metadata,
           actions: [
             {
               type: AutoModerationActionType.BlockMessage,
@@ -48,7 +56,7 @@ module.exports = {
           ]
         });
 
-        rulesCreated.push(`Rule ${i + 1}: \`${badWords[i]}\``);
+        rulesCreated.push(`Rule ${i + 1}: **${config.name}** (${config.desc})`);
 
         // Update loading message
         await loadingMsg.edit({
