@@ -55,10 +55,15 @@ class SelfBot {
                 } else if (item.name.endsWith('.js')) {
                     try {
                         const command = require(fullPath);
+                        if (!command.name) {
+                            console.error(`[ERROR] ${item.name} missing 'name' property`);
+                            return;
+                        }
                         this.commands.set(command.name, command);
                         console.log(`[LOAD] Loaded command: ${command.name}`);
                     } catch (error) {
                         console.error(`[ERROR] Failed to load ${item.name}: ${error.message}`);
+                        console.error(error.stack);
                     }
                 }
             }
@@ -70,23 +75,28 @@ class SelfBot {
 
     // Handle commands
     async handleCommand(message) {
-        if (!message?.content?.startsWith(this.prefix)) return;
-        if (!message.author || !this.client.user) return;
-        if (message.author.id !== this.client.user.id) return;
-        if (!this.enabled) return;
-
-        const args = message.content.slice(this.prefix.length).trim().split(/ +/);
-        const commandName = args.shift().toLowerCase();
-
-        const command = this.commands.get(commandName);
-        if (!command) return;
-
         try {
+            if (!message?.content?.startsWith(this.prefix)) return;
+            if (!message.author || !this.client.user) return;
+            if (message.author.id !== this.client.user.id) return;
+            if (!this.enabled) return;
+
+            const args = message.content.slice(this.prefix.length).trim().split(/ +/);
+            const commandName = args.shift().toLowerCase();
+
+            const command = this.commands.get(commandName);
+            if (!command) return;
+
+            console.log(`[CMD] Executing: ${commandName}`);
+            
             // Delete command message
             await message.delete().catch(() => {});
             await command.execute(message, args, this);
+            
+            console.log(`[CMD] Completed: ${commandName}`);
         } catch (error) {
-            console.error(`[ERROR] Command ${commandName} failed: ${error.message}`);
+            console.error(`[CMD ERROR] ${error.message}`);
+            console.error(error.stack);
         }
     }
 
@@ -99,14 +109,19 @@ class SelfBot {
     // Start the selfbot
     async start() {
         try {
+            console.log('[SELFBOT] Starting initialization...');
+            
             if (!this.token) {
                 throw new Error('TOKEN not found in .env file');
             }
+            console.log('[SELFBOT] Token found');
 
             // Load commands
+            console.log('[SELFBOT] Loading commands...');
             this.loadCommands();
 
             // Set up event handlers BEFORE login
+            console.log('[SELFBOT] Setting up event handlers...');
             this.client.once('ready', () => {
                 console.log(`[READY] Logged in as ${this.client.user?.tag || 'Unknown'}`);
                 console.log(`[INFO] Prefix: ${this.prefix}`);
@@ -130,19 +145,25 @@ class SelfBot {
                     }
                 } catch (error) {
                     console.error(`[MESSAGE ERROR] ${error.message}`);
+                    console.error(error.stack);
                 }
             });
 
             // Error handling
             this.client.on('error', (error) => {
                 console.error(`[CLIENT ERROR] ${error.message}`);
+                console.error(error.stack);
             });
 
             // Login
+            console.log('[SELFBOT] Attempting login...');
             await this.client.login(this.token);
+            console.log('[SELFBOT] Login successful');
 
         } catch (error) {
-            console.error(`[FATAL] Failed to start: ${error.message}`);
+            console.error(`[FATAL] Failed to start selfbot`);
+            console.error(`[FATAL] Error: ${error.message}`);
+            console.error(`[FATAL] Stack: ${error.stack}`);
             throw error;
         }
     }

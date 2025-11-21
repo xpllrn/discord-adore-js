@@ -578,8 +578,26 @@ class GuildService extends BaseService {
     try {
       const guildData = await this.ensureGuildData(guildId);
 
-      // Apply updates
-      Object.assign(guildData, updates);
+      // Apply updates - handle both flat and nested dot notation
+      for (const [key, value] of Object.entries(updates)) {
+        if (key.includes('.')) {
+          // Handle nested paths (e.g., "NoSelfReact.enabled")
+          const parts = key.split('.');
+          let current = guildData;
+          
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!current[parts[i]] || typeof current[parts[i]] !== 'object') {
+              current[parts[i]] = {};
+            }
+            current = current[parts[i]];
+          }
+          
+          current[parts[parts.length - 1]] = value;
+        } else {
+          // Handle flat properties
+          guildData[key] = value;
+        }
+      }
 
       await this.set(guildId, guildData);
       return true;
