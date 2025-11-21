@@ -4,7 +4,7 @@
  */
 
 const fetch = require('node-fetch');
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 const { colors } = require('../config/setup');
 const { embeds } = require('../core/embeds');
 const { getService } = require('@services');
@@ -141,6 +141,83 @@ function createRoleplayCommand(action, actionPastTense) {
   };
 }
 
+/**
+ * Get slash command data for roleplay commands
+ * @param {string} name - Command name
+ * @param {string} description - Command description
+ * @returns {SlashCommandBuilder} Slash command builder
+ */
+function getRoleplaySlashData(name, description) {
+  return new SlashCommandBuilder()
+    .setName(name)
+    .setDescription(description)
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('The user to target')
+        .setRequired(false)
+    );
+}
+
+/**
+ * Execute a roleplay slash command
+ * @param {string} action - The action name
+ * @param {string} actionPastTense - The past tense of the action
+ * @returns {Function} The execute function
+ */
+function executeRoleplaySlash(action, actionPastTense) {
+  return async (interaction) => {
+    try {
+      const targetUser = interaction.options.getUser('user') || interaction.user;
+      const author = interaction.user;
+
+      if (targetUser.id === interaction.client.user.id) {
+        return interaction.reply({ content: 'Leave me alone!', ephemeral: true });
+      }
+
+      // Defer reply since fetching GIF might take time
+      await interaction.deferReply();
+
+      const gifUrl = await fetchWaifuGif(action);
+      const userService = getService('user');
+
+      const count = await userService.trackRoleplayInteraction(
+        author.id,
+        targetUser.id,
+        action
+      );
+
+      const reverseCount = await userService.getRoleplayCount(targetUser.id, author.id, action);
+
+      let description;
+      if (targetUser.id === author.id) {
+        description = `<@${author.id}> ${actionPastTense} themselves`;
+      } else {
+        description = `<@${author.id}> ${actionPastTense} <@${targetUser.id}> for the ${getOrdinal(count)} time!`;
+      }
+
+      let footerText = '';
+      if (reverseCount > 0 && targetUser.id !== author.id) {
+        footerText = `${targetUser.username} ${actionPastTense} ${author.username} ${reverseCount} times before`;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(colors.embed)
+        .setDescription(description)
+        .setImage(gifUrl);
+
+      if (footerText) {
+        embed.setFooter({ text: footerText });
+      }
+
+      return interaction.editReply({ embeds: [embed] });
+
+    } catch (error) {
+      console.log(`${action} slash command failed:`, error.message);
+      return embeds.deny(interaction, `Failed to ${action}! Please try again.`, true);
+    }
+  };
+}
+
 // ===== NSFW ROLEPLAY HELPERS =====
 
 /**
@@ -170,10 +247,10 @@ async function fetchNSFWGif(action) {
 function isNSFWChannel(channel, guildData = null) {
   // If channel is NSFW, always allow
   if (channel.nsfw === true) return true;
-  
+
   // If guild has NSFW bypass enabled, allow in any channel
   if (guildData && guildData.NSFWBypass === true) return true;
-  
+
   return false;
 }
 
@@ -189,7 +266,7 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
       // Get guild data to check for NSFW bypass
       const guildService = getService('guild');
       const guildData = await guildService.ensureGuildData(message.guild.id);
-      
+
       if (!isNSFWChannel(message.channel, guildData)) {
         return embeds.deny(message, 'This command can **only be used** in `NSFW` channels!');
       }
@@ -327,14 +404,14 @@ function handleSpotifyError(message, error) {
   if (errorCode.includes('403') || errorCode.includes('Forbidden') || errorCode.includes('unauthorized')) {
     const { EmbedBuilder } = require('discord.js');
     const config = require('../config/setup');
-    
+
     const errorEmbed = new EmbedBuilder()
       .setColor(config.colors.error)
       .setDescription(
         `❌ ${message.author}: Your **Spotify account** is not approved for **adore** yet.\n\n` +
         `**Create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) and provide your **Spotify email** to get added to the beta list.`
       );
-    
+
     return message.channel.send({ embeds: [errorEmbed] });
   }
 
@@ -344,16 +421,18 @@ function handleSpotifyError(message, error) {
 module.exports = {
   // Shared
   getOrdinal,
-  
+
   // Roleplay
   fetchWaifuGif,
   createRoleplayCommand,
-  
+  getRoleplaySlashData,
+  executeRoleplaySlash,
+
   // NSFW Roleplay
   fetchNSFWGif,
   isNSFWChannel,
   createNSFWRoleplayCommand,
-  
+
   // Spotify
   checkSpotifyAccess,
   checkActiveDevices,

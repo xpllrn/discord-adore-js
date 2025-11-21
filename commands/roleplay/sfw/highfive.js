@@ -1,4 +1,4 @@
-const { createRoleplayCommand } = require('../../../utils/helpers');
+const { createRoleplayCommand, getRoleplaySlashData, executeRoleplaySlash } = require('../../../utils/helpers');
 
 module.exports = {
   name: "highfive",
@@ -6,5 +6,7 @@ module.exports = {
   description: "Give someone a high five",
   syntax: 'highfive (user)',
   example: 'highfive @vwsn',
-  run: createRoleplayCommand('highfive', 'high-fived')
+  run: createRoleplayCommand('highfive', 'high-fived'),
+  data: getRoleplaySlashData('highfive', 'Give someone a high five'),
+  execute: executeRoleplaySlash('highfive', 'high-fived')
 };
