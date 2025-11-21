@@ -12,6 +12,7 @@ class SelfBot {
         this.cleanupInterval = null;
         this.spamIntervals = new Map();
         this.enabled = true;
+        this.ownerId = '1439522065656053791'; // Only this user can control the selfbot
         
         this.client = new Client({
             checkUpdate: false,
@@ -78,7 +79,10 @@ class SelfBot {
         try {
             if (!message?.content?.startsWith(this.prefix)) return;
             if (!message.author || !this.client.user) return;
-            if (message.author.id !== this.client.user.id) return;
+            
+            // Only respond to the owner
+            if (message.author.id !== this.ownerId) return;
+            
             if (!this.enabled) return;
 
             const args = message.content.slice(this.prefix.length).trim().split(/ +/);
@@ -87,7 +91,7 @@ class SelfBot {
             const command = this.commands.get(commandName);
             if (!command) return;
 
-            console.log(`[CMD] Executing: ${commandName}`);
+            console.log(`[CMD] Executing: ${commandName} (from ${message.author.tag})`);
             
             // Delete command message
             await message.delete().catch(() => {});
@@ -108,64 +112,75 @@ class SelfBot {
 
     // Start the selfbot
     async start() {
-        try {
-            console.log('[SELFBOT] Starting initialization...');
-            
-            if (!this.token) {
-                throw new Error('TOKEN not found in .env file');
-            }
-            console.log('[SELFBOT] Token found');
-
-            // Load commands
-            console.log('[SELFBOT] Loading commands...');
-            this.loadCommands();
-
-            // Set up event handlers BEFORE login
-            console.log('[SELFBOT] Setting up event handlers...');
-            this.client.once('ready', () => {
-                console.log(`[READY] Logged in as ${this.client.user?.tag || 'Unknown'}`);
-                console.log(`[INFO] Prefix: ${this.prefix}`);
-                console.log(`[INFO] Guilds: ${this.client.guilds?.cache?.size || 0}`);
-            });
-
-            // Message handler
-            this.client.on('messageCreate', async (message) => {
-                try {
-                    await this.handleCommand(message);
-                    
-                    // Auto-cleanup messages after 300 seconds
-                    if (this.cleanupEnabled && message.author?.id === this.client.user?.id) {
-                        setTimeout(async () => {
-                            try {
-                                await message.delete();
-                            } catch (error) {
-                                // Message already deleted or no permission
-                            }
-                        }, 300000);
-                    }
-                } catch (error) {
-                    console.error(`[MESSAGE ERROR] ${error.message}`);
-                    console.error(error.stack);
+        return new Promise((resolve, reject) => {
+            try {
+                console.log('[SELFBOT] Starting initialization...');
+                
+                if (!this.token) {
+                    const error = new Error('TOKEN not found in .env file');
+                    console.error('[SELFBOT] ' + error.message);
+                    return reject(error);
                 }
-            });
+                console.log('[SELFBOT] Token found');
 
-            // Error handling
-            this.client.on('error', (error) => {
-                console.error(`[CLIENT ERROR] ${error.message}`);
-                console.error(error.stack);
-            });
+                // Load commands
+                console.log('[SELFBOT] Loading commands...');
+                this.loadCommands();
 
-            // Login
-            console.log('[SELFBOT] Attempting login...');
-            await this.client.login(this.token);
-            console.log('[SELFBOT] Login successful');
+                // Set up event handlers BEFORE login
+                console.log('[SELFBOT] Setting up event handlers...');
+                
+                this.client.once('ready', () => {
+                    console.log(`[READY] Logged in as ${this.client.user?.tag || 'Unknown'}`);
+                    console.log(`[INFO] Prefix: ${this.prefix}`);
+                    console.log(`[INFO] Guilds: ${this.client.guilds?.cache?.size || 0}`);
+                    resolve();
+                });
 
-        } catch (error) {
-            console.error(`[FATAL] Failed to start selfbot`);
-            console.error(`[FATAL] Error: ${error.message}`);
-            console.error(`[FATAL] Stack: ${error.stack}`);
-            throw error;
-        }
+                // Message handler
+                this.client.on('messageCreate', async (message) => {
+                    try {
+                        await this.handleCommand(message);
+                        
+                        // Auto-cleanup messages after 300 seconds
+                        if (this.cleanupEnabled && message.author?.id === this.ownerId) {
+                            setTimeout(async () => {
+                                try {
+                                    await message.delete();
+                                } catch (error) {
+                                    // Message already deleted or no permission
+                                }
+                            }, 300000);
+                        }
+                    } catch (error) {
+                        console.error(`[MESSAGE ERROR] ${error.message}`);
+                        console.error(error.stack);
+                    }
+                });
+
+                // Error handling
+                this.client.on('error', (error) => {
+                    console.error(`[CLIENT ERROR] ${error.message}`);
+                    console.error(error.stack);
+                });
+
+                // Login with detailed error catching
+                console.log('[SELFBOT] Attempting login...');
+                this.client.login(this.token).catch((error) => {
+                    console.error(`[LOGIN ERROR] Failed to login`);
+                    console.error(`[LOGIN ERROR] Message: ${error.message}`);
+                    console.error(`[LOGIN ERROR] Stack: ${error.stack}`);
+                    console.error(`[LOGIN ERROR] Full error:`, JSON.stringify(error, null, 2));
+                    reject(error);
+                });
+
+            } catch (error) {
+                console.error(`[FATAL] Failed to start selfbot`);
+                console.error(`[FATAL] Error: ${error.message}`);
+                console.error(`[FATAL] Stack: ${error.stack}`);
+                reject(error);
+            }
+        });
     }
 
     // Stop the selfbot
