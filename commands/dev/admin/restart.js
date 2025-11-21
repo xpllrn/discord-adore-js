@@ -53,8 +53,8 @@ module.exports = {
 
         currentStep++;
 
-        // Trigger restart at 60%
-        if (step.progress === 60) {
+        // Trigger restart at 40%
+        if (step.progress === 40) {
           setTimeout(async () => {
             try {
               await execAsync('pm2 restart adore');
