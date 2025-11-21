@@ -4,39 +4,12 @@ const { getService } = require('@services');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const config = require('../../../config/setup');
 
-// SHARED HELPER: Send response (works for both prefix and slash)
-async function sendResponse(context, type, text) {
-  const user = context.user || context.author;
-  const isInteraction = !!context.user;
-  
-  const colors = {
-    success: config.colors.success,
-    error: config.colors.error,
-    info: config.colors.info,
-    warn: config.colors.warn
-  };
-  
-  const emoji = type === 'success' ? config.emojis.success : 
-                type === 'error' ? config.emojis.error :
-                type === 'warn' ? config.emojis.warn : '';
-  
-  const embed = new EmbedBuilder()
-    .setColor(colors[type] || config.colors.embed)
-    .setDescription(`${emoji} <@${user.id}>: ${text}`);
-  
-  if (isInteraction) {
-    return context.reply({ embeds: [embed], ephemeral: true });
-  } else {
-    return context.channel.send({ embeds: [embed] });
-  }
-}
-
 // SHARED LOGIC: Set confession channel
 async function setConfessionChannelShared(context, channel, confessionService) {
   const guild = context.guild;
-  
+
   await confessionService.setConfessionChannel(guild.id, channel.id);
-  
+
   // Send the confession embed with button to the channel
   const embed = new EmbedBuilder()
     .setColor(config.colors.embed)
@@ -52,54 +25,54 @@ async function setConfessionChannelShared(context, channel, confessionService) {
     );
 
   const sentMessage = await channel.send({ embeds: [embed], components: [row] });
-  
+
   // Pin the message
   try {
     await sentMessage.pin();
   } catch (error) {
     console.error('Error pinning confession message:', error);
   }
-  
-  return sendResponse(context, 'success', `Set ${channel} as the confession channel and sent the confession button`);
+
+  return embeds.success(context, `Set ${channel} as the **confession channel** and sent the confession button`);
 }
 
 // SHARED LOGIC: View confession channel
 async function viewConfessionChannelShared(context, confessionService) {
   const guild = context.guild;
   const confessionConfig = await confessionService.getConfessionConfig(guild.id);
-  
+
   if (!confessionConfig.channelId) {
-    return sendResponse(context, 'info', 'No confession channel is currently set');
+    return embeds.info(context, 'No **confession channel** is currently set');
   }
-  
-  return sendResponse(context, 'info', `Current confession channel: <#${confessionConfig.channelId}>`);
+
+  return embeds.info(context, `Current **confession channel**: <#${confessionConfig.channelId}>`);
 }
 
-// SHARED LOGIC: Toggle ignore user
-async function toggleIgnoreUserShared(context, user, confessionService) {
+// SHARED LOGIC: Toggle blacklist user
+async function toggleBlacklistUserShared(context, user, confessionService) {
   const guild = context.guild;
-  const isIgnored = await confessionService.isUserIgnored(guild.id, user.id);
-  
-  if (isIgnored) {
+  const isBlacklisted = await confessionService.isUserIgnored(guild.id, user.id);
+
+  if (isBlacklisted) {
     await confessionService.removeIgnoredUser(guild.id, user.id);
-    return sendResponse(context, 'success', `Removed ${user} from the confession ignore list`);
+    return embeds.success(context, `Removed ${user} from the **confession blacklist**`);
   } else {
     await confessionService.addIgnoredUser(guild.id, user.id);
-    return sendResponse(context, 'success', `Added ${user} to the confession ignore list`);
+    return embeds.success(context, `Added ${user} to the **confession blacklist**`);
   }
 }
 
-// SHARED LOGIC: View ignored users
-async function viewIgnoredUsersShared(context, confessionService) {
+// SHARED LOGIC: View blacklisted users
+async function viewBlacklistedUsersShared(context, confessionService) {
   const guild = context.guild;
   const confessionConfig = await confessionService.getConfessionConfig(guild.id);
-  
+
   if (confessionConfig.ignoredUsers.length === 0) {
-    return sendResponse(context, 'info', 'No users are currently ignored');
+    return embeds.info(context, 'No **confession blacklist** users are currently set');
   }
-  
+
   const userList = confessionConfig.ignoredUsers.map(id => `<@${id}>`).join(', ');
-  return sendResponse(context, 'info', `Ignored users: ${userList}`);
+  return embeds.info(context, `**confession blacklist** users: ${userList}`);
 }
 
 // SHARED LOGIC: View confession config
@@ -107,14 +80,14 @@ async function viewConfessionConfigShared(context, confessionService) {
   const guild = context.guild;
   const user = context.user || context.author;
   const isInteraction = !!context.user;
-  
+
   const confessionConfig = await confessionService.getConfessionConfig(guild.id);
-  
+
   const embed = new EmbedBuilder()
     .setColor(config.colors.embed)
-    .setAuthor({ 
-      name: user.username, 
-      iconURL: user.displayAvatarURL({ dynamic: true }) 
+    .setAuthor({
+      name: user.username,
+      iconURL: user.displayAvatarURL({ dynamic: true })
     })
     .setTitle('Confession System Configuration')
     .addFields(
@@ -129,7 +102,7 @@ async function viewConfessionConfigShared(context, confessionService) {
         inline: true
       },
       {
-        name: 'Ignored Users',
+        name: 'Blacklisted Users',
         value: confessionConfig.ignoredUsers.length > 0 ? confessionConfig.ignoredUsers.map(id => `<@${id}>`).join(', ') : 'None',
         inline: false
       },
@@ -157,36 +130,36 @@ async function submitConfession(context, confessionText) {
 
   // Get confession config
   const confessionConfig = await confessionService.getConfessionConfig(guild.id);
-  
+
   // Check if system is enabled
   if (!confessionConfig.enabled || !confessionConfig.channelId) {
     const errorMsg = `${config.emojis.error} <@${user.id}>: The confession system is **not enabled** on this server.`;
     if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: true });
+      return context.reply({ content: errorMsg });
     } else {
-      return embeds.deny(context, 'The confession system is not enabled on this server.');
+      return embeds.deny(context, 'The confession system is **not enabled** on this server.');
     }
   }
 
-  // Check if user is ignored
-  const isIgnored = await confessionService.isUserIgnored(guild.id, user.id);
-  if (isIgnored) {
-    const errorMsg = `${config.emojis.error} <@${user.id}>: You are **not allowed** to submit confessions in this server.`;
+  // Check if user is blacklisted
+  const isBlacklisted = await confessionService.isUserIgnored(guild.id, user.id);
+  if (isBlacklisted) {
+    const errorMsg = `${config.emojis.error} <@${user.id}>: You are **blacklisted** from submitting confessions in this server.`;
     if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: true });
+      return context.reply({ content: errorMsg });
     } else {
-      return embeds.deny(context, 'You are not allowed to submit confessions in this server.');
+      return embeds.deny(context, 'You are **blacklisted** from submitting confessions in this server.');
     }
   }
 
   // Get confession channel
   const confessionChannel = guild.channels.cache.get(confessionConfig.channelId);
   if (!confessionChannel) {
-    const errorMsg = `${config.emojis.error} <@${user.id}>: The confession channel no longer exists.`;
+    const errorMsg = `${config.emojis.error} <@${user.id}>: The confession channel **no longer exists**.`;
     if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: true });
+      return context.reply({ content: errorMsg });
     } else {
-      return embeds.deny(context, 'The confession channel no longer exists.');
+      return embeds.deny(context, 'The confession channel **no longer exists**.');
     }
   }
 
@@ -230,7 +203,7 @@ async function submitConfession(context, confessionText) {
 
   // Send confession to channel
   const sentMessage = await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
-  
+
   // Track this confession
   await confessionService.addConfession(guild.id, confessionId, sentMessage.id, user.id);
 
@@ -240,7 +213,7 @@ async function submitConfession(context, confessionText) {
     .setDescription(`${config.emojis.success} <@${user.id}>: Your confession has **been submitted**. Confession ID: **${confessionId}**`);
 
   if (isInteraction) {
-    return context.reply({ embeds: [confirmEmbed], ephemeral: true });
+    return context.reply({ embeds: [confirmEmbed] });
   } else {
     return context.channel.send({ embeds: [confirmEmbed] });
   }
@@ -256,12 +229,12 @@ module.exports = {
   run: async (client, message, args) => {
     try {
       const confessionService = getService('confession');
-      
+
       // Normalize subcommand to lowercase
       const subcommand = args[0]?.toLowerCase();
 
       if (subcommand === 'channel') {
-        
+
         const subcommandInfo = {
           description: 'Set or view the confession channel',
           usage: '{guildprefix}confession channel [#channel]',
@@ -272,48 +245,48 @@ module.exports = {
 
         // Check permissions for config commands
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-          return sendResponse(message, 'error', 'You need **Manage Server** permission to use this command');
+          return embeds.deny(message, 'You need **Manage Server** permission to use this command');
         }
-        
+
         if (!args[1]) {
           return await viewConfessionChannelShared(message, confessionService);
         }
 
         const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[1]);
         if (!channel) {
-          return sendResponse(message, 'error', 'Invalid channel provided');
+          return embeds.deny(message, 'Invalid channel provided');
         }
 
         if (!channel.isTextBased()) {
-          return sendResponse(message, 'error', 'Confession channel must be a text channel');
+          return embeds.deny(message, 'Confession channel must be a text channel');
         }
 
         return await setConfessionChannelShared(message, channel, confessionService);
 
-      } else if (subcommand === 'ignore') {
+      } else if (subcommand === 'blacklist') {
         const subcommandInfo = {
-          description: 'Add or remove users from the confession ignore list',
-          usage: '{guildprefix}confession ignore [@user]',
+          description: 'Add or remove users from the confession blacklist',
+          usage: '{guildprefix}confession blacklist [@user]',
           aliases: [],
           parameters: ['user (optional)'],
-          example: '{guildprefix}confession ignore @user'
+          example: '{guildprefix}confession blacklist @user'
         };
 
         // Check permissions for config commands
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-          return sendResponse(message, 'error', 'You need **Manage Server** permission to use this command');
+          return embeds.deny(message, 'You need **Manage Server** permission to use this command');
         }
-        
+
         if (!args[1]) {
-          return await viewIgnoredUsersShared(message, confessionService);
+          return await viewBlacklistedUsersShared(message, confessionService);
         }
 
         const user = message.mentions.users.first() || await client.users.fetch(args[1]).catch(() => null);
         if (!user) {
-          return sendResponse(message, 'error', 'Invalid user provided');
+          return embeds.deny(message, 'Invalid user provided');
         }
 
-        return await toggleIgnoreUserShared(message, user, confessionService);
+        return await toggleBlacklistUserShared(message, user, confessionService);
 
       } else if (subcommand === 'config') {
         const subcommandInfo = {
@@ -326,9 +299,9 @@ module.exports = {
 
         // Check permissions for config commands
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-          return sendResponse(message, 'error', 'You need **Manage Server** permission to use this command');
+          return embeds.deny(message, 'You need **Manage Server** permission to use this command');
         }
-        
+
         return await viewConfessionConfigShared(message, confessionService);
 
       } else if (subcommand === 'toggle' || subcommand === 'enable' || subcommand === 'disable') {
@@ -336,12 +309,12 @@ module.exports = {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
           return embeds.deny(message, 'You need **Manage Server** permission to use this command');
         }
-        
+
         const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
         const newStatus = subcommand === 'disable' ? false : !confessionConfig.enabled;
-        
+
         await confessionService.setConfessionEnabled(message.guild.id, newStatus);
-        
+
         return embeds.success(message, `Confession system ${newStatus ? 'enabled' : 'disabled'}`);
 
       } else {
@@ -350,7 +323,7 @@ module.exports = {
       }
     } catch (error) {
       console.error('Error in confession command:', error);
-      
+
       if (client?.errorLogger) {
         client.errorLogger.log(error, 'Confession Command', {
           command: 'confession',
@@ -360,7 +333,7 @@ module.exports = {
           channel: message.channel
         });
       }
-      
+
       return embeds.deny(message, 'An error occurred while executing the confession command.');
     }
   },
@@ -379,7 +352,7 @@ module.exports = {
           .setMinLength(1)
           .setMaxLength(2000)
       ),
-    
+
     // /confession - Management with subcommands
     new SlashCommandBuilder()
       .setName('confession')
@@ -397,12 +370,12 @@ module.exports = {
       )
       .addSubcommand(subcommand =>
         subcommand
-          .setName('ignore')
-          .setDescription('Add or remove a user from the confession ignore list')
+          .setName('blacklist')
+          .setDescription('Add or remove a user from the confession blacklist')
           .addUserOption(option =>
             option
               .setName('user')
-              .setDescription('The user to ignore/unignore')
+              .setDescription('The user to blacklist/unblacklist')
               .setRequired(false)
           )
       )
@@ -412,11 +385,11 @@ module.exports = {
           .setDescription('View the confession system configuration')
       )
   ],
-  
+
   async execute(interaction) {
     try {
       const confessionService = getService('confession');
-      
+
       // Handle /confess command (simple submission)
       if (interaction.commandName === 'confess') {
         const confessionText = interaction.options.getString('confession');
@@ -431,11 +404,11 @@ module.exports = {
         if (subcommand === 'channel') {
           // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return sendResponse(interaction, 'error', 'You need **Manage Server** permission to use this command');
+            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command');
           }
 
           const channel = interaction.options.getChannel('channel');
-          
+
           // If no channel provided, show current
           if (!channel) {
             return await viewConfessionChannelShared(interaction, confessionService);
@@ -443,35 +416,35 @@ module.exports = {
 
           // Validate channel
           if (!channel.isTextBased()) {
-            return sendResponse(interaction, 'error', 'Confession channel must be a text channel');
+            return embeds.deny(interaction, 'Confession channel must be a text channel');
           }
 
           return await setConfessionChannelShared(interaction, channel, confessionService);
         }
 
-        // IGNORE subcommand
-        if (subcommand === 'ignore') {
+        // BLACKLIST subcommand
+        if (subcommand === 'blacklist') {
           // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return sendResponse(interaction, 'error', 'You need **Manage Server** permission to use this command');
+            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command');
           }
 
           const user = interaction.options.getUser('user');
-          
+
           // If no user provided, show list
           if (!user) {
-            return await viewIgnoredUsersShared(interaction, confessionService);
+            return await viewBlacklistedUsersShared(interaction, confessionService);
           }
 
-          // Toggle ignore status
-          return await toggleIgnoreUserShared(interaction, user, confessionService);
+          // Toggle blacklist status
+          return await toggleBlacklistUserShared(interaction, user, confessionService);
         }
 
         // CONFIG subcommand
         if (subcommand === 'config') {
           // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return sendResponse(interaction, 'error', 'You need **Manage Server** permission to use this command');
+            return embeds.deny(interaction, 'You need **Manage Server** permission to use this command');
           }
 
           return await viewConfessionConfigShared(interaction, confessionService);
@@ -480,7 +453,7 @@ module.exports = {
 
     } catch (error) {
       console.error('Error in /confession command:', error);
-      
+
       if (interaction.client?.errorLogger) {
         interaction.client.errorLogger.log(error, 'Slash Confession Command', {
           command: '/confession',
@@ -491,7 +464,7 @@ module.exports = {
         });
       }
 
-      return sendResponse(interaction, 'error', 'An error occurred while executing the command.').catch(() => {});
+      return embeds.deny(interaction, 'An error occurred while executing the command.').catch(() => { });
     }
   }
 };

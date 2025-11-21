@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js')
+const { EmbedBuilder, SlashCommandBuilder } = require('discord.js')
 const path = require('path')
 const fs = require('fs')
 const config = require('../../config/setup')
@@ -24,49 +24,49 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
   try {
     const fileContent = fs.readFileSync(commandFilePath, 'utf8');
     const subcommands = [];
-    
+
     // Regex to find subcommand blocks with subcommandInfo
     const subcommandBlockRegex = /if\s*\(\s*(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"]\s*(?:\|\|\s*(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"])*\s*\)\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
-    
+
     let match;
     while ((match = subcommandBlockRegex.exec(fileContent)) !== null) {
       const subcommandName = match[1];
       const subcommandInfoContent = match[3];
-      
+
       const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
       const aliasesFromConditional = extractAliasesFromConditional(match[0]);
-      
+
       if (aliasesFromConditional.length > 0) {
         subcommandData.aliases = [...new Set([...subcommandData.aliases, ...aliasesFromConditional])];
       }
-      
+
       subcommands.push(subcommandData);
     }
-    
+
     // Also try to find switch case statements with subcommandInfo
     const switchCaseRegex = /case\s+['"](\w+)['"]\s*:\s*(?:case\s+['"](\w+)['"]\s*:\s*)*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
-    
+
     while ((match = switchCaseRegex.exec(fileContent)) !== null) {
       const subcommandName = match[1];
       const subcommandInfoContent = match[3];
-      
+
       const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
       const aliasesFromCases = extractAliasesFromSwitchCases(match[0]);
-      
+
       if (aliasesFromCases.length > 0) {
         subcommandData.aliases = [...new Set([...subcommandData.aliases, ...aliasesFromCases])];
       }
-      
+
       subcommands.push(subcommandData);
     }
-    
+
     // NEW: Handle catch-all else-if blocks with subcommandInfo (e.g., "} else if (args[0]) {")
     // These blocks have a 'name' field in subcommandInfo that we can extract
     const catchAllRegex = /\}\s*else\s+if\s*\(\s*args\[0\]\s*\)\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
-    
+
     while ((match = catchAllRegex.exec(fileContent)) !== null) {
       const subcommandInfoContent = match[1];
-      
+
       // Extract the name from subcommandInfo
       const nameMatch = subcommandInfoContent.match(/name:\s*[`'"]([^`'"]*)[`'"]/);
       if (nameMatch) {
@@ -75,13 +75,13 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
         subcommands.push(subcommandData);
       }
     }
-    
+
     // NEW: Handle final else blocks with subcommandInfo (e.g., "} else {")
     const finalElseRegex = /\}\s*else\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
-    
+
     while ((match = finalElseRegex.exec(fileContent)) !== null) {
       const subcommandInfoContent = match[1];
-      
+
       // Extract the name from subcommandInfo
       const nameMatch = subcommandInfoContent.match(/name:\s*[`'"]([^`'"]*)[`'"]/);
       if (nameMatch) {
@@ -90,19 +90,19 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
         subcommands.push(subcommandData);
       }
     }
-    
+
     // NEW: Handle delegated commands (e.g., role command that delegates to reactionrole/buttonrole)
     // Look for patterns like: const xxxCommand = require('../essentials/path/to/file');
     //                         return xxxCommand.run(client, message, args.slice(1));
     const delegationRegex = /const\s+(\w+Command)\s*=\s*require\(['"](\.\/[^'"]+)['"]\);[\s\S]*?return\s+\1\.run\(/g;
-    
+
     while ((match = delegationRegex.exec(fileContent)) !== null) {
       const delegatedPath = match[2];
-      
+
       // Resolve the delegated file path relative to the current command file
       const commandDir = path.dirname(commandFilePath);
       const delegatedFilePath = path.resolve(commandDir, delegatedPath + '.js');
-      
+
       // Check if the delegated file exists
       if (fs.existsSync(delegatedFilePath)) {
         // Recursively parse the delegated file
@@ -110,7 +110,7 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
         subcommands.push(...delegatedSubcommands);
       }
     }
-    
+
     return subcommands;
   } catch (error) {
     console.error(`Error parsing subcommands from ${commandFilePath}:`, error.message);
@@ -125,11 +125,11 @@ function extractAliasesFromConditional(conditional) {
   const aliases = [];
   const aliasRegex = /(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"]/g;
   let match;
-  
+
   while ((match = aliasRegex.exec(conditional)) !== null) {
     aliases.push(match[1]);
   }
-  
+
   return aliases.slice(1); // Remove first one (main subcommand name)
 }
 
@@ -140,11 +140,11 @@ function extractAliasesFromSwitchCases(caseBlock) {
   const aliases = [];
   const caseRegex = /case\s+['"](\w+)['"]\s*:/g;
   let match;
-  
+
   while ((match = caseRegex.exec(caseBlock)) !== null) {
     aliases.push(match[1]);
   }
-  
+
   return aliases.slice(1); // Remove first one (main subcommand name)
 }
 
@@ -161,20 +161,20 @@ function parseSubcommandInfo(objectContent, subcommandName, commandName, guildPr
     syntax: '',
     example: ''
   };
-  
+
   // Extract description
   const descMatch = objectContent.match(/description:\s*[`'"]([^`'"]*)[`'"]/);
   if (descMatch) {
     subcommandData.description = descMatch[1];
   }
-  
+
   // Extract usage/syntax
   const usageMatch = objectContent.match(/usage:\s*[`'"]([^`'"]*)[`'"]/);
   if (usageMatch) {
     let usage = usageMatch[1].replace(/\{guildprefix\}/g, guildPrefix);
     subcommandData.syntax = usage;
   }
-  
+
   // Extract aliases array
   const aliasesMatch = objectContent.match(/aliases:\s*\[(.*?)\]/s);
   if (aliasesMatch) {
@@ -184,7 +184,7 @@ function parseSubcommandInfo(objectContent, subcommandName, commandName, guildPr
       subcommandData.aliases = aliases.map(a => a.replace(/['"]/g, ''));
     }
   }
-  
+
   // Extract parameters array
   const paramsMatch = objectContent.match(/parameters:\s*\[(.*?)\]/s);
   if (paramsMatch) {
@@ -194,13 +194,13 @@ function parseSubcommandInfo(objectContent, subcommandName, commandName, guildPr
       subcommandData.parameters = params.map(p => p.replace(/['"]/g, ''));
     }
   }
-  
+
   // Extract example
   const exampleMatch = objectContent.match(/example:\s*[`'"]([^`'"]*)[`'"]/);
   if (exampleMatch) {
     subcommandData.example = exampleMatch[1].replace(/\{guildprefix\}/g, guildPrefix);
   }
-  
+
   return subcommandData;
 }
 
@@ -211,11 +211,11 @@ function getCommandFilePath(commandName, commandsDir) {
   try {
     function searchDirectory(dir) {
       const files = fs.readdirSync(dir);
-      
+
       for (const file of files) {
         const fullPath = path.join(dir, file);
         const stat = fs.statSync(fullPath);
-        
+
         if (stat.isDirectory()) {
           const result = searchDirectory(fullPath);
           if (result) return result;
@@ -223,14 +223,139 @@ function getCommandFilePath(commandName, commandsDir) {
           return fullPath;
         }
       }
-      
+
       return null;
     }
-    
+
     return searchDirectory(commandsDir);
   } catch (error) {
     console.error(`Error finding command file for ${commandName}:`, error.message);
     return null;
+  }
+}
+
+// ============================================================================
+// SHARED HELP LOGIC - Works for both prefix and slash commands
+// ============================================================================
+
+async function showHelpShared(context, client, commandQuery) {
+  const message = context.message || context; // For backward compatibility
+  const isInteraction = !!context.user;
+
+  // Get guild prefix with multiple fallback methods for reliability
+  let guildprefix = config.bot.defaultPrefix; // Default fallback
+
+  try {
+    // Check if database is ready first
+    const { isDatabaseReady } = require('../../database');
+    const dbStatus = isDatabaseReady();
+
+    if (dbStatus.local || dbStatus.global) {
+      // Try service layer approach first
+      const { getService } = require('@services');
+      const guildService = getService('guild');
+      const cachedPrefix = await guildService.getPrefix(context.guild.id);
+      if (cachedPrefix) {
+        guildprefix = cachedPrefix;
+      }
+    }
+  } catch (cacheError) {
+    // guildprefix is already set to default
+  }
+
+  const command = client.commands.get(commandQuery) || client.commands.get(client.aliases.get(commandQuery))
+
+  if (command) {
+    // Check if this is a group command with subcommands
+    if (hasSubcommands(command)) {
+      try {
+        // Get the command file path
+        const commandsDir = path.join(__dirname, '..');
+        const commandFilePath = getCommandFilePath(command.name, commandsDir);
+
+        if (!commandFilePath) {
+          // Fall back to traditional embed
+          const embed = createTraditionalEmbed(command, guildprefix);
+          if (isInteraction) {
+            return context.reply({ embeds: [embed] });
+          } else {
+            return context.channel.send({ embeds: [embed] });
+          }
+        }
+
+        // Parse subcommands from the file
+        const subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
+
+        if (subcommands.length === 0) {
+          // Fall back to traditional embed
+          const embed = createTraditionalEmbed(command, guildprefix);
+          if (isInteraction) {
+            return context.reply({ embeds: [embed] });
+          } else {
+            return context.channel.send({ embeds: [embed] });
+          }
+        }
+
+        // Note: Subcommand filtering (args[1]) is handled by prefix command only
+        // Slash commands would need a separate option for this if needed
+
+        // Create page array: parent page + subcommand pages
+        const pages = [];
+
+        // Page 1: Parent command overview
+        pages.push(createParentCommandPage(command, guildprefix, subcommands.length));
+
+        // Pages 2+: Individual subcommand pages
+        const totalPages = subcommands.length + 1;
+        subcommands.forEach((subcommand, index) => {
+          const pageNumber = index + 2; // +2 because page 1 is parent
+          pages.push(createSubcommandPage(command, subcommand, pageNumber, totalPages));
+        });
+
+        // Display paginated help using prebuilt pagination
+        return createPagination(
+          isInteraction ? context : message,
+          pages,
+          (pageItems, currentPage, totalPages) => pageItems[0], // formatPage function returns the embed
+          1, // 1 item per page (each item is already a full embed)
+          command.name
+        );
+
+      } catch (error) {
+        // Fall back to traditional embed on error
+        console.error('[HELP ERROR] Error in group command help:', error);
+        console.error('[HELP ERROR] Stack:', error.stack);
+        const embed = createTraditionalEmbed(command, guildprefix);
+        if (isInteraction) {
+          return context.reply({ embeds: [embed] });
+        } else {
+          return context.channel.send({ embeds: [embed] });
+        }
+      }
+    } else {
+      // Traditional single-embed help for commands without subcommands
+      const embed = createTraditionalEmbed(command, guildprefix);
+      if (isInteraction) {
+        return context.reply({ embeds: [embed] });
+      } else {
+        return context.channel.send({ embeds: [embed] });
+      }
+    }
+
+  } else if (commandQuery) {
+    if (isInteraction) {
+      return context.reply({ content: `Command \`${commandQuery}\` does not exist` });
+    } else {
+      return embeds.warn(message, `Command \`${commandQuery}\` does not exist`);
+    }
+
+  } else {
+    const msg = `website will be added soon, use [**support server**](https://discord.gg/8XajeEMH) for now`;
+    if (isInteraction) {
+      return context.reply({ content: msg });
+    } else {
+      return context.channel.send(msg);
+    }
   }
 }
 
@@ -242,61 +367,42 @@ module.exports = {
   description: `View extended help for commands`,
   syntax: 'help (command)',
   example: 'help crash',
-  run: async(client, message, args) => {
 
-    // Get guild prefix with multiple fallback methods for reliability
-    let guildprefix = config.bot.defaultPrefix; // Default fallback
+  // PREFIX COMMAND
+  run: async (client, message, args) => {
+    // Check if user is asking for a specific subcommand (e.g., "h ar add")
+    if (args.length >= 2) {
+      const commandName = args[0];
+      const command = client.commands.get(commandName) || client.commands.get(client.aliases.get(commandName));
 
-    try {
-      // Check if database is ready first
-      const { isDatabaseReady } = require('../../database');
-      const dbStatus = isDatabaseReady();
-
-      if (dbStatus.local || dbStatus.global) {
-        // Try service layer approach first
-        const { getService } = require('@services');
-        const guildService = getService('guild');
-        const cachedPrefix = await guildService.getPrefix(message.guild.id);
-        if (cachedPrefix) {
-          guildprefix = cachedPrefix;
-        }
-      }
-    } catch (cacheError) {
-      // guildprefix is already set to default
-    }
-
-    const command = client.commands.get(args[0]) || client.commands.get(client.aliases.get(args[0]))
-  
-    if (command) {
-      // Check if this is a group command with subcommands
-      if (hasSubcommands(command)) {
+      if (command && hasSubcommands(command)) {
         try {
-          // Get the command file path
+          // Get guild prefix
+          let guildprefix = config.bot.defaultPrefix;
+          try {
+            const { isDatabaseReady } = require('../../database');
+            const dbStatus = isDatabaseReady();
+            if (dbStatus.local || dbStatus.global) {
+              const { getService } = require('@services');
+              const guildService = getService('guild');
+              const cachedPrefix = await guildService.getPrefix(message.guild.id);
+              if (cachedPrefix) {
+                guildprefix = cachedPrefix;
+              }
+            }
+          } catch (e) { }
+
+          // Get the command file path and parse subcommands
           const commandsDir = path.join(__dirname, '..');
           const commandFilePath = getCommandFilePath(command.name, commandsDir);
-          
-          if (!commandFilePath) {
-            // Fall back to traditional embed
-            const embed = createTraditionalEmbed(command, guildprefix);
-            return message.channel.send({ embeds: [embed] });
-          }
 
-          // Parse subcommands from the file
-          const subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
-          
-          if (subcommands.length === 0) {
-            // Fall back to traditional embed
-            const embed = createTraditionalEmbed(command, guildprefix);
-            return message.channel.send({ embeds: [embed] });
-          }
-
-          // Check if user is asking for a specific subcommand (e.g., "h ar add")
-          if (args[1]) {
+          if (commandFilePath) {
+            const subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
             const requestedSubcommand = args[1].toLowerCase();
-            
+
             // Find the matching subcommand (check both name and aliases)
-            const matchedSubcommand = subcommands.find(sub => 
-              sub.name.toLowerCase() === requestedSubcommand || 
+            const matchedSubcommand = subcommands.find(sub =>
+              sub.name.toLowerCase() === requestedSubcommand ||
               (sub.aliases && sub.aliases.some(alias => alias.toLowerCase() === requestedSubcommand))
             );
 
@@ -306,53 +412,30 @@ module.exports = {
               // Remove the footer with page numbers since it's a single page
               singleSubcommandEmbed.setFooter({ text: `Module: ${command.name}` });
               return message.channel.send({ embeds: [singleSubcommandEmbed] });
-            } else {
-              // Subcommand not found, fall back to showing full group command help
-              // Continue to show paginated help below
             }
           }
-
-          // Create page array: parent page + subcommand pages
-          const pages = [];
-          
-          // Page 1: Parent command overview
-          pages.push(createParentCommandPage(command, guildprefix, subcommands.length));
-          
-          // Pages 2+: Individual subcommand pages
-          const totalPages = subcommands.length + 1;
-          subcommands.forEach((subcommand, index) => {
-            const pageNumber = index + 2; // +2 because page 1 is parent
-            pages.push(createSubcommandPage(command, subcommand, pageNumber, totalPages));
-          });
-
-          // Display paginated help using prebuilt pagination
-          return createPagination(
-            message,
-            pages,
-            (pageItems, currentPage, totalPages) => pageItems[0], // formatPage function returns the embed
-            1, // 1 item per page (each item is already a full embed)
-            command.name
-          );
-
-        } catch (error) {
-          // Fall back to traditional embed on error
-          console.error('[HELP ERROR] Error in group command help:', error);
-          console.error('[HELP ERROR] Stack:', error.stack);
-          const embed = createTraditionalEmbed(command, guildprefix);
-          return message.channel.send({ embeds: [embed] });
+        } catch (e) {
+          // Fall through to normal help if subcommand parsing fails
         }
-      } else {
-        // Traditional single-embed help for commands without subcommands
-        const embed = createTraditionalEmbed(command, guildprefix);
-        return message.channel.send({ embeds: [embed] });
       }
-
-    } else if (args.length > 0) {
-
-      return embeds.warn(message, `Command **${args[0]}** does not exist`)
-
-    } else {
-
-      return message.channel.send(`website will be added soon, use [**support server**](https://discord.gg/8XajeEMH) for now`)
     }
-  }}
+
+    return showHelpShared(message, client, args[0]);
+  },
+
+  // SLASH COMMAND
+  data: new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('View extended help for commands')
+    .addStringOption(option =>
+      option
+        .setName('text')
+        .setDescription('The command to get help for')
+        .setRequired(false)
+    ),
+
+  async execute(interaction) {
+    const commandQuery = interaction.options.getString('text');
+    return showHelpShared(interaction, interaction.client, commandQuery);
+  }
+}

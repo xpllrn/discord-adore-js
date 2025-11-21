@@ -2,71 +2,117 @@ const { EmbedBuilder } = require('discord.js');
 const { colors, emojis } = require('../config/setup');
 
 // Pre-built embed system with user's preferred format
+// Supports both prefix commands (messages) and slash commands (interactions)
 const embeds = {
-    success: (message, text) => {
+    success: (context, text) => {
+        const user = context.user || context.author;
+        const isInteraction = !!context.user;
+
         const embed = new EmbedBuilder()
             .setColor(colors.success)
-            .setDescription(`${emojis.success} <@${message.author.id}>: ${text}`)
-        return message.channel.send({ embeds: [embed] })
+            .setDescription(`${emojis.success} <@${user.id}>: ${text}`)
+
+        if (isInteraction) {
+            return context.reply({ embeds: [embed] });
+        } else {
+            return context.channel.send({ embeds: [embed] });
+        }
     },
 
-    deny: (message, text) => {
+    deny: (context, text) => {
+        const user = context.user || context.author;
+        const isInteraction = !!context.user;
+
         const embed = new EmbedBuilder()
             .setColor(colors.error)
-            .setDescription(`${emojis.error} <@${message.author.id}>: ${text}`)
-        return message.channel.send({ embeds: [embed] })
+            .setDescription(`${emojis.error} <@${user.id}>: ${text}`)
+
+        if (isInteraction) {
+            return context.reply({ embeds: [embed] });
+        } else {
+            return context.channel.send({ embeds: [embed] });
+        }
     },
 
-    warn: (message, text) => {
+    warn: (context, text) => {
+        const user = context.user || context.author;
+        const isInteraction = !!context.user;
+
         const embed = new EmbedBuilder()
             .setColor(colors.warn)
-            .setDescription(`${emojis.warn} <@${message.author.id}>: ${text}`)
-        return message.channel.send({ embeds: [embed] })
+            .setDescription(`${emojis.warn} <@${user.id}>: ${text}`)
+
+        if (isInteraction) {
+            return context.reply({ embeds: [embed] });
+        } else {
+            return context.channel.send({ embeds: [embed] });
+        }
     },
 
-    info: (message, text) => {
+    info: (context, text) => {
+        const user = context.user || context.author;
+        const isInteraction = !!context.user;
+
         const embed = new EmbedBuilder()
             .setColor(colors.info)
-            .setDescription(`<@${message.author.id}>: ${text}`)
-        return message.channel.send({ embeds: [embed] })
+            .setDescription(`<@${user.id}>: ${text}`)
+
+        if (isInteraction) {
+            return context.reply({ embeds: [embed] });
+        } else {
+            return context.channel.send({ embeds: [embed] });
+        }
     },
 
-    loading: (message, text) => {
+    loading: (context, text) => {
+        const user = context.user || context.author;
+        const isInteraction = !!context.user;
+
         const embed = new EmbedBuilder()
             .setColor('#7985cd')
-            .setDescription(`${emojis.loading} <@${message.author.id}>: ${text}`)
-        return message.channel.send({ embeds: [embed] })
+            .setDescription(`${emojis.loading} <@${user.id}>: ${text}`)
+
+        if (isInteraction) {
+            return context.reply({ embeds: [embed] });
+        } else {
+            return context.channel.send({ embeds: [embed] });
+        }
     },
 
     // Helper functions to create embed objects without sending them (for editing)
-    createSuccess: (message, text) => {
+    createSuccess: (context, text) => {
+        const user = context.user || context.author;
         return new EmbedBuilder()
             .setColor(colors.success)
-            .setDescription(`${emojis.success} <@${message.author.id}>: ${text}`)
+            .setDescription(`${emojis.success} <@${user.id}>: ${text}`)
     },
 
-    createDeny: (message, text) => {
+    createDeny: (context, text) => {
+        const user = context.user || context.author;
         return new EmbedBuilder()
             .setColor(colors.error)
-            .setDescription(`${emojis.error} <@${message.author.id}>: ${text}`)
+            .setDescription(`${emojis.error} <@${user.id}>: ${text}`)
     },
 
-    createWarn: (message, text) => {
+    createWarn: (context, text) => {
+        const user = context.user || context.author;
         return new EmbedBuilder()
             .setColor(colors.warn)
-            .setDescription(`${emojis.warn} <@${message.author.id}>: ${text}`)
+            .setDescription(`${emojis.warn} <@${user.id}>: ${text}`)
     },
 
-    createInfo: (message, text) => {
+    createInfo: (context, text) => {
+        const user = context.user || context.author;
         return new EmbedBuilder()
             .setColor(colors.info)
-            .setDescription(`<@${message.author.id}>: ${text}`)
+            .setDescription(`<@${user.id}>: ${text}`)
     },
 
-    createLoading: (message, text) => {
+    createLoading: (context, text) => {
+        const user = context.user || context.author;
         return new EmbedBuilder()
             .setColor('#7985cd')
-            .setDescription(`${emojis.loading} <@${message.author.id}>: ${text}`)
+            .setDescription(`${emojis.loading} <@${user.id}>: ${text}`)
     }
 }
 

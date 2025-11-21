@@ -12,37 +12,22 @@ async function submitConfession(context, confessionText) {
 
   // Get confession config
   const confessionConfig = await confessionService.getConfessionConfig(guild.id);
-  
+
   // Check if system is enabled
   if (!confessionConfig.enabled || !confessionConfig.channelId) {
-    const errorMsg = `${config.emojis.error} <@${user.id}>: The confession system is **not enabled** on this server.`;
-    if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: true });
-    } else {
-      return embeds.deny(context, 'The confession system is not enabled on this server.');
-    }
+    return embeds.deny(context, 'The confession system is **not enabled** on this server.');
   }
 
-  // Check if user is ignored
-  const isIgnored = await confessionService.isUserIgnored(guild.id, user.id);
-  if (isIgnored) {
-    const errorMsg = `${config.emojis.error} <@${user.id}>: You are **not allowed** to submit confessions in this server.`;
-    if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: true });
-    } else {
-      return embeds.deny(context, 'You are not allowed to submit confessions in this server.');
-    }
+  // Check if user is blacklisted
+  const isBlacklisted = await confessionService.isUserIgnored(guild.id, user.id);
+  if (isBlacklisted) {
+    return embeds.deny(context, 'You are **blacklisted** from submitting confessions in this server.');
   }
 
   // Get confession channel
   const confessionChannel = guild.channels.cache.get(confessionConfig.channelId);
   if (!confessionChannel) {
-    const errorMsg = `${config.emojis.error} <@${user.id}>: The confession channel no longer exists.`;
-    if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: true });
-    } else {
-      return embeds.deny(context, 'The confession channel no longer exists.');
-    }
+    return embeds.deny(context, 'The confession channel **no longer exists**.');
   }
 
   // Get next confession ID
@@ -86,20 +71,12 @@ async function submitConfession(context, confessionText) {
 
   // Send confession to channel
   const sentMessage = await confessionChannel.send({ embeds: [confessionEmbed], components: [row] });
-  
+
   // Track this confession
   await confessionService.addConfession(guild.id, confessionId, sentMessage.id, user.id);
 
   // Confirm to user
-  const confirmEmbed = new EmbedBuilder()
-    .setColor(config.colors.success)
-    .setDescription(`${config.emojis.success} <@${user.id}>: Your confession has **been submitted**. Confession ID: **${confessionId}**`);
-
-  if (isInteraction) {
-    return context.reply({ embeds: [confirmEmbed], ephemeral: true });
-  } else {
-    return context.channel.send({ embeds: [confirmEmbed] });
-  }
+  return embeds.success(context, `Your confession has **been submitted**. Confession ID: **${confessionId}**`);
 }
 
 module.exports = {
@@ -112,12 +89,12 @@ module.exports = {
       if (args.length === 0) {
         return embeds.deny(message, 'Please provide a confession text.');
       }
-      
+
       const confessionText = args.join(' ');
       return await submitConfession(message, confessionText);
     } catch (error) {
       console.error('Error in confess command:', error);
-      
+
       if (client?.errorLogger) {
         client.errorLogger.log(error, 'Confess Command', {
           command: 'confess',
@@ -127,7 +104,7 @@ module.exports = {
           channel: message.channel
         });
       }
-      
+
       return embeds.deny(message, 'An error occurred while submitting your confession.');
     }
   }
