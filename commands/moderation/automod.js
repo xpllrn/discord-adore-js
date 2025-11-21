@@ -33,8 +33,9 @@ module.exports = {
           creatorId: creatorId,
           enabled: true,
           eventType: 1, // MESSAGE_SEND
-          triggerType: AutoModerationRuleTriggerType.Keyword,
+          triggerType: 5, // KEYWORD_PRESET
           triggerMetadata: {
+            presets: [1, 2, 3], // Profanity, Sexual Content, Slurs
             keywordFilter: [badWords[i]]
           },
           actions: [
