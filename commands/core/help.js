@@ -435,7 +435,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    const commandQuery = interaction.options.getString('text');
+    const commandQuery = interaction.options.getString('command');
     return showHelpShared(interaction, interaction.client, commandQuery);
   }
 }
