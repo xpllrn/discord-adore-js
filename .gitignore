@@ -1,2 +1,21 @@
-node_modules
-logs/*.txt
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+

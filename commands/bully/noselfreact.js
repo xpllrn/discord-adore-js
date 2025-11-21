@@ -63,7 +63,7 @@ module.exports = {
         'NoSelfReact.enabled': false
       });
 
-      return embeds.success(message, 'No selfreact** has been **disabled**');
+      return embeds.success(message, '**No selfreact** has been **disabled**');
     }
 
     if (subcommand === 'bypass') {
