@@ -2,11 +2,7 @@ module.exports = {
     name: 'status',
     description: 'Set your status',
     async execute(message, args, bot) {
-        if (args.length === 0) {
-            const msg = await message.channel.send('❌ Usage: ,status <text> [--online/--idle/--dnd/--offline]');
-            setTimeout(() => msg.delete().catch(() => {}), 3000);
-            return;
-        }
+        if (args.length === 0) return;
 
         let statusType = 'online';
         let statusText = args.join(' ');
@@ -25,20 +21,12 @@ module.exports = {
             statusText = statusText.replace('--online', '').trim();
         }
 
-        try {
-            await bot.client.user.setPresence({
-                status: statusType,
-                activities: [{
-                    name: statusText,
-                    type: 'PLAYING'
-                }]
-            });
-
-            const msg = await message.channel.send(`✅ Status set to: ${statusText} (${statusType})`);
-            setTimeout(() => msg.delete().catch(() => {}), 3000);
-        } catch (error) {
-            const msg = await message.channel.send('❌ Failed to set status');
-            setTimeout(() => msg.delete().catch(() => {}), 3000);
-        }
+        await bot.client.user.setPresence({
+            status: statusType,
+            activities: [{
+                name: statusText,
+                type: 'PLAYING'
+            }]
+        }).catch(() => {});
     }
 };
