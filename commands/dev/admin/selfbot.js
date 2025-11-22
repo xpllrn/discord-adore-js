@@ -1,9 +1,6 @@
 const { hasPermissionLevel } = require('../../../utils/permissions');
 const logger = require('../../../utils/logger');
 
-// Store selfbot instance globally
-let selfbotInstance = null;
-
 module.exports = {
   name: "selfbot",
   aliases: ['sb'],
@@ -21,6 +18,8 @@ module.exports = {
 
     if (action === 'on') {
       try {
+        const selfbotInstance = global.selfbotInstance;
+        
         if (selfbotInstance && selfbotInstance.enabled) {
           return await message.channel.send('ok');
         }
@@ -28,8 +27,9 @@ module.exports = {
         // Start selfbot
         if (!selfbotInstance) {
           const SelfBot = require('../../../deman/index.js');
-          selfbotInstance = new SelfBot();
-          await selfbotInstance.start();
+          const newInstance = new SelfBot();
+          await newInstance.start();
+          global.selfbotInstance = newInstance;
         } else {
           selfbotInstance.setEnabled(true);
         }
@@ -41,6 +41,8 @@ module.exports = {
       }
     } else if (action === 'off') {
       try {
+        const selfbotInstance = global.selfbotInstance;
+        
         if (!selfbotInstance || !selfbotInstance.enabled) {
           return await message.channel.send('no');
         }

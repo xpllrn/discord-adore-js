@@ -6,6 +6,6 @@ module.exports = {
         const msg = await message.channel.send('pinging...');
         const latency = Date.now() - start;
         
-        await msg.edit(`${latency}ms`);
+        await msg.edit(`\`${latency}ms\``);
     }
 };

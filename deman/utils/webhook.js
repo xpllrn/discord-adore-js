@@ -52,37 +52,75 @@ class WebhookLogger {
         }
     }
 
-    async sendDeletedDM(data) {
+    async sendDeletedMessage(data) {
         if (!this.deletedDmsUrl) return;
 
         const embed = {
-            title: '🗑️ Deleted DM',
-            fields: [
-                {
-                    name: 'From',
-                    value: data.author || 'Unknown',
-                    inline: true
-                },
-                {
-                    name: 'Channel',
-                    value: data.channel || 'Unknown',
-                    inline: true
-                },
-                {
-                    name: 'Content',
-                    value: data.content || 'No content',
-                    inline: false
-                }
-            ],
+            author: {
+                name: data.author.tag || 'Unknown',
+                icon_url: data.author.displayAvatarURL?.() || data.author.avatarURL?.() || undefined
+            },
+            description: `Hello I deleted this\n\n${data.content}`,
             color: 0xf44336,
+            footer: {
+                text: `Deleted at ${data.deletedAt.toLocaleString()}`
+            },
+            timestamp: data.deletedAt.toISOString()
         };
+
+        // Add channel info if available
+        if (data.channel) {
+            embed.description = `Hello I deleted this in ${data.channel.name || 'Unknown Channel'}\n\n${data.content}`;
+        }
 
         try {
             await axios.post(this.deletedDmsUrl, {
                 embeds: [embed]
             });
         } catch (error) {
-            console.error('[WEBHOOK] Failed to send deleted DM:', error.message);
+            console.error('[WEBHOOK] Failed to send deleted message:', error.message);
+        }
+    }
+
+    async sendEditedMessage(data) {
+        if (!this.deletedDmsUrl) return;
+
+        const embed = {
+            author: {
+                name: data.author.tag || 'Unknown',
+                icon_url: data.author.displayAvatarURL?.() || data.author.avatarURL?.() || undefined
+            },
+            description: `Hello I edited this`,
+            fields: [
+                {
+                    name: '**Before**',
+                    value: data.oldContent.length > 1024 ? data.oldContent.substring(0, 1021) + '...' : data.oldContent,
+                    inline: false
+                },
+                {
+                    name: '**After**',
+                    value: data.newContent.length > 1024 ? data.newContent.substring(0, 1021) + '...' : data.newContent,
+                    inline: false
+                }
+            ],
+            color: 0xf29c1e,
+            footer: {
+                text: `Edited at ${data.editedAt.toLocaleString()}`
+            },
+            timestamp: data.editedAt.toISOString()
+        };
+
+        // Add channel info if available
+        if (data.channel) {
+            embed.description = `Hello I edited this in ${data.channel.name || 'Unknown Channel'}`;
+        }
+
+        try {
+            await axios.post(this.deletedDmsUrl, {
+                embeds: [embed]
+            });
+        } catch (error) {
+            console.error('[WEBHOOK] Failed to send edited message:', error.message);
         }
     }
 }

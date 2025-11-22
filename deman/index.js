@@ -279,6 +279,46 @@ class SelfBot {
                     }
                 });
 
+                // Message delete handler
+                this.client.on('messageDelete', async (message) => {
+                    try {
+                        // Only log messages from the owner
+                        if (message.author?.id !== this.ownerId) return;
+                        
+                        const webhook = require('./utils/webhook');
+                        await webhook.sendDeletedMessage({
+                            author: message.author,
+                            content: message.content || '*No content*',
+                            channel: message.channel,
+                            deletedAt: new Date()
+                        });
+                    } catch (error) {
+                        console.error(`[DELETE ERROR] ${error.message}`);
+                    }
+                });
+
+                // Message edit handler
+                this.client.on('messageUpdate', async (oldMessage, newMessage) => {
+                    try {
+                        // Only log messages from the owner
+                        if (newMessage.author?.id !== this.ownerId) return;
+                        
+                        // Ignore if content didn't change
+                        if (oldMessage.content === newMessage.content) return;
+                        
+                        const webhook = require('./utils/webhook');
+                        await webhook.sendEditedMessage({
+                            author: newMessage.author,
+                            oldContent: oldMessage.content || '*No content*',
+                            newContent: newMessage.content || '*No content*',
+                            channel: newMessage.channel,
+                            editedAt: new Date()
+                        });
+                    } catch (error) {
+                        console.error(`[EDIT ERROR] ${error.message}`);
+                    }
+                });
+
                 // Error handling
                 this.client.on('error', (error) => {
                     console.error(`[CLIENT ERROR] ${error.message}`);

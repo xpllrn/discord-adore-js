@@ -45,12 +45,59 @@ module.exports = {
     name: 'ask',
     description: 'Ask AI a question',
     async execute(message, args, bot) {
-        if (args.length === 0) return;
-
-        const question = args.join(' ');
+        // If no args but replying to a message, use the replied message as the question
+        let question = '';
+        let contextText = '';
+        
+        if (message.reference) {
+            try {
+                const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+                
+                // If no args provided, use the replied message content as the question
+                if (args.length === 0) {
+                    if (repliedMessage.content) {
+                        question = repliedMessage.content;
+                    } else {
+                        return; // No content to process
+                    }
+                } else {
+                    // If args provided, use args as question and replied message as context
+                    question = args.join(' ');
+                    
+                    if (repliedMessage.content) {
+                        contextText = `\n\nContext from replied message: "${repliedMessage.content}"`;
+                    }
+                    
+                    // Include embed content if present
+                    if (repliedMessage.embeds && repliedMessage.embeds.length > 0) {
+                        const embed = repliedMessage.embeds[0];
+                        let embedText = '\n\nReplied message embed:';
+                        
+                        if (embed.title) embedText += `\nTitle: ${embed.title}`;
+                        if (embed.description) embedText += `\nDescription: ${embed.description}`;
+                        if (embed.fields && embed.fields.length > 0) {
+                            embedText += '\nFields:';
+                            embed.fields.forEach(field => {
+                                embedText += `\n- ${field.name}: ${field.value}`;
+                            });
+                        }
+                        
+                        contextText += embedText;
+                    }
+                }
+            } catch (error) {
+                // If can't fetch replied message, fall back to args
+                if (args.length === 0) return;
+                question = args.join(' ');
+            }
+        } else {
+            // No reply, just use args
+            if (args.length === 0) return;
+            question = args.join(' ');
+        }
         
         try {
-            const response = await getAIResponse(question);
+            const response = await getAIResponse(question + contextText);
             await message.channel.send(response);
         } catch (error) {
             console.error('[ASK] Error:', error.message);
