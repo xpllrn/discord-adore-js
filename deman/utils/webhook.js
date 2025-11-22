@@ -13,7 +13,6 @@ class WebhookLogger {
         const embed = {
             description: message,
             color: 0x51e395,
-            timestamp: new Date().toISOString()
         };
 
         try {
@@ -39,7 +38,6 @@ class WebhookLogger {
             title: `${type.toUpperCase()} Log`,
             description: message,
             color: colors[type] || colors.info,
-            timestamp: new Date().toISOString(),
             footer: {
                 text: 'Selfbot Logger'
             }
@@ -77,7 +75,6 @@ class WebhookLogger {
                 }
             ],
             color: 0xf44336,
-            timestamp: new Date().toISOString()
         };
 
         try {

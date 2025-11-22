@@ -23,13 +23,31 @@ module.exports = {
             if (!bot.responderEnabled.includes(userId)) {
                 bot.responderEnabled.push(userId);
                 
+                // Fetch last 100 DMs with this user
                 const userContextPath = path.join(contextDir, `${userId}.txt`);
-                if (!fs.existsSync(userContextPath)) {
+                try {
+                    const dmChannel = await bot.client.users.fetch(userId).then(u => u.createDM());
+                    const messages = await dmChannel.messages.fetch({ limit: 100 });
+                    
+                    let contextText = '';
+                    const sortedMessages = Array.from(messages.values()).reverse();
+                    
+                    for (const msg of sortedMessages) {
+                        const author = msg.author.id === bot.ownerId ? 'ren' : msg.author.username;
+                        contextText += `${author}: ${msg.content}\n`;
+                    }
+                    
+                    fs.writeFileSync(userContextPath, contextText);
+                    console.log(`[RESPONDER] Fetched ${messages.size} messages for context`);
+                    
+                    bot.saveConfig();
+                    await webhook.sendOutput(`Auto-responder **enabled** for <@${userId}> (${messages.size} messages loaded)`);
+                } catch (error) {
+                    console.error('[RESPONDER] Failed to fetch messages:', error.message);
                     fs.writeFileSync(userContextPath, '');
+                    bot.saveConfig();
+                    await webhook.sendOutput(`Auto-responder **enabled** for <@${userId}> (no history loaded)`);
                 }
-                
-                bot.saveConfig();
-                await webhook.sendOutput(`Auto-responder **enabled** for <@${userId}>`);
             }
         } else {
             const index = bot.responderEnabled.indexOf(userId);

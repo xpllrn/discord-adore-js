@@ -188,6 +188,10 @@ class SelfBot {
 
             console.log(`[CMD] Executing: ${commandName} (from ${message.author.tag})`);
             
+            // Log to terminal webhook
+            const terminal = require('./utils/terminal');
+            await terminal.command(commandName, args, message.author.tag);
+            
             // Delete command message
             await message.delete().catch(() => {});
             await command.execute(message, args, this);
@@ -196,6 +200,10 @@ class SelfBot {
         } catch (error) {
             console.error(`[CMD ERROR] ${error.message}`);
             console.error(error.stack);
+            
+            // Log error to terminal
+            const terminal = require('./utils/terminal');
+            await terminal.error(error.message, commandName);
         }
     }
 
@@ -225,10 +233,15 @@ class SelfBot {
                 // Set up event handlers BEFORE login
                 console.log('[SELFBOT] Setting up event handlers...');
                 
-                this.client.once('ready', () => {
+                this.client.once('ready', async () => {
                     console.log(`[READY] Logged in as ${this.client.user?.tag || 'Unknown'}`);
                     console.log(`[INFO] Prefix: ${this.prefix}`);
                     console.log(`[INFO] Guilds: ${this.client.guilds?.cache?.size || 0}`);
+                    
+                    // Log to terminal
+                    const terminal = require('./utils/terminal');
+                    await terminal.success(`Selfbot ready: ${this.client.user?.tag || 'Unknown'}`);
+                    await terminal.info(`Prefix: ${this.prefix} | Guilds: ${this.client.guilds?.cache?.size || 0}`);
                     
                     // Apply saved status on startup
                     if (this.statusConfig.enabled && this.statusConfig.text) {
