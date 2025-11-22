@@ -47,7 +47,7 @@ function analyzeStyle(messages) {
         singleWords: 0
     };
     
-    const slangWords = ['ion', 'u', 'wtv', 'oml', 'bruh', 'nvm', 'wym', 'alr', 'lmfao', 'hruu'];
+    const slangWords = ['ion', 'u', 'wtv', 'oml', 'nvm', 'hoe', 'alr', 'lmfao', 'slut'];
     
     messages.forEach(msg => {
         patterns.avgLength += msg.split(' ').length;
