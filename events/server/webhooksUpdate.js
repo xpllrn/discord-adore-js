@@ -12,11 +12,16 @@ module.exports = {
       try {
         const auditLogs = await channel.guild.fetchAuditLogs({
           type: AuditLogEvent.WebhookCreate,
-          limit: 1
+          limit: 5
         });
 
-        const auditEntry = auditLogs.entries.first();
-        if (auditEntry && Date.now() - auditEntry.createdTimestamp < 5000) {
+        // Find the most recent webhook creation audit entry
+        const auditEntry = auditLogs.entries.find(entry =>
+          entry.targetId === channel.id &&
+          Date.now() - entry.createdTimestamp < 10000
+        );
+
+        if (auditEntry) {
           executor = auditEntry.executor;
         }
       } catch (auditError) {

@@ -399,24 +399,24 @@ async function createVoiceManagerPanel(client, channel) {
     .setThumbnail(client.user.displayAvatarURL());
 
   // Create button rows - 4 buttons per row (8 total)
-  // Using custom emojis from config
+  // Using Unicode emojis as fallback since custom emojis aren't accessible
   const row1 = new ActionRowBuilder()
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_lock')
-        .setEmoji(emojis.vmLock)
+        .setEmoji('🔒')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_unlock')
-        .setEmoji(emojis.vmUnlock)
+        .setEmoji('🔓')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_hide')
-        .setEmoji(emojis.vmHide)
+        .setEmoji('👻')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_unhide')
-        .setEmoji(emojis.vmUnhide)
+        .setEmoji('👁️')
         .setStyle(ButtonStyle.Secondary)
     );
 
@@ -424,19 +424,19 @@ async function createVoiceManagerPanel(client, channel) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_increase')
-        .setEmoji(emojis.vmIncrease)
+        .setEmoji('➕')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_decrease')
-        .setEmoji(emojis.vmDecrease)
+        .setEmoji('➖')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_rename')
-        .setEmoji(emojis.vmRename)
+        .setEmoji('✏️')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_info')
-        .setEmoji(emojis.vmInfo)
+        .setEmoji('ℹ️')
         .setStyle(ButtonStyle.Secondary)
     );
 

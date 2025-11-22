@@ -43,56 +43,19 @@ module.exports = {
 
       const msg = await embeds.loading(message, `Searching for player **${username}#${tagline}**...`);
 
-      // Try multiple API endpoints for better reliability
-      let accountResponse = null;
-      let apiUsed = '';
+      const API_KEY = 'YOUR_API_KEY'
 
-      // Try Henrik API first
-      try {
-        accountResponse = await fetch(`https://api.henrikdev.xyz/valorant/v1/account/${username}/${tagline}`, {
-          method: 'GET',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        }).then((response) => response.json());
-
-        if (accountResponse && accountResponse.status === 200) {
-          apiUsed = 'Henrik API';
-        } else {
-          accountResponse = null;
+      // Fetch account data with API key
+      const accountResponse = await fetch(`https://api.henrikdev.xyz/valorant/v1/account/${username}/${tagline}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': API_KEY,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-      } catch (error) {
-        console.log('Henrik API failed:', error.message);
-        accountResponse = null;
-      }
+      }).then((response) => response.json());
 
-      // If Henrik API fails, try alternative approach
       if (!accountResponse) {
-        try {
-          // Try using Tracker.gg as fallback
-          const trackerUrl = `https://tracker.gg/valorant/profile/riot/${encodeURIComponent(`${username}#${tagline}`)}/overview`;
-
-          // Create a basic response for Tracker.gg
-          accountResponse = {
-            status: 200,
-            data: {
-              name: username,
-              tag: tagline,
-              region: 'unknown',
-              account_level: 'N/A',
-              card: null,
-              last_update_raw: null
-            }
-          };
-          apiUsed = 'Tracker.gg (Limited Info)';
-        } catch (fallbackError) {
-          console.log('Fallback API also failed:', fallbackError.message);
-        }
-      }
-
-      // If all APIs fail
-      if (!accountResponse) {
-        const errorEmbed = embeds.createWarn(message, `Valorant APIs are currently unavailable. Please try again later.`);
+        const errorEmbed = embeds.createWarn(message, `Valorant API is currently unavailable. Please try again later.`);
         return msg.edit({ embeds: [errorEmbed] });
       }
 
@@ -116,41 +79,40 @@ module.exports = {
 
       const { region, account_level, name, tag, card, last_update_raw } = results.data;
 
-      // Get MMR data - only if we have a valid region and Henrik API worked
+      // Get MMR data with API key
       let MMR = { data: {} };
-      if (apiUsed === 'Henrik API' && region && region !== 'unknown') {
-        try {
-          MMR = await fetch(`https://api.henrikdev.xyz/valorant/v1/mmr/${region}/${name}/${tag}`, {
-            method: 'GET',
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-          }).then((response) => response.json()).catch(() => ({ data: {} }));
-        } catch (mmrError) {
-          console.log('MMR fetch failed:', mmrError.message);
-          MMR = { data: {} };
-        }
+      try {
+        MMR = await fetch(`https://api.henrikdev.xyz/valorant/v2/mmr/${region}/${name}/${tag}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': API_KEY,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        }).then((response) => response.json()).catch(() => ({ data: {} }));
+      } catch (mmrError) {
+        console.log('MMR fetch failed:', mmrError.message);
+        MMR = { data: {} };
       }
 
-      const { currenttierpatched, mmr_change_to_last_game, elo } = MMR.data || {};
+      const { currenttierpatched, mmr_change_to_last_game, elo, ranking_in_tier } = MMR.data || {};
 
-      // Get recent matches - only if we have a valid region and Henrik API worked
+      // Get recent matches with API key
       let matches = { data: [] };
-      if (apiUsed === 'Henrik API' && region && region !== 'unknown') {
-        try {
-          matches = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/${region}/${name}/${tag}?filter=competitive`, {
-            method: 'GET',
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-          }).then((response) => response.json()).catch(() => ({ data: [] }));
-        } catch (matchError) {
-          console.log('Matches fetch failed:', matchError.message);
-          matches = { data: [] };
-        }
+      try {
+        matches = await fetch(`https://api.henrikdev.xyz/valorant/v3/matches/${region}/${name}/${tag}?filter=competitive`, {
+          method: 'GET',
+          headers: {
+            'Authorization': API_KEY,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        }).then((response) => response.json()).catch(() => ({ data: [] }));
+      } catch (matchError) {
+        console.log('Matches fetch failed:', matchError.message);
+        matches = { data: [] };
       }
 
       let competitive = [];
+      let stats = { kills: 0, deaths: 0, assists: 0, matches: 0, wins: 0 };
 
       if (matches.data && matches.data.length > 0) {
         competitive = matches.data.slice(0, 5).map((match) => {
@@ -158,15 +120,26 @@ module.exports = {
           const player = players.all_players.find((p) => p.name === name && p.tag === tag);
 
           let result = 'Unknown';
+          let kda = '';
           if (player) {
+            const { stats: playerStats } = player;
+            stats.kills += playerStats.kills || 0;
+            stats.deaths += playerStats.deaths || 0;
+            stats.assists += playerStats.assists || 0;
+            stats.matches++;
+
             if (player.team === 'Red') {
-              result = teams.red.has_won ? '🟢 Victory' : '🔴 Defeat';
+              result = teams.red.has_won ? 'Victory' : 'Defeat';
+              if (teams.red.has_won) stats.wins++;
             } else if (player.team === 'Blue') {
-              result = teams.blue.has_won ? '🟢 Victory' : '🔴 Defeat';
+              result = teams.blue.has_won ? 'Victory' : 'Defeat';
+              if (teams.blue.has_won) stats.wins++;
             }
+
+            kda = `${playerStats.kills}/${playerStats.deaths}/${playerStats.assists}`;
           }
 
-          return `<t:${metadata.game_start}:d> ${result}`;
+          return `<t:${metadata.game_start}:R> • ${result} • ${kda}`;
         });
       }
 
@@ -176,30 +149,49 @@ module.exports = {
           name: message.member.displayName,
           iconURL: message.member.displayAvatarURL({ dynamic: true })
         })
-        .setTitle(`${region && region !== 'unknown' ? region.toUpperCase() : 'VALORANT'}: ${name}#${tag}`)
+        .setTitle(`${region ? region.toUpperCase() : 'VALORANT'} • ${name}#${tag}`)
         .setURL(url)
         .setThumbnail(card ? card.small : null)
         .setFooter({
-          text: `${apiUsed} • ${last_update_raw ? 'Last Updated' : 'Valorant Profile'}`,
+          text: `${last_update_raw ? 'Last Updated' : 'Valorant Profile'}`,
           iconURL: 'https://img.icons8.com/color/512/valorant.png'
         });
 
-      // Build description based on available data
-      let description = `**Account Level:** ${account_level || 'Unknown'}`;
+      // Build description
+      let description = `**Account Level** ${account_level || 'Unknown'}`;
 
       if (currenttierpatched || elo) {
-        description += `\n**Rank:** ${currenttierpatched || 'Unranked'}`;
-        description += `\n**ELO:** ${elo || '0'}`;
+        description += `\n**Current Rank** ${currenttierpatched || 'Unranked'}`;
+        description += `\n**Rating** ${elo || '0'} RR`;
 
         if (mmr_change_to_last_game) {
-          description += ` (\`${mmr_change_to_last_game >= 0 ? '+' : ''}${mmr_change_to_last_game}\`)`;
+          const change = mmr_change_to_last_game >= 0 ? `+${mmr_change_to_last_game}` : mmr_change_to_last_game;
+          description += ` \`${change}\``;
         }
-      } else if (apiUsed !== 'Henrik API') {
-        description += `\n\n⚠️ **Limited data available** - Rank and match data requires Henrik API`;
-        description += `\n🔗 [View full profile on Tracker.gg](${url})`;
+
+        if (ranking_in_tier) {
+          description += `\n**Leaderboard** #${ranking_in_tier.toLocaleString()}`;
+        }
       }
 
       embed.setDescription(description);
+
+      // Add statistics if available
+      if (stats.matches > 0) {
+        const kd = (stats.kills / Math.max(stats.deaths, 1)).toFixed(2);
+        const winRate = ((stats.wins / stats.matches) * 100).toFixed(1);
+        const avgKills = (stats.kills / stats.matches).toFixed(1);
+        const avgDeaths = (stats.deaths / stats.matches).toFixed(1);
+        const avgAssists = (stats.assists / stats.matches).toFixed(1);
+
+        embed.addFields(
+          {
+            name: 'Recent Performance',
+            value: `**Win Rate** ${winRate}% (${stats.wins}W ${stats.matches - stats.wins}L)\n**K/D Ratio** ${kd}\n**Avg KDA** ${avgKills} / ${avgDeaths} / ${avgAssists}`,
+            inline: true
+          }
+        );
+      }
 
       if (competitive.length > 0) {
         embed.addFields({
@@ -207,7 +199,7 @@ module.exports = {
           value: competitive.join('\n'),
           inline: false
         });
-      } else if (apiUsed === 'Henrik API') {
+      } else {
         embed.addFields({
           name: 'Recent Matches',
           value: 'No recent competitive matches found',

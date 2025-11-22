@@ -669,7 +669,7 @@ class WebhookLogger {
     const embed = new EmbedBuilder()
       .setColor(config.colors.info)
       .setAuthor({
-        name: `Channel Permissions ${action === 'create' ? 'Created' : 'Updated'}`,
+        name: `Channel Overrides ${action === 'create' ? 'Created' : action === 'delete' ? 'Deleted' : 'Updated'}`,
         iconURL: executor?.displayAvatarURL({ dynamic: true })
       })
       .setTimestamp();
@@ -684,56 +684,86 @@ class WebhookLogger {
       }
     }
 
+    const executorText = executor ? `<@${executor.id}>` : '**Unknown**';
+
     if (action === 'create') {
-      embed.setDescription(`**${targetDisplay}** permissions for <#${channel?.id}> created by <@${executor?.id}>`);
+      embed.setDescription(`${executorText} created channel overrides for <#${channel?.id}>`);
+      
+      // Show what permissions were set for the target
+      if (changes && changes.length > 0) {
+        const permissionText = this.formatPermissionChanges(changes);
+        if (permissionText) {
+          embed.addFields({
+            name: `**Denied permissions for ${targetDisplay}**`,
+            value: permissionText,
+            inline: false
+          });
+        }
+      }
+    } else if (action === 'delete') {
+      embed.setDescription(`${executorText} deleted channel overrides for <#${channel?.id}>`);
     } else {
-      embed.setDescription(`Channel permissions for <#${channel?.id}> updated by <@${executor?.id}>`);
+      embed.setDescription(`${executorText} updated channel overrides for <#${channel?.id}>`);
 
       // Add permission changes
       if (changes && changes.length > 0) {
-        const permissionText = changes.map(change => {
-          // Handle allow/deny permission changes
-          if (change.key === 'allow' || change.key === 'deny') {
-            const oldPerms = this.getPermissionDiff(change.old, change.new);
-            const newPerms = this.getPermissionDiff(change.new, change.old);
-            
-            let text = '';
-            if (change.key === 'allow') {
-              if (newPerms.length > 0) {
-                text = `**allow:** ${newPerms.map(p => `\`✅\` ${p}`).join(', ')}`;
-              } else if (oldPerms.length > 0) {
-                text = `**allow:** ${oldPerms.map(p => `\`❌\` ${p}`).join(', ')}`;
-              }
-            } else if (change.key === 'deny') {
-              if (newPerms.length > 0) {
-                text = `**deny:** ${newPerms.map(p => `\`✅\` ${p}`).join(', ')}`;
-              } else if (oldPerms.length > 0) {
-                text = `**deny:** ${oldPerms.map(p => `\`❌\` ${p}`).join(', ')}`;
-              }
-            }
-            return text;
-          }
-          
-          // Default formatting for other changes
-          return this.formatChange(change);
-        }).filter(text => text).join('\n');
-
+        const permissionText = this.formatPermissionChanges(changes);
         if (permissionText) {
           embed.addFields({
             name: '**Changes**',
-            value: permissionText.length > 1024 ? permissionText.substring(0, 1021) + '...' : permissionText,
+            value: permissionText,
             inline: false
           });
         }
       }
     }
 
-    embed.setFooter({
-      text: `User ID: ${executor?.id}`,
-      iconURL: null
-    });
+    if (executor) {
+      embed.setFooter({
+        text: `User ID: ${executor.id}`,
+        iconURL: null
+      });
+    }
 
     return embed;
+  }
+
+  /**
+   * Format permission changes for display
+   * @param {Array} changes - Array of change objects
+   * @returns {string} - Formatted permission text
+   */
+  formatPermissionChanges(changes) {
+    const permissionText = changes.map(change => {
+      // Handle allow/deny permission changes
+      if (change.key === 'allow' || change.key === 'deny') {
+        const newPerms = this.getPermissionDiff(change.new, change.old);
+        const removedPerms = this.getPermissionDiff(change.old, change.new);
+        
+        let text = '';
+        if (change.key === 'allow') {
+          if (newPerms.length > 0) {
+            text = newPerms.map(p => `Allowed: ${p}`).join('\n');
+          }
+          if (removedPerms.length > 0) {
+            text += (text ? '\n' : '') + removedPerms.map(p => `Removed Allow: ${p}`).join('\n');
+          }
+        } else if (change.key === 'deny') {
+          if (newPerms.length > 0) {
+            text = newPerms.map(p => `Denied: ${p}`).join('\n');
+          }
+          if (removedPerms.length > 0) {
+            text += (text ? '\n' : '') + removedPerms.map(p => `Removed Deny: ${p}`).join('\n');
+          }
+        }
+        return text;
+      }
+      
+      // Default formatting for other changes
+      return this.formatChange(change);
+    }).filter(text => text).join('\n');
+
+    return permissionText.length > 1024 ? permissionText.substring(0, 1021) + '...' : permissionText;
   }
 
   /**

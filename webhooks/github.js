@@ -83,13 +83,14 @@ class GitHubWebhook {
     // Get the latest commit message
     const latestCommit = commits[commits.length - 1];
     const commitMessage = latestCommit?.message?.split('\n')[0] || 'No commit message';
+    const commitUrl = latestCommit?.url?.replace('api.github.com/repos', 'github.com').replace('/commits/', '/commit/') || compare;
     
     // Build description
-    let description = `> There had been \u001b[2;34m**${commits.length}**\u001b[0m commit${commits.length > 1 ? 's' : ''} to \`${repository.full_name}\`\n`;
+    let description = `> There had been **${commits.length}** commit${commits.length > 1 ? 's' : ''} to \`${repository.full_name}\`\n`;
     if (fileChanges.length > 0) {
       description += `\`\`\`ansi\n${fileChanges.join(', ')}\n\`\`\``;
     }
-    description += `\`\`\`${commitMessage}\`\`\``;
+    description += `[\`\`\`${commitMessage}\`\`\`](${commitUrl})`;
     
     const embed = new EmbedBuilder()
       .setColor('#242429')

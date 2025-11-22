@@ -81,7 +81,7 @@ module.exports = {
         .setColor(colors.embed)
         .setTitle(`Couples of ${message.guild.name}`)
         .setDescription(description)
-        .setFooter({ text: `${marriages.length} e-couple${marriages.length !== 1 ? 's' : ''}` });
+        .setFooter({ text: `You currently have ${marriages.length} e-daters here${marriages.length !== 1 ? 's' : ''}` });
 
       return message.channel.send({ embeds: [embed] });
 

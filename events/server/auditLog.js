@@ -225,16 +225,20 @@ async function logChannelPermissionUpdate(auditLogEntry, guild) {
 
     // Get the target (role or member)
     let target = null;
-    if (auditLogEntry.extra?.type === 'role') {
+    let targetName = 'Unknown';
+    
+    if (auditLogEntry.extra?.type === 'role' || auditLogEntry.extra?.type === '0') {
       target = guild.roles.cache.get(auditLogEntry.extra.id);
-    } else if (auditLogEntry.extra?.type === 'member') {
-      target = guild.members.cache.get(auditLogEntry.extra.id);
+      targetName = target?.name || 'Unknown Role';
+    } else if (auditLogEntry.extra?.type === 'member' || auditLogEntry.extra?.type === '1') {
+      target = await guild.members.fetch(auditLogEntry.extra.id).catch(() => null);
+      targetName = target?.user?.username || 'Unknown Member';
     }
 
     const embed = webhookLogger.createChannelPermissionsLog({
       action: action,
       channel: channel,
-      target: target,
+      target: target || { name: targetName },
       executor: auditLogEntry.executor,
       changes: auditLogEntry.changes
     });

@@ -678,7 +678,7 @@ async function handleTicketDelete(interaction) {
       }
     };
 
-    return embeds.warn(fakeMessage, 'Are you sure you want to **permanently delete** this ticket?\n\nThis action cannot be undone.');
+    return embeds.warn(fakeMessage, 'Are you sure you want to **permanently delete** this ticket?');
 
   } catch (error) {
     console.error('Error handling ticket delete:', error);
@@ -707,12 +707,9 @@ async function handleConfirmDelete(interaction) {
     const channelId = interaction.customId.split('_')[2];
 
     // Respond to the interaction first before deleting the channel
-    const { EmbedBuilder } = require('discord.js');
-    const { colors, emojis } = require('../../config/setup');
+    const { embeds } = require('../../core/embeds');
 
-    const loadingEmbed = new EmbedBuilder()
-      .setColor(colors.info)
-      .setDescription(`${emojis.loading} Deleting ticket...`);
+    const loadingEmbed = embeds.createLoading(interaction, 'Deleting ticket...');
 
     await interaction.update({
       content: null,

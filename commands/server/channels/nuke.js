@@ -168,7 +168,13 @@ module.exports = {
 
           // Send "first" message in the new channel
           await newChannel.send('first');
-          await embeds.success({ channel: newChannel }, `Channel nuked by **${message.author.tag}**`);
+          
+          // Create a message-like context for the embed
+          const successContext = {
+            author: message.author,
+            channel: newChannel
+          };
+          await embeds.success(successContext, `Channel nuked by **${message.author.tag}**`);
 
         } catch (error) {
           console.error('Nuke command error:', error);
@@ -182,7 +188,11 @@ module.exports = {
             );
             
             if (errorChannel) {
-              await embeds.deny({ channel: errorChannel }, `Failed to nuke channel: ${error.message}`);
+              const errorContext = {
+                author: message.author,
+                channel: errorChannel
+              };
+              await embeds.deny(errorContext, `Failed to nuke channel: ${error.message}`);
             }
           } catch (sendError) {
             // Can't send error anywhere

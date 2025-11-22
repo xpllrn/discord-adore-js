@@ -14,13 +14,16 @@ module.exports = {
       try {
         const auditLogs = await newChannel.guild.fetchAuditLogs({
           type: AuditLogEvent.ChannelUpdate,
-          limit: 1
+          limit: 5
         });
 
-        const auditEntry = auditLogs.entries.first();
-        if (auditEntry && 
-            auditEntry.target?.id === newChannel.id &&
-            Date.now() - auditEntry.createdTimestamp < 5000) {
+        // Find the most recent audit entry for this channel
+        const auditEntry = auditLogs.entries.find(entry => 
+          entry.target?.id === newChannel.id &&
+          Date.now() - entry.createdTimestamp < 10000
+        );
+
+        if (auditEntry) {
           executor = auditEntry.executor;
           
           // Extract changes from audit log
