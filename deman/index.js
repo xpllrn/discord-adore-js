@@ -39,7 +39,6 @@ class SelfBot {
 
         this.humanDelay = { min: 800, max: 2500 };
         this.typingSpeed = { min: 50, max: 150 };
-        this.responderEnabled = [];
         this.customStatus = null;
         this.statusLoop = {
             enabled: false,
@@ -47,6 +46,7 @@ class SelfBot {
             currentIndex: 0
         };
         this.statusLoopInterval = null;
+        this.statusLoopTimeout = null;
         
         this.loadConfig();
     }
@@ -58,10 +58,9 @@ class SelfBot {
                 const data = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
                 this.cleanupEnabled = data.cleanupEnabled || false;
                 this.statusConfig = data.statusConfig || this.statusConfig;
-                this.responderEnabled = data.responderEnabled || [];
                 this.customStatus = data.customStatus || null;
                 this.statusLoop = data.statusLoop || this.statusLoop;
-                console.log(`[CONFIG] Loaded - Cleanup: ${this.cleanupEnabled ? 'ON' : 'OFF'}, Responder: ${this.responderEnabled.length} users`);
+                console.log(`[CONFIG] Loaded - Cleanup: ${this.cleanupEnabled ? 'ON' : 'OFF'}`);
             } else {
                 this.saveConfig();
             }
@@ -76,7 +75,6 @@ class SelfBot {
             const data = {
                 cleanupEnabled: this.cleanupEnabled,
                 statusConfig: this.statusConfig,
-                responderEnabled: this.responderEnabled,
                 customStatus: this.customStatus,
                 statusLoop: this.statusLoop
             };
@@ -293,12 +291,6 @@ class SelfBot {
                 this.client.on('messageCreate', async (message) => {
                     try {
                         await this.handleCommand(message);
-                        
-                        // Auto-responder for enabled users
-                        if (message.author?.id !== this.ownerId) {
-                            const responder = require('./utils/responder');
-                            await responder.handleMessage(message, this);
-                        }
                         
                         // Auto-cleanup messages after 300 seconds
                         if (this.cleanupEnabled && message.author?.id === this.ownerId) {

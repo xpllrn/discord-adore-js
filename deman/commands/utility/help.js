@@ -8,13 +8,7 @@ module.exports = {
 
         // Command categories with their commands
         const categories = {
-            responder: {
-                title: 'Responder',
-                commands: [
-                    { cmd: '.responder enable <userId>', desc: 'Enable AI auto-responder for a user' },
-                    { cmd: '.responder disable <userId>', desc: 'Disable AI auto-responder for a user' }
-                ]
-            },
+
             activity: {
                 title: 'Activity',
                 commands: [
@@ -60,7 +54,7 @@ module.exports = {
                 output += `\`${num}\` **${categories[cat].title}**\n`;
             });
             
-            output += `\nUse \`.help <category>\` to see specific commands\nExample: \`.help activity\` or \`.help responder\``;
+            output += `\nUse \`.help <category>\` to see specific commands\nExample: \`.help activity\` or \`.help status\``;
             
             await webhook.sendOutput(output);
             return;

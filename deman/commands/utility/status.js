@@ -67,14 +67,16 @@ module.exports = {
             };
             bot.saveConfig();
             
-            // Start the loop
+            // Start the loop with random interval
             if (bot.statusLoopInterval) {
                 clearInterval(bot.statusLoopInterval);
             }
             
-            bot.statusLoopInterval = setInterval(() => {
+            const updateStatus = () => {
                 if (!bot.statusLoop || !bot.statusLoop.enabled) {
-                    clearInterval(bot.statusLoopInterval);
+                    if (bot.statusLoopInterval) {
+                        clearInterval(bot.statusLoopInterval);
+                    }
                     return;
                 }
                 
@@ -127,9 +129,16 @@ module.exports = {
                 }
                 
                 bot.statusLoop.currentIndex = (bot.statusLoop.currentIndex + 1) % bot.statusLoop.lines.length;
-            }, 5000);
+                
+                // Schedule next update with random interval (6-10 seconds)
+                const randomInterval = Math.floor(Math.random() * (10000 - 6000 + 1)) + 6000;
+                bot.statusLoopTimeout = setTimeout(updateStatus, randomInterval);
+            };
             
-            await webhook.sendOutput(`Status loop **enabled** with ${lines.length} lines (5s interval)`);
+            // Start the first update immediately
+            updateStatus();
+            
+            await webhook.sendOutput(`Status loop **enabled** with ${lines.length} lines (6-10s random interval)`);
             return;
         }
 
@@ -138,6 +147,10 @@ module.exports = {
             if (bot.statusLoopInterval) {
                 clearInterval(bot.statusLoopInterval);
                 bot.statusLoopInterval = null;
+            }
+            if (bot.statusLoopTimeout) {
+                clearTimeout(bot.statusLoopTimeout);
+                bot.statusLoopTimeout = null;
             }
             
             bot.statusLoop = {
