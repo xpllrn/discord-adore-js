@@ -60,7 +60,7 @@ module.exports = {
           const vanityConfig = await guildService.getVanitySettings(message.guild.id);
           const voiceManager = await guildService.getVoiceManager(message.guild.id);
           const ticketSystem = await guildService.getTicketSystem(message.guild.id);
-          const levelSystem = await guildService.getLevelSystem(message.guild.id);
+          const levelUpChannel = await guildService.getLevelUpChannel(message.guild.id);
           const countingData = await guildService.getCounting(message.guild.id);
 
           // Delete the confirmation message first
@@ -120,9 +120,9 @@ module.exports = {
 
 
           if (vanityConfig && vanityConfig.logChannelId === channelId) {
-            await guildService.setVanityConfig(
+            await guildService.setVanitySettings(
               message.guild.id,
-              vanityConfig.vanity,
+              vanityConfig.vanityText,
               vanityConfig.roles,
               newChannel.id,
               vanityConfig.message
@@ -155,7 +155,7 @@ module.exports = {
             });
           }
 
-          if (levelSystem && levelSystem.levelUpChannel === channelId) {
+          if (levelUpChannel === channelId) {
             await guildService.setLevelUpChannel(message.guild.id, newChannel.id);
           }
 

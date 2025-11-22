@@ -76,18 +76,18 @@ class GitHubWebhook {
     
     // Build file changes text
     let fileChanges = [];
-    if (filesModified > 0) fileChanges.push(`Modified ${filesModified} file${filesModified > 1 ? 's' : ''}`);
-    if (filesAdded > 0) fileChanges.push(`Added ${filesAdded} file${filesAdded > 1 ? 's' : ''}`);
-    if (filesRemoved > 0) fileChanges.push(`Removed ${filesRemoved} file${filesRemoved > 1 ? 's' : ''}`);
+    if (filesModified > 0) fileChanges.push(`\u001b[2;45m\u001b[2;31m\u001b[2;47m\u001b[2;41m\u001b[2;37mModified ${filesModified} file${filesModified > 1 ? 's' : ''}\u001b[0m\u001b[2;31m\u001b[2;41m\u001b[0m\u001b[2;31m\u001b[2;47m\u001b[0m\u001b[2;31m\u001b[2;45m\u001b[0m\u001b[2;45m\u001b[0m`);
+    if (filesAdded > 0) fileChanges.push(`\u001b[2;45m\u001b[2;31m\u001b[2;47m\u001b[2;41m\u001b[2;37mAdded ${filesAdded} file${filesAdded > 1 ? 's' : ''}\u001b[0m\u001b[2;31m\u001b[2;41m\u001b[0m\u001b[2;31m\u001b[2;47m\u001b[0m\u001b[2;31m\u001b[2;45m\u001b[0m\u001b[2;45m\u001b[0m`);
+    if (filesRemoved > 0) fileChanges.push(`\u001b[2;45m\u001b[2;31m\u001b[2;47m\u001b[2;41m\u001b[2;37mRemoved ${filesRemoved} file${filesRemoved > 1 ? 's' : ''}\u001b[0m\u001b[2;31m\u001b[2;41m\u001b[0m\u001b[2;31m\u001b[2;47m\u001b[0m\u001b[2;31m\u001b[2;45m\u001b[0m\u001b[2;45m\u001b[0m`);
     
     // Get the latest commit message
     const latestCommit = commits[commits.length - 1];
     const commitMessage = latestCommit?.message?.split('\n')[0] || 'No commit message';
     
     // Build description
-    let description = `> There had been **${commits.length}** commit${commits.length > 1 ? 's' : ''} to \`${repository.full_name}\`\n`;
+    let description = `> There had been \u001b[2;34m**${commits.length}**\u001b[0m commit${commits.length > 1 ? 's' : ''} to \`${repository.full_name}\`\n`;
     if (fileChanges.length > 0) {
-      description += `\`\`\`ansi\n\u001b[0;32m${fileChanges.join(', ')}\u001b[0m\n\`\`\``;
+      description += `\`\`\`ansi\n${fileChanges.join(', ')}\n\`\`\``;
     }
     description += `\`\`\`${commitMessage}\`\`\``;
     
