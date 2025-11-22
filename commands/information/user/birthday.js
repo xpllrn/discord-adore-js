@@ -11,26 +11,40 @@ module.exports = {
   name: "bday",
   aliases: ['birthday'],
   description: `manage birthday settings`,
-  isGroupCommand: true,
+  syntax: 'bday (subcommand)',
+  example: 'bday set 15 March',
   run: async (client, message, args) => {
     const userService = getService('user');
 
-    // Show help if no subcommand provided
-    if (!args[0]) return false;
+    // Show user's own birthday if no args provided
+    if (!args[0]) {
+      try {
+        const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
+
+        if (!formattedBirthday) {
+          return embeds.info(message, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`);
+        }
+
+        const isBirthdayToday = await userService.isBirthday(message.author.id);
+
+        if (isBirthdayToday) {
+          const birthdayText = `🎂 Your birthday is today! Happy birthday!`;
+          return embeds.info(message, birthdayText);
+        } else {
+          const nextBirthdayTimestamp = await getNextBirthdayTimestamp(message.author.id);
+          const birthdayText = `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
+          return embeds.info(message, birthdayText);
+        }
+      } catch (error) {
+        logger.webhook.error(error, message);
+        return embeds.deny(message, 'Failed to get birthday');
+      }
+    }
 
     if (args[0] === 'set') {
-      const subcommandInfo = {
-        name: 'set',
-        description: 'Set your birthday (cannot be changed once set)',
-        usage: '{guildprefix}bday set [day] [month]',
-        aliases: [],
-        parameters: ['day', 'month'],
-        example: '{guildprefix}bday set 15 March'
-      };
-
       // Set birthday (universal)
       if (!args[1] || !args[2]) {
-        return false;
+        return embeds.warn(message, 'Please provide both day and month. Example: `,bday set 15 March`');
       }
 
       const day = parseInt(args[1]);
@@ -95,15 +109,6 @@ module.exports = {
       }
 
     } else if (args[0] === 'list') {
-      const subcommandInfo = {
-        name: 'list',
-        description: 'List all birthdays in the server',
-        usage: '{guildprefix}bday list',
-        aliases: [],
-        parameters: [],
-        example: '{guildprefix}bday list'
-      };
-
       // List all birthdays in the server
       try {
         const guildMembers = await message.guild.members.fetch();
@@ -192,18 +197,14 @@ module.exports = {
         return embeds.deny(message, 'Failed to list birthdays');
       }
 
-    } else if (args[0]) {
-      const subcommandInfo = {
-        name: 'view',
-        description: 'View a specific user\'s birthday',
-        usage: '{guildprefix}bday [user]',
-        aliases: [],
-        parameters: ['user'],
-        example: '{guildprefix}bday @user'
-      };
-
+    } else if (args[0] === 'view' || args[0]) {
       // Show specific user's birthday
-      const userResult = await findUser(message.guild, args[0], client);
+      const userArg = args[0] === 'view' ? args[1] : args[0];
+      
+      if (!userArg) {
+        return embeds.warn(message, 'Please mention a user. Example: `,bday @user`');
+      }
+      const userResult = await findUser(message.guild, userArg, client);
 
       if (!userResult.found) {
         return embeds.warn(message, userResult.error);
@@ -234,39 +235,6 @@ module.exports = {
         } else {
           const nextBirthdayTimestamp = await getNextBirthdayTimestamp(targetUser.id);
           const birthdayText = `🎂 **${username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
-          return embeds.info(message, birthdayText);
-        }
-      } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to get birthday');
-      }
-
-    } else {
-      const subcommandInfo = {
-        name: 'show',
-        description: 'Show your own birthday',
-        usage: '{guildprefix}bday',
-        aliases: [],
-        parameters: [],
-        example: '{guildprefix}bday'
-      };
-
-      // Show user's own birthday
-      try {
-        const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
-
-        if (!formattedBirthday) {
-          return embeds.info(message, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`);
-        }
-
-        const isBirthdayToday = await userService.isBirthday(message.author.id);
-
-        if (isBirthdayToday) {
-          const birthdayText = `🎂 Your birthday is today! Happy birthday!`;
-          return embeds.info(message, birthdayText);
-        } else {
-          const nextBirthdayTimestamp = await getNextBirthdayTimestamp(message.author.id);
-          const birthdayText = `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
           return embeds.info(message, birthdayText);
         }
       } catch (error) {

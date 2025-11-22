@@ -48,6 +48,10 @@ module.exports = {
 
       const user = results.data.user;
 
+      // Check for stories
+      const hasStories = user.has_public_story || false;
+      const storyStatus = hasStories ? '📖 Has active stories' : 'No active stories';
+
       const embed = new EmbedBuilder()
         .setColor(config.colors.info)
         .setAuthor({
@@ -71,6 +75,11 @@ module.exports = {
           {
             name: 'Following',
             value: user.edge_follow.count.toLocaleString(),
+            inline: true
+          },
+          {
+            name: 'Stories',
+            value: storyStatus,
             inline: true
           }
         ])

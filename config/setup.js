@@ -119,12 +119,18 @@ module.exports = {
     google: '<:google:1439546269847650345>',
     spotify: '<:spotify:1433468387824238712>',
 
-    // Rank Emojis
-    bronze: '<:bronze:1439546272448118924>',
-    silver: '<:silver:1439546277221109841>',
-    gold: '<:gold:1439546274960380044>',
-
-
+    // Roblox Badge Emojis
+    online: '<a:online:1441833868045979670>',
+    robloxWelcomeToTheClub: '<:welcometothebuilderclub:1441832474970951850>',
+    robloxWarrior: '<:warrior:1441832471720235089>',
+    robloxVeteran: '<:veteran:1441832469161840721>',
+    robloxPremium: '<:premium:1441832466519162980>',
+    robloxInviter: '<:inviter:1441832463705051228>',
+    robloxHomestead: '<:homestead:1441832461536592033>',
+    robloxFriendship: '<:friendship:1441832459078602762>',
+    robloxCombat: '<:combat:1441832456985514165>',
+    robloxBricksmith: '<:bricksmith:1441832454750212146>',
+    robloxBloxxer: '<:bloxxer:1441832452283961354>'
 
   },
 

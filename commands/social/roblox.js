@@ -62,11 +62,14 @@ module.exports = {
       }).then(r => r.json()).catch(() => ({ userPresences: [] }));
 
       const presence = presenceResponse.userPresences?.[0];
+      const isOnline = presence?.userPresenceType > 0; // 1=Online, 2=InGame, 3=InStudio
       const lastOnline = presence?.lastOnline ? new Date(presence.lastOnline).getTime() / 1000 : null;
       
       // Calculate last seen text
       let lastSeenText = 'Unknown';
-      if (lastOnline) {
+      if (isOnline) {
+        lastSeenText = `${config.emojis.online} Currently Online`;
+      } else if (lastOnline) {
         const now = Date.now() / 1000;
         const diff = now - lastOnline;
         const hours = diff / 3600;
@@ -83,6 +86,54 @@ module.exports = {
         } else {
           lastSeenText = `Last seen <t:${Math.floor(lastOnline)}:R>`;
         }
+      }
+
+      // Get badges
+      const badgesResponse = await fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=100&sortOrder=Asc`).then(r => r.json()).catch(() => ({ data: [] }));
+      
+      const badgeEmotes = {
+        'Welcome To The Club': config.emojis.robloxWelcomeToTheClub,
+        'Warrior': config.emojis.robloxWarrior,
+        'Veteran': config.emojis.robloxVeteran,
+        'Administrator': config.emojis.robloxPremium,
+        'Inviter': config.emojis.robloxInviter,
+        'Homestead': config.emojis.robloxHomestead,
+        'Friendship': config.emojis.robloxFriendship,
+        'Combat Initiation': config.emojis.robloxCombat,
+        'Bricksmith': config.emojis.robloxBricksmith,
+        'Bloxxer': config.emojis.robloxBloxxer
+      };
+
+      let badgeEmotesList = [];
+      if (badgesResponse.data && badgesResponse.data.length > 0) {
+        badgesResponse.data.forEach(badge => {
+          const emote = badgeEmotes[badge.name];
+          if (emote && !badgeEmotesList.includes(emote)) {
+            badgeEmotesList.push(emote);
+          }
+        });
+      }
+
+      // Get collectibles value (RAP)
+      let rapValue = 'N/A';
+      let totalValue = 'N/A';
+      try {
+        const collectiblesResponse = await fetch(`https://inventory.roblox.com/v1/users/${userId}/assets/collectibles?sortOrder=Asc&limit=100`).then(r => r.json()).catch(() => ({ data: [] }));
+        
+        if (collectiblesResponse.data && collectiblesResponse.data.length > 0) {
+          let rap = 0;
+          let value = 0;
+          
+          collectiblesResponse.data.forEach(item => {
+            if (item.recentAveragePrice) rap += item.recentAveragePrice;
+            if (item.originalPrice) value += item.originalPrice;
+          });
+          
+          if (rap > 0) rapValue = `[${rap.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
+          if (value > 0) totalValue = `[${value.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
+        }
+      } catch (error) {
+        console.log('Failed to fetch collectibles:', error.message);
       }
 
       const embed = new EmbedBuilder()
@@ -104,6 +155,10 @@ module.exports = {
       }
       
       description += `<t:${createdTimestamp}:D> (<t:${createdTimestamp}:R>)`;
+      
+      if (isOnline) {
+        description += ` ${config.emojis.online}`;
+      }
 
       embed.setDescription(description);
 
@@ -122,6 +177,21 @@ module.exports = {
         {
           name: 'Friends',
           value: friendsCount.count?.toLocaleString() || '0',
+          inline: true
+        },
+        {
+          name: 'RAP',
+          value: rapValue,
+          inline: true
+        },
+        {
+          name: 'Value',
+          value: totalValue,
+          inline: true
+        },
+        {
+          name: `Badges (${badgeEmotesList.length})`,
+          value: badgeEmotesList.length > 0 ? badgeEmotesList.join(' ') : 'No badges',
           inline: true
         }
       );

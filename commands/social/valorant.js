@@ -41,7 +41,7 @@ module.exports = {
     try {
       const url = `https://tracker.gg/valorant/profile/riot/${encodeURIComponent(`${username}#${tagline}`)}/overview`;
 
-      const msg = await embeds.loading(message, `Searching for player \`${username}#${tagline}\`...`);
+      const msg = await embeds.loading(message, `Searching for player \`${username}#${tagline}\``);
 
       const API_KEY = 'YOUR_API_KEY'
 
@@ -119,7 +119,7 @@ module.exports = {
           const { metadata, players, teams } = match;
           const player = players.all_players.find((p) => p.name === name && p.tag === tag);
 
-          let result = 'Unknown';
+          let result = 'Match';
           let kda = '';
           if (player) {
             const { stats: playerStats } = player;
@@ -139,7 +139,7 @@ module.exports = {
             kda = `${playerStats.kills}/${playerStats.deaths}/${playerStats.assists}`;
           }
 
-          return `<t:${metadata.game_start}:R> • ${result} • ${kda}`;
+          return `<t:${metadata.game_start}:R> • \`${result}\` • \`${kda}\``;
         });
       }
 
@@ -187,7 +187,7 @@ module.exports = {
         embed.addFields(
           {
             name: 'Recent Performance',
-            value: `> **win rate** ${winRate}% (${stats.wins}W ${stats.matches - stats.wins}L)\n> **k/d ratio** ${kd}\n**> kda** ${avgKills} / ${avgDeaths} / ${avgAssists}`,
+            value: `> **win rate** \`${winRate}%\` (${stats.wins}W ${stats.matches - stats.wins}L)\n> **k/d ratio** \`${kd}\`\n> **kda** \`${avgKills} / ${avgDeaths} / ${avgAssists}\``,
             inline: true
           }
         );
