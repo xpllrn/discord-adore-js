@@ -31,12 +31,49 @@ module.exports = {
             return;
         }
 
-        // .activity avatar <link> or attach
+        // .activity avatar <link> or attach or @user
         if (subcommand === 'avatar') {
-            const imageUrl = args[1] || message.attachments.first()?.url;
+            let imageUrl = args[1] || message.attachments.first()?.url;
+            
+            // Check if it's a user mention
+            if (args[1] && args[1].startsWith('<@') && args[1].endsWith('>')) {
+                const userId = args[1].replace(/[<@!>]/g, '');
+                try {
+                    const user = await bot.client.users.fetch(userId);
+                    imageUrl = user.displayAvatarURL({ dynamic: true, size: 512 });
+                } catch (error) {
+                    console.error('[ACTIVITY] Failed to fetch user:', error.message);
+                    return;
+                }
+            }
+            
             if (!imageUrl) return;
             
             bot.statusConfig.avatar = imageUrl;
+            bot.saveConfig();
+            bot.applyStatus();
+            return;
+        }
+
+        // .activity subavatar <link> or attach or @user
+        if (subcommand === 'subavatar') {
+            let imageUrl = args[1] || message.attachments.first()?.url;
+            
+            // Check if it's a user mention
+            if (args[1] && args[1].startsWith('<@') && args[1].endsWith('>')) {
+                const userId = args[1].replace(/[<@!>]/g, '');
+                try {
+                    const user = await bot.client.users.fetch(userId);
+                    imageUrl = user.displayAvatarURL({ dynamic: true, size: 512 });
+                } catch (error) {
+                    console.error('[ACTIVITY] Failed to fetch user:', error.message);
+                    return;
+                }
+            }
+            
+            if (!imageUrl) return;
+            
+            bot.statusConfig.subavatar = imageUrl;
             bot.saveConfig();
             bot.applyStatus();
             return;

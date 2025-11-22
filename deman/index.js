@@ -19,6 +19,7 @@ class SelfBot {
             subtext: null,
             type: 'online',
             avatar: null,
+            subavatar: null,
             buttons: [],
             activityType: 'PLAYING',
             enabled: false
@@ -98,6 +99,10 @@ class SelfBot {
 
             if (this.statusConfig.avatar) {
                 rpc.setAssetsLargeImage(this.statusConfig.avatar);
+            }
+
+            if (this.statusConfig.subavatar) {
+                rpc.setAssetsSmallImage(this.statusConfig.subavatar);
             }
 
             if (this.statusConfig.buttons.length > 0) {
