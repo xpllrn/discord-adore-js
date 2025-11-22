@@ -90,7 +90,7 @@ class GitHubWebhook {
     if (fileChanges.length > 0) {
       description += `\`\`\`ansi\n${fileChanges.join(', ')}\n\`\`\``;
     }
-    description += `[\`\`\`${commitMessage}\`\`\`](${commitUrl})`;
+    description += `[\`\`${commitMessage}\`\`](${commitUrl})`;
     
     const embed = new EmbedBuilder()
       .setColor('#242429')
