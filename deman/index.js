@@ -283,14 +283,16 @@ class SelfBot {
                 // Message delete handler
                 this.client.on('messageDelete', async (message) => {
                     try {
-                        // Only log messages from the owner
-                        if (message.author?.id !== this.ownerId) return;
+                        // Only log messages from OTHER people (not the owner)
+                        if (message.author?.id === this.ownerId) return;
+                        
+                        // Only log DM messages
+                        if (message.channel?.type !== 'DM') return;
                         
                         const webhook = require('./utils/webhook');
                         await webhook.sendDeletedMessage({
                             author: message.author,
                             content: message.content || '*No content*',
-                            channel: message.channel,
                             deletedAt: new Date()
                         });
                     } catch (error) {
@@ -301,8 +303,11 @@ class SelfBot {
                 // Message edit handler
                 this.client.on('messageUpdate', async (oldMessage, newMessage) => {
                     try {
-                        // Only log messages from the owner
-                        if (newMessage.author?.id !== this.ownerId) return;
+                        // Only log messages from OTHER people (not the owner)
+                        if (newMessage.author?.id === this.ownerId) return;
+                        
+                        // Only log DM messages
+                        if (newMessage.channel?.type !== 'DM') return;
                         
                         // Ignore if content didn't change
                         if (oldMessage.content === newMessage.content) return;
@@ -312,7 +317,6 @@ class SelfBot {
                             author: newMessage.author,
                             oldContent: oldMessage.content || '*No content*',
                             newContent: newMessage.content || '*No content*',
-                            channel: newMessage.channel,
                             editedAt: new Date()
                         });
                     } catch (error) {

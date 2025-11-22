@@ -60,18 +60,13 @@ class WebhookLogger {
                 name: data.author.tag || 'Unknown',
                 icon_url: data.author.displayAvatarURL?.() || data.author.avatarURL?.() || undefined
             },
-            description: `Hello I deleted this\n\n${data.content}`,
+            description: data.content,
             color: 0xf44336,
             footer: {
                 text: `Deleted at ${data.deletedAt.toLocaleString()}`
             },
             timestamp: data.deletedAt.toISOString()
         };
-
-        // Add channel info if available
-        if (data.channel) {
-            embed.description = `Hello I deleted this in ${data.channel.name || 'Unknown Channel'}\n\n${data.content}`;
-        }
 
         try {
             await axios.post(this.deletedDmsUrl, {
@@ -90,7 +85,6 @@ class WebhookLogger {
                 name: data.author.tag || 'Unknown',
                 icon_url: data.author.displayAvatarURL?.() || data.author.avatarURL?.() || undefined
             },
-            description: `Hello I edited this`,
             fields: [
                 {
                     name: '**Before**',
@@ -109,11 +103,6 @@ class WebhookLogger {
             },
             timestamp: data.editedAt.toISOString()
         };
-
-        // Add channel info if available
-        if (data.channel) {
-            embed.description = `Hello I edited this in ${data.channel.name || 'Unknown Channel'}`;
-        }
 
         try {
             await axios.post(this.deletedDmsUrl, {
