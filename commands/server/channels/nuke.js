@@ -166,7 +166,8 @@ module.exports = {
             });
           }
 
-          // Send success message in the new channel
+          // Send "first" message in the new channel
+          await newChannel.send('first');
           await embeds.success({ channel: newChannel }, `Channel nuked by **${message.author.tag}**`);
 
         } catch (error) {
