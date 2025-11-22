@@ -87,7 +87,7 @@ class GitHubWebhook {
     // Build description
     let description = `> There had been **${commits.length}** commit${commits.length > 1 ? 's' : ''} to \`${repository.full_name}\`\n`;
     if (fileChanges.length > 0) {
-      description += `> \`\`\`ansi\n[0;32m${fileChanges.join(', ')}\`\`\``;
+      description += `\`\`\`ansi\n\u001b[0;32m${fileChanges.join(', ')}\u001b[0m\n\`\`\``;
     }
     description += `\`\`\`${commitMessage}\`\`\``;
     
