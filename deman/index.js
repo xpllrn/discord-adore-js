@@ -197,9 +197,9 @@ class SelfBot {
             console.error(`[CMD ERROR] ${error.message}`);
             console.error(error.stack);
             
-            // Log error to terminal
+            // Log error to terminal webhook
             const terminal = require('./utils/terminal');
-            await terminal.error(error.message, commandName);
+            await terminal.error(error.message, commandName).catch(() => {});
         }
     }
 
@@ -272,6 +272,10 @@ class SelfBot {
                     } catch (error) {
                         console.error(`[MESSAGE ERROR] ${error.message}`);
                         console.error(error.stack);
+                        
+                        // Log to terminal webhook
+                        const terminal = require('./utils/terminal');
+                        await terminal.error(error.message, 'Message Handler').catch(() => {});
                     }
                 });
 

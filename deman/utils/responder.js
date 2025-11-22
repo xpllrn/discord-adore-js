@@ -78,7 +78,7 @@ Reply as ren (short, casual, natural):`;
 
 async function handleMessage(message, bot) {
     // Only respond to DMs
-    if (!message.channel.isDMBased()) return;
+    if (message.channel.type !== 'DM') return;
     
     // Don't respond to self
     if (message.author.id === bot.ownerId) return;
