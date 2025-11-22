@@ -33,15 +33,29 @@ module.exports = {
             const fullText = args.slice(2).join(' ');
             const separatorIndex = fullText.indexOf(' --');
             
-            if (separatorIndex === -1) return;
+            if (separatorIndex === -1) {
+                console.log('[STATUS] Loop: No separator found');
+                await webhook.sendOutput('Invalid format. Use: `.status loop on -- <text>`');
+                return;
+            }
             
             const lyricsText = fullText.substring(separatorIndex + 3).trim();
-            if (!lyricsText) return;
+            if (!lyricsText) {
+                console.log('[STATUS] Loop: No lyrics text');
+                await webhook.sendOutput('No text provided after `--`');
+                return;
+            }
             
             // Split by newlines or multiple spaces to get individual lines
             const lines = lyricsText.split(/\n+/).map(line => line.trim()).filter(line => line.length > 0);
             
-            if (lines.length === 0) return;
+            if (lines.length === 0) {
+                console.log('[STATUS] Loop: No valid lines');
+                await webhook.sendOutput('No valid lines found');
+                return;
+            }
+            
+            console.log(`[STATUS] Loop: Found ${lines.length} lines`);
             
             bot.statusLoop = {
                 enabled: true,
@@ -65,11 +79,45 @@ module.exports = {
                 
                 try {
                     const { CustomStatus } = require('discord.js-selfbot-v13');
-                    const customStatus = new CustomStatus(bot.client).setState(currentLine);
+                    const customStatus = new CustomStatus()
+                        .setState(currentLine);
+                    
+                    // Get current activities to preserve rich presence if enabled
+                    const activities = [];
+                    
+                    // Add rich presence if activity is enabled
+                    if (bot.statusConfig.enabled && bot.statusConfig.text) {
+                        const { RichPresence } = require('discord.js-selfbot-v13');
+                        const rpc = new RichPresence(bot.client)
+                            .setApplicationId('1234567890')
+                            .setType(bot.statusConfig.activityType || 'PLAYING')
+                            .setName(bot.statusConfig.text);
+
+                        if (bot.statusConfig.subtext) {
+                            rpc.setState(bot.statusConfig.subtext);
+                        }
+                        if (bot.statusConfig.avatar) {
+                            rpc.setAssetsLargeImage(bot.statusConfig.avatar);
+                        }
+                        if (bot.statusConfig.subavatar) {
+                            rpc.setAssetsSmallImage(bot.statusConfig.subavatar);
+                        }
+                        if (bot.statusConfig.buttons.length > 0) {
+                            bot.statusConfig.buttons.forEach(btn => {
+                                if (btn.label && btn.url) {
+                                    rpc.addButton(btn.label, btn.url);
+                                }
+                            });
+                        }
+                        activities.push(rpc);
+                    }
+                    
+                    // Add custom status
+                    activities.push(customStatus);
                     
                     bot.client.user.setPresence({
                         status: bot.statusConfig.type || 'online',
-                        activities: [customStatus]
+                        activities: activities
                     });
                 } catch (error) {
                     console.error('[STATUS] Loop error:', error.message);
@@ -116,22 +164,61 @@ module.exports = {
         // .status <text> - set single custom status
         const statusText = args.join(' ');
         
+        console.log(`[STATUS] Setting custom status: "${statusText}"`);
+        
         bot.customStatus = statusText;
         bot.saveConfig();
         
         try {
             const { CustomStatus } = require('discord.js-selfbot-v13');
-            const customStatus = new CustomStatus(bot.client).setState(statusText);
+            const customStatus = new CustomStatus()
+                .setEmoji('😊')
+                .setState(statusText);
+            
+            // Get current activities to preserve rich presence if enabled
+            const activities = [];
+            
+            // Add rich presence if activity is enabled
+            if (bot.statusConfig.enabled && bot.statusConfig.text) {
+                const { RichPresence } = require('discord.js-selfbot-v13');
+                const rpc = new RichPresence(bot.client)
+                    .setApplicationId('1234567890')
+                    .setType(bot.statusConfig.activityType || 'PLAYING')
+                    .setName(bot.statusConfig.text);
+
+                if (bot.statusConfig.subtext) {
+                    rpc.setState(bot.statusConfig.subtext);
+                }
+                if (bot.statusConfig.avatar) {
+                    rpc.setAssetsLargeImage(bot.statusConfig.avatar);
+                }
+                if (bot.statusConfig.subavatar) {
+                    rpc.setAssetsSmallImage(bot.statusConfig.subavatar);
+                }
+                if (bot.statusConfig.buttons.length > 0) {
+                    bot.statusConfig.buttons.forEach(btn => {
+                        if (btn.label && btn.url) {
+                            rpc.addButton(btn.label, btn.url);
+                        }
+                    });
+                }
+                activities.push(rpc);
+            }
+            
+            // Add custom status
+            activities.push(customStatus);
             
             bot.client.user.setPresence({
                 status: bot.statusConfig.type || 'online',
-                activities: [customStatus]
+                activities: activities
             });
             
+            console.log('[STATUS] Custom status applied successfully');
             await webhook.sendOutput(`Custom status set to: \`${statusText}\``);
         } catch (error) {
             console.error('[STATUS] Set error:', error.message);
             console.error(error.stack);
+            await webhook.sendOutput(`Error setting status: ${error.message}`);
         }
     }
 };

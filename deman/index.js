@@ -124,9 +124,19 @@ class SelfBot {
                 });
             }
 
+            const activities = [rpc];
+            
+            // Add custom status if set
+            if (this.customStatus) {
+                const { CustomStatus } = require('discord.js-selfbot-v13');
+                const customStatus = new CustomStatus()
+                    .setState(this.customStatus);
+                activities.push(customStatus);
+            }
+            
             this.client.user.setPresence({
                 status: this.statusConfig.type,
-                activities: [rpc]
+                activities: activities
             });
             
             console.log(`[ACTIVITY] Applied: ${statusText} (${this.statusConfig.activityType}) with ${this.statusConfig.buttons.length} button(s)`);

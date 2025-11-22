@@ -82,9 +82,13 @@ module.exports = {
         // .activity button <name> --<link>
         if (subcommand === 'button') {
             const buttonText = args.slice(1).join(' ');
+            console.log(`[ACTIVITY] Button text: "${buttonText}"`);
+            
             const separatorIndex = buttonText.indexOf(' --');
+            console.log(`[ACTIVITY] Separator index: ${separatorIndex}`);
             
             if (separatorIndex === -1) {
+                console.log('[ACTIVITY] No separator found');
                 await webhook.sendOutput('Invalid format. Use: `.activity button <name> --<url>`');
                 return;
             }
@@ -92,7 +96,10 @@ module.exports = {
             const name = buttonText.substring(0, separatorIndex).trim();
             const url = buttonText.substring(separatorIndex + 3).trim();
             
+            console.log(`[ACTIVITY] Button name: "${name}", URL: "${url}"`);
+            
             if (!name || !url) {
+                console.log('[ACTIVITY] Name or URL empty');
                 await webhook.sendOutput('Button name and URL cannot be empty');
                 return;
             }
@@ -104,9 +111,13 @@ module.exports = {
                 bot.statusConfig.buttons[0] = { label: name, url: url };
             }
             
+            console.log(`[ACTIVITY] Buttons array:`, JSON.stringify(bot.statusConfig.buttons));
+            console.log(`[ACTIVITY] Full statusConfig:`, JSON.stringify(bot.statusConfig));
+            
             bot.saveConfig();
             bot.applyStatus();
             
+            console.log(`[ACTIVITY] Button added: ${name}`);
             await webhook.sendOutput(`Button **${name}** added successfully`);
             return;
         }
