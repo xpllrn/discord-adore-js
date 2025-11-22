@@ -167,6 +167,7 @@ class SelfBot {
 
     // Handle commands
     async handleCommand(message) {
+        let commandName = 'Unknown';
         try {
             if (!message?.content?.startsWith(this.prefix)) return;
             if (!message.author || !this.client.user) return;
@@ -177,7 +178,7 @@ class SelfBot {
             if (!this.enabled) return;
 
             const args = message.content.slice(this.prefix.length).trim().split(/ +/);
-            const commandName = args.shift().toLowerCase();
+            commandName = args.shift().toLowerCase();
 
             const command = this.commands.get(commandName);
             if (!command) return;
