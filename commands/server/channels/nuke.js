@@ -57,7 +57,6 @@ module.exports = {
           
           // Get single channel reference settings
           const starboardChannel = await guildService.getStarboardChannel(message.guild.id);
-          const jailConfig = await guildService.getJailConfig(message.guild.id);
           const vanityConfig = await guildService.getVanityConfig(message.guild.id);
           const voiceManager = await guildService.getVoiceManager(message.guild.id);
           const ticketSystem = await guildService.getTicketSystem(message.guild.id);
@@ -118,9 +117,7 @@ module.exports = {
             await guildService.setStarboardChannel(message.guild.id, newChannel.id);
           }
 
-          if (jailConfig && jailConfig.channelId === channelId) {
-            await guildService.setJailConfig(message.guild.id, jailConfig.roleId, newChannel.id);
-          }
+
 
           if (vanityConfig && vanityConfig.logChannelId === channelId) {
             await guildService.setVanityConfig(

@@ -15,10 +15,14 @@ module.exports = {
                 buttons: []
             };
             bot.saveConfig();
-            await bot.client.user.setPresence({
-                status: 'online',
-                activities: []
-            }).catch(() => {});
+            try {
+                bot.client.user.setPresence({
+                    status: 'online',
+                    activities: []
+                });
+            } catch (error) {
+                console.error('[STATUS] Reset error:', error.message);
+            }
             return;
         }
 
@@ -67,9 +71,13 @@ module.exports = {
             statusText = statusText.replace('--online', '').trim();
         }
 
-        bot.statusConfig.text = statusText;
-        bot.statusConfig.type = statusType;
-        bot.saveConfig();
-        bot.applyStatus();
+        try {
+            bot.statusConfig.text = statusText;
+            bot.statusConfig.type = statusType;
+            bot.saveConfig();
+            bot.applyStatus();
+        } catch (error) {
+            console.error('[STATUS] Error:', error.message);
+        }
     }
 };

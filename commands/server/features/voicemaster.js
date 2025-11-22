@@ -424,19 +424,19 @@ async function createVoiceManagerPanel(client, channel) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_increase')
-        .setEmoji(emojis.vmIncrease)
+        .setLabel('Increase')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_decrease')
-        .setEmoji(emojis.vmDecrease)
+        .setLabel('Decrease')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_rename')
-        .setEmoji(emojis.vmRename)
+        .setLabel('Rename')
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_info')
-        .setEmoji(emojis.vmInfo)
+        .setLabel('Info')
         .setStyle(ButtonStyle.Secondary)
     );
 

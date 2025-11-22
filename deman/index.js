@@ -72,25 +72,29 @@ class SelfBot {
     applyStatus() {
         if (!this.statusConfig.text) return;
 
-        const activity = {
-            name: this.statusConfig.text,
-            type: 'PLAYING'
-        };
-
-        if (this.statusConfig.avatar) {
-            activity.assets = {
-                large_image: this.statusConfig.avatar
+        try {
+            const activity = {
+                name: this.statusConfig.text,
+                type: 'PLAYING'
             };
-        }
 
-        if (this.statusConfig.buttons.length > 0) {
-            activity.buttons = this.statusConfig.buttons;
-        }
+            if (this.statusConfig.avatar) {
+                activity.assets = {
+                    large_image: this.statusConfig.avatar
+                };
+            }
 
-        this.client.user.setPresence({
-            status: this.statusConfig.type,
-            activities: [activity]
-        }).catch(() => {});
+            if (this.statusConfig.buttons.length > 0) {
+                activity.buttons = this.statusConfig.buttons;
+            }
+
+            this.client.user.setPresence({
+                status: this.statusConfig.type,
+                activities: [activity]
+            });
+        } catch (error) {
+            console.error('[STATUS] Failed to apply:', error.message);
+        }
     }
 
     // Humanized delay
