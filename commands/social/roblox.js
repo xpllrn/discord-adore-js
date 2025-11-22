@@ -216,21 +216,6 @@ module.exports = {
       // Add statistics - all inline
       embed.addFields(
         {
-          name: 'Followers',
-          value: followersCount.count?.toLocaleString() || '0',
-          inline: true
-        },
-        {
-          name: 'Follows',
-          value: followingCount.count?.toLocaleString() || '0',
-          inline: true
-        },
-        {
-          name: 'Friends',
-          value: friendsCount.count?.toLocaleString() || '0',
-          inline: true
-        },
-        {
           name: 'RAP',
           value: rapValue,
           inline: true
@@ -243,6 +228,21 @@ module.exports = {
         {
           name: `Badges (${badgeEmotesList.length})`,
           value: badgeEmotesList.length > 0 ? badgeEmotesList.join(' ') : 'No badges',
+          inline: true
+        },
+        {
+          name: 'Followers',
+          value: followersCount.count?.toLocaleString() || '0',
+          inline: true
+        },
+        {
+          name: 'Follows',
+          value: followingCount.count?.toLocaleString() || '0',
+          inline: true
+        },
+        {
+          name: 'Friends',
+          value: friendsCount.count?.toLocaleString() || '0',
           inline: true
         }
       );
