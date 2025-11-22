@@ -57,7 +57,7 @@ module.exports = {
           
           // Get single channel reference settings
           const starboardChannel = await guildService.getStarboardChannel(message.guild.id);
-          const vanityConfig = await guildService.getVanityConfig(message.guild.id);
+          const vanityConfig = await guildService.getVanitySettings(message.guild.id);
           const voiceManager = await guildService.getVoiceManager(message.guild.id);
           const ticketSystem = await guildService.getTicketSystem(message.guild.id);
           const levelSystem = await guildService.getLevelSystem(message.guild.id);
