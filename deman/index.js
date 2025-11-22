@@ -40,10 +40,6 @@ class SelfBot {
         this.typingSpeed = { min: 50, max: 150 };
         this.responderEnabled = [];
         
-        // Initialize auto-responder
-        const AutoResponder = require('./utils/responder');
-        this.autoResponder = new AutoResponder(this);
-        
         this.loadConfig();
     }
 
@@ -259,7 +255,8 @@ class SelfBot {
                         
                         // Auto-responder for enabled users
                         if (message.author?.id !== this.ownerId) {
-                            await this.autoResponder.handleMessage(message);
+                            const responder = require('./utils/responder');
+                            await responder.handleMessage(message, this);
                         }
                         
                         // Auto-cleanup messages after 300 seconds
