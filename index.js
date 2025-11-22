@@ -220,6 +220,8 @@ client.once('ready', async () => {
   } catch (error) {
     logger.console.error('❌ Failed to auto-start selfbot:', error.message);
   }
+
+
 });
 
 // Export client for modules that need it (avoid circular dependencies by using global reference)
