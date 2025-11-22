@@ -25,9 +25,16 @@ module.exports = {
             bot.statusConfig.type = validPresences[presenceType];
             bot.saveConfig();
             
-            bot.client.user.setPresence({
-                status: validPresences[presenceType]
-            });
+            // Reapply activity with new presence if activity is enabled
+            if (bot.statusConfig.enabled) {
+                bot.applyStatus();
+            } else {
+                // Just change presence without activity
+                bot.client.user.setPresence({
+                    status: validPresences[presenceType],
+                    activities: []
+                });
+            }
             
             await webhook.sendOutput(`Presence changed to **${presenceType}**`);
         } catch (error) {

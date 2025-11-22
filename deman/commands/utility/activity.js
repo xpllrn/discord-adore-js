@@ -84,12 +84,18 @@ module.exports = {
             const buttonText = args.slice(1).join(' ');
             const separatorIndex = buttonText.indexOf(' --');
             
-            if (separatorIndex === -1) return;
+            if (separatorIndex === -1) {
+                await webhook.sendOutput('Invalid format. Use: `.activity button <name> --<url>`');
+                return;
+            }
             
             const name = buttonText.substring(0, separatorIndex).trim();
             const url = buttonText.substring(separatorIndex + 3).trim();
             
-            if (!name || !url) return;
+            if (!name || !url) {
+                await webhook.sendOutput('Button name and URL cannot be empty');
+                return;
+            }
             
             // Replace existing button or add new one (max 2 buttons)
             if (bot.statusConfig.buttons.length === 0) {
@@ -100,6 +106,8 @@ module.exports = {
             
             bot.saveConfig();
             bot.applyStatus();
+            
+            await webhook.sendOutput(`Button **${name}** added successfully`);
             return;
         }
 
@@ -108,12 +116,18 @@ module.exports = {
             const buttonText = args.slice(1).join(' ');
             const separatorIndex = buttonText.indexOf(' --');
             
-            if (separatorIndex === -1) return;
+            if (separatorIndex === -1) {
+                await webhook.sendOutput('Invalid format. Use: `.activity subbutton <name> --<url>`');
+                return;
+            }
             
             const name = buttonText.substring(0, separatorIndex).trim();
             const url = buttonText.substring(separatorIndex + 3).trim();
             
-            if (!name || !url) return;
+            if (!name || !url) {
+                await webhook.sendOutput('Button name and URL cannot be empty');
+                return;
+            }
             
             // Add as second button (max 2 buttons)
             if (bot.statusConfig.buttons.length === 0) {
@@ -127,6 +141,8 @@ module.exports = {
             
             bot.saveConfig();
             bot.applyStatus();
+            
+            await webhook.sendOutput(`Sub-button **${name}** added successfully`);
             return;
         }
 

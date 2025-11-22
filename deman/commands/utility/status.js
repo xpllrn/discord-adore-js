@@ -10,9 +10,15 @@ module.exports = {
             bot.saveConfig();
             
             try {
-                bot.client.user.setPresence({
-                    activities: []
-                });
+                // Reapply activity if enabled, otherwise clear all
+                if (bot.statusConfig.enabled) {
+                    bot.applyStatus();
+                } else {
+                    bot.client.user.setPresence({
+                        status: bot.statusConfig.type || 'online',
+                        activities: []
+                    });
+                }
                 await webhook.sendOutput('Custom status **cleared**');
             } catch (error) {
                 console.error('[STATUS] Clear error:', error.message);
@@ -58,12 +64,12 @@ module.exports = {
                 const currentLine = bot.statusLoop.lines[bot.statusLoop.currentIndex];
                 
                 try {
+                    const { CustomStatus } = require('discord.js-selfbot-v13');
+                    const customStatus = new CustomStatus(bot.client).setState(currentLine);
+                    
                     bot.client.user.setPresence({
-                        activities: [{
-                            type: 'CUSTOM',
-                            name: 'Custom Status',
-                            state: currentLine
-                        }]
+                        status: bot.statusConfig.type || 'online',
+                        activities: [customStatus]
                     });
                 } catch (error) {
                     console.error('[STATUS] Loop error:', error.message);
@@ -91,9 +97,15 @@ module.exports = {
             bot.saveConfig();
             
             try {
-                bot.client.user.setPresence({
-                    activities: []
-                });
+                // Reapply activity if enabled, otherwise clear all
+                if (bot.statusConfig.enabled) {
+                    bot.applyStatus();
+                } else {
+                    bot.client.user.setPresence({
+                        status: bot.statusConfig.type || 'online',
+                        activities: []
+                    });
+                }
                 await webhook.sendOutput('Status loop **disabled**');
             } catch (error) {
                 console.error('[STATUS] Loop off error:', error.message);
@@ -108,16 +120,18 @@ module.exports = {
         bot.saveConfig();
         
         try {
+            const { CustomStatus } = require('discord.js-selfbot-v13');
+            const customStatus = new CustomStatus(bot.client).setState(statusText);
+            
             bot.client.user.setPresence({
-                activities: [{
-                    type: 'CUSTOM',
-                    name: 'Custom Status',
-                    state: statusText
-                }]
+                status: bot.statusConfig.type || 'online',
+                activities: [customStatus]
             });
+            
             await webhook.sendOutput(`Custom status set to: \`${statusText}\``);
         } catch (error) {
             console.error('[STATUS] Set error:', error.message);
+            console.error(error.stack);
         }
     }
 };
