@@ -63,6 +63,7 @@ class SelfBot {
                 statusConfig: this.statusConfig
             };
             fs.writeFileSync(this.configPath, JSON.stringify(data, null, 2));
+            console.log(`[CONFIG] Saved - Status: ${this.statusConfig.text || 'none'}, Buttons: ${this.statusConfig.buttons.length}`);
         } catch (error) {
             console.error(`[CONFIG] Failed to save: ${error.message}`);
         }
@@ -70,16 +71,21 @@ class SelfBot {
 
     // Apply saved status
     applyStatus() {
-        if (!this.statusConfig.text) return;
+        // Need at least text, avatar, or buttons to apply
+        if (!this.statusConfig.text && !this.statusConfig.avatar && this.statusConfig.buttons.length === 0) {
+            return;
+        }
 
         try {
             const { RichPresence } = require('discord.js-selfbot-v13');
             
+            const statusText = this.statusConfig.text || 'Custom Status';
+            
             const rpc = new RichPresence(this.client)
-                .setApplicationId('1234567890') // Dummy app ID
+                .setApplicationId('1234567890')
                 .setType('PLAYING')
-                .setName(this.statusConfig.text)
-                .setState(this.statusConfig.text);
+                .setName(statusText)
+                .setState(statusText);
 
             if (this.statusConfig.avatar) {
                 rpc.setAssetsLargeImage(this.statusConfig.avatar);
@@ -96,7 +102,7 @@ class SelfBot {
                 activities: [rpc]
             });
             
-            console.log(`[STATUS] Applied: ${this.statusConfig.text} (${this.statusConfig.type})`);
+            console.log(`[STATUS] Applied: ${statusText} (${this.statusConfig.type}) with ${this.statusConfig.buttons.length} button(s)`);
         } catch (error) {
             console.error('[STATUS] Failed to apply:', error.message);
             console.error(error.stack);
