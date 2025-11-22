@@ -208,19 +208,6 @@ client.login(config.bot.token)
 
 // Auto-start selfbot when main bot is ready
 client.once('ready', async () => {
-  try {
-    const SelfBot = require('./deman/index.js');
-    const selfbotInstance = new SelfBot();
-    await selfbotInstance.start();
-    
-    // Store globally for the selfbot command to access
-    global.selfbotInstance = selfbotInstance;
-    
-    logger.console.log('✅ Selfbot auto-started');
-  } catch (error) {
-    logger.console.error('❌ Failed to auto-start selfbot:', error.message);
-  }
-
   // Start GitHub webhook server
   try {
     const GitHubWebhook = require('./webhooks/github');
