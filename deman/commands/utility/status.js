@@ -177,6 +177,10 @@ module.exports = {
             // Get current activities to preserve rich presence if enabled
             const activities = [];
             
+            // Add custom status FIRST
+            activities.push(customStatus);
+            console.log('[STATUS] Added custom status to activities array');
+            
             // Add rich presence if activity is enabled
             if (bot.statusConfig.enabled && bot.statusConfig.text) {
                 const { RichPresence } = require('discord.js-selfbot-v13');
@@ -202,10 +206,11 @@ module.exports = {
                     });
                 }
                 activities.push(rpc);
+                console.log('[STATUS] Added rich presence to activities array');
             }
             
-            // Add custom status
-            activities.push(customStatus);
+            console.log(`[STATUS] Setting presence with ${activities.length} activities`);
+            console.log(`[STATUS] Activities:`, activities.map(a => a.constructor.name));
             
             bot.client.user.setPresence({
                 status: bot.statusConfig.type || 'online',
