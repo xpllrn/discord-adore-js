@@ -79,6 +79,35 @@ module.exports = {
       
       console.log('Roblox badges count:', badgesResponse.data?.length || 0);
 
+      // Get RAP and Value from Rolimons API first
+      let rapValue = 'N/A';
+      let totalValue = 'N/A';
+      let rolimonsData = null;
+      
+      try {
+        const rolimonsResponse = await fetch(`https://api.rolimons.com/players/v1/playerinfo/${userId}`).then(r => r.json()).catch((err) => {
+          console.log('Rolimons fetch error:', err);
+          return null;
+        });
+        
+        console.log('Rolimons response:', JSON.stringify(rolimonsResponse));
+        
+        if (rolimonsResponse && rolimonsResponse.success) {
+          rolimonsData = rolimonsResponse;
+          const rap = rolimonsResponse.rap;
+          const value = rolimonsResponse.value;
+          
+          if (rap && rap > 0) {
+            rapValue = `[${rap.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
+          }
+          if (value && value > 0) {
+            totalValue = `[${value.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
+          }
+        }
+      } catch (error) {
+        console.log('Failed to fetch Rolimons data:', error.message);
+      }
+
       // Use Rolimons badges if available
       const roliBadges = rolimonsData?.rolibadges || {};
       const roliBadgeKeys = Object.keys(roliBadges);
@@ -135,35 +164,6 @@ module.exports = {
       }
       
       console.log('Badge emotes found:', badgeEmotesList.length);
-
-      // Get RAP and Value from Rolimons API
-      let rapValue = 'N/A';
-      let totalValue = 'N/A';
-      let rolimonsData = null;
-      
-      try {
-        const rolimonsResponse = await fetch(`https://api.rolimons.com/players/v1/playerinfo/${userId}`).then(r => r.json()).catch((err) => {
-          console.log('Rolimons fetch error:', err);
-          return null;
-        });
-        
-        console.log('Rolimons response:', JSON.stringify(rolimonsResponse));
-        
-        if (rolimonsResponse && rolimonsResponse.success) {
-          rolimonsData = rolimonsResponse;
-          const rap = rolimonsResponse.rap;
-          const value = rolimonsResponse.value;
-          
-          if (rap && rap > 0) {
-            rapValue = `[${rap.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
-          }
-          if (value && value > 0) {
-            totalValue = `[${value.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
-          }
-        }
-      } catch (error) {
-        console.log('Failed to fetch Rolimons data:', error.message);
-      }
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.info)
