@@ -108,13 +108,8 @@ module.exports = {
         console.log('Failed to fetch Rolimons data:', error.message);
       }
 
-      // Use Rolimons badges if available
-      const roliBadges = rolimonsData?.rolibadges || {};
-      const roliBadgeKeys = Object.keys(roliBadges);
-      
-      console.log('Rolimons badges:', roliBadgeKeys);
-
-      const badgeEmotes = {
+      // Map Roblox official badges
+      const robloxBadgeEmotes = {
         'Welcome To The Club': config.emojis.robloxWelcomeToTheClub,
         'Warrior': config.emojis.robloxWarrior,
         'Veteran': config.emojis.robloxVeteran,
@@ -129,39 +124,39 @@ module.exports = {
 
       let badgeEmotesList = [];
       
-      // Try Roblox badges first
+      // Try Roblox official badges first
       if (badgesResponse.data && badgesResponse.data.length > 0) {
         badgesResponse.data.forEach(badge => {
-          const emote = badgeEmotes[badge.name];
+          const emote = robloxBadgeEmotes[badge.name];
           if (emote && !badgeEmotesList.includes(emote)) {
             badgeEmotesList.push(emote);
           }
         });
       }
       
-      // If no Roblox badges found, check Rolimons badges
-      if (badgeEmotesList.length === 0 && roliBadgeKeys.length > 0) {
-        // Rolimons uses badge IDs, we'll show a count instead
-        // Common Roblox badge IDs that Rolimons tracks
-        const knownBadges = {
-          '1': config.emojis.robloxWelcomeToTheClub, // Welcome To The Club
-          '2': config.emojis.robloxHomestead, // Homestead
-          '3': config.emojis.robloxBricksmith, // Bricksmith
-          '4': config.emojis.robloxFriendship, // Friendship
-          '5': config.emojis.robloxVeteran, // Veteran
-          '6': config.emojis.robloxWarrior, // Warrior
-          '7': config.emojis.robloxInviter, // Inviter
-          '8': config.emojis.robloxCombat, // Combat Initiation
-          '15': config.emojis.robloxBloxxer // Bloxxer
-        };
-        
-        roliBadgeKeys.forEach(badgeId => {
-          const emote = knownBadges[badgeId];
-          if (emote && !badgeEmotesList.includes(emote)) {
-            badgeEmotesList.push(emote);
-          }
-        });
-      }
+      // Add Rolimons badges (these are special community badges)
+      const roliBadges = rolimonsData?.rolibadges || {};
+      const roliBadgeKeys = Object.keys(roliBadges);
+      
+      // Map Rolimons badge names to display text
+      const rolimonsBadgeMap = {
+        'booster': '🚀',
+        'roligang': '👥',
+        'verified': '✅',
+        'value_100k': '💎',
+        'value_1m': '💰',
+        'own_10_items': '📦',
+        'own_lucky_cat_uaid': '🐱',
+        'create_10_trade_ads': '📢'
+      };
+      
+      // Add Rolimons badges to the list
+      roliBadgeKeys.forEach(badgeName => {
+        const emote = rolimonsBadgeMap[badgeName];
+        if (emote && !badgeEmotesList.includes(emote)) {
+          badgeEmotesList.push(emote);
+        }
+      });
       
       console.log('Badge emotes found:', badgeEmotesList.length);
 
