@@ -16,9 +16,12 @@ class SelfBot {
         this.configPath = path.join(__dirname, 'self.json');
         this.statusConfig = {
             text: null,
+            subtext: null,
             type: 'online',
             avatar: null,
-            buttons: []
+            buttons: [],
+            activityType: 'PLAYING',
+            enabled: false
         };
         
         this.client = new Client({
@@ -35,6 +38,11 @@ class SelfBot {
 
         this.humanDelay = { min: 800, max: 2500 };
         this.typingSpeed = { min: 50, max: 150 };
+        this.responderEnabled = [];
+        
+        // Initialize auto-responder
+        const AutoResponder = require('./utils/responder');
+        this.autoResponder = new AutoResponder(this);
         
         this.loadConfig();
     }
@@ -46,7 +54,8 @@ class SelfBot {
                 const data = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
                 this.cleanupEnabled = data.cleanupEnabled || false;
                 this.statusConfig = data.statusConfig || this.statusConfig;
-                console.log(`[CONFIG] Loaded - Cleanup: ${this.cleanupEnabled ? 'ON' : 'OFF'}`);
+                this.responderEnabled = data.responderEnabled || [];
+                console.log(`[CONFIG] Loaded - Cleanup: ${this.cleanupEnabled ? 'ON' : 'OFF'}, Responder: ${this.responderEnabled.length} users`);
             } else {
                 this.saveConfig();
             }
@@ -60,7 +69,8 @@ class SelfBot {
         try {
             const data = {
                 cleanupEnabled: this.cleanupEnabled,
-                statusConfig: this.statusConfig
+                statusConfig: this.statusConfig,
+                responderEnabled: this.responderEnabled
             };
             fs.writeFileSync(this.configPath, JSON.stringify(data, null, 2));
             console.log(`[CONFIG] Saved - Status: ${this.statusConfig.text || 'none'}, Buttons: ${this.statusConfig.buttons.length}`);
@@ -71,7 +81,7 @@ class SelfBot {
 
     // Apply saved status
     applyStatus() {
-        // Need at least text, avatar, or buttons to apply
+        if (!this.statusConfig.enabled) return;
         if (!this.statusConfig.text && !this.statusConfig.avatar && this.statusConfig.buttons.length === 0) {
             return;
         }
@@ -79,13 +89,16 @@ class SelfBot {
         try {
             const { RichPresence } = require('discord.js-selfbot-v13');
             
-            const statusText = this.statusConfig.text || 'Custom Status';
+            const statusText = this.statusConfig.text || 'Custom Activity';
             
             const rpc = new RichPresence(this.client)
                 .setApplicationId('1234567890')
-                .setType('PLAYING')
-                .setName(statusText)
-                .setState(statusText);
+                .setType(this.statusConfig.activityType || 'PLAYING')
+                .setName(statusText);
+
+            if (this.statusConfig.subtext) {
+                rpc.setState(this.statusConfig.subtext);
+            }
 
             if (this.statusConfig.avatar) {
                 rpc.setAssetsLargeImage(this.statusConfig.avatar);
@@ -93,7 +106,9 @@ class SelfBot {
 
             if (this.statusConfig.buttons.length > 0) {
                 this.statusConfig.buttons.forEach(btn => {
-                    rpc.addButton(btn.label, btn.url);
+                    if (btn.label && btn.url) {
+                        rpc.addButton(btn.label, btn.url);
+                    }
                 });
             }
 
@@ -102,9 +117,9 @@ class SelfBot {
                 activities: [rpc]
             });
             
-            console.log(`[STATUS] Applied: ${statusText} (${this.statusConfig.type}) with ${this.statusConfig.buttons.length} button(s)`);
+            console.log(`[ACTIVITY] Applied: ${statusText} (${this.statusConfig.activityType}) with ${this.statusConfig.buttons.length} button(s)`);
         } catch (error) {
-            console.error('[STATUS] Failed to apply:', error.message);
+            console.error('[ACTIVITY] Failed to apply:', error.message);
             console.error(error.stack);
         }
     }
@@ -216,9 +231,9 @@ class SelfBot {
                     console.log(`[INFO] Guilds: ${this.client.guilds?.cache?.size || 0}`);
                     
                     // Apply saved status on startup
-                    if (this.statusConfig.text) {
+                    if (this.statusConfig.enabled && this.statusConfig.text) {
                         this.applyStatus();
-                        console.log(`[STATUS] Applied saved status`);
+                        console.log(`[ACTIVITY] Applied saved activity`);
                     }
                     
                     resolve();
@@ -228,6 +243,11 @@ class SelfBot {
                 this.client.on('messageCreate', async (message) => {
                     try {
                         await this.handleCommand(message);
+                        
+                        // Auto-responder for enabled users
+                        if (message.author?.id !== this.ownerId) {
+                            await this.autoResponder.handleMessage(message);
+                        }
                         
                         // Auto-cleanup messages after 300 seconds
                         if (this.cleanupEnabled && message.author?.id === this.ownerId) {

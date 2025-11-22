@@ -1,3 +1,5 @@
+const webhook = require('../../utils/webhook');
+
 module.exports = {
     name: 'status',
     description: 'Set your status',
@@ -20,36 +22,10 @@ module.exports = {
                     status: 'online',
                     activities: []
                 });
+                await webhook.sendOutput('Your status has been **successfully reset**');
             } catch (error) {
                 console.error('[STATUS] Reset error:', error.message);
             }
-            return;
-        }
-
-        // Set avatar for activity
-        if (subcommand === 'av') {
-            const imageUrl = args[1] || message.attachments.first()?.url;
-            if (!imageUrl) return;
-            
-            bot.statusConfig.avatar = imageUrl;
-            bot.saveConfig();
-            bot.applyStatus();
-            return;
-        }
-
-        // Add button to status
-        if (subcommand === 'button') {
-            const buttonText = args.slice(1).join(' ');
-            const urlMatch = buttonText.match(/--(.+)/);
-            
-            if (!urlMatch) return;
-            
-            const name = buttonText.replace(/--(.+)/, '').trim();
-            const url = urlMatch[1].trim();
-            
-            bot.statusConfig.buttons.push({ label: name, url: url });
-            bot.saveConfig();
-            bot.applyStatus();
             return;
         }
 
@@ -76,6 +52,8 @@ module.exports = {
             bot.statusConfig.type = statusType;
             bot.saveConfig();
             bot.applyStatus();
+            
+            await webhook.sendOutput(`Your status is **successfully set** to \`${statusType}\``);
         } catch (error) {
             console.error('[STATUS] Error:', error.message);
         }
