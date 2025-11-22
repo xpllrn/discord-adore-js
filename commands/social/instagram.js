@@ -21,28 +21,28 @@ module.exports = {
     try {
       message.channel.sendTyping();
 
-      console.log(`[Instagram] Fetching profile for: ${username}`);
-
-      const response = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
+      // Using Instagram's public web endpoint (no auth required)
+      const response = await fetch(`https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
         method: 'GET',
         headers: {
-          'User-Agent': 'Instagram 76.0.0.15.395 Android (24/7.0; 640dpi; 1440x2560; samsung; SM-G930F; herolte; samsungexynos8890; en_US; 138226743)',
-          'X-IG-App-ID': '936619743392459'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'X-IG-App-ID': '936619743392459',
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Referer': 'https://www.instagram.com/',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-site'
         }
       });
 
-      console.log(`[Instagram] Response status: ${response.status}`);
-
       if (!response.ok) {
-        console.error(`[Instagram] API error - Status: ${response.status}, StatusText: ${response.statusText}`);
-        return embeds.warn(message, `Instagram API returned an error (${response.status}). The service may be temporarily unavailable.`);
+        return embeds.warn(message, `Instagram profile **${username}** was not found or the service is temporarily unavailable.`);
       }
 
       const results = await response.json();
-      console.log(`[Instagram] Response data:`, JSON.stringify(results).substring(0, 200));
 
       if (!results.data || !results.data.user) {
-        console.error(`[Instagram] Profile not found or invalid response structure for: ${username}`);
         return embeds.warn(message, `Instagram profile **${username}** was not found`);
       }
 
@@ -86,13 +86,10 @@ module.exports = {
         ]);
       }
 
-      console.log(`[Instagram] Successfully fetched profile for: ${username}`);
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      console.error(`[Instagram] Error fetching profile for ${username}:`, error);
-      console.error(`[Instagram] Error stack:`, error.stack);
-      return embeds.warn(message, `Failed to fetch Instagram profile for **${username}**. Error: ${error.message}`);
+      return embeds.warn(message, `Failed to fetch Instagram profile for **${username}**. Please try again later.`);
     }
   }
 }
