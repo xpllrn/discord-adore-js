@@ -59,11 +59,18 @@ module.exports = {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ userIds: [userId] })
-      }).then(r => r.json()).catch(() => ({ userPresences: [] }));
+      }).then(r => r.json()).catch((err) => {
+        console.log('Presence fetch error:', err);
+        return { userPresences: [] };
+      });
+
+      console.log('Presence response:', JSON.stringify(presenceResponse));
 
       const presence = presenceResponse.userPresences?.[0];
-      const isOnline = presence?.userPresenceType > 0; // 1=Online, 2=InGame, 3=InStudio
+      const isOnline = presence && presence.userPresenceType && presence.userPresenceType > 0; // 1=Online, 2=InGame, 3=InStudio
       const lastOnline = presence?.lastOnline ? new Date(presence.lastOnline).getTime() / 1000 : null;
+      
+      console.log('Is online:', isOnline, 'Presence type:', presence?.userPresenceType, 'Last online:', lastOnline);
       
       // Calculate last seen text
       let lastSeenText = 'Unknown';
@@ -89,8 +96,16 @@ module.exports = {
       }
 
       // Get badges
-      const badgesResponse = await fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=100&sortOrder=Asc`).then(r => r.json()).catch(() => ({ data: [] }));
+      const badgesResponse = await fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=100&sortOrder=Asc`).then(r => r.json()).catch((err) => {
+        console.log('Badges fetch error:', err);
+        return { data: [] };
+      });
       
+      console.log('Badges count:', badgesResponse.data?.length || 0);
+      if (badgesResponse.data && badgesResponse.data.length > 0) {
+        console.log('First few badges:', badgesResponse.data.slice(0, 5).map(b => b.name));
+      }
+
       const badgeEmotes = {
         'Welcome To The Club': config.emojis.robloxWelcomeToTheClub,
         'Warrior': config.emojis.robloxWarrior,
@@ -113,28 +128,13 @@ module.exports = {
           }
         });
       }
+      
+      console.log('Badge emotes found:', badgeEmotesList.length);
 
-      // Get collectibles value (RAP)
-      let rapValue = 'N/A';
-      let totalValue = 'N/A';
-      try {
-        const collectiblesResponse = await fetch(`https://inventory.roblox.com/v1/users/${userId}/assets/collectibles?sortOrder=Asc&limit=100`).then(r => r.json()).catch(() => ({ data: [] }));
-        
-        if (collectiblesResponse.data && collectiblesResponse.data.length > 0) {
-          let rap = 0;
-          let value = 0;
-          
-          collectiblesResponse.data.forEach(item => {
-            if (item.recentAveragePrice) rap += item.recentAveragePrice;
-            if (item.originalPrice) value += item.originalPrice;
-          });
-          
-          if (rap > 0) rapValue = `[${rap.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
-          if (value > 0) totalValue = `[${value.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
-        }
-      } catch (error) {
-        console.log('Failed to fetch collectibles:', error.message);
-      }
+      // RAP and Value - Link to Rolimons (Roblox API doesn't provide RAP directly)
+      // We'll just provide links to Rolimons where users can see this info
+      const rapValue = `[View on Rolimons](https://www.rolimons.com/player/${userId})`;
+      const totalValue = `[View on Rolimons](https://www.rolimons.com/player/${userId})`;
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.info)

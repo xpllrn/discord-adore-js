@@ -139,7 +139,7 @@ module.exports = {
             kda = `${playerStats.kills}/${playerStats.deaths}/${playerStats.assists}`;
           }
 
-          return `<t:${metadata.game_start}:R> • \`${result}\` • \`${kda}\``;
+          return `<t:${metadata.game_start}:R> • ${result} • ${kda}`;
         });
       }
 
