@@ -68,43 +68,22 @@ module.exports = {
 
       const presence = presenceResponse.userPresences?.[0];
       const isOnline = presence && presence.userPresenceType && presence.userPresenceType > 0; // 1=Online, 2=InGame, 3=InStudio
-      const lastOnline = presence?.lastOnline ? new Date(presence.lastOnline).getTime() / 1000 : null;
       
-      console.log('Is online:', isOnline, 'Presence type:', presence?.userPresenceType, 'Last online:', lastOnline);
-      
-      // Calculate last seen text
-      let lastSeenText = 'Unknown';
-      if (isOnline) {
-        lastSeenText = `${config.emojis.online} Currently Online`;
-      } else if (lastOnline) {
-        const now = Date.now() / 1000;
-        const diff = now - lastOnline;
-        const hours = diff / 3600;
-        const days = diff / 86400;
-        
-        if (hours < 1) {
-          lastSeenText = 'Last seen few minutes ago';
-        } else if (hours < 24) {
-          lastSeenText = 'Last seen today';
-        } else if (days < 2) {
-          lastSeenText = 'Last seen yesterday';
-        } else if (days < 7) {
-          lastSeenText = 'Last seen this week';
-        } else {
-          lastSeenText = `Last seen <t:${Math.floor(lastOnline)}:R>`;
-        }
-      }
+      console.log('Is online:', isOnline, 'Presence type:', presence?.userPresenceType);
 
-      // Get badges
+      // Get Roblox badges (note: may be empty if user has privacy enabled)
       const badgesResponse = await fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=100&sortOrder=Asc`).then(r => r.json()).catch((err) => {
         console.log('Badges fetch error:', err);
         return { data: [] };
       });
       
-      console.log('Badges count:', badgesResponse.data?.length || 0);
-      if (badgesResponse.data && badgesResponse.data.length > 0) {
-        console.log('First few badges:', badgesResponse.data.slice(0, 5).map(b => b.name));
-      }
+      console.log('Roblox badges count:', badgesResponse.data?.length || 0);
+
+      // Use Rolimons badges if available
+      const roliBadges = rolimonsData?.rolibadges || {};
+      const roliBadgeKeys = Object.keys(roliBadges);
+      
+      console.log('Rolimons badges:', roliBadgeKeys);
 
       const badgeEmotes = {
         'Welcome To The Club': config.emojis.robloxWelcomeToTheClub,
@@ -120,9 +99,35 @@ module.exports = {
       };
 
       let badgeEmotesList = [];
+      
+      // Try Roblox badges first
       if (badgesResponse.data && badgesResponse.data.length > 0) {
         badgesResponse.data.forEach(badge => {
           const emote = badgeEmotes[badge.name];
+          if (emote && !badgeEmotesList.includes(emote)) {
+            badgeEmotesList.push(emote);
+          }
+        });
+      }
+      
+      // If no Roblox badges found, check Rolimons badges
+      if (badgeEmotesList.length === 0 && roliBadgeKeys.length > 0) {
+        // Rolimons uses badge IDs, we'll show a count instead
+        // Common Roblox badge IDs that Rolimons tracks
+        const knownBadges = {
+          '1': config.emojis.robloxWelcomeToTheClub, // Welcome To The Club
+          '2': config.emojis.robloxHomestead, // Homestead
+          '3': config.emojis.robloxBricksmith, // Bricksmith
+          '4': config.emojis.robloxFriendship, // Friendship
+          '5': config.emojis.robloxVeteran, // Veteran
+          '6': config.emojis.robloxWarrior, // Warrior
+          '7': config.emojis.robloxInviter, // Inviter
+          '8': config.emojis.robloxCombat, // Combat Initiation
+          '15': config.emojis.robloxBloxxer // Bloxxer
+        };
+        
+        roliBadgeKeys.forEach(badgeId => {
+          const emote = knownBadges[badgeId];
           if (emote && !badgeEmotesList.includes(emote)) {
             badgeEmotesList.push(emote);
           }
@@ -134,6 +139,8 @@ module.exports = {
       // Get RAP and Value from Rolimons API
       let rapValue = 'N/A';
       let totalValue = 'N/A';
+      let rolimonsData = null;
+      
       try {
         const rolimonsResponse = await fetch(`https://api.rolimons.com/players/v1/playerinfo/${userId}`).then(r => r.json()).catch((err) => {
           console.log('Rolimons fetch error:', err);
@@ -142,9 +149,10 @@ module.exports = {
         
         console.log('Rolimons response:', JSON.stringify(rolimonsResponse));
         
-        if (rolimonsResponse && rolimonsResponse.success && rolimonsResponse.player_info) {
-          const rap = rolimonsResponse.player_info[0]; // RAP
-          const value = rolimonsResponse.player_info[1]; // Value
+        if (rolimonsResponse && rolimonsResponse.success) {
+          rolimonsData = rolimonsResponse;
+          const rap = rolimonsResponse.rap;
+          const value = rolimonsResponse.value;
           
           if (rap && rap > 0) {
             rapValue = `[${rap.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
@@ -182,6 +190,31 @@ module.exports = {
       }
 
       embed.setDescription(description);
+
+      // Calculate last seen text using Rolimons data if available
+      let lastSeenText = 'Unknown';
+      const lastOnlineTimestamp = rolimonsData?.last_online || null;
+      
+      if (isOnline) {
+        lastSeenText = `${config.emojis.online} Currently Online`;
+      } else if (lastOnlineTimestamp) {
+        const now = Date.now() / 1000;
+        const diff = now - lastOnlineTimestamp;
+        const hours = diff / 3600;
+        const days = diff / 86400;
+        
+        if (hours < 1) {
+          lastSeenText = 'Last seen few minutes ago';
+        } else if (hours < 24) {
+          lastSeenText = 'Last seen today';
+        } else if (days < 2) {
+          lastSeenText = 'Last seen yesterday';
+        } else if (days < 7) {
+          lastSeenText = 'Last seen this week';
+        } else {
+          lastSeenText = `Last seen <t:${Math.floor(lastOnlineTimestamp)}:R>`;
+        }
+      }
 
       // Add statistics - all inline
       embed.addFields(
