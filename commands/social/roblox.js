@@ -48,8 +48,8 @@ module.exports = {
         fetch(`https://friends.roblox.com/v1/users/${userId}/followings/count`).then(r => r.json()).catch(() => ({ count: 0 }))
       ]);
 
-      // Get user avatar
-      const avatarResponse = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png`).then(r => r.json());
+      // Get full body avatar
+      const avatarResponse = await fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=420x420&format=Png`).then(r => r.json());
       const avatarUrl = avatarResponse.data?.[0]?.imageUrl || null;
 
       // Get user presence
@@ -62,11 +62,27 @@ module.exports = {
       }).then(r => r.json()).catch(() => ({ userPresences: [] }));
 
       const presence = presenceResponse.userPresences?.[0];
-      let status = 'Offline';
-      if (presence) {
-        if (presence.userPresenceType === 1) status = 'Online';
-        else if (presence.userPresenceType === 2) status = 'In Game';
-        else if (presence.userPresenceType === 3) status = 'In Studio';
+      const lastOnline = presence?.lastOnline ? new Date(presence.lastOnline).getTime() / 1000 : null;
+      
+      // Calculate last seen text
+      let lastSeenText = 'Unknown';
+      if (lastOnline) {
+        const now = Date.now() / 1000;
+        const diff = now - lastOnline;
+        const hours = diff / 3600;
+        const days = diff / 86400;
+        
+        if (hours < 1) {
+          lastSeenText = 'Last seen few minutes ago';
+        } else if (hours < 24) {
+          lastSeenText = 'Last seen today';
+        } else if (days < 2) {
+          lastSeenText = 'Last seen yesterday';
+        } else if (days < 7) {
+          lastSeenText = 'Last seen this week';
+        } else {
+          lastSeenText = `Last seen <t:${Math.floor(lastOnline)}:R>`;
+        }
       }
 
       const embed = new EmbedBuilder()
@@ -75,47 +91,43 @@ module.exports = {
           name: message.member.displayName,
           iconURL: message.member.displayAvatarURL({ dynamic: true })
         })
-        .setTitle(`ROBLOX • ${userDetails.name}`)
+        .setTitle(`${userDetails.name} • ${userId}`)
         .setURL(`https://www.roblox.com/users/${userId}/profile`)
         .setThumbnail(avatarUrl);
 
-      // Build description
-      let description = `**Display Name** ${userDetails.displayName}`;
-      description += `\n**User ID** ${userId}`;
-      description += `\n**Status** ${status}`;
+      // Build description with bio and timestamp
+      const createdTimestamp = Math.floor(new Date(userDetails.created).getTime() / 1000);
+      let description = '';
       
       if (userDetails.description) {
-        const bio = userDetails.description.length > 100 
-          ? userDetails.description.substring(0, 100) + '...' 
-          : userDetails.description;
-        description += `\n\n${bio}`;
+        description += `${userDetails.description}\n\n`;
       }
+      
+      description += `<t:${createdTimestamp}:D> (<t:${createdTimestamp}:R>)`;
 
       embed.setDescription(description);
 
-      // Add statistics
+      // Add statistics - all inline
       embed.addFields(
         {
-          name: 'Account Info',
-          value: `**Created** <t:${Math.floor(new Date(userDetails.created).getTime() / 1000)}:R>\n**Friends** ${friendsCount.count?.toLocaleString() || '0'}\n**Followers** ${followersCount.count?.toLocaleString() || '0'}\n**Following** ${followingCount.count?.toLocaleString() || '0'}`,
+          name: 'Followers',
+          value: followersCount.count?.toLocaleString() || '0',
+          inline: true
+        },
+        {
+          name: 'Follows',
+          value: followingCount.count?.toLocaleString() || '0',
+          inline: true
+        },
+        {
+          name: 'Friends',
+          value: friendsCount.count?.toLocaleString() || '0',
           inline: true
         }
       );
 
-      // Get badges
-      const badgesResponse = await fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=10&sortOrder=Asc`).then(r => r.json()).catch(() => ({ data: [] }));
-      
-      if (badgesResponse.data && badgesResponse.data.length > 0) {
-        const badgesList = badgesResponse.data.slice(0, 5).map(badge => `**${badge.name}**`).join('\n');
-        embed.addFields({
-          name: 'Recent Badges',
-          value: badgesList,
-          inline: true
-        });
-      }
-
       embed.setFooter({
-        text: 'Roblox Profile',
+        text: lastSeenText,
         iconURL: 'https://images.rbxcdn.com/c69b74f49c6738f0a0d01b1db0b8e95c.png'
       });
 
