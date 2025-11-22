@@ -221,7 +221,15 @@ client.once('ready', async () => {
     logger.console.error('❌ Failed to auto-start selfbot:', error.message);
   }
 
-
+  // Start GitHub webhook server
+  try {
+    const GitHubWebhook = require('./webhooks/github');
+    const githubWebhook = new GitHubWebhook(client);
+    await githubWebhook.start();
+    global.githubWebhook = githubWebhook;
+  } catch (error) {
+    logger.console.error('❌ Failed to start GitHub webhook:', error.message);
+  }
 });
 
 // Export client for modules that need it (avoid circular dependencies by using global reference)
