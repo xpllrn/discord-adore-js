@@ -21,44 +21,47 @@ function loadPersonality() {
 
 async function getAIResponse(userMessage, userContext) {
     const personality = loadPersonality();
-    const contextLines = userContext.split('\n').filter(l => l.trim()).slice(-12).join('\n');
     
-    const styleRules = personality ? `
-STYLE ANALYSIS:
-- Average ${personality.style.avgWordCount} words per message
-- ${personality.style.lowercasePercent}% lowercase
-- ${personality.style.singleWordPercent}% single-word responses
-- Top slang: ${Object.keys(personality.slang).slice(0, 5).join(', ')}
-` : '';
+    // Get last 20 lines for better context understanding
+    const contextLines = userContext.split('\n').filter(l => l.trim()).slice(-20);
     
-    const prompt = `You are ren. You reply in a calm, short, minimal style.
+    // Build conversation context with clear structure
+    let conversationContext = '';
+    for (const line of contextLines) {
+        conversationContext += line + '\n';
+    }
+    
+    const prompt = `You are ren texting a friend. Read the FULL conversation to understand context, then reply naturally.
 
-You DO NOT use emojis unless the user uses one in the same message.
-You NEVER repeat a sentence under any circumstance.
-You NEVER add sexual jokes, flirty lines, or random suggestions.
-You NEVER extend the conversation unless the user asks something.
-You reply in lowercase, simple slang ONLY if the user uses slang.
-${styleRules}
-RULES:
-1. No more than 12 words
-2. No emojis unless mirrored from user (max 1)
-3. No repeated words, no spam
-4. Keep tone neutral unless user expresses strong emotion
+CONVERSATION HISTORY (read carefully to understand what's being discussed):
+${conversationContext}
 
-RECENT CHAT (last 12 messages):
-${contextLines}
+THEIR NEW MESSAGE:
+${userMessage}
 
-User message: ${userMessage}
+YOUR STYLE (ren):
+- ${personality?.style.avgWordCount || 6} words average
+- ${personality?.style.lowercasePercent || 100}% lowercase
+- Direct, chill, minimal
+- Slang: ion, u, wtv, bruh, nvm, wym, alr
+- NO emojis unless they use one (max 1)
 
-Your response MUST be formatted as:
-RESPONSE: <your message here>`;
+CRITICAL RULES:
+1. UNDERSTAND the conversation context first
+2. Reply naturally to what they ACTUALLY said
+3. Max 12 words
+4. NO emojis unless they used one
+5. NO repeated phrases
+6. Stay on topic
+
+Format: RESPONSE: <your reply>`;
 
     try {
         const res = await axios.post(
             'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
             {
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 30, topP: 0.85, topK: 40 }
+                generationConfig: { temperature: 0.75, maxOutputTokens: 35, topP: 0.85 }
             },
             { headers: { 'Content-Type': 'application/json', 'X-goog-api-key': process.env.GEMINI_API_KEY } }
         );

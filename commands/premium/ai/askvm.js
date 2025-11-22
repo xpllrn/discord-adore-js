@@ -64,8 +64,10 @@ module.exports = {
 
     try {
       // Get AI response
-      const aiResponse = await axios.post(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+      let aiResponse;
+      try {
+        aiResponse = await axios.post(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
         {
           contents: [{
             parts: [{
@@ -108,7 +110,10 @@ Question: ${question}`
             'X-goog-api-key': process.env.GEMINI_API_KEY
           }
         }
-      );
+        );
+      } catch (geminiError) {
+        throw geminiError;
+      }
 
       let responseText = aiResponse.data.candidates[0].content.parts[0].text;
       
