@@ -33,7 +33,7 @@ module.exports = {
     const parsed = parse(args.join(' '));
 
     if (!parsed) {
-      return embeds.warn(message, 'Please provide a valid Valorant username in the format: **username#tag**');
+      return embeds.warn(message, 'Please provide a **valid Valorant** username');
     }
 
     const { username, tagline } = parsed;
@@ -41,7 +41,7 @@ module.exports = {
     try {
       const url = `https://tracker.gg/valorant/profile/riot/${encodeURIComponent(`${username}#${tagline}`)}/overview`;
 
-      const msg = await embeds.loading(message, `Searching for player **${username}#${tagline}**...`);
+      const msg = await embeds.loading(message, `Searching for player \`${username}#${tagline}\`...`);
 
       const API_KEY = 'YOUR_API_KEY'
 
@@ -60,11 +60,11 @@ module.exports = {
       }
 
       if (accountResponse.status !== 200) {
-        let errorMessage = `Could not find Valorant player **${username}#${tagline}**`;
+        let errorMessage = `Could not find Valorant player \`${username}#${tagline}\``;
 
         // Provide more specific error messages based on API response
         if (accountResponse.status === 404) {
-          errorMessage = `Valorant player **${username}#${tagline}** was not found. Please check the username and tag.`;
+          errorMessage = `Valorant player \`${username}#${tagline}\` was not found. Please check the username and tag.`;
         } else if (accountResponse.status === 429) {
           errorMessage = `Valorant API rate limit exceeded. Please try again in a few minutes.`;
         } else if (accountResponse.errors && accountResponse.errors.length > 0) {
@@ -158,7 +158,7 @@ module.exports = {
         });
 
       // Build description
-      let description = `**Account Level** ${account_level || 'Unknown'}`;
+      let description = `\`${username}#${tagline}\`\n**Account Level** ${account_level || 'not sure'}`;
 
       if (currenttierpatched || elo) {
         description += `\n**Current Rank** ${currenttierpatched || 'Unranked'}`;
@@ -187,7 +187,7 @@ module.exports = {
         embed.addFields(
           {
             name: 'Recent Performance',
-            value: `**Win Rate** ${winRate}% (${stats.wins}W ${stats.matches - stats.wins}L)\n**K/D Ratio** ${kd}\n**Avg KDA** ${avgKills} / ${avgDeaths} / ${avgAssists}`,
+            value: `> **win rate** ${winRate}% (${stats.wins}W ${stats.matches - stats.wins}L)\n> **k/d ratio** ${kd}\n**> kda** ${avgKills} / ${avgDeaths} / ${avgAssists}`,
             inline: true
           }
         );
@@ -195,14 +195,14 @@ module.exports = {
 
       if (competitive.length > 0) {
         embed.addFields({
-          name: 'Recent Competitive Matches',
+          name: 'Recent Matches',
           value: competitive.join('\n'),
           inline: false
         });
       } else {
         embed.addFields({
           name: 'Recent Matches',
-          value: 'No recent competitive matches found',
+          value: 'No recent **competitive matches** found',
           inline: false
         });
       }
@@ -215,7 +215,7 @@ module.exports = {
       return msg.edit({ embeds: [successEmbed] });
 
     } catch (error) {
-      return embeds.warn(message, `Failed to fetch Valorant profile for **${username}#${tagline}**. Please try again later.`);
+      return embeds.warn(message, `Failed to **fetch Valorant** profile for \`${username}#${tagline}\`. Please try again later.`);
     }
   }
 }

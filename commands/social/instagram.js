@@ -21,15 +21,28 @@ module.exports = {
     try {
       message.channel.sendTyping();
 
-      const results = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
+      console.log(`[Instagram] Fetching profile for: ${username}`);
+
+      const response = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
         method: 'GET',
         headers: {
           'User-Agent': 'Instagram 76.0.0.15.395 Android (24/7.0; 640dpi; 1440x2560; samsung; SM-G930F; herolte; samsungexynos8890; en_US; 138226743)',
           'X-IG-App-ID': '936619743392459'
         }
-      }).then((response) => response.json());
+      });
+
+      console.log(`[Instagram] Response status: ${response.status}`);
+
+      if (!response.ok) {
+        console.error(`[Instagram] API error - Status: ${response.status}, StatusText: ${response.statusText}`);
+        return embeds.warn(message, `Instagram API returned an error (${response.status}). The service may be temporarily unavailable.`);
+      }
+
+      const results = await response.json();
+      console.log(`[Instagram] Response data:`, JSON.stringify(results).substring(0, 200));
 
       if (!results.data || !results.data.user) {
+        console.error(`[Instagram] Profile not found or invalid response structure for: ${username}`);
         return embeds.warn(message, `Instagram profile **${username}** was not found`);
       }
 
@@ -73,10 +86,13 @@ module.exports = {
         ]);
       }
 
+      console.log(`[Instagram] Successfully fetched profile for: ${username}`);
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      return embeds.warn(message, `Failed to fetch Instagram profile for **${username}**. Please try again later.`);
+      console.error(`[Instagram] Error fetching profile for ${username}:`, error);
+      console.error(`[Instagram] Error stack:`, error.stack);
+      return embeds.warn(message, `Failed to fetch Instagram profile for **${username}**. Error: ${error.message}`);
     }
   }
 }

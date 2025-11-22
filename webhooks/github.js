@@ -127,8 +127,6 @@ class GitHubWebhook {
     return new Promise((resolve, reject) => {
       try {
         this.server = this.app.listen(this.port, '0.0.0.0', () => {
-          console.log(`✅ GitHub webhook server running on port ${this.port}`);
-          console.log(`   Endpoint: http://0.0.0.0:${this.port}/github`);
           resolve();
         });
       } catch (error) {
