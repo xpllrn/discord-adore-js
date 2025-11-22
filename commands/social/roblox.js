@@ -108,6 +108,15 @@ module.exports = {
         console.log('Failed to fetch Rolimons data:', error.message);
       }
 
+      // Get player badges from Roblox API
+      let playerBadgesResponse = null;
+      try {
+        playerBadgesResponse = await fetch(`https://accountinformation.roblox.com/v1/users/${userId}/roblox-badges`).then(r => r.json()).catch(() => null);
+        console.log('Player badges response:', JSON.stringify(playerBadgesResponse));
+      } catch (err) {
+        console.log('Player badges fetch error:', err);
+      }
+
       // Map Roblox official badges
       const robloxBadgeEmotes = {
         'Welcome To The Club': config.emojis.robloxWelcomeToTheClub,
@@ -124,9 +133,9 @@ module.exports = {
 
       let badgeEmotesList = [];
       
-      // Try Roblox official badges first
-      if (badgesResponse.data && badgesResponse.data.length > 0) {
-        badgesResponse.data.forEach(badge => {
+      // Try player badges API (this shows official Roblox badges)
+      if (playerBadgesResponse && Array.isArray(playerBadgesResponse)) {
+        playerBadgesResponse.forEach(badge => {
           const emote = robloxBadgeEmotes[badge.name];
           if (emote && !badgeEmotesList.includes(emote)) {
             badgeEmotesList.push(emote);
@@ -134,29 +143,15 @@ module.exports = {
         });
       }
       
-      // Add Rolimons badges (these are special community badges)
-      const roliBadges = rolimonsData?.rolibadges || {};
-      const roliBadgeKeys = Object.keys(roliBadges);
-      
-      // Map Rolimons badge names to display text
-      const rolimonsBadgeMap = {
-        'booster': '🚀',
-        'roligang': '👥',
-        'verified': '✅',
-        'value_100k': '💎',
-        'value_1m': '💰',
-        'own_10_items': '📦',
-        'own_lucky_cat_uaid': '🐱',
-        'create_10_trade_ads': '📢'
-      };
-      
-      // Add Rolimons badges to the list
-      roliBadgeKeys.forEach(badgeName => {
-        const emote = rolimonsBadgeMap[badgeName];
-        if (emote && !badgeEmotesList.includes(emote)) {
-          badgeEmotesList.push(emote);
-        }
-      });
+      // Fallback to game badges if no player badges found
+      if (badgeEmotesList.length === 0 && badgesResponse.data && badgesResponse.data.length > 0) {
+        badgesResponse.data.forEach(badge => {
+          const emote = robloxBadgeEmotes[badge.name];
+          if (emote && !badgeEmotesList.includes(emote)) {
+            badgeEmotesList.push(emote);
+          }
+        });
+      }
       
       console.log('Badge emotes found:', badgeEmotesList.length);
 
@@ -190,13 +185,17 @@ module.exports = {
       let lastSeenText = 'Unknown';
       const lastOnlineTimestamp = rolimonsData?.last_online || null;
       
+      console.log('Last online timestamp:', lastOnlineTimestamp);
+      
       if (isOnline) {
-        lastSeenText = `${config.emojis.online} Currently Online`;
+        lastSeenText = 'Currently Online';
       } else if (lastOnlineTimestamp) {
-        const now = Date.now() / 1000;
+        const now = Math.floor(Date.now() / 1000);
         const diff = now - lastOnlineTimestamp;
         const hours = diff / 3600;
         const days = diff / 86400;
+        
+        console.log('Time diff - hours:', hours, 'days:', days);
         
         if (hours < 1) {
           lastSeenText = 'Last seen few minutes ago';
@@ -207,7 +206,10 @@ module.exports = {
         } else if (days < 7) {
           lastSeenText = 'Last seen this week';
         } else {
-          lastSeenText = `Last seen <t:${Math.floor(lastOnlineTimestamp)}:R>`;
+          // Convert to readable date
+          const date = new Date(lastOnlineTimestamp * 1000);
+          const options = { month: 'short', day: 'numeric', year: 'numeric' };
+          lastSeenText = `Last seen on ${date.toLocaleDateString('en-US', options)}`;
         }
       }
 
