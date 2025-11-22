@@ -120,30 +120,18 @@ class SelfBot {
                 rpc.setAssetsSmallImage(this.statusConfig.subavatar);
             }
 
-            // Buttons - try both methods
+            // Buttons
             if (this.statusConfig.buttons.length > 0) {
-                console.log('[ACTIVITY] Adding buttons:', JSON.stringify(this.statusConfig.buttons));
-                
-                // Method 1: Try addButton
-                try {
-                    this.statusConfig.buttons.forEach((btn, index) => {
-                        if (btn.label && btn.url) {
-                            console.log(`[ACTIVITY] Adding button ${index + 1}: ${btn.label} -> ${btn.url}`);
-                            rpc.addButton(btn.label, btn.url);
-                        }
-                    });
-                } catch (error) {
-                    console.error('[ACTIVITY] Button error:', error.message);
-                }
-                
-                // Method 2: Try setURL for first button (works with STREAMING type)
-                if (this.statusConfig.activityType === 'STREAMING' && this.statusConfig.buttons[0]) {
-                    try {
-                        rpc.setURL(this.statusConfig.buttons[0].url);
-                        console.log('[ACTIVITY] Set streaming URL:', this.statusConfig.buttons[0].url);
-                    } catch (error) {
-                        console.error('[ACTIVITY] setURL error:', error.message);
+                // Try addButton for all buttons
+                this.statusConfig.buttons.forEach((btn) => {
+                    if (btn.label && btn.url) {
+                        rpc.addButton(btn.label, btn.url);
                     }
+                });
+                
+                // For STREAMING type, also set URL (makes it clickable)
+                if (this.statusConfig.activityType === 'STREAMING' && this.statusConfig.buttons[0]) {
+                    rpc.setURL(this.statusConfig.buttons[0].url);
                 }
             }
 
@@ -155,13 +143,10 @@ class SelfBot {
                 const customStatus = new CustomStatus(this.client)
                     .setState(this.customStatus);
                 activities.push(customStatus);
-                console.log(`[ACTIVITY] Adding custom status: ${this.customStatus}`);
             }
             
             // Add rich presence
             activities.push(rpc);
-            
-            console.log(`[ACTIVITY] Setting presence with ${activities.length} activities`);
             
             this.client.user.setPresence({
                 status: this.statusConfig.type,

@@ -38,12 +38,7 @@ module.exports = {
                     { cmd: '.status loop off', desc: 'Stop status loop' }
                 ]
             },
-            presence: {
-                title: 'Presence',
-                commands: [
-                    { cmd: '.presence <online/idle/dnd/invisible>', desc: 'Change your Discord presence' }
-                ]
-            },
+
             utility: {
                 title: 'Utility',
                 commands: [

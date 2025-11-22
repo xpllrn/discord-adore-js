@@ -8,10 +8,17 @@ module.exports = {
 
         const subcommand = args[0]?.toLowerCase();
 
-        // .activity text <text>
+        // .activity text <text> or .activity text (to remove)
         if (subcommand === 'text') {
             const text = args.slice(1).join(' ');
-            if (!text) return;
+            
+            if (!text) {
+                bot.statusConfig.text = null;
+                bot.saveConfig();
+                bot.applyStatus();
+                await webhook.sendOutput('Activity text **removed**');
+                return;
+            }
             
             bot.statusConfig.text = text;
             bot.statusConfig.enabled = true;
@@ -22,10 +29,17 @@ module.exports = {
             return;
         }
 
-        // .activity subtext <text>
+        // .activity subtext <text> or .activity subtext (to remove)
         if (subcommand === 'subtext') {
             const subtext = args.slice(1).join(' ');
-            if (!subtext) return;
+            
+            if (!subtext) {
+                bot.statusConfig.subtext = null;
+                bot.saveConfig();
+                bot.applyStatus();
+                await webhook.sendOutput('Activity subtext **removed**');
+                return;
+            }
             
             bot.statusConfig.subtext = subtext;
             bot.saveConfig();
@@ -35,9 +49,18 @@ module.exports = {
             return;
         }
 
-        // .activity avatar <link> or attach or @user
+        // .activity avatar <link> or attach or @user or .activity avatar (to remove)
         if (subcommand === 'avatar') {
             let imageUrl = args[1] || message.attachments.first()?.url;
+            
+            // If no args and no attachment, remove avatar
+            if (!imageUrl) {
+                bot.statusConfig.avatar = null;
+                bot.saveConfig();
+                bot.applyStatus();
+                await webhook.sendOutput('Activity avatar **removed**');
+                return;
+            }
             
             // Check if it's a user mention
             if (args[1] && args[1].startsWith('<@') && args[1].endsWith('>')) {
@@ -50,8 +73,6 @@ module.exports = {
                     return;
                 }
             }
-            
-            if (!imageUrl) return;
             
             bot.statusConfig.avatar = imageUrl;
             bot.saveConfig();
@@ -61,9 +82,18 @@ module.exports = {
             return;
         }
 
-        // .activity subavatar <link> or attach or @user
+        // .activity subavatar <link> or attach or @user or .activity subavatar (to remove)
         if (subcommand === 'subavatar') {
             let imageUrl = args[1] || message.attachments.first()?.url;
+            
+            // If no args and no attachment, remove subavatar
+            if (!imageUrl) {
+                bot.statusConfig.subavatar = null;
+                bot.saveConfig();
+                bot.applyStatus();
+                await webhook.sendOutput('Activity sub-avatar **removed**');
+                return;
+            }
             
             // Check if it's a user mention
             if (args[1] && args[1].startsWith('<@') && args[1].endsWith('>')) {
@@ -77,8 +107,6 @@ module.exports = {
                 }
             }
             
-            if (!imageUrl) return;
-            
             bot.statusConfig.subavatar = imageUrl;
             bot.saveConfig();
             bot.applyStatus();
@@ -87,27 +115,34 @@ module.exports = {
             return;
         }
 
-        // .activity button <name> --<link>
+        // .activity button <name> --<link> or .activity button (to remove)
         if (subcommand === 'button') {
             const buttonText = args.slice(1).join(' ');
-            console.log(`[ACTIVITY] Button text: "${buttonText}"`);
+            
+            // If no args, remove the first button
+            if (!buttonText) {
+                if (bot.statusConfig.buttons.length > 0) {
+                    bot.statusConfig.buttons.shift(); // Remove first button
+                    bot.saveConfig();
+                    bot.applyStatus();
+                    await webhook.sendOutput('First button **removed**');
+                } else {
+                    await webhook.sendOutput('No buttons to remove');
+                }
+                return;
+            }
             
             const separatorIndex = buttonText.indexOf(' --');
-            console.log(`[ACTIVITY] Separator index: ${separatorIndex}`);
             
             if (separatorIndex === -1) {
-                console.log('[ACTIVITY] No separator found');
-                await webhook.sendOutput('Invalid format. Use: `.activity button <name> --<url>`');
+                await webhook.sendOutput('Invalid format. Use: `.activity button <name> --<url>` or `.activity button` to remove');
                 return;
             }
             
             const name = buttonText.substring(0, separatorIndex).trim();
             const url = buttonText.substring(separatorIndex + 3).trim();
             
-            console.log(`[ACTIVITY] Button name: "${name}", URL: "${url}"`);
-            
             if (!name || !url) {
-                console.log('[ACTIVITY] Name or URL empty');
                 await webhook.sendOutput('Button name and URL cannot be empty');
                 return;
             }
@@ -119,24 +154,34 @@ module.exports = {
                 bot.statusConfig.buttons[0] = { label: name, url: url };
             }
             
-            console.log(`[ACTIVITY] Buttons array:`, JSON.stringify(bot.statusConfig.buttons));
-            console.log(`[ACTIVITY] Full statusConfig:`, JSON.stringify(bot.statusConfig));
-            
             bot.saveConfig();
             bot.applyStatus();
             
-            console.log(`[ACTIVITY] Button added: ${name}`);
             await webhook.sendOutput(`Button **${name}** added successfully`);
             return;
         }
 
-        // .activity subbutton <name> --<link>
+        // .activity subbutton <name> --<link> or .activity subbutton (to remove)
         if (subcommand === 'subbutton') {
             const buttonText = args.slice(1).join(' ');
+            
+            // If no args, remove the second button
+            if (!buttonText) {
+                if (bot.statusConfig.buttons.length > 1) {
+                    bot.statusConfig.buttons.pop(); // Remove second button
+                    bot.saveConfig();
+                    bot.applyStatus();
+                    await webhook.sendOutput('Second button **removed**');
+                } else {
+                    await webhook.sendOutput('No second button to remove');
+                }
+                return;
+            }
+            
             const separatorIndex = buttonText.indexOf(' --');
             
             if (separatorIndex === -1) {
-                await webhook.sendOutput('Invalid format. Use: `.activity subbutton <name> --<url>`');
+                await webhook.sendOutput('Invalid format. Use: `.activity subbutton <name> --<url>` or `.activity subbutton` to remove');
                 return;
             }
             
