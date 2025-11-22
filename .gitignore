@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# Environment
+.env
+*.env
+
 # Logs
 *.log
 
@@ -18,4 +22,8 @@ build/
 # Database
 *.db
 *.sqlite
+
+# Selfbot
+deman/context/*.txt
+deman/self.json
 
