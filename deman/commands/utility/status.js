@@ -79,7 +79,7 @@ module.exports = {
                 
                 try {
                     const { CustomStatus } = require('discord.js-selfbot-v13');
-                    const customStatus = new CustomStatus()
+                    const customStatus = new CustomStatus(bot.client)
                         .setState(currentLine);
                     
                     // Get current activities to preserve rich presence if enabled
@@ -171,8 +171,7 @@ module.exports = {
         
         try {
             const { CustomStatus } = require('discord.js-selfbot-v13');
-            const customStatus = new CustomStatus()
-                .setEmoji('😊')
+            const customStatus = new CustomStatus(bot.client)
                 .setState(statusText);
             
             // Get current activities to preserve rich presence if enabled

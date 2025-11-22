@@ -17,6 +17,8 @@ module.exports = {
             bot.statusConfig.enabled = true;
             bot.saveConfig();
             bot.applyStatus();
+            
+            await webhook.sendOutput(`Activity text set to: \`${text}\``);
             return;
         }
 
@@ -28,6 +30,8 @@ module.exports = {
             bot.statusConfig.subtext = subtext;
             bot.saveConfig();
             bot.applyStatus();
+            
+            await webhook.sendOutput(`Activity subtext set to: \`${subtext}\``);
             return;
         }
 
@@ -52,6 +56,8 @@ module.exports = {
             bot.statusConfig.avatar = imageUrl;
             bot.saveConfig();
             bot.applyStatus();
+            
+            await webhook.sendOutput(`Activity avatar updated`);
             return;
         }
 
@@ -76,6 +82,8 @@ module.exports = {
             bot.statusConfig.subavatar = imageUrl;
             bot.saveConfig();
             bot.applyStatus();
+            
+            await webhook.sendOutput(`Activity sub-avatar updated`);
             return;
         }
 

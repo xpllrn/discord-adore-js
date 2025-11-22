@@ -117,8 +117,10 @@ class SelfBot {
             }
 
             if (this.statusConfig.buttons.length > 0) {
-                this.statusConfig.buttons.forEach(btn => {
+                console.log('[ACTIVITY] Adding buttons:', JSON.stringify(this.statusConfig.buttons));
+                this.statusConfig.buttons.forEach((btn, index) => {
                     if (btn.label && btn.url) {
+                        console.log(`[ACTIVITY] Adding button ${index + 1}: ${btn.label} -> ${btn.url}`);
                         rpc.addButton(btn.label, btn.url);
                     }
                 });
@@ -129,7 +131,7 @@ class SelfBot {
             // Add custom status if set
             if (this.customStatus) {
                 const { CustomStatus } = require('discord.js-selfbot-v13');
-                const customStatus = new CustomStatus()
+                const customStatus = new CustomStatus(this.client)
                     .setState(this.customStatus);
                 activities.push(customStatus);
             }
