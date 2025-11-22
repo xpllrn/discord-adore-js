@@ -61,7 +61,7 @@ async function handleProfileCommand(client, message, username) {
     });
 
     if (!response.ok) {
-      return embeds.warn(message, `Instagram profile **${username}** was not found or the service is temporarily unavailable.`);
+      return embeds.warn(message, `Instagram profile **${username}** was not found.`);
     }
 
     const results = await response.json();
@@ -148,7 +148,7 @@ async function handleStoryCommand(client, message, username) {
     });
 
     if (!response.ok) {
-      return embeds.warn(message, `Instagram profile **${username}** was not found or the service is temporarily unavailable.`);
+      return embeds.warn(message, `Instagram profile **${username}** was not found.`);
     }
 
     const results = await response.json();
@@ -168,7 +168,7 @@ async function handleStoryCommand(client, message, username) {
 async function fetchStories(client, message, user) {
   try {
     if (!user.has_public_story) {
-      return embeds.warn(message, `**${user.username}** doesn't have any active stories or their stories are private.`);
+      return embeds.warn(message, `**${user.username}** doesn't have any **ctive stories**.`);
     }
 
     const storiesResponse = await fetch(`https://i.instagram.com/api/v1/feed/user/${user.id}/story/`, {

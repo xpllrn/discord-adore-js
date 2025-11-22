@@ -131,10 +131,31 @@ module.exports = {
       
       console.log('Badge emotes found:', badgeEmotesList.length);
 
-      // RAP and Value - Link to Rolimons (Roblox API doesn't provide RAP directly)
-      // We'll just provide links to Rolimons where users can see this info
-      const rapValue = `[View on Rolimons](https://www.rolimons.com/player/${userId})`;
-      const totalValue = `[View on Rolimons](https://www.rolimons.com/player/${userId})`;
+      // Get RAP and Value from Rolimons API
+      let rapValue = 'N/A';
+      let totalValue = 'N/A';
+      try {
+        const rolimonsResponse = await fetch(`https://api.rolimons.com/players/v1/playerinfo/${userId}`).then(r => r.json()).catch((err) => {
+          console.log('Rolimons fetch error:', err);
+          return null;
+        });
+        
+        console.log('Rolimons response:', JSON.stringify(rolimonsResponse));
+        
+        if (rolimonsResponse && rolimonsResponse.success && rolimonsResponse.player_info) {
+          const rap = rolimonsResponse.player_info[0]; // RAP
+          const value = rolimonsResponse.player_info[1]; // Value
+          
+          if (rap && rap > 0) {
+            rapValue = `[${rap.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
+          }
+          if (value && value > 0) {
+            totalValue = `[${value.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
+          }
+        }
+      } catch (error) {
+        console.log('Failed to fetch Rolimons data:', error.message);
+      }
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.info)
