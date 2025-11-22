@@ -73,27 +73,33 @@ class SelfBot {
         if (!this.statusConfig.text) return;
 
         try {
-            const activity = {
-                name: this.statusConfig.text,
-                type: 'PLAYING'
-            };
+            const { RichPresence } = require('discord.js-selfbot-v13');
+            
+            const rpc = new RichPresence(this.client)
+                .setApplicationId('1234567890') // Dummy app ID
+                .setType('PLAYING')
+                .setName(this.statusConfig.text)
+                .setState(this.statusConfig.text);
 
             if (this.statusConfig.avatar) {
-                activity.assets = {
-                    large_image: this.statusConfig.avatar
-                };
+                rpc.setAssetsLargeImage(this.statusConfig.avatar);
             }
 
             if (this.statusConfig.buttons.length > 0) {
-                activity.buttons = this.statusConfig.buttons;
+                this.statusConfig.buttons.forEach(btn => {
+                    rpc.addButton(btn.label, btn.url);
+                });
             }
 
             this.client.user.setPresence({
                 status: this.statusConfig.type,
-                activities: [activity]
+                activities: [rpc]
             });
+            
+            console.log(`[STATUS] Applied: ${this.statusConfig.text} (${this.statusConfig.type})`);
         } catch (error) {
             console.error('[STATUS] Failed to apply:', error.message);
+            console.error(error.stack);
         }
     }
 
