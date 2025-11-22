@@ -59,25 +59,17 @@ module.exports = {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ userIds: [userId] })
-      }).then(r => r.json()).catch((err) => {
-        console.log('Presence fetch error:', err);
+      }).then(r => r.json()).catch(() => {
         return { userPresences: [] };
       });
 
-      console.log('Presence response:', JSON.stringify(presenceResponse));
-
       const presence = presenceResponse.userPresences?.[0];
       const isOnline = presence && presence.userPresenceType && presence.userPresenceType > 0; // 1=Online, 2=InGame, 3=InStudio
-      
-      console.log('Is online:', isOnline, 'Presence type:', presence?.userPresenceType);
 
       // Get Roblox badges (note: may be empty if user has privacy enabled)
-      const badgesResponse = await fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=100&sortOrder=Asc`).then(r => r.json()).catch((err) => {
-        console.log('Badges fetch error:', err);
+      const badgesResponse = await fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=100&sortOrder=Asc`).then(r => r.json()).catch(() => {
         return { data: [] };
       });
-      
-      console.log('Roblox badges count:', badgesResponse.data?.length || 0);
 
       // Get RAP and Value from Rolimons API first
       let rapValue = 'N/A';
@@ -85,12 +77,9 @@ module.exports = {
       let rolimonsData = null;
       
       try {
-        const rolimonsResponse = await fetch(`https://api.rolimons.com/players/v1/playerinfo/${userId}`).then(r => r.json()).catch((err) => {
-          console.log('Rolimons fetch error:', err);
+        const rolimonsResponse = await fetch(`https://api.rolimons.com/players/v1/playerinfo/${userId}`).then(r => r.json()).catch(() => {
           return null;
         });
-        
-        console.log('Rolimons response:', JSON.stringify(rolimonsResponse));
         
         if (rolimonsResponse && rolimonsResponse.success) {
           rolimonsData = rolimonsResponse;
@@ -105,16 +94,15 @@ module.exports = {
           }
         }
       } catch (error) {
-        console.log('Failed to fetch Rolimons data:', error.message);
+        // Silent fail
       }
 
       // Get player badges from Roblox API
       let playerBadgesResponse = null;
       try {
         playerBadgesResponse = await fetch(`https://accountinformation.roblox.com/v1/users/${userId}/roblox-badges`).then(r => r.json()).catch(() => null);
-        console.log('Player badges response:', JSON.stringify(playerBadgesResponse));
       } catch (err) {
-        console.log('Player badges fetch error:', err);
+        // Silent fail
       }
 
       // Map Roblox official badges
@@ -152,8 +140,6 @@ module.exports = {
           }
         });
       }
-      
-      console.log('Badge emotes found:', badgeEmotesList.length);
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.info)
@@ -185,8 +171,6 @@ module.exports = {
       let lastSeenText = 'Unknown';
       const lastOnlineTimestamp = rolimonsData?.last_online || null;
       
-      console.log('Last online timestamp:', lastOnlineTimestamp);
-      
       if (isOnline) {
         lastSeenText = 'Currently Online';
       } else if (lastOnlineTimestamp) {
@@ -194,8 +178,6 @@ module.exports = {
         const diff = now - lastOnlineTimestamp;
         const hours = diff / 3600;
         const days = diff / 86400;
-        
-        console.log('Time diff - hours:', hours, 'days:', days);
         
         if (hours < 1) {
           lastSeenText = 'Last seen few minutes ago';

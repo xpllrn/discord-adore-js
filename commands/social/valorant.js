@@ -139,7 +139,7 @@ module.exports = {
             kda = `${playerStats.kills}/${playerStats.deaths}/${playerStats.assists}`;
           }
 
-          return `<t:${metadata.game_start}:R> • ${result} • ${kda}`;
+          return `<t:${metadata.game_start}:R> • ${result} • **\`${kda}\`**`;
         });
       }
 
@@ -187,7 +187,7 @@ module.exports = {
         embed.addFields(
           {
             name: 'Recent Performance',
-            value: `> **win rate** \`${winRate}%\` (${stats.wins}W ${stats.matches - stats.wins}L)\n> **k/d ratio** \`${kd}\`\n> **kda** \`${avgKills} / ${avgDeaths} / ${avgAssists}\``,
+            value: `> **win rate** ${winRate}% (${stats.wins}W ${stats.matches - stats.wins}L)\n> **k/d ratio** ${kd}\n> **kda** ${avgKills} / ${avgDeaths} / ${avgAssists}`,
             inline: true
           }
         );
