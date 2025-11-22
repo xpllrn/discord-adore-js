@@ -8,8 +8,8 @@ module.exports = {
 
         const subcommand = args[0]?.toLowerCase();
 
-        // .activity add <text>
-        if (subcommand === 'add') {
+        // .activity text <text>
+        if (subcommand === 'text') {
             const text = args.slice(1).join(' ');
             if (!text) return;
             
@@ -82,12 +82,14 @@ module.exports = {
         // .activity button <name> --<link>
         if (subcommand === 'button') {
             const buttonText = args.slice(1).join(' ');
-            const urlMatch = buttonText.match(/--(.+)/);
+            const separatorIndex = buttonText.indexOf(' --');
             
-            if (!urlMatch) return;
+            if (separatorIndex === -1) return;
             
-            const name = buttonText.replace(/--(.+)/, '').trim();
-            const url = urlMatch[1].trim();
+            const name = buttonText.substring(0, separatorIndex).trim();
+            const url = buttonText.substring(separatorIndex + 3).trim();
+            
+            if (!name || !url) return;
             
             // Replace existing button or add new one (max 2 buttons)
             if (bot.statusConfig.buttons.length === 0) {
@@ -104,12 +106,14 @@ module.exports = {
         // .activity subbutton <name> --<link>
         if (subcommand === 'subbutton') {
             const buttonText = args.slice(1).join(' ');
-            const urlMatch = buttonText.match(/--(.+)/);
+            const separatorIndex = buttonText.indexOf(' --');
             
-            if (!urlMatch) return;
+            if (separatorIndex === -1) return;
             
-            const name = buttonText.replace(/--(.+)/, '').trim();
-            const url = urlMatch[1].trim();
+            const name = buttonText.substring(0, separatorIndex).trim();
+            const url = buttonText.substring(separatorIndex + 3).trim();
+            
+            if (!name || !url) return;
             
             // Add as second button (max 2 buttons)
             if (bot.statusConfig.buttons.length === 0) {

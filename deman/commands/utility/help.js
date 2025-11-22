@@ -18,7 +18,7 @@ module.exports = {
             activity: {
                 title: 'Activity',
                 commands: [
-                    { cmd: '.activity add <text>', desc: 'Set activity text' },
+                    { cmd: '.activity text <text>', desc: 'Set activity text' },
                     { cmd: '.activity subtext <text>', desc: 'Set activity subtext/state' },
                     { cmd: '.activity avatar <link/@user/attach>', desc: 'Set activity large avatar image' },
                     { cmd: '.activity subavatar <link/@user/attach>', desc: 'Set activity small avatar image' },
@@ -32,7 +32,16 @@ module.exports = {
             status: {
                 title: 'Status',
                 commands: [
-                    { cmd: '.status <online/idle/dnd/invisible>', desc: 'Change your Discord status' }
+                    { cmd: '.status', desc: 'Clear custom status' },
+                    { cmd: '.status <text>', desc: 'Set custom status text' },
+                    { cmd: '.status loop on -- <lines>', desc: 'Loop through status lines (5s interval)' },
+                    { cmd: '.status loop off', desc: 'Stop status loop' }
+                ]
+            },
+            presence: {
+                title: 'Presence',
+                commands: [
+                    { cmd: '.presence <online/idle/dnd/invisible>', desc: 'Change your Discord presence' }
                 ]
             },
             utility: {

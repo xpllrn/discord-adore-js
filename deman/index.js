@@ -40,6 +40,13 @@ class SelfBot {
         this.humanDelay = { min: 800, max: 2500 };
         this.typingSpeed = { min: 50, max: 150 };
         this.responderEnabled = [];
+        this.customStatus = null;
+        this.statusLoop = {
+            enabled: false,
+            lines: [],
+            currentIndex: 0
+        };
+        this.statusLoopInterval = null;
         
         this.loadConfig();
     }
@@ -52,6 +59,8 @@ class SelfBot {
                 this.cleanupEnabled = data.cleanupEnabled || false;
                 this.statusConfig = data.statusConfig || this.statusConfig;
                 this.responderEnabled = data.responderEnabled || [];
+                this.customStatus = data.customStatus || null;
+                this.statusLoop = data.statusLoop || this.statusLoop;
                 console.log(`[CONFIG] Loaded - Cleanup: ${this.cleanupEnabled ? 'ON' : 'OFF'}, Responder: ${this.responderEnabled.length} users`);
             } else {
                 this.saveConfig();
@@ -67,7 +76,9 @@ class SelfBot {
             const data = {
                 cleanupEnabled: this.cleanupEnabled,
                 statusConfig: this.statusConfig,
-                responderEnabled: this.responderEnabled
+                responderEnabled: this.responderEnabled,
+                customStatus: this.customStatus,
+                statusLoop: this.statusLoop
             };
             fs.writeFileSync(this.configPath, JSON.stringify(data, null, 2));
             console.log(`[CONFIG] Saved - Status: ${this.statusConfig.text || 'none'}, Buttons: ${this.statusConfig.buttons.length}`);
