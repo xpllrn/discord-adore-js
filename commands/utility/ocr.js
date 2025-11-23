@@ -60,67 +60,100 @@ module.exports = {
       return runHelpCommand(message, 'ocr');
     }
 
-    let detectedText = null;
-
     try {
       message.channel.sendTyping();
 
-      // Try VisionParser API first
-      try {
-        // Download the image
-        const imageResponse = await fetch(imageUrl);
-        
-        if (!imageResponse.ok) {
-          throw new Error('Failed to download image');
-        }
+      console.log('[OCR] Processing image:', imageUrl);
 
-        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      // Download the image once
+      const imageResponse = await fetch(imageUrl);
+      
+      if (!imageResponse.ok) {
+        console.error('[OCR] Failed to download image:', imageResponse.status);
+        return embeds.warn(message, 'Failed to download the image. Please make sure the URL is valid and accessible.');
+      }
 
-        // Create form data
-        const formData = new FormData();
-        formData.append('file', imageBuffer, {
-          filename: 'image.png',
-          contentType: 'image/png'
-        });
-        formData.append('response_type', 'simple');
+      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      console.log('[OCR] Image downloaded, size:', imageBuffer.length, 'bytes');
 
-        // Send to VisionParser API
-        const response = await axios.post('https://api.visionparser.com/parse/image/file', formData, {
-          headers: {
-            ...formData.getHeaders(),
-            'api_key': VISIONPARSER_API_KEY=YOUR_KEY_HERE
-          },
-          timeout: 10000
-        });
-
-        if (response.data && response.data.text && response.data.text.trim().length > 0) {
-          detectedText = response.data.text;
-        }
-      } catch (visionError) {
-        console.log('VisionParser failed, trying Optiic fallback:', visionError.message);
-        
-        // Fallback to Optiic API
+      // Run both APIs in parallel
+      const visionParserPromise = (async () => {
         try {
-          const result = await optiic.process({ url: imageUrl });
-          if (result && result.text && result.text.trim().length > 0) {
-            detectedText = result.text;
+          console.log('[OCR] Starting VisionParser API call...');
+          const formData = new FormData();
+          formData.append('file', imageBuffer, {
+            filename: 'image.png',
+            contentType: 'image/png'
+          });
+          formData.append('response_type', 'simple');
+
+          const response = await axios.post('https://api.visionparser.com/parse/image/file', formData, {
+            headers: {
+              ...formData.getHeaders(),
+              'api_key': VISIONPARSER_API_KEY=YOUR_KEY_HERE
+            },
+            timeout: 15000
+          });
+
+          console.log('[OCR] VisionParser response status:', response.status);
+          console.log('[OCR] VisionParser response data:', JSON.stringify(response.data, null, 2));
+
+          if (response.data && response.data.text && response.data.text.trim().length > 0) {
+            console.log('[OCR] VisionParser SUCCESS - Text length:', response.data.text.length);
+            return { source: 'VisionParser', text: response.data.text };
+          } else {
+            console.log('[OCR] VisionParser returned empty or no text');
+            return null;
           }
-        } catch (optiicError) {
-          console.error('Optiic fallback also failed:', optiicError.message);
-          throw new Error('Both OCR services failed to process the image');
+        } catch (error) {
+          console.error('[OCR] VisionParser ERROR:', error.message);
+          if (error.response) {
+            console.error('[OCR] VisionParser error response:', JSON.stringify(error.response.data, null, 2));
+          }
+          return null;
         }
+      })();
+
+      const optiicPromise = (async () => {
+        try {
+          console.log('[OCR] Starting Optiic API call...');
+          const result = await optiic.process({ url: imageUrl });
+          
+          console.log('[OCR] Optiic response:', JSON.stringify(result, null, 2));
+
+          if (result && result.text && result.text.trim().length > 0) {
+            console.log('[OCR] Optiic SUCCESS - Text length:', result.text.length);
+            return { source: 'Optiic', text: result.text };
+          } else {
+            console.log('[OCR] Optiic returned empty or no text');
+            return null;
+          }
+        } catch (error) {
+          console.error('[OCR] Optiic ERROR:', error.message);
+          return null;
+        }
+      })();
+
+      // Wait for both to complete
+      const results = await Promise.all([visionParserPromise, optiicPromise]);
+      console.log('[OCR] Both APIs completed');
+
+      // Use VisionParser result if available, otherwise Optiic
+      const result = results[0] || results[1];
+
+      if (!result || !result.text) {
+        console.log('[OCR] No text detected by either API');
+        return embeds.warn(message, 'No text detected in the image by either OCR service.');
       }
 
-      // Check if text was detected
-      if (!detectedText || detectedText.trim().length === 0) {
-        return embeds.warn(message, 'No text detected in the image.');
-      }
+      console.log('[OCR] Using result from:', result.source);
+      console.log('[OCR] Final text:', result.text.substring(0, 100) + '...');
 
       // Reply with just the text (no embed)
-      return message.reply(detectedText.length > 2000 ? detectedText.substring(0, 1997) + '...' : detectedText);
+      return message.reply(result.text.length > 2000 ? result.text.substring(0, 1997) + '...' : result.text);
 
     } catch (error) {
-      console.error('OCR Error:', error);
+      console.error('[OCR] Fatal error:', error);
       return embeds.deny(message, `An error occurred: ${error.message}`);
     }
   }
