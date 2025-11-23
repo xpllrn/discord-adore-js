@@ -255,12 +255,20 @@ async function logInviteUpdate(auditLogEntry, guild) {
     if (auditLogEntry.action === 40) actionName = 'Invite Created'; // InviteCreate
     if (auditLogEntry.action === 42) actionName = 'Invite Deleted'; // InviteDelete
 
-    const embed = webhookLogger.createServerEventLog({
+    // Extract invite code from changes
+    let inviteCode = null;
+    if (auditLogEntry.changes) {
+      const codeChange = auditLogEntry.changes.find(c => c.key === 'code');
+      inviteCode = codeChange?.new || codeChange?.old;
+    }
+
+    const embed = webhookLogger.createInviteLog({
       action: auditLogEntry.action === 40 ? 'inviteCreate' :
               auditLogEntry.action === 42 ? 'inviteDelete' : 'inviteUpdate',
       executor: auditLogEntry.executor,
       target: auditLogEntry.target,
       changes: auditLogEntry.changes,
+      inviteCode: inviteCode,
       guild: guild
     });
 
@@ -338,6 +346,9 @@ async function logManualMessageDelete(auditLogEntry, guild) {
     // Only log if it's a manual deletion (not by the message author)
     if (auditLogEntry.executor?.id === auditLogEntry.target?.id) return;
 
+    // Skip if the target is a bot
+    if (auditLogEntry.target?.bot) return;
+
     let actionName = 'Message Deleted';
     if (auditLogEntry.action === 73) actionName = 'Messages Bulk Deleted'; // MessageBulkDelete
 
@@ -349,7 +360,7 @@ async function logManualMessageDelete(auditLogEntry, guild) {
       guild: guild
     });
 
-    await webhookLogger.sendLog(guild.id, 'moderator', embed);
+    await webhookLogger.sendLog(guild.id, 'message', embed);
   } catch (error) {
     // Silent fail to avoid infinite loops
   }

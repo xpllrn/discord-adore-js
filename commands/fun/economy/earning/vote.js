@@ -65,7 +65,7 @@ module.exports = {
 
         // Check if user has actually voted on Top.gg
         let hasVoted = false;
-
+        
         try {
           const apiUrl = `https://top.gg/api/bots/${BOT_ID}/check?userId=${userId}`;
           const response = await axios.get(apiUrl, {
