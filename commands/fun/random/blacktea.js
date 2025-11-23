@@ -177,8 +177,8 @@ async function startGame(client, message) {
         // Check if player has quit
         if (!playerSet.has(currentPlayer.id)) {
           const quitEmbed = new EmbedBuilder()
-            .setColor(colors.embed)
-            .setDescription(`:wave: <@${currentPlayer.id}> has left the game!`)
+            .setColor(colors.error)
+            .setDescription(`${currentPlayer.username} **left** the game early`)
           
           await message.channel.send({ embeds: [quitEmbed] });
           
@@ -195,7 +195,7 @@ async function startGame(client, message) {
         const currentLives = playerLives.get(currentPlayer.id);
 
         // Send challenge without embed
-        const challengeMsg = await message.channel.send(`<@${currentPlayer.id}> ${emojis.wordtea} Your word must contain: **${letterCombo.toUpperCase()}**`);
+        const challengeMsg = await message.channel.send(`${emojis.wordtea} <@${currentPlayer.id}> Your word must contain: **${letterCombo.toUpperCase()}**`);
 
         // Wait for response with custom time window for unlimited tries
         const filter = m => m.author.id === currentPlayer.id;
@@ -237,15 +237,15 @@ async function startGame(client, message) {
             playerLives.set(currentPlayer.id, newLives);
 
             const lostLifeEmbed = new EmbedBuilder()
-              .setColor(colors.embed)
-              .setDescription(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`)
+              .setColor(colors.error)
+              .setDescription(`:boom: <@${currentPlayer.id}> Time's up, you have lost **a life** with only **${newLives} ${newLives === 1 ? 'life' : 'lives'}** left.`)
             
             await message.channel.send({ embeds: [lostLifeEmbed] });
 
             if (newLives <= 0) {
               const eliminatedEmbed = new EmbedBuilder()
-                .setColor(colors.embed)
-                .setDescription(`:skull: <@${currentPlayer.id}> has been eliminated!`)
+                .setColor(colors.error)
+                .setDescription(`${currentPlayer.username} has been **eliminated due** to no life`)
               
               await message.channel.send({ embeds: [eliminatedEmbed] });
               
@@ -317,25 +317,27 @@ async function startGame(client, message) {
         .sort((a, b) => b.points - a.points);
 
       // Build leaderboard message
-      let leaderboardText = '**Game Over!**\n\n';
+      let leaderboardText = '**Blacktea leaderboard**\n';
       leaderboard.forEach((entry, index) => {
         let prefix = '';
         if (index === 0) {
-          prefix = `${emojis.gold} `;
+          prefix = `${emojis.gold}`;
         } else if (index === 1) {
-          prefix = `${emojis.silver} `;
+          prefix = `${emojis.silver}`;
         } else if (index === 2) {
-          prefix = `${emojis.bronze} `;
+          prefix = `${emojis.bronze}`;
         } else {
-          prefix = `\`${index + 1}\` `;
+          prefix = `\`${index + 1}\``;
         }
         
-        leaderboardText += `${prefix}**${entry.user.username}** - ${entry.points} points\n`;
+        leaderboardText += `${prefix} ${entry.user.username} - ${entry.points} points\n`;
       });
 
+      const winner = leaderboard[0];
       const leaderboardEmbed = new EmbedBuilder()
         .setColor(colors.embed)
-        .setDescription(leaderboardText);
+        .setDescription(leaderboardText)
+        .setFooter({ text: `Game ended, ${winner.user.username} is the winner` });
       
       await message.channel.send({ embeds: [leaderboardEmbed] });
 
