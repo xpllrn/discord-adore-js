@@ -1,8 +1,12 @@
-const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
-const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+const axios = require('axios');
+const FormData = require('form-data');
+const { fetch } = require('undici');
 const Optiic = require('optiic');
+
+const VISIONPARSER_API_KEY=YOUR_KEY_HERE
+const OPTIIC_API_KEY=YOUR_KEY_HERE
 
 const optiic = new Optiic({
   apiKey: 'YOUR_API_KEY'
@@ -56,32 +60,64 @@ module.exports = {
       return runHelpCommand(message, 'ocr');
     }
 
+    let detectedText = null;
+
     try {
       message.channel.sendTyping();
 
-      // Process image with Optiic
-      const result = await optiic.process({ url: imageUrl });
+      // Try VisionParser API first
+      try {
+        // Download the image
+        const imageResponse = await fetch(imageUrl);
+        
+        if (!imageResponse.ok) {
+          throw new Error('Failed to download image');
+        }
+
+        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('file', imageBuffer, {
+          filename: 'image.png',
+          contentType: 'image/png'
+        });
+        formData.append('response_type', 'simple');
+
+        // Send to VisionParser API
+        const response = await axios.post('https://api.visionparser.com/parse/image/file', formData, {
+          headers: {
+            ...formData.getHeaders(),
+            'api_key': VISIONPARSER_API_KEY=YOUR_KEY_HERE
+          },
+          timeout: 10000
+        });
+
+        if (response.data && response.data.text && response.data.text.trim().length > 0) {
+          detectedText = response.data.text;
+        }
+      } catch (visionError) {
+        console.log('VisionParser failed, trying Optiic fallback:', visionError.message);
+        
+        // Fallback to Optiic API
+        try {
+          const result = await optiic.process({ url: imageUrl });
+          if (result && result.text && result.text.trim().length > 0) {
+            detectedText = result.text;
+          }
+        } catch (optiicError) {
+          console.error('Optiic fallback also failed:', optiicError.message);
+          throw new Error('Both OCR services failed to process the image');
+        }
+      }
 
       // Check if text was detected
-      if (!result || !result.text || result.text.trim().length === 0) {
+      if (!detectedText || detectedText.trim().length === 0) {
         return embeds.warn(message, 'No text detected in the image.');
       }
 
-      const detectedText = result.text;
-
-      // Create embed with results
-      const embed = new EmbedBuilder()
-        .setColor(config.colors.success)
-        .setAuthor({
-          name: message.member.displayName,
-          iconURL: message.member.displayAvatarURL({ dynamic: true })
-        })
-        .setTitle('📝 OCR Results')
-        .setDescription(detectedText.length > 4000 ? detectedText.substring(0, 4000) + '...' : detectedText)
-        .setThumbnail(imageUrl)
-        .setFooter({ text: `Confidence: ${result.confidence ? (result.confidence * 100).toFixed(1) + '%' : 'N/A'}` });
-
-      return message.channel.send({ embeds: [embed] });
+      // Reply with just the text (no embed)
+      return message.reply(detectedText.length > 2000 ? detectedText.substring(0, 1997) + '...' : detectedText);
 
     } catch (error) {
       console.error('OCR Error:', error);
