@@ -19,7 +19,10 @@ module.exports = {
     // Check for image attachment
     if (message.attachments.size > 0) {
       const attachment = message.attachments.first();
-      if (attachment.contentType && attachment.contentType.startsWith('image/')) {
+      // Check if it's an image by contentType or file extension
+      const isImage = (attachment.contentType && attachment.contentType.startsWith('image/')) ||
+                      /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(attachment.name);
+      if (isImage) {
         imageUrl = attachment.url;
       }
     }
@@ -54,14 +57,22 @@ module.exports = {
     try {
       message.channel.sendTyping();
 
+      // Download the image and convert to base64
+      const imageResponse = await fetch(imageUrl);
+      
+      if (!imageResponse.ok) {
+        return embeds.warn(message, 'Failed to download the image. Please make sure the URL is valid and accessible.');
+      }
+
+      const imageBuffer = await imageResponse.arrayBuffer();
+      const base64Image = Buffer.from(imageBuffer).toString('base64');
+
       // Prepare the request to Google Cloud Vision API
       const requestBody = {
         requests: [
           {
             image: {
-              source: {
-                imageUri: imageUrl
-              }
+              content: base64Image
             },
             features: [
               {
@@ -85,7 +96,10 @@ module.exports = {
       );
 
       if (!response.ok) {
-        return embeds.warn(message, 'Failed to process the image. Please make sure the URL is valid and accessible.');
+        const errorText = await response.text();
+        console.error('Google Vision API Error:', response.status, errorText);
+        const errorData = JSON.parse(errorText).catch(() => ({}));
+        return embeds.warn(message, `API Error (${response.status}): ${errorData.error?.message || 'Failed to process the image'}`);
       }
 
       const data = await response.json();
@@ -120,7 +134,7 @@ module.exports = {
 
     } catch (error) {
       console.error('OCR Error:', error);
-      return embeds.deny(message, 'An error occurred while processing the image. Please try again later.');
+      return embeds.deny(message, `An error occurred: ${error.message}`);
     }
   }
 };
