@@ -2,9 +2,11 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
-const { fetch } = require('undici');
+const Optiic = require('optiic');
 
-const GOOGLE_API_KEY=YOUR_KEY_HERE
+const optiic = new Optiic({
+  apiKey: 'YOUR_API_KEY'
+});
 
 module.exports = {
   name: "ocr",
@@ -57,66 +59,15 @@ module.exports = {
     try {
       message.channel.sendTyping();
 
-      // Download the image and convert to base64
-      const imageResponse = await fetch(imageUrl);
-      
-      if (!imageResponse.ok) {
-        return embeds.warn(message, 'Failed to download the image. Please make sure the URL is valid and accessible.');
-      }
+      // Process image with Optiic
+      const result = await optiic.process({ url: imageUrl });
 
-      const imageBuffer = await imageResponse.arrayBuffer();
-      const base64Image = Buffer.from(imageBuffer).toString('base64');
-
-      // Prepare the request to Google Cloud Vision API
-      const requestBody = {
-        requests: [
-          {
-            image: {
-              content: base64Image
-            },
-            features: [
-              {
-                type: 'TEXT_DETECTION',
-                maxResults: 1
-              }
-            ]
-          }
-        ]
-      };
-
-      const response = await fetch(
-        `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_API_KEY=YOUR_KEY_HERE
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestBody)
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Google Vision API Error:', response.status, errorText);
-        const errorData = JSON.parse(errorText).catch(() => ({}));
-        return embeds.warn(message, `API Error (${response.status}): ${errorData.error?.message || 'Failed to process the image'}`);
-      }
-
-      const data = await response.json();
-
-      // Check for errors
-      if (data.responses[0].error) {
-        return embeds.warn(message, `OCR Error: ${data.responses[0].error.message}`);
-      }
-
-      // Extract text
-      const textAnnotations = data.responses[0].textAnnotations;
-      
-      if (!textAnnotations || textAnnotations.length === 0) {
+      // Check if text was detected
+      if (!result || !result.text || result.text.trim().length === 0) {
         return embeds.warn(message, 'No text detected in the image.');
       }
 
-      const detectedText = textAnnotations[0].description;
+      const detectedText = result.text;
 
       // Create embed with results
       const embed = new EmbedBuilder()
@@ -128,7 +79,7 @@ module.exports = {
         .setTitle('📝 OCR Results')
         .setDescription(detectedText.length > 4000 ? detectedText.substring(0, 4000) + '...' : detectedText)
         .setThumbnail(imageUrl)
-        .setFooter({ text: `Detected ${textAnnotations.length - 1} text blocks` });
+        .setFooter({ text: `Confidence: ${result.confidence ? (result.confidence * 100).toFixed(1) + '%' : 'N/A'}` });
 
       return message.channel.send({ embeds: [embed] });
 
