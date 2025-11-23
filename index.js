@@ -208,14 +208,14 @@ client.login(config.bot.token)
 
 // Auto-start selfbot when main bot is ready
 client.once('ready', async () => {
-  // Start GitHub webhook server
+  // Start webhook server (handles both GitHub and Top.gg)
   try {
     const GitHubWebhook = require('./webhooks/github');
     const githubWebhook = new GitHubWebhook(client);
     await githubWebhook.start();
     global.githubWebhook = githubWebhook;
   } catch (error) {
-    logger.console.error('❌ Failed to start GitHub webhook:', error.message);
+    logger.console.error('❌ Failed to start webhook server:', error.message);
   }
 });
 

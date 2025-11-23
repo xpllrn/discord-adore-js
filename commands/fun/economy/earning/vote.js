@@ -34,9 +34,9 @@ module.exports = {
       const userService = getService('user');
       const userId = message.author.id;
 
-      // Top.gg configuration - hardcoded to avoid env loading issues
-      const TOPGG_API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfdCI6Ijc3MTI1NTgzMTAyMTk0NDgzMiIsImlkIjoiNzcwNTY0MDIwMjk0NjMxNDI0IiwiaWF0IjoxNzYxNzE4NTE5fQ.Qd5Adqx-NhtIEldO5PsYrQat8iQvNVuqyTYXC96f1Qk';
-      const BOT_ID = client.user?.id || '1431062059260575825';
+      // Top.gg configuration
+      const TOPGG_API_TOKEN = process.env.TOPGG_API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfdCI6Ijc4MDQ3MTA0MTc1NzMwNjg4MCIsImlkIjoiNzcwNTY0MDIwMjk0NjMxNDI0IiwiaWF0IjoxNzYzOTE1NTk2fQ.U0wM9atxsmZNB6YNBogXJC-NDudbAxwhSQqbQXLamjk';
+      const BOT_ID = client.user?.id || '1439529198325596172';
       const VOTE_REWARD = 100000;
       const VOTE_COOLDOWN = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 

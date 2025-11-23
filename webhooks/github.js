@@ -9,6 +9,7 @@ class GitHubWebhook {
     this.port = process.env.GITHUB_WEBHOOK_PORT || 3000;
     this.secret = process.env.GITHUB_WEBHOOK_SECRET;
     this.channelId = process.env.GITHUB_WEBHOOK_CHANNEL_ID;
+    this.voteChannelId = process.env.TOPGG_VOTE_CHANNEL_ID;
     
     this.setupMiddleware();
     this.setupRoutes();
@@ -54,6 +55,29 @@ class GitHubWebhook {
         res.status(200).json({ received: true });
       } catch (error) {
         console.error('GitHub webhook error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
+    // Top.gg vote webhook
+    this.app.post('/vote', async (req, res) => {
+      try {
+        const authHeader = req.headers['authorization'];
+        const expectedAuth = process.env.TOPGG_LEGACY_TOKEN;
+        
+        if (expectedAuth && authHeader !== expectedAuth) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { user, bot, type, isWeekend } = req.body;
+        
+        if (type === 'upvote') {
+          await this.handleVote(user, isWeekend);
+        }
+
+        res.status(200).json({ success: true });
+      } catch (error) {
+        console.error('Top.gg webhook error:', error);
         res.status(500).json({ error: 'Internal server error' });
       }
     });
@@ -105,6 +129,47 @@ class GitHubWebhook {
       .setTimestamp();
 
     await this.sendToChannel(embed);
+  }
+
+  async handleVote(userId, isWeekend) {
+    try {
+      const { getService } = require('@services');
+      const userService = getService('user');
+      
+      const voteReward = 100000;
+      const reward = isWeekend ? voteReward * 2 : voteReward;
+      
+      await userService.updateWallet(userId, reward);
+      await userService.updateVoteTimestamp(userId);
+      
+      const embed = new EmbedBuilder()
+        .setColor('#242429')
+        .setTitle('Thank you for voting!')
+        .setDescription(`You received **${Math.floor(reward).toLocaleString()}** coins for voting!${isWeekend ? ' (Weekend Bonus!)' : ''}\n\nYou can vote again in 12 hours.`)
+        .setTimestamp();
+
+      await this.sendVoteNotification(userId, embed);
+
+      console.log(`✅ Vote processed: User ${userId} received ${reward} coins`);
+    } catch (error) {
+      console.error('Error handling vote:', error);
+    }
+  }
+
+  async sendVoteNotification(userId, embed) {
+    if (!this.voteChannelId) {
+      console.warn('⚠️  No TOPGG_VOTE_CHANNEL_ID configured');
+      return;
+    }
+
+    try {
+      const channel = await this.client.channels.fetch(this.voteChannelId);
+      if (channel?.isTextBased()) {
+        await channel.send({ content: `<@${userId}>`, embeds: [embed] });
+      }
+    } catch (error) {
+      console.error('❌ Failed to send vote notification:', error.message);
+    }
   }
 
   async sendToChannel(embed) {

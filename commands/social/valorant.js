@@ -158,8 +158,8 @@ module.exports = {
         });
 
       // Build description
-      let description = `[${username}#${tagline}](${url})\n**Account Level** ${account_level || 'not sure'}`;
-
+      let description = `**Account Level** ${account_level || 'not sure'}`;
+        
       if (currenttierpatched || elo) {
         description += `\n**Current Rank** ${currenttierpatched || 'Unranked'}`;
         description += `\n**Rating** ${elo || '0'} RR`;
