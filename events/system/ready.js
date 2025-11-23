@@ -190,7 +190,7 @@ async function loadBotStatusFromDatabase(client) {
 
   // Set bot status
   client.user.setPresence({
-    activities: [{ name: '/help || free premium till 2026', type: ActivityType.Custom }],
+    activities: [{ name: '/help || free premium', type: ActivityType.Custom }],
     status: 'dnd'
   });
 }

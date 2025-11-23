@@ -898,53 +898,6 @@ class WebhookLogger {
       } else {
         embed.setDescription(`Invite created by ${executor ? `<@${executor.id}>` : '**Unknown**'}`);
       }
-
-      // Add invite details from changes
-      if (changes && changes.length > 0) {
-        const channelChange = changes.find(c => c.key === 'channel_id');
-        const maxAgeChange = changes.find(c => c.key === 'max_age');
-        const maxUsesChange = changes.find(c => c.key === 'max_uses');
-
-        if (channelChange?.new) {
-          embed.addFields({
-            name: '**Channel**',
-            value: `<#${channelChange.new}>`,
-            inline: true
-          });
-        }
-
-        if (maxUsesChange?.new) {
-          embed.addFields({
-            name: '**Max Uses**',
-            value: maxUsesChange.new === 0 ? 'Unlimited' : `${maxUsesChange.new}`,
-            inline: true
-          });
-        }
-
-        if (maxAgeChange?.new) {
-          const seconds = maxAgeChange.new;
-          let duration = 'Never';
-          if (seconds > 0) {
-            const days = Math.floor(seconds / 86400);
-            const hours = Math.floor((seconds % 86400) / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            
-            if (days > 0) {
-              duration = `${days}d ${hours}h`;
-            } else if (hours > 0) {
-              duration = `${hours}h ${minutes}m`;
-            } else {
-              duration = `${minutes}m`;
-            }
-          }
-          
-          embed.addFields({
-            name: '**Expires**',
-            value: duration,
-            inline: true
-          });
-        }
-      }
     } else if (action === 'inviteDelete') {
       embed.setAuthor({
         name: 'Invite Deleted',
