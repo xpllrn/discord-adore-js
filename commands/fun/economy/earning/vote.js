@@ -60,7 +60,7 @@ module.exports = {
           const nextVote = new Date(lastVote.getTime() + VOTE_COOLDOWN);
           const unixTimestamp = Math.floor(nextVote.getTime() / 1000);
 
-          return embeds.warn(message, `You can vote again <t:${unixTimestamp}:R>\n\nYou'll receive **${formatCurrency(VOTE_REWARD)}** coins when you vote!`);
+          return embeds.warn(message, `You can vote <t:${unixTimestamp}:R>, You'll receive **${formatCurrency(VOTE_REWARD)}** coins when you vote!`);
         }
 
         // Check if user has actually voted on Top.gg
@@ -77,7 +77,7 @@ module.exports = {
 
           hasVoted = response.data.voted === 1;
         } catch (error) {
-          return embeds.deny(message, 'Unable to verify your vote status. Please try again later.');
+          return embeds.deny(message, 'I was unable to **verify your vote** status.');
         }
 
         if (hasVoted) {
@@ -133,8 +133,8 @@ module.exports = {
           .setColor(colors.info)
           .setDescription(`**Vote for adore and Claim Your Daily Vote Rewards**`)
           .addFields(
-            { name: 'Reward', value: `\`${formatCurrency(VOTE_REWARD)}\``, inline: true },
-            { name: 'Your Votes', value: `\`${totalVotes}\``, inline: true },
+            { name: '**Reward**', value: `**${formatCurrency(VOTE_REWARD)}** coins`, inline: true },
+            { name: '**Your Votes**', value: `**${totalVotes}** votes`, inline: true },
             cooldownField
           )
           .setFooter({ text: `Use ${await getGuildPrefix(message)}vote claim to claim your reward` });

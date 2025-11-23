@@ -145,7 +145,7 @@ class GitHubWebhook {
       const embed = new EmbedBuilder()
         .setColor('#242429')
         .setTitle('Thank you for voting!')
-        .setDescription(`You received **${Math.floor(reward).toLocaleString()}** coins for voting!${isWeekend ? ' (Weekend Bonus!)' : ''}\n\nYou can vote again in 12 hours.`)
+        .setDescription(`You received **${Math.floor(reward).toLocaleString()}** coins for voting!${isWeekend ? ' **(Weekend Bonus!)**' : ''}\n\nYou can vote again in **12 hours**.`)
         .setTimestamp();
 
       await this.sendVoteNotification(userId, embed);
