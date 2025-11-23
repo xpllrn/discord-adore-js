@@ -130,7 +130,14 @@ module.exports = {
     robloxFriendship: '<:friendship:1441832459078602762>',
     robloxCombat: '<:combat:1441832456985514165>',
     robloxBricksmith: '<:bricksmith:1441832454750212146>',
-    robloxBloxxer: '<:bloxxer:1441832452283961354>'
+    robloxBloxxer: '<:bloxxer:1441832452283961354>',
+
+    // BlackTea Game Emojis
+    blacktea: '<:empty:1442011316897321041>',
+    wordtea: '<:wordtea:1442011593771716698>',
+    gold: '<:Gold:1442013191331643444>',
+    silver: '<:silver:1442013193537847478>',
+    bronze: '<:bronze:1442013188580315158>'
 
   },
 

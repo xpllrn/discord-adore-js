@@ -1,6 +1,7 @@
 const { embeds } = require('../../../core/embeds');
-const { EmbedBuilder } = require('discord.js');
-const { colors } = require('../../../config/setup');
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { colors, emojis } = require('../../../config/setup');
+const { hasDiscordPermission } = require('../../../utils/permissions');
 const fs = require('fs');
 const path = require('path');
 
@@ -33,14 +34,76 @@ function isValidWord(word) {
 
 const activeGames = new Set();
 const usedWords = new Map(); // Track used words per game
+const gameSettings = new Map(); // Store game settings per guild (response time)
+const activePlayers = new Map(); // Track active players per channel
 
 module.exports = {
   name: "blacktea",
   aliases: ['bt', 'wordgame'],
   description: 'Play a word challenge game with friends',
-  syntax: 'blacktea',
+  syntax: 'blacktea <start|end|exit|quit|time>',
   permission: 'user',
+  isGroupCommand: true,
   run: async (client, message, args) => {
+    const subcommand = args[0]?.toLowerCase();
+
+    // If no subcommand or 'start', start the game
+    if (!subcommand || subcommand === 'start') {
+      // Check if game is already running in this channel
+      if (activeGames.has(message.channel.id)) {
+        return embeds.warn(message, 'A blacktea game is **already running** in this channel!');
+      }
+      
+      return startGame(client, message);
+    }
+
+    // End subcommand
+    if (subcommand === 'end') {
+      if (!activeGames.has(message.channel.id)) {
+        return embeds.warn(message, 'No blacktea game is **running** in this channel!');
+      }
+
+      activeGames.delete(message.channel.id);
+      activePlayers.delete(message.channel.id);
+      return embeds.success(message, 'Blacktea game has been ended!');
+    }
+
+    // Exit/Quit subcommand - leave the game
+    if (subcommand === 'exit' || subcommand === 'quit') {
+      if (!activeGames.has(message.channel.id)) {
+        return embeds.warn(message, 'No blacktea game is **running** in this channel!');
+      }
+
+      const players = activePlayers.get(message.channel.id);
+      if (!players || !players.has(message.author.id)) {
+        return embeds.warn(message, 'You are not in the current game!');
+      }
+
+      // Mark player as quit
+      players.delete(message.author.id);
+      return embeds.success(message, 'You have left the blacktea game!');
+    }
+
+    // Time subcommand - set response time (guild manager only)
+    if (subcommand === 'time') {
+      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) {
+        return;
+      }
+
+      const timeValue = parseInt(args[1]);
+      if (!timeValue || isNaN(timeValue) || timeValue < 5 || timeValue > 60) {
+        return embeds.warn(message, 'Please provide a valid time between **5-60 seconds**: `,blacktea time 15`');
+      }
+
+      gameSettings.set(message.guild.id, { responseTime: timeValue });
+      return embeds.success(message, `Blacktea response time set to **${timeValue} seconds**!`);
+    }
+
+    // Invalid subcommand
+    return embeds.warn(message, 'Invalid subcommand! Use `blacktea start`, `blacktea end`, `blacktea exit`, or `blacktea time <5-60>`');
+  }
+};
+async function startGame(client, message) {
     // Check if game is already running in this channel
     if (activeGames.has(message.channel.id)) {
       return embeds.warn(message, 'A blacktea game is already running in this channel!');
@@ -48,13 +111,17 @@ module.exports = {
 
     activeGames.add(message.channel.id);
 
+    // Get custom response time or default to 10 seconds
+    const settings = gameSettings.get(message.guild.id) || { responseTime: 10 };
+    const responseTime = settings.responseTime;
+
     try {
       // Send join message
       const joinEmbed = new EmbedBuilder()
-        .setColor(colors.info || '#7985cd')
-        .setTitle('🍵 BlackTea Matchmaking')
-        .setDescription('React with ✅ to join the game!\n\nEach player will take turns guessing words containing specific letters.\nRun out of time or make incorrect guesses, and you lose lives. The last player standing wins!')
-        .setFooter({ text: 'Game starts in 30 seconds' })
+        .setColor(colors.embed)
+        .setTitle('The Black Teaword will start!')
+        .setDescription(`To participate, **react** on \`✅\` \n\n\`Goal:\` You have **${responseTime} seconds** to write a word containing the group of **2-3 letters** indicated. You lose **1 HP** when the time is up.\n\n`)
+        .setFooter({ text: 'Use ,blacktea quit to abandon' });
 
       const joinMessage = await message.channel.send({ embeds: [joinEmbed] });
       await joinMessage.react('✅');
@@ -70,19 +137,17 @@ module.exports = {
       if (players.size === 0) {
         activeGames.delete(message.channel.id);
         const cancelEmbed = new EmbedBuilder()
-          .setColor(colors.error || '#ff0000')
-          .setTitle('🍵 BlackTea Matchmaking')
+          .setColor(colors.embed)
           .setDescription('No one joined! Game cancelled.')
-        return joinMessage.edit({ embeds: [cancelEmbed] });
+        return message.channel.send({ embeds: [cancelEmbed] });
       }
 
       // Start the game
       const startEmbed = new EmbedBuilder()
-        .setColor(colors.success || '#00ff00')
-        .setTitle('🍵 BlackTea Match Started!')
+        .setColor(colors.embed)
         .setDescription(`**${players.size}** player(s) joined! Good luck!`)
       
-      await joinMessage.edit({ embeds: [startEmbed] });
+      await message.channel.send({ embeds: [startEmbed] });
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Game loop with point system
@@ -90,9 +155,17 @@ module.exports = {
       const gameId = message.channel.id + Date.now();
       usedWords.set(gameId, new Set());
       
-      // Initialize player lives (everyone starts with 2 lives)
+      // Track active players for quit functionality
+      const playerSet = new Set(playersArray.map(p => p.id));
+      activePlayers.set(message.channel.id, playerSet);
+      
+      // Initialize player lives (everyone starts with 2 lives) and points
       const playerLives = new Map();
-      playersArray.forEach(player => playerLives.set(player.id, 2));
+      const playerPoints = new Map();
+      playersArray.forEach(player => {
+        playerLives.set(player.id, 2);
+        playerPoints.set(player.id, 0);
+      });
       
       let currentPlayerIndex = 0;
       let roundsPlayed = 0;
@@ -100,25 +173,56 @@ module.exports = {
 
       while (playersArray.length > 0) {
         const currentPlayer = playersArray[currentPlayerIndex];
+        
+        // Check if player has quit
+        if (!playerSet.has(currentPlayer.id)) {
+          const quitEmbed = new EmbedBuilder()
+            .setColor(colors.embed)
+            .setDescription(`:wave: <@${currentPlayer.id}> has left the game!`)
+          
+          await message.channel.send({ embeds: [quitEmbed] });
+          
+          playerLives.delete(currentPlayer.id);
+          playersArray.splice(currentPlayerIndex, 1);
+          
+          if (currentPlayerIndex >= playersArray.length && playersArray.length > 0) {
+            currentPlayerIndex = 0;
+          }
+          continue;
+        }
+        
         const letterCombo = getRandomCombo();
         const currentLives = playerLives.get(currentPlayer.id);
 
-        // Send challenge
-        const challengeEmbed = new EmbedBuilder()
-          .setColor('#7985cd')
-          .setDescription(`:dart: <@${currentPlayer.id}>, your word must contain: **${letterCombo}**\n\nYou have **10 seconds** to respond!`)
-        
-        await message.channel.send({ embeds: [challengeEmbed] });
+        // Send challenge without embed
+        const challengeMsg = await message.channel.send(`<@${currentPlayer.id}> ${emojis.wordtea} Your word must contain: **${letterCombo.toUpperCase()}**`);
 
-        // Wait for response with 10 second window for unlimited tries
+        // Wait for response with custom time window for unlimited tries
         const filter = m => m.author.id === currentPlayer.id;
         const startTime = Date.now();
-        const timeLimit = 10000;
+        const timeLimit = responseTime * 1000;
         let correctAnswer = false;
+        let countdownStarted = false;
         const gameWords = usedWords.get(gameId);
 
         while (!correctAnswer && (Date.now() - startTime) < timeLimit) {
           const remainingTime = timeLimit - (Date.now() - startTime);
+          
+          // Add countdown reactions when 3 seconds left
+          if (!countdownStarted && remainingTime <= 3000) {
+            countdownStarted = true;
+            (async () => {
+              try {
+                await challengeMsg.react('3️⃣');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await challengeMsg.react('2️⃣');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await challengeMsg.react('1️⃣');
+              } catch (err) {
+                // Ignore reaction errors
+              }
+            })();
+          }
           
           const collected = await message.channel.awaitMessages({ 
             filter, 
@@ -133,14 +237,14 @@ module.exports = {
             playerLives.set(currentPlayer.id, newLives);
 
             const lostLifeEmbed = new EmbedBuilder()
-              .setColor(colors.error || '#ff0000')
+              .setColor(colors.embed)
               .setDescription(`:boom: <@${currentPlayer.id}> lost a life (timeout). **${newLives}** ${newLives === 1 ? 'life' : 'lives'} left.`)
             
             await message.channel.send({ embeds: [lostLifeEmbed] });
 
             if (newLives <= 0) {
               const eliminatedEmbed = new EmbedBuilder()
-                .setColor('#000000')
+                .setColor(colors.embed)
                 .setDescription(`:skull: <@${currentPlayer.id}> has been eliminated!`)
               
               await message.channel.send({ embeds: [eliminatedEmbed] });
@@ -169,6 +273,11 @@ module.exports = {
             // Correct answer!
             gameWords.add(userAnswer);
             await collected.first().react('✅');
+            
+            // Award points based on word length
+            const points = userAnswer.length;
+            playerPoints.set(currentPlayer.id, playerPoints.get(currentPlayer.id) + points);
+            
             correctAnswer = true;
             currentPlayerIndex = (currentPlayerIndex + 1) % playersArray.length;
           }
@@ -195,26 +304,40 @@ module.exports = {
       
       // Cleanup
       usedWords.delete(gameId);
+      activePlayers.delete(message.channel.id);
 
-      // Game over - announce winner
-      if (playersArray.length === 1) {
-        const winner = playersArray[0];
-        const finalLives = playerLives.get(winner.id);
+      // Create leaderboard with all players sorted by points
+      const allPlayers = Array.from(players.values());
+      const leaderboard = allPlayers
+        .map(player => ({
+          user: player,
+          points: playerPoints.get(player.id) || 0,
+          lives: playerLives.get(player.id) || 0
+        }))
+        .sort((a, b) => b.points - a.points);
+
+      // Build leaderboard message
+      let leaderboardText = '**Game Over!**\n\n';
+      leaderboard.forEach((entry, index) => {
+        let prefix = '';
+        if (index === 0) {
+          prefix = `${emojis.gold} `;
+        } else if (index === 1) {
+          prefix = `${emojis.silver} `;
+        } else if (index === 2) {
+          prefix = `${emojis.bronze} `;
+        } else {
+          prefix = `\`${index + 1}\` `;
+        }
         
-        const winnerEmbed = new EmbedBuilder()
-          .setColor('#FFD700')
-          .setTitle(':trophy: BlackTea Champion!')
-          .setDescription(`<@${winner.id}> wins with **${finalLives}** ${finalLives === 1 ? 'life' : 'lives'} remaining!`)
-        
-        await message.channel.send({ embeds: [winnerEmbed] });
-      } else {
-        const gameOverEmbed = new EmbedBuilder()
-          .setColor('#000000')
-          .setTitle(':skull: Game Over!')
-          .setDescription('Everyone was eliminated! No winner this time.')
-        
-        await message.channel.send({ embeds: [gameOverEmbed] });
-      }
+        leaderboardText += `${prefix}**${entry.user.username}** - ${entry.points} points\n`;
+      });
+
+      const leaderboardEmbed = new EmbedBuilder()
+        .setColor(colors.embed)
+        .setDescription(leaderboardText);
+      
+      await message.channel.send({ embeds: [leaderboardEmbed] });
 
     } catch (error) {
       console.error('Blacktea game error:', error);
@@ -222,5 +345,4 @@ module.exports = {
     } finally {
       activeGames.delete(message.channel.id);
     }
-  }
-};
+}
