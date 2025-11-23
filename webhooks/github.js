@@ -9,8 +9,7 @@ class GitHubWebhook {
     this.port = process.env.GITHUB_WEBHOOK_PORT || 3000;
     this.secret = process.env.GITHUB_WEBHOOK_SECRET;
     this.channelId = process.env.GITHUB_WEBHOOK_CHANNEL_ID;
-    this.voteChannelId = process.env.TOPGG_VOTE_CHANNEL_ID;
-    
+
     this.setupMiddleware();
     this.setupRoutes();
   }
@@ -25,13 +24,13 @@ class GitHubWebhook {
 
   verifySignature(req) {
     if (!this.secret) return true;
-    
+
     const signature = req.headers['x-hub-signature-256'];
     if (!signature) return false;
 
     const hmac = crypto.createHmac('sha256', this.secret);
     const digest = 'sha256=' + hmac.update(req.rawBody).digest('hex');
-    
+
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
   }
 
@@ -47,7 +46,7 @@ class GitHubWebhook {
         }
 
         const event = req.headers['x-github-event'];
-        
+
         if (event === 'push') {
           await this.handlePush(req.body);
         }
@@ -62,22 +61,31 @@ class GitHubWebhook {
     // Top.gg vote webhook
     this.app.post('/vote', async (req, res) => {
       try {
+        console.log('📥 Received vote webhook request');
+        console.log('   Headers:', JSON.stringify(req.headers, null, 2));
+        console.log('   Body:', JSON.stringify(req.body, null, 2));
+
         const authHeader = req.headers['authorization'];
-        const expectedAuth = process.env.TOPGG_LEGACY_TOKEN;
-        
+        const expectedAuth = process.env.TOPGG_API_TOKEN;
+
         if (expectedAuth && authHeader !== expectedAuth) {
+          console.warn('⚠️  Vote webhook rejected: Invalid authorization');
+          console.warn(`   Expected: ${expectedAuth?.substring(0, 20)}...`);
+          console.warn(`   Received: ${authHeader?.substring(0, 20)}...`);
           return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const { user, bot, type, isWeekend } = req.body;
-        
+
         if (type === 'upvote') {
           await this.handleVote(user, isWeekend);
+        } else {
+          console.log(`ℹ️  Vote webhook ignored: type = ${type}`);
         }
 
         res.status(200).json({ success: true });
       } catch (error) {
-        console.error('Top.gg webhook error:', error);
+        console.error('❌ Top.gg webhook error:', error);
         res.status(500).json({ error: 'Internal server error' });
       }
     });
@@ -86,40 +94,40 @@ class GitHubWebhook {
   async handlePush(payload) {
     const { repository, commits, ref, compare, sender } = payload;
     const branch = ref.replace('refs/heads/', '');
-    
+
     // Count file changes
     let filesAdded = 0;
     let filesModified = 0;
     let filesRemoved = 0;
-    
+
     commits.forEach(commit => {
       filesAdded += commit.added?.length || 0;
       filesModified += commit.modified?.length || 0;
       filesRemoved += commit.removed?.length || 0;
     });
-    
+
     // Build file changes text
     let fileChanges = [];
     if (filesModified > 0) fileChanges.push(`\u001b[2;45m\u001b[2;31m\u001b[2;47m\u001b[2;41m\u001b[2;37mModified ${filesModified} file${filesModified > 1 ? 's' : ''}\u001b[0m\u001b[2;31m\u001b[2;41m\u001b[0m\u001b[2;31m\u001b[2;47m\u001b[0m\u001b[2;31m\u001b[2;45m\u001b[0m\u001b[2;45m\u001b[0m`);
     if (filesAdded > 0) fileChanges.push(`\u001b[2;45m\u001b[2;31m\u001b[2;47m\u001b[2;41m\u001b[2;37mAdded ${filesAdded} file${filesAdded > 1 ? 's' : ''}\u001b[0m\u001b[2;31m\u001b[2;41m\u001b[0m\u001b[2;31m\u001b[2;47m\u001b[0m\u001b[2;31m\u001b[2;45m\u001b[0m\u001b[2;45m\u001b[0m`);
     if (filesRemoved > 0) fileChanges.push(`\u001b[2;45m\u001b[2;31m\u001b[2;47m\u001b[2;41m\u001b[2;37mRemoved ${filesRemoved} file${filesRemoved > 1 ? 's' : ''}\u001b[0m\u001b[2;31m\u001b[2;41m\u001b[0m\u001b[2;31m\u001b[2;47m\u001b[0m\u001b[2;31m\u001b[2;45m\u001b[0m\u001b[2;45m\u001b[0m`);
-    
+
     // Get the latest commit message
     const latestCommit = commits[commits.length - 1];
     const commitMessage = latestCommit?.message?.split('\n')[0] || 'No commit message';
     const commitUrl = latestCommit?.url?.replace('api.github.com/repos', 'github.com').replace('/commits/', '/commit/') || compare;
-    
+
     // Build description
     let description = `> There had been **${commits.length}** commit${commits.length > 1 ? 's' : ''} to \`${repository.full_name}\`\n`;
     if (fileChanges.length > 0) {
       description += `\`\`\`ansi\n${fileChanges.join(', ')}\n\`\`\``;
     }
     description += `\`\`\`${commitMessage}\`\`\``;
-    
+
     const embed = new EmbedBuilder()
       .setColor('#242429')
-      .setAuthor({ 
-        name: sender.login, 
+      .setAuthor({
+        name: sender.login,
         iconURL: sender.avatar_url,
         url: sender.html_url
       })
@@ -133,15 +141,39 @@ class GitHubWebhook {
 
   async handleVote(userId, isWeekend) {
     try {
+      console.log(`📥 Vote webhook received: User ${userId}, Weekend: ${isWeekend}`);
+
       const { getService } = require('@services');
       const userService = getService('user');
-      
+
       const voteReward = 100000;
       const reward = isWeekend ? voteReward * 2 : voteReward;
-      
-      await userService.updateWallet(userId, reward);
+      const VOTE_COOLDOWN = 12 * 60 * 60 * 1000; // 12 hours
+
+      // Check if user is on cooldown to prevent double-rewarding
+      let gambling;
+      try {
+        gambling = await userService.getGamblingData(userId);
+      } catch (error) {
+        console.error(`❌ Failed to get gambling data for user ${userId}:`, error.message);
+        return;
+      }
+
+      const lastVote = gambling.lastVote ? new Date(gambling.lastVote) : null;
+      const now = new Date();
+
+      // Check if user already claimed recently (prevent webhook spam)
+      if (lastVote && (now.getTime() - lastVote.getTime()) < VOTE_COOLDOWN) {
+        const nextVote = new Date(lastVote.getTime() + VOTE_COOLDOWN);
+        const unixTimestamp = Math.floor(nextVote.getTime() / 1000);
+        console.warn(`⚠️  Vote webhook ignored: User ${userId} is on cooldown until <t:${unixTimestamp}:R>`);
+        return;
+      }
+
+      // Update timestamp FIRST to prevent race conditions
       await userService.updateVoteTimestamp(userId);
-      
+      await userService.updateWallet(userId, reward);
+
       const embed = new EmbedBuilder()
         .setColor('#242429')
         .setTitle('Thank you for voting!')
@@ -150,20 +182,22 @@ class GitHubWebhook {
 
       await this.sendVoteNotification(userId, embed);
 
-      console.log(`✅ Vote processed: User ${userId} received ${reward} coins`);
+      console.log(`✅ Vote processed: User ${userId} received ${reward} coins (Webhook)`);
     } catch (error) {
-      console.error('Error handling vote:', error);
+      console.error('❌ Error handling vote webhook:', error);
     }
   }
 
   async sendVoteNotification(userId, embed) {
-    if (!this.voteChannelId) {
+    const voteChannelId = process.env.TOPGG_VOTE_CHANNEL_ID;
+
+    if (!voteChannelId) {
       console.warn('⚠️  No TOPGG_VOTE_CHANNEL_ID configured');
       return;
     }
 
     try {
-      const channel = await this.client.channels.fetch(this.voteChannelId);
+      const channel = await this.client.channels.fetch(voteChannelId);
       if (channel?.isTextBased()) {
         await channel.send({ content: `<@${userId}>`, embeds: [embed] });
       }

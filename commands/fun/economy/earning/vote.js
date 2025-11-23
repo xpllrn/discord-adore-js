@@ -49,25 +49,30 @@ module.exports = {
         try {
           gambling = await userService.getGamblingData(userId);
         } catch (error) {
+          logger.webhook.error(error, message);
           return embeds.deny(message, 'Unable to access your account data. Please try again later.');
         }
 
         const lastVote = gambling.lastVote ? new Date(gambling.lastVote) : null;
         const now = new Date();
 
-        // Check if user is on cooldown
+        // Check if user is on cooldown FIRST (before API check)
         if (lastVote && (now.getTime() - lastVote.getTime()) < VOTE_COOLDOWN) {
           const nextVote = new Date(lastVote.getTime() + VOTE_COOLDOWN);
           const unixTimestamp = Math.floor(nextVote.getTime() / 1000);
 
+          logger.console.log(`⏰ Vote cooldown: User ${userId} can vote <t:${unixTimestamp}:R>`);
           return embeds.warn(message, `You can vote <t:${unixTimestamp}:R>, You'll receive **${formatCurrency(VOTE_REWARD)}** coins when you vote!`);
         }
 
         // Check if user has actually voted on Top.gg
         let hasVoted = false;
-        
+        let apiCheckFailed = false;
+
         try {
           const apiUrl = `https://top.gg/api/bots/${BOT_ID}/check?userId=${userId}`;
+          logger.console.log(`🔍 Checking vote status for user ${userId}...`);
+
           const response = await axios.get(apiUrl, {
             headers: {
               'Authorization': TOPGG_API_TOKEN
@@ -76,25 +81,42 @@ module.exports = {
           });
 
           hasVoted = response.data.voted === 1;
+          logger.console.log(`✅ Top.gg API check: User ${userId} voted = ${hasVoted}`);
         } catch (error) {
-          return embeds.deny(message, 'I was unable to **verify your vote** status.');
+          logger.webhook.error(error, message);
+          apiCheckFailed = true;
+          logger.console.error(`❌ Top.gg API check failed for user ${userId}:`, error.message);
+          return embeds.deny(message, 'I was unable to **verify your vote** status. Please try again in a moment.');
         }
 
         if (hasVoted) {
-          // User has voted! Give them the reward
+          // User has voted! Update timestamp FIRST to prevent double-claiming
           try {
-            await userService.updateWallet(userId, VOTE_REWARD);
             await userService.updateVoteTimestamp(userId);
+            await userService.updateWallet(userId, VOTE_REWARD);
 
-            return embeds.success(message, `You received **${formatCurrency(VOTE_REWARD)}** coins for voting! come back in **12 hours** `);
+            logger.console.log(`✅ Vote claimed: User ${userId} received ${VOTE_REWARD} coins`);
+            return embeds.success(message, `You received **${formatCurrency(VOTE_REWARD)}** coins for voting! Come back in **12 hours** to vote again!`);
           } catch (rewardError) {
+            logger.webhook.error(rewardError, message);
             return embeds.deny(message, 'You voted successfully, but there was an error giving your reward. Please contact an administrator.');
           }
         } else {
-          // User hasn't voted yet
+          // User hasn't voted yet OR the 12-hour Top.gg window expired
           const voteUrl = `https://top.gg/bot/${BOT_ID}/vote`;
 
-          const embed = embeds.createDeny(message, `You need to vote first before claiming your reward!\n\nClick the button below to vote on Top.gg\n\nAfter voting, use the claim command to get your reward!`);
+          // Check if they voted before but the Top.gg API window expired
+          const timeSinceLastVote = lastVote ? (now.getTime() - lastVote.getTime()) : null;
+          const topggWindowExpired = timeSinceLastVote && timeSinceLastVote >= VOTE_COOLDOWN;
+
+          let errorMessage = `You need to vote first before claiming your reward!\n\nClick the button below to vote on Top.gg\n\nAfter voting, use the claim command to get your reward!`;
+
+          if (topggWindowExpired) {
+            // They voted before, cooldown passed, but Top.gg API says they haven't voted
+            errorMessage = `You can vote again now!\n\nClick the button below to vote on Top.gg\n\nAfter voting, use the claim command to get your reward!`;
+          }
+
+          const embed = embeds.createDeny(message, errorMessage);
 
           const row = new ActionRowBuilder()
             .addComponents(
@@ -104,6 +126,7 @@ module.exports = {
                 .setURL(voteUrl)
             );
 
+          logger.console.log(`❌ Vote claim denied: User ${userId} has not voted (or Top.gg window expired)`);
           return message.channel.send({ embeds: [embed], components: [row] });
         }
       } else {

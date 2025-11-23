@@ -29,7 +29,8 @@ module.exports = {
 
     try {
       switch (category) {
-        case 'invites': {
+        case 'invites':
+        case 'invite': {
           const subcommandInfo = {
             description: 'Manage invite link filtering',
             usage: '{guildprefix}filter invites [on/off]',
@@ -79,15 +80,15 @@ module.exports = {
           };
           return await handleWordsReset(message);
         }
-        case 'ignore': {
+        case 'exempt': {
           const subcommandInfo = {
-            description: 'Manage filter ignore list',
-            usage: '{guildprefix}filter ignore [role/user/channel]',
+            description: 'Manage filter exempt list',
+            usage: '{guildprefix}filter exempt [role/user/channel]',
             aliases: [],
             parameters: ['role', 'user', 'channel'],
-            example: '{guildprefix}filter ignore @Moderator'
+            example: '{guildprefix}filter exempt @Moderator'
           };
-          return await handleWordsIgnore(message, subcommand, args.slice(2));
+          return await handleWordsExempt(message, subcommand, args.slice(2));
         }
         default:
           return runHelpCommand(message, 'filter');
@@ -111,8 +112,8 @@ async function handleInvitesCategory(message, subcommand, args) {
       return await handleInvitesToggle(message, true);
     case 'off':
       return await handleInvitesToggle(message, false);
-    case 'ignore':
-      return await handleInvitesIgnore(message, args);
+    case 'exempt':
+      return await handleInvitesExempt(message, args);
     default:
       return runHelpCommand(message, 'filter');
   }
@@ -249,21 +250,21 @@ async function handleWordsReset(message) {
   }
 }
 
-async function handleWordsIgnore(message, subcommand, args) {
+async function handleWordsExempt(message, subcommand, args) {
   if (!subcommand) {
     return runHelpCommand(message, 'filter');
   }
 
   if (subcommand === 'list') {
-    return await handleWordsIgnoreList(message);
+    return await handleWordsExemptList(message);
   }
 
-  // Handle ignore toggle
+  // Handle exempt toggle
   const allArgs = [subcommand, ...args];
-  return await handleWordsToggleIgnore(message, allArgs);
+  return await handleWordsToggleExempt(message, allArgs);
 }
 
-async function handleWordsIgnoreList(message) {
+async function handleWordsExemptList(message) {
   const rule = await getAutoModRule(message.guild);
 
   if (!rule) {
@@ -275,7 +276,7 @@ async function handleWordsIgnoreList(message) {
   const exemptChannels = rule.exemptChannels || [];
 
   if (exemptRoles.length === 0 && exemptUsers.length === 0 && exemptChannels.length === 0) {
-    return embeds.warn(message, 'No ignored roles, users, or channels found for word filter');
+    return embeds.warn(message, 'No exempted roles, users, or channels found for word filter');
   }
 
   let description = '';
@@ -318,16 +319,16 @@ async function handleWordsIgnoreList(message) {
 
   const embed = new EmbedBuilder()
     .setColor(colors.embed)
-    .setTitle('Word Filter - Ignored List')
+    .setTitle('Word Filter - Exempted List')
     .setDescription(description)
-    .setFooter({ text: `${totalCount} total ignored entr${totalCount === 1 ? 'y' : 'ies'}` });
+    .setFooter({ text: `${totalCount} total exempted entr${totalCount === 1 ? 'y' : 'ies'}` });
 
   return message.channel.send({ embeds: [embed] });
 }
 
-async function handleWordsToggleIgnore(message, args) {
+async function handleWordsToggleExempt(message, args) {
   if (!args[0]) {
-    return embeds.warn(message, 'Please provide a role, user, or channel to toggle ignore for');
+    return embeds.warn(message, 'Please provide a role, user, or channel to toggle exempt for');
   }
 
   const input = args.join(' ');
@@ -387,30 +388,30 @@ async function handleWordsToggleIgnore(message, args) {
       exemptChannels: newExemptChannels
     });
 
-    return embeds.success(message, `**${target.name}** has been ${action} the word filter ignore list`);
+    return embeds.success(message, `**${target.name}** has been ${action} the word filter exempt list`);
   } catch (error) {
     return embeds.deny(message, 'Failed to update word filter rule');
   }
 }
 
-async function handleInvitesIgnore(message, args) {
+async function handleInvitesExempt(message, args) {
   if (!args[0]) {
     return runHelpCommand(message, 'filter');
   }
 
   if (args[0] === 'list') {
-    return await handleInvitesIgnoreList(message);
+    return await handleInvitesExemptList(message);
   }
 
-  // Handle ignore toggle
-  return await handleInvitesToggleIgnore(message, args);
+  // Handle exempt toggle
+  return await handleInvitesToggleExempt(message, args);
 }
 
-async function handleInvitesIgnoreList(message) {
+async function handleInvitesExemptList(message) {
   const rule = await getInviteAutoModRule(message.guild);
 
   if (!rule) {
-    return embeds.warn(message, 'No invite filter found');
+    return embeds.warn(message, 'No **invite filter** found');
   }
 
   const exemptRoles = rule.exemptRoles || [];
@@ -418,7 +419,7 @@ async function handleInvitesIgnoreList(message) {
   const exemptChannels = rule.exemptChannels || [];
 
   if (exemptRoles.length === 0 && exemptUsers.length === 0 && exemptChannels.length === 0) {
-    return embeds.warn(message, 'No ignored roles, users, or channels found for invite filter');
+    return embeds.warn(message, 'No exempted roles, users, or channels found for **invite filter**');
   }
 
   let description = '';
@@ -461,16 +462,16 @@ async function handleInvitesIgnoreList(message) {
 
   const embed = new EmbedBuilder()
     .setColor(colors.embed)
-    .setTitle('Invite Filter - Ignored List')
+    .setTitle('Invite Filter - Exempted List')
     .setDescription(description)
-    .setFooter({ text: `${totalCount} total ignored entr${totalCount === 1 ? 'y' : 'ies'}` });
+    .setFooter({ text: `${totalCount} total exempted entr${totalCount === 1 ? 'y' : 'ies'}` });
 
   return message.channel.send({ embeds: [embed] });
 }
 
-async function handleInvitesToggleIgnore(message, args) {
+async function handleInvitesToggleExempt(message, args) {
   if (!args[0]) {
-    return embeds.warn(message, 'Please provide a role, user, or channel to toggle ignore for');
+    return embeds.warn(message, 'Please provide a role, user, or channel to toggle exempt for');
   }
 
   const input = args.join(' ');
@@ -482,7 +483,7 @@ async function handleInvitesToggleIgnore(message, args) {
 
   const rule = await getInviteAutoModRule(message.guild);
   if (!rule) {
-    return embeds.warn(message, 'No invite filter found. Enable invite filtering first.');
+    return embeds.warn(message, 'No **invite filter** found. Enable **invite filtering** first.');
   }
 
   const currentExemptRoles = rule.exemptRoles || [];
@@ -530,9 +531,9 @@ async function handleInvitesToggleIgnore(message, args) {
       exemptChannels: newExemptChannels
     });
 
-    return embeds.success(message, `**${target.name}** has been ${action} the invite filter ignore list`);
+    return embeds.success(message, `**${target.name}** has been ${action} the **invite filter** exempt list`);
   } catch (error) {
-    return embeds.deny(message, 'Failed to update invite filter rule');
+    return embeds.deny(message, 'Failed to update **invite filter** rule');
   }
 }
 
@@ -541,26 +542,26 @@ async function handleInvitesToggle(message, enable) {
 
   if (enable) {
     if (rule) {
-      return embeds.warn(message, 'Invite filter is already enabled');
+      return embeds.warn(message, '**Invite filter** is already **enabled**');
     }
 
     // Create invite filter rule
     const result = await createInviteAutoModRule(message.guild);
     if (result.success) {
-      return embeds.success(message, 'Invite filter has been **enabled**');
+      return embeds.success(message, '**Invite filter** has been **enabled**');
     } else {
       return embeds.deny(message, result.message);
     }
   } else {
     if (!rule) {
-      return embeds.warn(message, 'Invite filter is already disabled');
+      return embeds.warn(message, '**Invite filter** is already **disabled**');
     }
 
     try {
       await rule.delete('Invite filter disabled by user');
-      return embeds.success(message, 'Invite filter has been **disabled**');
+      return embeds.success(message, '**Invite filter** has been **disabled**');
     } catch (error) {
-      return embeds.deny(message, 'Failed to disable invite filter');
+      return embeds.deny(message, 'Failed to disable **invite filter**');
     }
   }
 }
