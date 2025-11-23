@@ -705,7 +705,7 @@ async function getOrCreateAutoModRule(guild) {
 
     return rule;
   } catch (error) {
-    logger.webhook.error(error, message);
+    logger.webhook.error(error);
 
     // Check for specific AutoMod rule limit error
     if (error.code === 50035 && error.rawError?.errors?._errors?.some(e =>
@@ -744,7 +744,7 @@ async function createInviteAutoModRule(guild) {
     await guild.autoModerationRules.create(ruleData);
     return { success: true };
   } catch (error) {
-    logger.webhook.error(error, message);
+    logger.webhook.error(error);
 
     // Check for specific AutoMod rule limit error
     if (error.code === 50035 && error.rawError?.errors?._errors?.some(e =>
