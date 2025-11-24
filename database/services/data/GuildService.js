@@ -7443,10 +7443,10 @@ class GuildService extends BaseService {
    * @param {string} guildId - Guild ID
    * @param {string} userId - User ID
    * @param {string} nickname - Forced nickname
-   * @param {string} reason - Optional reason
+   * @param {string} setBy - User ID who set the forced nickname
    * @returns {Promise<boolean>} Success status
    */
-  async setForceNick(guildId, userId, nickname, reason = null) {
+  async setForceNick(guildId, userId, nickname, setBy = null) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -7475,7 +7475,6 @@ class GuildService extends BaseService {
         forceNicks[existingIndex] = {
           userId,
           nickname: nickname.trim(),
-          reason: reason ? reason.trim() : null,
           setAt: new Date(),
           setBy: setBy || 'Unknown' // Provide default value
         };
@@ -7484,7 +7483,6 @@ class GuildService extends BaseService {
         forceNicks.push({
           userId,
           nickname: nickname.trim(),
-          reason: reason ? reason.trim() : null,
           setAt: new Date(),
           setBy: setBy || 'Unknown' // Provide default value
         });
