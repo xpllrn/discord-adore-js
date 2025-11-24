@@ -21,7 +21,7 @@ module.exports = {
     if (args[0] === 'add' || args[0] === 'create') {
       const subcommandInfo = {
         description: 'Add a new note',
-        usage: '{guildprefix}note add [content]',
+        syntax: '{guildprefix}note add [content]',
         aliases: ['create'],
         parameters: ['content'],
         example: '{guildprefix}note add NoNutNovember'
@@ -54,7 +54,7 @@ module.exports = {
     } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
       const subcommandInfo = {
         description: 'Remove a note by ID',
-        usage: '{guildprefix}note remove [id]',
+        syntax: '{guildprefix}note remove [id]',
         aliases: ['delete', 'rm', 'del'],
         parameters: ['id'],
         example: '{guildprefix}note remove 1'
@@ -82,7 +82,7 @@ module.exports = {
     } else if (args[0] === 'list' || !args[0]) {
       const subcommandInfo = {
         description: 'List all your notes',
-        usage: '{guildprefix}note list',
+        syntax: '{guildprefix}note list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}note list'
@@ -129,7 +129,7 @@ module.exports = {
     } else if (args[0] === 'reset' || args[0] === 'clear') {
       const subcommandInfo = {
         description: 'Clear all your notes',
-        usage: '{guildprefix}note reset',
+        syntax: '{guildprefix}note reset',
         aliases: ['clear'],
         parameters: [],
         example: '{guildprefix}note reset'

@@ -22,7 +22,7 @@ module.exports = {
     if (args[0] === 'add') {
       const subcommandInfo = {
         description: 'Add a reaction role to a message',
-        usage: '{guildprefix}reactionrole add [message_link] [reaction] [role]',
+        syntax: '{guildprefix}reactionrole add [message_link] [reaction] [role]',
         aliases: [],
         parameters: ['message_link', 'reaction', 'role'],
         example: '{guildprefix}reactionrole add https://discord.com/channels/.../... 🌟 @Member'
@@ -123,7 +123,7 @@ module.exports = {
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
         description: 'Remove a reaction role from a message',
-        usage: '{guildprefix}reactionrole remove [message_link] [reaction]',
+        syntax: '{guildprefix}reactionrole remove [message_link] [reaction]',
         aliases: [],
         parameters: ['message_link', 'reaction'],
         example: '{guildprefix}reactionrole remove https://discord.com/channels/.../... 🌟'
@@ -185,7 +185,7 @@ module.exports = {
     } else if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'List all reaction roles in the server',
-        usage: '{guildprefix}reactionrole list',
+        syntax: '{guildprefix}reactionrole list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}reactionrole list'
@@ -249,7 +249,7 @@ module.exports = {
     } else if (args[0] === 'reset') {
       const subcommandInfo = {
         description: 'Remove all reaction roles from the server',
-        usage: '{guildprefix}reactionrole reset',
+        syntax: '{guildprefix}reactionrole reset',
         aliases: ['clear'],
         parameters: [],
         example: '{guildprefix}reactionrole reset'
@@ -274,7 +274,7 @@ module.exports = {
     } else if (args[0] === 'removeall') {
       const subcommandInfo = {
         description: 'Remove all reaction roles from a specific message',
-        usage: '{guildprefix}reactionrole removeall [message_link]',
+        syntax: '{guildprefix}reactionrole removeall [message_link]',
         aliases: [],
         parameters: ['message_link'],
         example: '{guildprefix}reactionrole removeall https://discord.com/channels/.../...'

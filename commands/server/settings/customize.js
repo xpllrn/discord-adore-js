@@ -80,7 +80,7 @@ module.exports = {
     if (subcommand === 'avatar') {
       const subcommandInfo = {
         description: 'Customize the bot\'s server avatar',
-        usage: '{guildprefix}customize avatar [image url/attachment]',
+        syntax: '{guildprefix}customize avatar [image url/attachment]',
         aliases: [],
         parameters: ['image (optional)'],
         example: '{guildprefix}customize avatar https://example.com/image.png'
@@ -188,7 +188,7 @@ module.exports = {
     if (subcommand === 'banner') {
       const subcommandInfo = {
         description: 'Customize the bot\'s server banner',
-        usage: '{guildprefix}customize banner [image url/attachment]',
+        syntax: '{guildprefix}customize banner [image url/attachment]',
         aliases: [],
         parameters: ['image (optional)'],
         example: '{guildprefix}customize banner https://example.com/banner.png'
@@ -297,7 +297,7 @@ module.exports = {
     if (subcommand === 'bio') {
       const subcommandInfo = {
         description: 'Customize the bot\'s server bio',
-        usage: '{guildprefix}customize bio [text]',
+        syntax: '{guildprefix}customize bio [text]',
         aliases: [],
         parameters: ['text (optional)'],
         example: '{guildprefix}customize bio Best bot ever!'

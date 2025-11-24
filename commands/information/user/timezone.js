@@ -24,7 +24,7 @@ module.exports = {
       case 'set': {
         const subcommandInfo = {
           description: 'Set your timezone by city name',
-          usage: '{guildprefix}timezone set [city]',
+          syntax: '{guildprefix}timezone set [city]',
           aliases: [],
           example: '{guildprefix}timezone set London'
         };
@@ -40,7 +40,7 @@ module.exports = {
       default: {
         const subcommandInfo = {
           description: 'View a user\'s timezone',
-          usage: '{guildprefix}timezone (user)',
+          syntax: '{guildprefix}timezone (user)',
           aliases: [],
           example: '{guildprefix}timezone @user'
         };

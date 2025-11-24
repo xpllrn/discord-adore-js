@@ -102,7 +102,7 @@ module.exports = {
       case 'view': {
         const subcommandInfo = {
           description: 'View the current server prefix',
-          usage: '{guildprefix}prefix view',
+          syntax: '{guildprefix}prefix view',
           aliases: [],
           example: '{guildprefix}prefix view'
         };
@@ -112,7 +112,7 @@ module.exports = {
       case 'set': {
         const subcommandInfo = {
           description: 'Set a new server prefix',
-          usage: '{guildprefix}prefix set [prefix]',
+          syntax: '{guildprefix}prefix set [prefix]',
           aliases: [],
           example: '{guildprefix}prefix set !'
         };
@@ -124,7 +124,7 @@ module.exports = {
       case 'default': {
         const subcommandInfo = {
           description: 'Reset server prefix to default',
-          usage: '{guildprefix}prefix remove',
+          syntax: '{guildprefix}prefix remove',
           aliases: ['reset', 'default'],
           example: '{guildprefix}prefix remove'
         };

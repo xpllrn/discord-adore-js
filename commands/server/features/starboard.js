@@ -30,7 +30,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'set',
         description: 'Set the starboard channel',
-        usage: '{guildprefix}starboard set <channel>',
+        syntax: '{guildprefix}starboard set <channel>',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}starboard set #starboard'
@@ -63,7 +63,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'threshold',
         description: 'Set the minimum number of reactions needed for a message to appear on the starboard',
-        usage: '{guildprefix}starboard threshold <number>',
+        syntax: '{guildprefix}starboard threshold <number>',
         aliases: [],
         parameters: ['number'],
         example: '{guildprefix}starboard threshold 5'
@@ -84,7 +84,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'emoji',
         description: 'Set the emoji used for starboard reactions',
-        usage: '{guildprefix}starboard emoji <emoji>',
+        syntax: '{guildprefix}starboard emoji <emoji>',
         aliases: [],
         parameters: ['emoji'],
         example: '{guildprefix}starboard emoji ⭐'
@@ -122,7 +122,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'check',
         description: 'View the current starboard configuration',
-        usage: '{guildprefix}starboard check',
+        syntax: '{guildprefix}starboard check',
         aliases: [],
         parameters: [],
         example: '{guildprefix}starboard check'
@@ -156,7 +156,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'unset',
         description: 'Disable the starboard system',
-        usage: '{guildprefix}starboard unset',
+        syntax: '{guildprefix}starboard unset',
         aliases: [],
         parameters: [],
         example: '{guildprefix}starboard unset'

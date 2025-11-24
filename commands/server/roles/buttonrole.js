@@ -22,7 +22,7 @@ module.exports = {
     if (args[0] === 'add') {
       const subcommandInfo = {
         description: 'Add a button role to a message',
-        usage: '{guildprefix}buttonrole add [message_link] [role] [style] <emoji> <label>',
+        syntax: '{guildprefix}buttonrole add [message_link] [role] [style] <emoji> <label>',
         aliases: [],
         parameters: ['message_link', 'role', 'style', 'emoji', 'label'],
         example: '{guildprefix}buttonrole add https://discord.com/channels/.../... @Member primary 🌟 "Get Member Role"'
@@ -200,7 +200,7 @@ module.exports = {
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
         description: 'Remove a button role from a message',
-        usage: '{guildprefix}buttonrole remove [message_link] [role]',
+        syntax: '{guildprefix}buttonrole remove [message_link] [role]',
         aliases: [],
         parameters: ['message_link', 'role'],
         example: '{guildprefix}buttonrole remove https://discord.com/channels/.../... @Member'
@@ -280,7 +280,7 @@ module.exports = {
     } else if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'List all button roles in the server',
-        usage: '{guildprefix}buttonrole list',
+        syntax: '{guildprefix}buttonrole list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}buttonrole list'
@@ -346,7 +346,7 @@ module.exports = {
     } else if (args[0] === 'reset') {
       const subcommandInfo = {
         description: 'Remove all button roles from the server',
-        usage: '{guildprefix}buttonrole reset',
+        syntax: '{guildprefix}buttonrole reset',
         aliases: ['clear'],
         parameters: [],
         example: '{guildprefix}buttonrole reset'
@@ -371,7 +371,7 @@ module.exports = {
     } else if (args[0] === 'removeall') {
       const subcommandInfo = {
         description: 'Remove all button roles from a specific message',
-        usage: '{guildprefix}buttonrole removeall [message_link]',
+        syntax: '{guildprefix}buttonrole removeall [message_link]',
         aliases: [],
         parameters: ['message_link'],
         example: '{guildprefix}buttonrole removeall https://discord.com/channels/.../...'

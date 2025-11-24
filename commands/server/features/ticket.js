@@ -33,7 +33,7 @@ module.exports = {
       case 'setup': {
         const subcommandInfo = {
           description: 'Create ticket system',
-          usage: '{guildprefix}ticket setup',
+          syntax: '{guildprefix}ticket setup',
           aliases: [],
           parameters: [],
           example: '{guildprefix}ticket setup'
@@ -43,7 +43,7 @@ module.exports = {
       case 'reset': {
         const subcommandInfo = {
           description: 'Reset ticket system',
-          usage: '{guildprefix}ticket reset',
+          syntax: '{guildprefix}ticket reset',
           aliases: [],
           parameters: [],
           example: '{guildprefix}ticket reset'
@@ -53,7 +53,7 @@ module.exports = {
       case 'category': {
         const subcommandInfo = {
           description: 'Set ticket category',
-          usage: '{guildprefix}ticket category [category]',
+          syntax: '{guildprefix}ticket category [category]',
           aliases: [],
           parameters: ['category'],
           example: '{guildprefix}ticket category Support'
@@ -63,7 +63,7 @@ module.exports = {
       case 'add': {
         const subcommandInfo = {
           description: 'Add user to current ticket',
-          usage: '{guildprefix}ticket add [@user]',
+          syntax: '{guildprefix}ticket add [@user]',
           aliases: [],
           parameters: ['user'],
           example: '{guildprefix}ticket add @vwsn'
@@ -73,7 +73,7 @@ module.exports = {
       case 'remove': {
         const subcommandInfo = {
           description: 'Remove user from current ticket',
-          usage: '{guildprefix}ticket remove [@user]',
+          syntax: '{guildprefix}ticket remove [@user]',
           aliases: [],
           parameters: ['user'],
           example: '{guildprefix}ticket remove @vwsn'
@@ -83,7 +83,7 @@ module.exports = {
       case 'close': {
         const subcommandInfo = {
           description: 'Close current ticket',
-          usage: '{guildprefix}ticket close',
+          syntax: '{guildprefix}ticket close',
           aliases: [],
           parameters: [],
           example: '{guildprefix}ticket close'
@@ -93,7 +93,7 @@ module.exports = {
       case 'open': {
         const subcommandInfo = {
           description: 'Reopen current ticket',
-          usage: '{guildprefix}ticket open',
+          syntax: '{guildprefix}ticket open',
           aliases: [],
           parameters: [],
           example: '{guildprefix}ticket open'
@@ -103,7 +103,7 @@ module.exports = {
       case 'rename': {
         const subcommandInfo = {
           description: 'Rename current ticket',
-          usage: '{guildprefix}ticket rename [name]',
+          syntax: '{guildprefix}ticket rename [name]',
           aliases: [],
           parameters: ['name'],
           example: '{guildprefix}ticket rename Bug Report'
@@ -113,7 +113,7 @@ module.exports = {
       case 'support': {
         const subcommandInfo = {
           description: 'Set support role',
-          usage: '{guildprefix}ticket support [@role/none]',
+          syntax: '{guildprefix}ticket support [@role/none]',
           aliases: [],
           parameters: ['role'],
           example: '{guildprefix}ticket support @Support'
@@ -123,7 +123,7 @@ module.exports = {
       case 'message': {
         const subcommandInfo = {
           description: 'Set custom ticket setup message',
-          usage: '{guildprefix}ticket message [custom message/remove/none]',
+          syntax: '{guildprefix}ticket message [custom message/remove/none]',
           aliases: [],
           parameters: ['message'],
           example: '{guildprefix}ticket message {embed}$v{title: Support Tickets}$v{description: Need help? Create a ticket below!}'
@@ -134,7 +134,7 @@ module.exports = {
       case 'variables': {
         const subcommandInfo = {
           description: 'Show available variables for ticket messages',
-          usage: '{guildprefix}ticket variables',
+          syntax: '{guildprefix}ticket variables',
           aliases: [],
           parameters: [],
           example: '{guildprefix}ticket variables'

@@ -35,7 +35,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'set',
         description: 'Set the vanity text that users need in their status',
-        usage: '{guildprefix}vanity set [text]',
+        syntax: '{guildprefix}vanity set [text]',
         aliases: [],
         parameters: ['text'],
         example: '{guildprefix}vanity set MyServer'
@@ -60,7 +60,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'role',
         description: 'Set the role given to users who rep the server',
-        usage: '{guildprefix}vanity role [@role]',
+        syntax: '{guildprefix}vanity role [@role]',
         aliases: [],
         parameters: ['role'],
         example: '{guildprefix}vanity role @Rep Role'
@@ -115,7 +115,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'add',
         description: 'Add a vanity message to be sent when someone reps',
-        usage: '{guildprefix}vanity add [#channel] [message]',
+        syntax: '{guildprefix}vanity add [#channel] [message]',
         aliases: [],
         parameters: ['channel', 'message'],
         example: '{guildprefix}vanity add #general Thanks for repping {user.mention}!'
@@ -159,7 +159,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'remove',
         description: 'Remove the vanity message for a channel',
-        usage: '{guildprefix}vanity remove [#channel]',
+        syntax: '{guildprefix}vanity remove [#channel]',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}vanity remove #general'
@@ -198,7 +198,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'view',
         description: 'Preview the vanity message for a channel',
-        usage: '{guildprefix}vanity view [#channel]',
+        syntax: '{guildprefix}vanity view [#channel]',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}vanity view #general'
@@ -234,7 +234,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'variables',
         description: 'Show available variables for vanity messages',
-        usage: '{guildprefix}vanity variables',
+        syntax: '{guildprefix}vanity variables',
         aliases: [],
         parameters: [],
         example: '{guildprefix}vanity variables'
@@ -251,7 +251,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'check',
         description: 'Check current vanity configuration',
-        usage: '{guildprefix}vanity check',
+        syntax: '{guildprefix}vanity check',
         aliases: [],
         parameters: [],
         example: '{guildprefix}vanity check'
@@ -313,7 +313,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'enable',
         description: 'Re-enable the vanity system if it was disabled',
-        usage: '{guildprefix}vanity enable',
+        syntax: '{guildprefix}vanity enable',
         aliases: [],
         parameters: [],
         example: '{guildprefix}vanity enable'

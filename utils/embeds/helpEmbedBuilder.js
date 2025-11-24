@@ -26,9 +26,9 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
   const permissionValue = command.permission || 'none';
   fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
-  // Usage field - only show syntax for group commands
-  const usageValue = `\`\`\`Syntax: ${guildPrefix}${command.name} (subcommand) <args>\`\`\``;
-  fields.push({ name: '**Usage**', value: usageValue, inline: false });
+  // Syntax field - only show syntax for group commands
+  const syntaxValue = `\`\`\`Syntax: ${guildPrefix}${command.name} (subcommand) <args>\`\`\``;
+  fields.push({ name: '**Syntax**', value: syntaxValue, inline: false });
 
   embed.addFields(...fields);
 
@@ -67,18 +67,18 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
   const permissionValue = command.permission || 'none';
   fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
-  // Usage field
-  const usageLines = [];
+  // Syntax and Example fields
+  const syntaxLines = [];
   if (subcommand.syntax) {
-    usageLines.push(`Syntax: ${subcommand.syntax}`);
+    syntaxLines.push(`Syntax: ${subcommand.syntax}`);
   }
   if (subcommand.example) {
-    usageLines.push(`Example: ${subcommand.example}`);
+    syntaxLines.push(`Example: ${subcommand.example}`);
   }
 
-  if (usageLines.length > 0) {
-    const usageValue = `\`\`\`${usageLines.join('\n')}\`\`\``;
-    fields.push({ name: '**Usage**', value: usageValue, inline: false });
+  if (syntaxLines.length > 0) {
+    const syntaxValue = `\`\`\`${syntaxLines.join('\n')}\`\`\``;
+    fields.push({ name: '**Syntax & Example**', value: syntaxValue, inline: false });
   }
 
   embed.addFields(...fields);
@@ -116,22 +116,22 @@ function createTraditionalEmbed(command, guildPrefix) {
   const permissionValue = command.permission || 'none';
   fields.push({ name: '**Permission**', value: permissionValue, inline: true });
 
-  // Usage field with syntax and example
+  // Syntax and Example field
   if (command.syntax || command.example) {
-    const usageValue = [];
+    const syntaxValue = [];
 
     if (command.syntax) {
       const syntaxWithPrefix = `${guildPrefix}${command.syntax}`;
-      usageValue.push(`Syntax: ${syntaxWithPrefix}`);
+      syntaxValue.push(`Syntax: ${syntaxWithPrefix}`);
     }
 
     if (command.example) {
       const exampleWithPrefix = `${guildPrefix}${command.example}`;
-      usageValue.push(`Example: ${exampleWithPrefix}`);
+      syntaxValue.push(`Example: ${exampleWithPrefix}`);
     }
 
-    if (usageValue.length > 0) {
-      fields.push({ name: '**Usage**', value: `\`\`\`${usageValue.join('\n')}\`\`\``, inline: false });
+    if (syntaxValue.length > 0) {
+      fields.push({ name: '**Syntax & Example**', value: `\`\`\`${syntaxValue.join('\n')}\`\`\``, inline: false });
     }
   }
 

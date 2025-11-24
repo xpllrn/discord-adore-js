@@ -196,6 +196,11 @@ async function checkCommandPermission(message, permission) {
         [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles],
         ['Manage Guild', 'Manage Roles']);
 
+    case 'manage guild & manage nicknames':
+      return hasMultipleDiscordPermissions(message,
+        [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageNicknames],
+        ['Manage Guild', 'Manage Nicknames']);
+
     case 'manage roles':
       return hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles');
 

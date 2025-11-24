@@ -64,7 +64,7 @@ module.exports = {
     if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'List all swears used by you or another user',
-        usage: '{guildprefix}swear list [user]',
+        syntax: '{guildprefix}swear list [user]',
         aliases: [],
         parameters: ['user (optional)'],
         example: '{guildprefix}swear list @vwsn'
@@ -130,7 +130,7 @@ module.exports = {
     } else if (args[0] === 'leaderboard' || args[0] === 'lb') {
       const subcommandInfo = {
         description: 'Show the server swear leaderboard',
-        usage: '{guildprefix}swear leaderboard',
+        syntax: '{guildprefix}swear leaderboard',
         aliases: ['lb'],
         parameters: [],
         example: '{guildprefix}swear leaderboard'
@@ -220,7 +220,7 @@ module.exports = {
     } else if (args[0] === 'reset') {
       const subcommandInfo = {
         description: 'Reset all swear data for the server',
-        usage: '{guildprefix}swear reset',
+        syntax: '{guildprefix}swear reset',
         aliases: [],
         parameters: [],
         example: '{guildprefix}swear reset'
@@ -256,7 +256,7 @@ module.exports = {
       const subcommandInfo = {
         name: 'view',
         description: 'View swear statistics for a specific user',
-        usage: '{guildprefix}swear [user]',
+        syntax: '{guildprefix}swear [user]',
         aliases: [],
         parameters: ['user'],
         example: '{guildprefix}swear @vwsn'

@@ -33,7 +33,7 @@ module.exports = {
       case 'start': {
         const subcommandInfo = {
           description: 'Start a new giveaway',
-          usage: '{guildprefix}giveaways start [duration] [winners] [title]',
+          syntax: '{guildprefix}giveaways start [duration] [winners] [title]',
           aliases: [],
           parameters: ['duration', 'winners', 'title'],
           example: '{guildprefix}giveaways start 1d 1 Nitro'
@@ -43,7 +43,7 @@ module.exports = {
       case 'end': {
         const subcommandInfo = {
           description: 'End a giveaway early',
-          usage: '{guildprefix}giveaways end [message_link]',
+          syntax: '{guildprefix}giveaways end [message_link]',
           aliases: [],
           parameters: ['message_link'],
           example: '{guildprefix}giveaways end https://discord.com/channels/...'
@@ -53,7 +53,7 @@ module.exports = {
       case 'list': {
         const subcommandInfo = {
           description: 'List all active giveaways',
-          usage: '{guildprefix}giveaways list',
+          syntax: '{guildprefix}giveaways list',
           aliases: [],
           parameters: [],
           example: '{guildprefix}giveaways list'
@@ -63,7 +63,7 @@ module.exports = {
       case 'cancel': {
         const subcommandInfo = {
           description: 'Cancel a giveaway',
-          usage: '{guildprefix}giveaways cancel [message_link]',
+          syntax: '{guildprefix}giveaways cancel [message_link]',
           aliases: [],
           parameters: ['message_link'],
           example: '{guildprefix}giveaways cancel https://discord.com/channels/...'
@@ -73,7 +73,7 @@ module.exports = {
       case 'reroll': {
         const subcommandInfo = {
           description: 'Reroll giveaway winners',
-          usage: '{guildprefix}giveaways reroll [message_link] [winners]',
+          syntax: '{guildprefix}giveaways reroll [message_link] [winners]',
           aliases: [],
           parameters: ['message_link', 'winners (optional)'],
           example: '{guildprefix}giveaways reroll https://discord.com/channels/... 2'
@@ -83,7 +83,7 @@ module.exports = {
       case 'edit': {
         const subcommandInfo = {
           description: 'Edit giveaway settings',
-          usage: '{guildprefix}giveaways edit [type] [message_link] [value]',
+          syntax: '{guildprefix}giveaways edit [type] [message_link] [value]',
           aliases: [],
           parameters: ['type', 'message_link', 'value'],
           example: '{guildprefix}giveaways edit level https://discord.com/channels/... 10'

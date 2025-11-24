@@ -27,7 +27,7 @@ module.exports = {
     if (args[0] === 'add') {
       const subcommandInfo = {
         description: 'Add or update a boost message for a channel',
-        usage: '{guildprefix}boost add [channel] [message]',
+        syntax: '{guildprefix}boost add [channel] [message]',
         aliases: [],
         parameters: ['channel', 'message'],
         example: '{guildprefix}boost add #boosts Thanks for boosting {user.mention}!'
@@ -70,7 +70,7 @@ module.exports = {
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
         description: 'Remove a boost message from a channel',
-        usage: '{guildprefix}boost remove [channel]',
+        syntax: '{guildprefix}boost remove [channel]',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}boost remove #boosts'
@@ -108,7 +108,7 @@ module.exports = {
     } else if (args[0] === 'view') {
       const subcommandInfo = {
         description: 'Preview the boost message for a channel',
-        usage: '{guildprefix}boost view [channel]',
+        syntax: '{guildprefix}boost view [channel]',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}boost view #boosts'
@@ -142,7 +142,7 @@ module.exports = {
     } else if (args[0] === 'variables') {
       const subcommandInfo = {
         description: 'Shows available variables for boost messages',
-        usage: '{guildprefix}boost variables',
+        syntax: '{guildprefix}boost variables',
         aliases: [],
         parameters: [],
         example: '{guildprefix}boost variables'
@@ -161,7 +161,7 @@ module.exports = {
     } else if (args[0] === 'award') {
       const subcommandInfo = {
         description: 'Set or remove the boost award role',
-        usage: '{guildprefix}boost award [@role/none]',
+        syntax: '{guildprefix}boost award [@role/none]',
         aliases: [],
         parameters: ['role'],
         example: '{guildprefix}boost award @Booster'
@@ -204,7 +204,7 @@ module.exports = {
     } else if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'Lists all configured boost messages',
-        usage: '{guildprefix}boost list',
+        syntax: '{guildprefix}boost list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}boost list'

@@ -42,7 +42,7 @@ module.exports = {
         case 'enable': {
           const subcommandInfo = {
             description: 'Enable the leveling system',
-            usage: '{guildprefix}levels unlock',
+            syntax: '{guildprefix}levels unlock',
             aliases: ['enable'],
             parameters: [],
             example: '{guildprefix}levels unlock'
@@ -53,7 +53,7 @@ module.exports = {
         case 'disable': {
           const subcommandInfo = {
             description: 'Disable the leveling system',
-            usage: '{guildprefix}levels lock',
+            syntax: '{guildprefix}levels lock',
             aliases: ['disable'],
             parameters: [],
             example: '{guildprefix}levels lock'
@@ -63,7 +63,7 @@ module.exports = {
         case 'setrate': {
           const subcommandInfo = {
             description: 'Set XP gain multiplier',
-            usage: '{guildprefix}levels setrate [multiplier]',
+            syntax: '{guildprefix}levels setrate [multiplier]',
             aliases: [],
             parameters: ['multiplier'],
             example: '{guildprefix}levels setrate 2'
@@ -73,7 +73,7 @@ module.exports = {
         case 'roles': {
           const subcommandInfo = {
             description: 'Show all level roles',
-            usage: '{guildprefix}levels roles',
+            syntax: '{guildprefix}levels roles',
             aliases: [],
             parameters: [],
             example: '{guildprefix}levels roles'
@@ -83,7 +83,7 @@ module.exports = {
         case 'stackroles': {
           const subcommandInfo = {
             description: 'Toggle role stacking',
-            usage: '{guildprefix}levels stackroles [on/off]',
+            syntax: '{guildprefix}levels stackroles [on/off]',
             aliases: [],
             parameters: ['on/off'],
             example: '{guildprefix}levels stackroles on'
@@ -93,7 +93,7 @@ module.exports = {
         case 'update': {
           const subcommandInfo = {
             description: 'Update a level role',
-            usage: '{guildprefix}levels update [@role] [level]',
+            syntax: '{guildprefix}levels update [@role] [level]',
             aliases: [],
             parameters: ['role', 'level'],
             example: '{guildprefix}levels update @VIP 15'
@@ -103,7 +103,7 @@ module.exports = {
         case 'reset': {
           const subcommandInfo = {
             description: 'Reset all level data',
-            usage: '{guildprefix}levels reset',
+            syntax: '{guildprefix}levels reset',
             aliases: [],
             parameters: [],
             example: '{guildprefix}levels reset'
@@ -113,7 +113,7 @@ module.exports = {
         case 'cleanup': {
           const subcommandInfo = {
             description: 'Remove level data for users who left',
-            usage: '{guildprefix}levels cleanup',
+            syntax: '{guildprefix}levels cleanup',
             aliases: [],
             parameters: [],
             example: '{guildprefix}levels cleanup'
@@ -124,7 +124,7 @@ module.exports = {
         case 'lb': {
           const subcommandInfo = {
             description: 'Show the server level leaderboard',
-            usage: '{guildprefix}levels leaderboard',
+            syntax: '{guildprefix}levels leaderboard',
             aliases: ['lb'],
             parameters: [],
             example: '{guildprefix}levels lb'
@@ -134,7 +134,7 @@ module.exports = {
         case 'add': {
           const subcommandInfo = {
             description: 'Add a level role reward',
-            usage: '{guildprefix}levels add [@role] [level]',
+            syntax: '{guildprefix}levels add [@role] [level]',
             aliases: [],
             parameters: ['role', 'level'],
             example: '{guildprefix}levels add @VIP 10'
@@ -145,7 +145,7 @@ module.exports = {
         case 'rm': {
           const subcommandInfo = {
             description: 'Remove a level role reward',
-            usage: '{guildprefix}levels remove [level]',
+            syntax: '{guildprefix}levels remove [level]',
             aliases: ['rm'],
             parameters: ['level'],
             example: '{guildprefix}levels remove 10'
@@ -155,7 +155,7 @@ module.exports = {
         case 'set': {
           const subcommandInfo = {
             description: 'Set a user\'s level',
-            usage: '{guildprefix}levels set [@user] [level]',
+            syntax: '{guildprefix}levels set [@user] [level]',
             aliases: [],
             parameters: ['user', 'level'],
             example: '{guildprefix}levels set @user 25'
@@ -165,7 +165,7 @@ module.exports = {
         case 'sync': {
           const subcommandInfo = {
             description: 'Sync level roles for all members',
-            usage: '{guildprefix}levels sync',
+            syntax: '{guildprefix}levels sync',
             aliases: [],
             parameters: [],
             example: '{guildprefix}levels sync'
@@ -175,7 +175,7 @@ module.exports = {
         case 'messagemode': {
           const subcommandInfo = {
             description: 'Configure level up message mode',
-            usage: '{guildprefix}levels messagemode [none/channel/context] [#channel]',
+            syntax: '{guildprefix}levels messagemode [none/channel/context] [#channel]',
             aliases: [],
             parameters: ['mode', 'channel (optional)'],
             example: '{guildprefix}levels messagemode channel #level-ups'
@@ -185,7 +185,7 @@ module.exports = {
         case 'message': {
           const subcommandInfo = {
             description: 'Manage custom level up messages',
-            usage: '{guildprefix}levels message [message/remove/none/view/variables]',
+            syntax: '{guildprefix}levels message [message/remove/none/view/variables]',
             aliases: [],
             parameters: ['action'],
             example: '{guildprefix}levels message {user.mention} leveled up to {level.new_rank}!'

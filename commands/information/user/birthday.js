@@ -48,7 +48,7 @@ module.exports = {
       case 'set': {
         const subcommandInfo = {
           description: 'Set your birthday (can only be set once)',
-          usage: '{guildprefix}bday set [day] [month]',
+          syntax: '{guildprefix}bday set [day] [month]',
           aliases: [],
           example: '{guildprefix}bday set 15 March'
         };
@@ -123,7 +123,7 @@ module.exports = {
       case 'list': {
         const subcommandInfo = {
           description: 'List all birthdays in the server',
-          usage: '{guildprefix}bday list',
+          syntax: '{guildprefix}bday list',
           aliases: [],
           example: '{guildprefix}bday list'
         };
@@ -221,7 +221,7 @@ module.exports = {
       default: {
         const subcommandInfo = {
           description: 'View a user\'s birthday',
-          usage: '{guildprefix}bday (user)',
+          syntax: '{guildprefix}bday (user)',
           aliases: [],
           example: '{guildprefix}bday @user'
         };

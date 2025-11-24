@@ -39,7 +39,7 @@ module.exports = {
     if (subcommand === 'cleanup') {
       const subcommandInfo = {
         description: 'Remove unused booster roles',
-        usage: '{guildprefix}boostrole cleanup [days]',
+        syntax: '{guildprefix}boostrole cleanup [days]',
         aliases: [],
         parameters: ['days (optional)'],
         example: '{guildprefix}boostrole cleanup 30'
@@ -53,7 +53,7 @@ module.exports = {
     if (subcommand === 'create') {
       const subcommandInfo = {
         description: 'Create your personal booster role',
-        usage: '{guildprefix}boostrole create [name]',
+        syntax: '{guildprefix}boostrole create [name]',
         aliases: [],
         parameters: ['name'],
         example: '{guildprefix}boostrole create My Cool Role'
@@ -71,7 +71,7 @@ module.exports = {
     if (subcommand === 'rename') {
       const subcommandInfo = {
         description: 'Rename your booster role',
-        usage: '{guildprefix}boostrole rename [name]',
+        syntax: '{guildprefix}boostrole rename [name]',
         aliases: [],
         parameters: ['name'],
         example: '{guildprefix}boostrole rename New Name'
@@ -89,7 +89,7 @@ module.exports = {
     if (subcommand === 'icon') {
       const subcommandInfo = {
         description: 'Set an icon for your booster role',
-        usage: '{guildprefix}boostrole icon [emoji/url]',
+        syntax: '{guildprefix}boostrole icon [emoji/url]',
         aliases: [],
         parameters: ['emoji or url'],
         example: '{guildprefix}boostrole icon :star:'
@@ -107,7 +107,7 @@ module.exports = {
     if (subcommand === 'color' || subcommand === 'colour') {
       const subcommandInfo = {
         description: 'Set a color for your booster role',
-        usage: '{guildprefix}boostrole color [color]',
+        syntax: '{guildprefix}boostrole color [color]',
         aliases: ['colour'],
         parameters: ['color'],
         example: '{guildprefix}boostrole color #FF0000'
@@ -125,7 +125,7 @@ module.exports = {
     if (subcommand === 'gradient') {
       const subcommandInfo = {
         description: 'Set a gradient color for your booster role',
-        usage: '{guildprefix}boostrole gradient [color1] [color2]',
+        syntax: '{guildprefix}boostrole gradient [color1] [color2]',
         aliases: [],
         parameters: ['color1', 'color2'],
         example: '{guildprefix}boostrole gradient red blue'
@@ -143,7 +143,7 @@ module.exports = {
     if (subcommand === 'holographic' || subcommand === 'holo') {
       const subcommandInfo = {
         description: 'Set your booster role to holographic colors',
-        usage: '{guildprefix}boostrole holographic',
+        syntax: '{guildprefix}boostrole holographic',
         aliases: ['holo'],
         parameters: [],
         example: '{guildprefix}boostrole holographic'
@@ -165,7 +165,7 @@ module.exports = {
       if (shareSubcommand === 'remove') {
         const subcommandInfo = {
           description: 'Remove someone from your shared booster role',
-          usage: '{guildprefix}boostrole share remove [@user]',
+          syntax: '{guildprefix}boostrole share remove [@user]',
           aliases: [],
           parameters: ['user'],
           example: '{guildprefix}boostrole share remove @vwsn'
@@ -182,7 +182,7 @@ module.exports = {
       if (shareSubcommand === 'list') {
         const subcommandInfo = {
           description: 'Show list of users who have your booster role',
-          usage: '{guildprefix}boostrole share list',
+          syntax: '{guildprefix}boostrole share list',
           aliases: [],
           parameters: [],
           example: '{guildprefix}boostrole share list'
@@ -199,7 +199,7 @@ module.exports = {
       // Default share behavior
       const subcommandInfo = {
         description: 'Share your booster role with another user',
-        usage: '{guildprefix}boostrole share [@user]',
+        syntax: '{guildprefix}boostrole share [@user]',
         aliases: [],
         parameters: ['user'],
         example: '{guildprefix}boostrole share @vwsn'
@@ -217,7 +217,7 @@ module.exports = {
     if (subcommand === 'remove' || subcommand === 'delete') {
       const subcommandInfo = {
         description: 'Remove your booster role',
-        usage: '{guildprefix}boostrole remove',
+        syntax: '{guildprefix}boostrole remove',
         aliases: ['delete'],
         parameters: [],
         example: '{guildprefix}boostrole remove'

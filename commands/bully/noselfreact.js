@@ -32,7 +32,7 @@ module.exports = {
       case 'on': {
         const subcommandInfo = {
           description: 'Enable no self-react',
-          usage: '{guildprefix}nsr on',
+          syntax: '{guildprefix}nsr on',
           aliases: [],
           example: '{guildprefix}nsr on'
         };
@@ -52,7 +52,7 @@ module.exports = {
       case 'off': {
         const subcommandInfo = {
           description: 'Disable no self-react',
-          usage: '{guildprefix}nsr off',
+          syntax: '{guildprefix}nsr off',
           aliases: [],
           example: '{guildprefix}nsr off'
         };
@@ -72,7 +72,7 @@ module.exports = {
       case 'bypass': {
         const subcommandInfo = {
           description: 'Toggle bypass for a user',
-          usage: '{guildprefix}nsr bypass [user]',
+          syntax: '{guildprefix}nsr bypass [user]',
           aliases: [],
           example: '{guildprefix}nsr bypass @user'
         };

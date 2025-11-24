@@ -27,7 +27,7 @@ module.exports = {
       case 'user': {
         const subcommandInfo = {
           description: 'Manage user blacklist - add/remove users or list all blacklisted users',
-          usage: '{guildprefix}blacklist users [user.id] [reason]',
+          syntax: '{guildprefix}blacklist users [user.id] [reason]',
           aliases: ['user'],
           parameters: ['user.id', 'reason'],
           example: '{guildprefix}blacklist users @jonathan jon pork'
@@ -45,7 +45,7 @@ module.exports = {
       case 'server': {
         const subcommandInfo = {
           description: 'Manage server blacklist - add/remove servers or list all blacklisted servers',
-          usage: '{guildprefix}blacklist servers [server.id] [reason]',
+          syntax: '{guildprefix}blacklist servers [server.id] [reason]',
           aliases: ['server'],
           parameters: ['server.id', 'reason'],
           example: '{guildprefix}blacklist servers 987654321 abuse'

@@ -30,7 +30,7 @@ module.exports = {
       case 'usernames': {
         const subcommandInfo = {
           description: 'Clear a user\'s name change history',
-          usage: '{guildprefix}clear names [@user]',
+          syntax: '{guildprefix}clear names [@user]',
           aliases: ['usernames'],
           parameters: ['user'],
           example: '{guildprefix}clear names @user'
@@ -43,7 +43,7 @@ module.exports = {
       case 'guildnames': {
         const subcommandInfo = {
           description: 'Clear the server\'s name change history',
-          usage: '{guildprefix}clear servernames [server id]',
+          syntax: '{guildprefix}clear servernames [server id]',
           aliases: ['guildnames'],
           parameters: ['server id'],
           example: '{guildprefix}clear servernames 1234567890123456789'

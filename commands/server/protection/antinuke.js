@@ -35,7 +35,7 @@ module.exports = {
       case 'whitelist': {
         const subcommandInfo = {
           description: 'Whitelist a member or bot from triggering antinuke',
-          usage: '{guildprefix}antinuke whitelist [user]',
+          syntax: '{guildprefix}antinuke whitelist [user]',
           aliases: [],
           example: '{guildprefix}antinuke whitelist @user'
         };
@@ -45,7 +45,7 @@ module.exports = {
       case 'role': {
         const subcommandInfo = {
           description: 'Prevent mass role delete',
-          usage: '{guildprefix}antinuke role [state] (threshold) (punishment)',
+          syntax: '{guildprefix}antinuke role [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke role on --threshold 5 --do kick'
         };
@@ -55,7 +55,7 @@ module.exports = {
       case 'kick': {
         const subcommandInfo = {
           description: 'Prevent mass member kick',
-          usage: '{guildprefix}antinuke kick [state] (threshold) (punishment)',
+          syntax: '{guildprefix}antinuke kick [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke kick on --threshold 3 --do ban'
         };
@@ -65,7 +65,7 @@ module.exports = {
       case 'ban': {
         const subcommandInfo = {
           description: 'Prevent mass member ban',
-          usage: '{guildprefix}antinuke ban [state] (threshold) (punishment)',
+          syntax: '{guildprefix}antinuke ban [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke ban on --threshold 3 --do ban'
         };
@@ -75,7 +75,7 @@ module.exports = {
       case 'channel': {
         const subcommandInfo = {
           description: 'Prevent mass channel create and delete',
-          usage: '{guildprefix}antinuke channel [state] (threshold) (punishment)',
+          syntax: '{guildprefix}antinuke channel [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke channel on --threshold 5 --do kick'
         };
@@ -85,7 +85,7 @@ module.exports = {
       case 'webhook': {
         const subcommandInfo = {
           description: 'Prevent mass webhook creation',
-          usage: '{guildprefix}antinuke webhook [state] (threshold) (punishment)',
+          syntax: '{guildprefix}antinuke webhook [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke webhook on --threshold 3 --do ban'
         };
@@ -95,7 +95,7 @@ module.exports = {
       case 'botadd': {
         const subcommandInfo = {
           description: 'Prevent new bot additions',
-          usage: '{guildprefix}antinuke botadd [state] (punishment)',
+          syntax: '{guildprefix}antinuke botadd [state] (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke botadd on --do ban'
         };
@@ -105,7 +105,7 @@ module.exports = {
       case 'config': {
         const subcommandInfo = {
           description: 'View server configuration for Antinuke',
-          usage: '{guildprefix}antinuke config',
+          syntax: '{guildprefix}antinuke config',
           aliases: [],
           example: '{guildprefix}antinuke config'
         };
@@ -115,7 +115,7 @@ module.exports = {
       case 'permissions': {
         const subcommandInfo = {
           description: 'Watch specific dangerous permissions',
-          usage: '{guildprefix}antinuke permissions [permission] (punishment)',
+          syntax: '{guildprefix}antinuke permissions [permission] (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke permissions administrator --do kick'
         };
@@ -125,7 +125,7 @@ module.exports = {
       case 'view': {
         const subcommandInfo = {
           description: 'View all whitelisted members & bots',
-          usage: '{guildprefix}antinuke view',
+          syntax: '{guildprefix}antinuke view',
           aliases: [],
           example: '{guildprefix}antinuke view'
         };
@@ -135,7 +135,7 @@ module.exports = {
       case 'admin': {
         const subcommandInfo = {
           description: 'Give a user permissions to edit antinuke settings',
-          usage: '{guildprefix}antinuke admin [user]',
+          syntax: '{guildprefix}antinuke admin [user]',
           aliases: [],
           example: '{guildprefix}antinuke admin @user'
         };
@@ -145,7 +145,7 @@ module.exports = {
       case 'admins': {
         const subcommandInfo = {
           description: 'View all antinuke admins',
-          usage: '{guildprefix}antinuke admins',
+          syntax: '{guildprefix}antinuke admins',
           aliases: [],
           example: '{guildprefix}antinuke admins'
         };

@@ -18,7 +18,7 @@ module.exports = {
     if (args[0] === 'config') {
       const subcommandInfo = {
         description: 'View all server configuration settings',
-        usage: '{guildprefix}settings config',
+        syntax: '{guildprefix}settings config',
         aliases: [],
         parameters: [],
         example: '{guildprefix}settings config'
@@ -114,7 +114,7 @@ module.exports = {
     } else if (args[0] === 'baserole') {
       const subcommandInfo = {
         description: 'set base role for booster role positioning',
-        usage: '{guildprefix}settings baserole [@role]',
+        syntax: '{guildprefix}settings baserole [@role]',
         aliases: [],
         parameters: ['role'],
         example: '{guildprefix}settings baserole @Booster'
@@ -163,7 +163,7 @@ module.exports = {
     } else if (args[0] === 'bypass') {
       const subcommandInfo = {
         description: 'Toggle NSFW bypass to allow NSFW commands in non-NSFW channels',
-        usage: '{guildprefix}settings bypass nsfw',
+        syntax: '{guildprefix}settings bypass nsfw',
         aliases: [],
         parameters: ['nsfw'],
         example: '{guildprefix}settings bypass nsfw'

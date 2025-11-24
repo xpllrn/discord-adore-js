@@ -53,7 +53,7 @@ module.exports = {
       if (subcommand === 'setup') {
         const subcommandInfo = {
           description: 'Setup the VoiceMaster system',
-          usage: '{guildprefix}voicemaster setup',
+          syntax: '{guildprefix}voicemaster setup',
           aliases: [],
           example: '{guildprefix}voicemaster setup'
         };
@@ -61,7 +61,7 @@ module.exports = {
       } else if (subcommand === 'reset') {
         const subcommandInfo = {
           description: 'Reset the VoiceMaster system',
-          usage: '{guildprefix}voicemaster reset',
+          syntax: '{guildprefix}voicemaster reset',
           aliases: [],
           example: '{guildprefix}voicemaster reset'
         };
@@ -95,7 +95,7 @@ module.exports = {
       case 'lock': {
         const subcommandInfo = {
           description: 'Lock your voice channel',
-          usage: '{guildprefix}voicemaster lock',
+          syntax: '{guildprefix}voicemaster lock',
           aliases: [],
           parameters: [],
           example: '{guildprefix}voicemaster lock'
@@ -106,7 +106,7 @@ module.exports = {
       case 'unlock': {
         const subcommandInfo = {
           description: 'Unlock your voice channel',
-          usage: '{guildprefix}voicemaster unlock',
+          syntax: '{guildprefix}voicemaster unlock',
           aliases: [],
           parameters: [],
           example: '{guildprefix}voicemaster unlock'
@@ -118,7 +118,7 @@ module.exports = {
       case 'ghost': {
         const subcommandInfo = {
           description: 'Hide your voice channel',
-          usage: '{guildprefix}voicemaster hide',
+          syntax: '{guildprefix}voicemaster hide',
           aliases: ['ghost'],
           parameters: [],
           example: '{guildprefix}voicemaster ghost'
@@ -130,7 +130,7 @@ module.exports = {
       case 'unghost': {
         const subcommandInfo = {
           description: 'Unhide your voice channel',
-          usage: '{guildprefix}voicemaster unhide',
+          syntax: '{guildprefix}voicemaster unhide',
           aliases: ['unghost'],
           parameters: [],
           example: '{guildprefix}voicemaster unghost'
@@ -141,7 +141,7 @@ module.exports = {
       case 'increase': {
         const subcommandInfo = {
           description: 'Increase user limit by 1',
-          usage: '{guildprefix}voicemaster increase',
+          syntax: '{guildprefix}voicemaster increase',
           aliases: [],
           parameters: [],
           example: '{guildprefix}voicemaster increase'
@@ -152,7 +152,7 @@ module.exports = {
       case 'decrease': {
         const subcommandInfo = {
           description: 'Decrease user limit by 1',
-          usage: '{guildprefix}voicemaster decrease',
+          syntax: '{guildprefix}voicemaster decrease',
           aliases: [],
           parameters: [],
           example: '{guildprefix}voicemaster decrease'
@@ -163,7 +163,7 @@ module.exports = {
       case 'limit': {
         const subcommandInfo = {
           description: 'Set user limit (0-99)',
-          usage: '{guildprefix}voicemaster limit [number]',
+          syntax: '{guildprefix}voicemaster limit [number]',
           aliases: [],
           parameters: ['number'],
           example: '{guildprefix}voicemaster limit 5'
@@ -175,7 +175,7 @@ module.exports = {
       case 'rename': {
         const subcommandInfo = {
           description: 'Change your channel name',
-          usage: '{guildprefix}voicemaster rename [name]',
+          syntax: '{guildprefix}voicemaster rename [name]',
           aliases: ['name'],
           parameters: ['name'],
           example: '{guildprefix}voicemaster rename My Cool Channel'
@@ -187,7 +187,7 @@ module.exports = {
       case 'disconnect': {
         const subcommandInfo = {
           description: 'Disconnect a user from your channel',
-          usage: '{guildprefix}voicemaster kick [@user]',
+          syntax: '{guildprefix}voicemaster kick [@user]',
           aliases: ['disconnect'],
           parameters: ['user'],
           example: '{guildprefix}voicemaster kick @vwsn'
@@ -198,7 +198,7 @@ module.exports = {
       case 'invite': {
         const subcommandInfo = {
           description: 'Invite a user to your channel',
-          usage: '{guildprefix}voicemaster invite [@user]',
+          syntax: '{guildprefix}voicemaster invite [@user]',
           aliases: [],
           parameters: ['user'],
           example: '{guildprefix}voicemaster invite @vwsn'
@@ -209,7 +209,7 @@ module.exports = {
       case 'reject': {
         const subcommandInfo = {
           description: 'Reject a user from your channel',
-          usage: '{guildprefix}voicemaster reject [@user]',
+          syntax: '{guildprefix}voicemaster reject [@user]',
           aliases: [],
           parameters: ['user'],
           example: '{guildprefix}voicemaster reject @vwsn'
@@ -220,7 +220,7 @@ module.exports = {
       case 'permit': {
         const subcommandInfo = {
           description: 'Permit a user to access your channel',
-          usage: '{guildprefix}voicemaster permit [@user]',
+          syntax: '{guildprefix}voicemaster permit [@user]',
           aliases: [],
           parameters: ['user'],
           example: '{guildprefix}voicemaster permit @vwsn'
@@ -231,7 +231,7 @@ module.exports = {
       case 'status': {
         const subcommandInfo = {
           description: 'Set your channel status',
-          usage: '{guildprefix}voicemaster status [text]',
+          syntax: '{guildprefix}voicemaster status [text]',
           aliases: [],
           parameters: ['text'],
           example: '{guildprefix}voicemaster status Playing games!'
@@ -242,7 +242,7 @@ module.exports = {
       case 'transfer': {
         const subcommandInfo = {
           description: 'Transfer ownership to another user',
-          usage: '{guildprefix}voicemaster transfer [@user]',
+          syntax: '{guildprefix}voicemaster transfer [@user]',
           aliases: [],
           parameters: ['user'],
           example: '{guildprefix}voicemaster transfer @vwsn'
@@ -253,7 +253,7 @@ module.exports = {
       case 'claim': {
         const subcommandInfo = {
           description: 'Claim ownership of an abandoned channel',
-          usage: '{guildprefix}voicemaster claim',
+          syntax: '{guildprefix}voicemaster claim',
           aliases: [],
           parameters: [],
           example: '{guildprefix}voicemaster claim'
@@ -387,7 +387,7 @@ async function createVoiceManagerPanel(client, channel) {
     .setTitle('**VoiceMaster Interface**')
     .setDescription(
       '-# Use the buttons below to control your voice channel.\n\n' +
-      '**Button Usage:**\n' +
+      '**Button Syntax:**\n' +
       '> [**`Lock`**](https://dsc.gg/s-invite) the voice channel\n' +
       '> [**`Unlock`**](https://dsc.gg/s-invite) the voice channel\n' +
       '> [**`Ghost`**](https://dsc.gg/s-invite) the voice channel\n' +

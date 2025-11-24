@@ -58,7 +58,7 @@ module.exports = {
     if (!args.length) {
       return message.channel.send(
         '**Text-to-Speech (Free & No API Key Required)**\n\n' +
-        '**Usage:** `{guildprefix}tts [text]`\n' +
+        '**Syntax:** `{guildprefix}tts [text]`\n' +
         '**Example:** `{guildprefix}tts Hello everyone!`\n\n' +
         'Uses high-quality TTS from StreamElements (completely free!)'.replace(/{guildprefix}/g, message.prefix || ',')
       );

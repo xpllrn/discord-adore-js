@@ -23,7 +23,7 @@ module.exports = {
     if (args[0] === 'view') {
       const subcommandInfo = {
         description: 'View a specific case',
-        usage: '{guildprefix}history view [caseid]',
+        syntax: '{guildprefix}history view [caseid]',
         aliases: [],
         parameters: ['caseid'],
         example: '{guildprefix}history view 12'
@@ -75,7 +75,7 @@ module.exports = {
     if (args[0] === 'remove') {
       const subcommandInfo = {
         description: 'Remove a specific case from user history',
-        usage: '{guildprefix}history remove [user] [caseid]',
+        syntax: '{guildprefix}history remove [user] [caseid]',
         aliases: [],
         parameters: ['user', 'caseid'],
         example: '{guildprefix}history remove @user 123'
@@ -123,7 +123,7 @@ module.exports = {
     if (args[0] === 'removeall') {
       const subcommandInfo = {
         description: 'Remove all cases from user history',
-        usage: '{guildprefix}history removeall [user]',
+        syntax: '{guildprefix}history removeall [user]',
         aliases: [],
         parameters: ['user'],
         example: '{guildprefix}history removeall @user'

@@ -57,7 +57,7 @@ module.exports = {
       case 'start': {
         const subcommandInfo = {
           description: 'Start a new blacktea word game',
-          usage: '{guildprefix}blacktea start',
+          syntax: '{guildprefix}blacktea start',
           aliases: [],
           example: '{guildprefix}blacktea start'
         };
@@ -72,7 +72,7 @@ module.exports = {
       case 'end': {
         const subcommandInfo = {
           description: 'End the current blacktea game',
-          usage: '{guildprefix}blacktea end',
+          syntax: '{guildprefix}blacktea end',
           aliases: [],
           example: '{guildprefix}blacktea end'
         };
@@ -89,7 +89,7 @@ module.exports = {
       case 'quit': {
         const subcommandInfo = {
           description: 'Leave the current blacktea game',
-          usage: '{guildprefix}blacktea exit',
+          syntax: '{guildprefix}blacktea exit',
           aliases: ['quit'],
           example: '{guildprefix}blacktea quit'
         };
@@ -110,7 +110,7 @@ module.exports = {
       case 'time': {
         const subcommandInfo = {
           description: 'Set response time for blacktea games (5-60 seconds)',
-          usage: '{guildprefix}blacktea time [seconds]',
+          syntax: '{guildprefix}blacktea time [seconds]',
           aliases: [],
           example: '{guildprefix}blacktea time 15'
         };

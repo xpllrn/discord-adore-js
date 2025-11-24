@@ -35,7 +35,7 @@ module.exports = {
         case 'invite': {
           const subcommandInfo = {
             description: 'Manage invite link filtering',
-            usage: '{guildprefix}filter invites [on/off]',
+            syntax: '{guildprefix}filter invites [on/off]',
             aliases: [],
             parameters: ['on/off'],
             example: '{guildprefix}filter invites on'
@@ -45,7 +45,7 @@ module.exports = {
         case 'add': {
           const subcommandInfo = {
             description: 'Add a word to the filter',
-            usage: '{guildprefix}filter add [word]',
+            syntax: '{guildprefix}filter add [word]',
             aliases: [],
             parameters: ['word'],
             example: '{guildprefix}filter add badword'
@@ -55,7 +55,7 @@ module.exports = {
         case 'remove': {
           const subcommandInfo = {
             description: 'Remove a word from the filter',
-            usage: '{guildprefix}filter remove [word]',
+            syntax: '{guildprefix}filter remove [word]',
             aliases: [],
             parameters: ['word'],
             example: '{guildprefix}filter remove badword'
@@ -65,7 +65,7 @@ module.exports = {
         case 'list': {
           const subcommandInfo = {
             description: 'List all filtered words',
-            usage: '{guildprefix}filter list',
+            syntax: '{guildprefix}filter list',
             aliases: [],
             parameters: [],
             example: '{guildprefix}filter list'
@@ -75,7 +75,7 @@ module.exports = {
         case 'reset': {
           const subcommandInfo = {
             description: 'Reset the word filter',
-            usage: '{guildprefix}filter reset',
+            syntax: '{guildprefix}filter reset',
             aliases: [],
             parameters: [],
             example: '{guildprefix}filter reset'
@@ -85,7 +85,7 @@ module.exports = {
         case 'exempt': {
           const subcommandInfo = {
             description: 'Manage filter exempt list',
-            usage: '{guildprefix}filter exempt [role/user/channel]',
+            syntax: '{guildprefix}filter exempt [role/user/channel]',
             aliases: [],
             parameters: ['role', 'user', 'channel'],
             example: '{guildprefix}filter exempt @Moderator'

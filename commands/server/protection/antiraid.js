@@ -34,7 +34,7 @@ module.exports = {
       case 'avatar': {
         const subcommandInfo = {
           description: 'Kick members without profile pictures',
-          usage: '{guildprefix}antiraid avatar [state] (punishment)',
+          syntax: '{guildprefix}antiraid avatar [state] (punishment)',
           aliases: [],
           example: '{guildprefix}antiraid avatar on --do kick'
         };
@@ -44,7 +44,7 @@ module.exports = {
       case 'newaccount': {
         const subcommandInfo = {
           description: 'Kick/ban new accounts',
-          usage: '{guildprefix}antiraid newaccount [state] (threshold) (punishment)',
+          syntax: '{guildprefix}antiraid newaccount [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antiraid newaccount on --threshold 7 --do ban'
         };
@@ -54,7 +54,7 @@ module.exports = {
       case 'massjoin': {
         const subcommandInfo = {
           description: 'Prevent mass join raids',
-          usage: '{guildprefix}antiraid massjoin [state] (threshold) (punishment)',
+          syntax: '{guildprefix}antiraid massjoin [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antiraid massjoin on --threshold 5 --do ban'
         };
@@ -64,7 +64,7 @@ module.exports = {
       case 'whitelist': {
         const subcommandInfo = {
           description: 'Whitelist a member from antiraid checks',
-          usage: '{guildprefix}antiraid whitelist [user]',
+          syntax: '{guildprefix}antiraid whitelist [user]',
           aliases: [],
           example: '{guildprefix}antiraid whitelist @user'
         };
@@ -74,7 +74,7 @@ module.exports = {
       case 'view': {
         const subcommandInfo = {
           description: 'View all whitelisted members',
-          usage: '{guildprefix}antiraid view',
+          syntax: '{guildprefix}antiraid view',
           aliases: [],
           example: '{guildprefix}antiraid view'
         };
@@ -84,7 +84,7 @@ module.exports = {
       case 'config': {
         const subcommandInfo = {
           description: 'View antiraid configuration',
-          usage: '{guildprefix}antiraid config',
+          syntax: '{guildprefix}antiraid config',
           aliases: [],
           example: '{guildprefix}antiraid config'
         };

@@ -26,7 +26,7 @@ module.exports = {
       case 'addbalance': {
         const subcommandInfo = {
           description: 'Add balance to a user\'s wallet',
-          usage: '{guildprefix}economy addbal [@user] [amount]',
+          syntax: '{guildprefix}economy addbal [@user] [amount]',
           aliases: ['addbalance'],
           parameters: ['user', 'amount'],
           example: '{guildprefix}economy addbal @user 1000'
@@ -39,7 +39,7 @@ module.exports = {
       case 'removebal': {
         const subcommandInfo = {
           description: 'Remove balance from a user\'s wallet',
-          usage: '{guildprefix}economy cleanbal [@user] [amount]',
+          syntax: '{guildprefix}economy cleanbal [@user] [amount]',
           aliases: ['removebal'],
           parameters: ['user', 'amount'],
           example: '{guildprefix}economy cleanbal @user 100'
@@ -57,11 +57,11 @@ module.exports = {
 
 async function handleAddBalance(client, message, args) {
   if (!args[1]) {
-    return embeds.warn(message, 'Please mention a **user** to add balance to!\n\nUsage: `,eco addbal @user 1000`');
+    return embeds.warn(message, 'Please mention a **user** to add balance to!\n\nSyntax: `,eco addbal @user 1000`');
   }
 
   if (!args[2]) {
-    return embeds.warn(message, 'Please specify an **amount** to add!\n\nUsage: `,eco addbal @user 1000`');
+    return embeds.warn(message, 'Please specify an **amount** to add!\n\nSyntax: `,eco addbal @user 1000`');
   }
 
   // Parse user mention or ID
@@ -76,13 +76,13 @@ async function handleAddBalance(client, message, args) {
   }
 
   if (!targetUser) {
-    return embeds.warn(message, 'Please provide a **valid user mention or ID**!\n\nUsage: `,eco addbal @user 1000`');
+    return embeds.warn(message, 'Please provide a **valid user mention or ID**!\n\nSyntax: `,eco addbal @user 1000`');
   }
 
   // Parse amount
   const amount = parseInt(args[2]);
   if (isNaN(amount)) {
-    return embeds.warn(message, 'Please provide a **valid number** for the amount!\n\nUsage: `,eco addbal @user 1000`');
+    return embeds.warn(message, 'Please provide a **valid number** for the amount!\n\nSyntax: `,eco addbal @user 1000`');
   }
 
   if (amount <= 0) {
@@ -125,11 +125,11 @@ async function handleAddBalance(client, message, args) {
 
 async function handleCleanBalance(client, message, args) {
   if (!args[1]) {
-    return embeds.warn(message, 'Please mention a **user** to remove balance from!\n\nUsage: `,eco cleanbal @user 100`');
+    return embeds.warn(message, 'Please mention a **user** to remove balance from!\n\nSyntax: `,eco cleanbal @user 100`');
   }
 
   if (!args[2]) {
-    return embeds.warn(message, 'Please specify an **amount** to remove!\n\nUsage: `,eco cleanbal @user 100`');
+    return embeds.warn(message, 'Please specify an **amount** to remove!\n\nSyntax: `,eco cleanbal @user 100`');
   }
 
   // Parse user mention or ID
@@ -144,13 +144,13 @@ async function handleCleanBalance(client, message, args) {
   }
 
   if (!targetUser) {
-    return embeds.warn(message, 'Please provide a **valid user mention or ID**!\n\nUsage: `,eco cleanbal @user 100`');
+    return embeds.warn(message, 'Please provide a **valid user mention or ID**!\n\nSyntax: `,eco cleanbal @user 100`');
   }
 
   // Parse amount
   const amount = parseInt(args[2]);
   if (isNaN(amount)) {
-    return embeds.warn(message, 'Please provide a **valid number** for the amount!\n\nUsage: `,eco cleanbal @user 100`');
+    return embeds.warn(message, 'Please provide a **valid number** for the amount!\n\nSyntax: `,eco cleanbal @user 100`');
   }
 
   if (amount <= 0) {

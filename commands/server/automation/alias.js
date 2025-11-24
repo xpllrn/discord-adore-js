@@ -26,7 +26,7 @@ module.exports = {
       case 'create': {
         const subcommandInfo = {
           description: 'Create an alias for a command with optional {0} placeholder',
-          usage: '{guildprefix}alias add [shortcut] [command]',
+          syntax: '{guildprefix}alias add [shortcut] [command]',
           aliases: ['create'],
           example: '{guildprefix}alias add deport ban'
         };
@@ -37,7 +37,7 @@ module.exports = {
       case 'delete': {
         const subcommandInfo = {
           description: 'Remove an alias',
-          usage: '{guildprefix}alias remove [shortcut]',
+          syntax: '{guildprefix}alias remove [shortcut]',
           aliases: ['delete'],
           example: '{guildprefix}alias remove bal'
         };
@@ -48,7 +48,7 @@ module.exports = {
       case 'clear': {
         const subcommandInfo = {
           description: 'Remove all aliases in this server',
-          usage: '{guildprefix}alias removeall',
+          syntax: '{guildprefix}alias removeall',
           aliases: ['clear'],
           example: '{guildprefix}alias removeall'
         };
@@ -59,7 +59,7 @@ module.exports = {
       case 'view': {
         const subcommandInfo = {
           description: 'List all your aliases',
-          usage: '{guildprefix}alias list',
+          syntax: '{guildprefix}alias list',
           aliases: ['view'],
           example: '{guildprefix}alias list'
         };
@@ -69,7 +69,7 @@ module.exports = {
       case 'reset': {
         const subcommandInfo = {
           description: 'Reset all your aliases',
-          usage: '{guildprefix}alias reset',
+          syntax: '{guildprefix}alias reset',
           aliases: [],
           example: '{guildprefix}alias reset'
         };

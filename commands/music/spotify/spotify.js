@@ -29,7 +29,7 @@ module.exports = {
       case 'login': {
         const subcommandInfo = {
           description: 'Link your Spotify account to control playback',
-          usage: '{guildprefix}spotify link',
+          syntax: '{guildprefix}spotify link',
           aliases: ['login'],
           example: '{guildprefix}spotify link'
         };
@@ -40,7 +40,7 @@ module.exports = {
       case 'logout': {
         const subcommandInfo = {
           description: 'Unlink your Spotify account',
-          usage: '{guildprefix}spotify unlink',
+          syntax: '{guildprefix}spotify unlink',
           aliases: ['logout'],
           example: '{guildprefix}spotify unlink'
         };
@@ -50,7 +50,7 @@ module.exports = {
       case 'play': {
         const subcommandInfo = {
           description: 'Play a track, search query, or from another user',
-          usage: '{guildprefix}spotify play [track link|search query|@user]',
+          syntax: '{guildprefix}spotify play [track link|search query|@user]',
           aliases: [],
           example: '{guildprefix}spotify play never gonna give you up'
         };
@@ -60,7 +60,7 @@ module.exports = {
       case 'pause': {
         const subcommandInfo = {
           description: 'Pause current playback',
-          usage: '{guildprefix}spotify pause',
+          syntax: '{guildprefix}spotify pause',
           aliases: [],
           example: '{guildprefix}spotify pause'
         };
@@ -71,7 +71,7 @@ module.exports = {
       case 'next': {
         const subcommandInfo = {
           description: 'Skip to the next track',
-          usage: '{guildprefix}spotify skip',
+          syntax: '{guildprefix}spotify skip',
           aliases: ['next'],
           example: '{guildprefix}spotify skip'
         };
@@ -82,7 +82,7 @@ module.exports = {
       case 'back': {
         const subcommandInfo = {
           description: 'Go back to the previous track',
-          usage: '{guildprefix}spotify previous',
+          syntax: '{guildprefix}spotify previous',
           aliases: ['back'],
           example: '{guildprefix}spotify previous'
         };
@@ -93,7 +93,7 @@ module.exports = {
       case 'vol': {
         const subcommandInfo = {
           description: 'Set playback volume (0-100)',
-          usage: '{guildprefix}spotify volume [0-100]',
+          syntax: '{guildprefix}spotify volume [0-100]',
           aliases: ['vol'],
           example: '{guildprefix}spotify volume 50'
         };
@@ -104,7 +104,7 @@ module.exports = {
       case 'loop': {
         const subcommandInfo = {
           description: 'Set repeat mode (track, context, or off)',
-          usage: '{guildprefix}spotify repeat [mode]',
+          syntax: '{guildprefix}spotify repeat [mode]',
           aliases: ['loop'],
           example: '{guildprefix}spotify repeat track'
         };
@@ -114,7 +114,7 @@ module.exports = {
       case 'shuffle': {
         const subcommandInfo = {
           description: 'Toggle shuffle mode on or off',
-          usage: '{guildprefix}spotify shuffle [state]',
+          syntax: '{guildprefix}spotify shuffle [state]',
           aliases: [],
           example: '{guildprefix}spotify shuffle on'
         };
@@ -125,7 +125,7 @@ module.exports = {
       case 'q': {
         const subcommandInfo = {
           description: 'Add a track to your queue',
-          usage: '{guildprefix}spotify queue [track link|search query]',
+          syntax: '{guildprefix}spotify queue [track link|search query]',
           aliases: ['q'],
           example: '{guildprefix}spotify queue bohemian rhapsody'
         };
@@ -135,7 +135,7 @@ module.exports = {
       case 'search': {
         const subcommandInfo = {
           description: 'Search for a track and get its Spotify link',
-          usage: '{guildprefix}spotify search [search query|@user]',
+          syntax: '{guildprefix}spotify search [search query|@user]',
           aliases: [],
           example: '{guildprefix}spotify search the beatles'
         };
@@ -146,7 +146,7 @@ module.exports = {
       case 'recent': {
         const subcommandInfo = {
           description: 'View your recently played tracks',
-          usage: '{guildprefix}spotify recents',
+          syntax: '{guildprefix}spotify recents',
           aliases: ['recent'],
           example: '{guildprefix}spotify recents'
         };
@@ -157,7 +157,7 @@ module.exports = {
       case 'tracks': {
         const subcommandInfo = {
           description: 'View your top tracks (short, medium, or long term)',
-          usage: '{guildprefix}spotify toptracks [short|medium|long]',
+          syntax: '{guildprefix}spotify toptracks [short|medium|long]',
           aliases: ['tracks'],
           example: '{guildprefix}spotify toptracks short'
         };
@@ -168,7 +168,7 @@ module.exports = {
       case 'artists': {
         const subcommandInfo = {
           description: 'View your top artists (short, medium, or long term)',
-          usage: '{guildprefix}spotify topartists [short|medium|long]',
+          syntax: '{guildprefix}spotify topartists [short|medium|long]',
           aliases: ['artists'],
           example: '{guildprefix}spotify topartists long'
         };

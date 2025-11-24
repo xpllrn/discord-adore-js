@@ -137,7 +137,7 @@ module.exports = {
       case 'add': {
         const subcommandInfo = {
           description: 'Add a sticker to the server',
-          usage: '{guildprefix}sticker add [name] [image/url]',
+          syntax: '{guildprefix}sticker add [name] [image/url]',
           aliases: [],
           parameters: ['name', 'image'],
           example: '{guildprefix}sticker add cool_sticker [attach image]'
@@ -148,7 +148,7 @@ module.exports = {
       case 'delete': {
         const subcommandInfo = {
           description: 'Remove a sticker from the server',
-          usage: '{guildprefix}sticker remove [message_link]',
+          syntax: '{guildprefix}sticker remove [message_link]',
           aliases: ['delete'],
           parameters: ['message_link'],
           example: '{guildprefix}sticker remove https://discord.com/channels/...'
@@ -158,7 +158,7 @@ module.exports = {
       case 'tag': {
         const subcommandInfo = {
           description: 'Tag all stickers with server vanity',
-          usage: '{guildprefix}sticker tag',
+          syntax: '{guildprefix}sticker tag',
           aliases: [],
           parameters: [],
           example: '{guildprefix}sticker tag'

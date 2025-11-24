@@ -34,7 +34,7 @@ module.exports = {
     if (args[0] === 'create' || args[0] === 'c') {
       const subcommandInfo = {
         description: 'Create a new role',
-        usage: '{guildprefix}role create [name]',
+        syntax: '{guildprefix}role create [name]',
         aliases: ['c'],
         parameters: ['name'],
         example: '{guildprefix}role create VIP'
@@ -63,7 +63,7 @@ module.exports = {
     if (args[0] === 'delete' || args[0] === 'del') {
       const subcommandInfo = {
         description: 'Delete a role',
-        usage: '{guildprefix}role delete [role]',
+        syntax: '{guildprefix}role delete [role]',
         aliases: ['del'],
         parameters: ['role'],
         example: '{guildprefix}role delete VIP'
@@ -116,7 +116,7 @@ module.exports = {
     if (args[0] === 'rename') {
       const subcommandInfo = {
         description: 'Rename a role',
-        usage: '{guildprefix}role rename [role] [new name]',
+        syntax: '{guildprefix}role rename [role] [new name]',
         aliases: [],
         parameters: ['role', 'new name'],
         example: '{guildprefix}role rename VIP Premium'
@@ -164,7 +164,7 @@ module.exports = {
     if (args[0] === 'color') {
       const subcommandInfo = {
         description: 'Change role color',
-        usage: '{guildprefix}role color [role] [color]',
+        syntax: '{guildprefix}role color [role] [color]',
         aliases: [],
         parameters: ['role', 'color'],
         example: '{guildprefix}role color VIP #ff0000'
@@ -246,7 +246,7 @@ module.exports = {
     if (args[0] === 'gradient') {
       const subcommandInfo = {
         description: 'Apply gradient color to role name',
-        usage: '{guildprefix}role gradient [role] [color1] [color2]',
+        syntax: '{guildprefix}role gradient [role] [color1] [color2]',
         aliases: [],
         parameters: ['role', 'color1', 'color2'],
         example: '{guildprefix}role gradient VIP #ff0000 #0000ff'
@@ -356,7 +356,7 @@ module.exports = {
     if (args[0] === 'holographic' || args[0] === 'holo') {
       const subcommandInfo = {
         description: 'Apply holographic effect to role name',
-        usage: '{guildprefix}role holographic [role]',
+        syntax: '{guildprefix}role holographic [role]',
         aliases: ['holo'],
         parameters: ['role'],
         example: '{guildprefix}role holo VIP'
@@ -416,7 +416,7 @@ module.exports = {
     if (args[0] === 'icon') {
       const subcommandInfo = {
         description: 'Set role icon',
-        usage: '{guildprefix}role icon [role] [emoji]',
+        syntax: '{guildprefix}role icon [role] [emoji]',
         aliases: [],
         parameters: ['role', 'emoji'],
         example: '{guildprefix}role icon VIP ⭐'
@@ -527,7 +527,7 @@ module.exports = {
     if (args[0] === 'humans' || args[0] === 'bots' || args[0] === 'all') {
       const subcommandInfo = {
         description: 'Assign role to multiple members',
-        usage: '{guildprefix}role humans/bots/all [role]',
+        syntax: '{guildprefix}role humans/bots/all [role]',
         aliases: [],
         parameters: ['role'],
         example: '{guildprefix}role humans Member'
@@ -632,7 +632,7 @@ module.exports = {
     if (args[0] === 'restore') {
       const subcommandInfo = {
         description: 'Restore roles to a user who left the server',
-        usage: '{guildprefix}role restore [user]',
+        syntax: '{guildprefix}role restore [user]',
         aliases: [],
         parameters: ['user'],
         example: '{guildprefix}role restore @user'

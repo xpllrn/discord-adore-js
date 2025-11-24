@@ -29,7 +29,7 @@ module.exports = {
       case 'inv': {
         const subcommandInfo = {
           description: 'Fetch an invite link for a server by ID',
-          usage: '{guildprefix}fetch invite [server id]',
+          syntax: '{guildprefix}fetch invite [server id]',
           aliases: ['inv'],
           parameters: ['server id'],
           example: '{guildprefix}fetch invite 1234567890123456789'
@@ -42,7 +42,7 @@ module.exports = {
       case 'confess': {
         const subcommandInfo = {
           description: 'Reveal who submitted a confession',
-          usage: '{guildprefix}fetch confession [server id] [confession id]',
+          syntax: '{guildprefix}fetch confession [server id] [confession id]',
           aliases: ['confess'],
           parameters: ['server id', 'confession id'],
           example: '{guildprefix}fetch confession 1234567890123456789 5'
@@ -131,7 +131,7 @@ async function handleInvite(client, message, args) {
 
 async function handleConfession(client, message, args) {
   if (!args[1] || !args[2]) {
-    return embeds.warn(message, 'Usage: `,fetch confession [server id] [confession id]`');
+    return embeds.warn(message, 'Syntax: `,fetch confession [server id] [confession id]`');
   }
 
   const guildId = args[1];

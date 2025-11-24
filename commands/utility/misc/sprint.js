@@ -65,7 +65,7 @@ module.exports = {
       case 'start': {
         const subcommandInfo = {
           description: 'Start a new reading sprint',
-          usage: '{guildprefix}sprint start [duration] [name]',
+          syntax: '{guildprefix}sprint start [duration] [name]',
           aliases: [],
           parameters: ['duration', 'name (optional)'],
           example: '{guildprefix}sprint start 30m Reading Session'
@@ -75,7 +75,7 @@ module.exports = {
       case 'end': {
         const subcommandInfo = {
           description: 'End the current sprint',
-          usage: '{guildprefix}sprint end',
+          syntax: '{guildprefix}sprint end',
           aliases: [],
           parameters: [],
           example: '{guildprefix}sprint end'
@@ -85,7 +85,7 @@ module.exports = {
       case 'join': {
         const subcommandInfo = {
           description: 'Join the current sprint',
-          usage: '{guildprefix}sprint join [book name], [start page]',
+          syntax: '{guildprefix}sprint join [book name], [start page]',
           aliases: [],
           parameters: ['book name', 'start page'],
           example: '{guildprefix}sprint join Harry Potter, 150'
@@ -95,7 +95,7 @@ module.exports = {
       case 'leave': {
         const subcommandInfo = {
           description: 'Leave the current sprint',
-          usage: '{guildprefix}sprint leave',
+          syntax: '{guildprefix}sprint leave',
           aliases: [],
           parameters: [],
           example: '{guildprefix}sprint leave'
@@ -105,7 +105,7 @@ module.exports = {
       case 'update': {
         const subcommandInfo = {
           description: 'Update your current page',
-          usage: '{guildprefix}sprint update [page number]',
+          syntax: '{guildprefix}sprint update [page number]',
           aliases: [],
           parameters: ['page number'],
           example: '{guildprefix}sprint update 175'
@@ -115,7 +115,7 @@ module.exports = {
       case 'flow': {
         const subcommandInfo = {
           description: 'Pause or resume your time tracking',
-          usage: '{guildprefix}sprint flow',
+          syntax: '{guildprefix}sprint flow',
           aliases: [],
           parameters: [],
           example: '{guildprefix}sprint flow'
@@ -125,7 +125,7 @@ module.exports = {
       case 'leaderboard': {
         const subcommandInfo = {
           description: 'Show sprint leaderboard',
-          usage: '{guildprefix}sprint leaderboard',
+          syntax: '{guildprefix}sprint leaderboard',
           aliases: [],
           parameters: [],
           example: '{guildprefix}sprint leaderboard'
@@ -135,7 +135,7 @@ module.exports = {
       case 'history': {
         const subcommandInfo = {
           description: 'Show your sprint history',
-          usage: '{guildprefix}sprint history',
+          syntax: '{guildprefix}sprint history',
           aliases: [],
           parameters: [],
           example: '{guildprefix}sprint history'

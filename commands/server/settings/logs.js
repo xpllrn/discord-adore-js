@@ -31,7 +31,7 @@ module.exports = {
         case 'add': {
           const subcommandInfo = {
             description: 'Add a logging channel',
-            usage: '{guildprefix}logs add [channel] [type]',
+            syntax: '{guildprefix}logs add [channel] [type]',
             aliases: [],
             parameters: ['channel', 'type'],
             example: '{guildprefix}logs add #logs all'
@@ -43,7 +43,7 @@ module.exports = {
         case 'delete': {
           const subcommandInfo = {
             description: 'Remove a logging channel',
-            usage: '{guildprefix}logs remove [channel] [type]',
+            syntax: '{guildprefix}logs remove [channel] [type]',
             aliases: ['delete'],
             parameters: ['channel', 'type (optional)'],
             example: '{guildprefix}logs remove #logs'
@@ -55,7 +55,7 @@ module.exports = {
         case 'show': {
           const subcommandInfo = {
             description: 'List all logging channels',
-            usage: '{guildprefix}logs list',
+            syntax: '{guildprefix}logs list',
             aliases: ['show'],
             parameters: [],
             example: '{guildprefix}logs list'

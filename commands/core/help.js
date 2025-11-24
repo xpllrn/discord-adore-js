@@ -169,7 +169,7 @@ function parseSubcommandInfo(objectContent, subcommandName, commandName, guildPr
   }
 
   // Extract usage/syntax
-  const usageMatch = objectContent.match(/usage:\s*[`'"]([^`'"]*)[`'"]/);
+  const usageMatch = objectContent.match(/syntax:\s*[`'"]([^`'"]*)[`'"]/);
   if (usageMatch) {
     let usage = usageMatch[1].replace(/\{guildprefix\}/g, guildPrefix);
     subcommandData.syntax = usage;

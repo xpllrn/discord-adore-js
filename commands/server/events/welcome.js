@@ -27,7 +27,7 @@ module.exports = {
     if (args[0] === 'add') {
       const subcommandInfo = {
         description: 'Add or update a welcome message for a channel',
-        usage: '{guildprefix}welcome add [channel] [message]',
+        syntax: '{guildprefix}welcome add [channel] [message]',
         aliases: [],
         parameters: ['channel', 'message'],
         example: '{guildprefix}welcome add #general Welcome {user.mention}!'
@@ -71,7 +71,7 @@ module.exports = {
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
         description: 'Remove a welcome message from a channel',
-        usage: '{guildprefix}welcome remove [channel]',
+        syntax: '{guildprefix}welcome remove [channel]',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}welcome remove #general'
@@ -106,7 +106,7 @@ module.exports = {
     } else if (args[0] === 'view') {
       const subcommandInfo = {
         description: 'Preview the welcome message for a channel',
-        usage: '{guildprefix}welcome view [channel]',
+        syntax: '{guildprefix}welcome view [channel]',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}welcome view #general'
@@ -142,7 +142,7 @@ module.exports = {
     } else if (args[0] === 'variables') {
       const subcommandInfo = {
         description: 'Shows available variables for welcome messages',
-        usage: '{guildprefix}welcome variables',
+        syntax: '{guildprefix}welcome variables',
         aliases: [],
         parameters: [],
         example: '{guildprefix}welcome variables'
@@ -161,7 +161,7 @@ module.exports = {
     } else if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'Lists all configured welcome messages',
-        usage: '{guildprefix}welcome list',
+        syntax: '{guildprefix}welcome list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}welcome list'

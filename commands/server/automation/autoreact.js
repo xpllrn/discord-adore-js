@@ -26,7 +26,7 @@ module.exports = {
     if (args[0] === 'add' || args[0] === 'create') {
       const subcommandInfo = {
         description: 'Add an autoreact for a word',
-        usage: '{guildprefix}autoreact add [emoji] [word]',
+        syntax: '{guildprefix}autoreact add [emoji] [word]',
         aliases: ['create'],
         parameters: ['emoji', 'word'],
         example: '{guildprefix}autoreact add :star: hello'
@@ -91,7 +91,7 @@ module.exports = {
     } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
       const subcommandInfo = {
         description: 'Remove an autoreact for a word',
-        usage: '{guildprefix}autoreact remove [word]',
+        syntax: '{guildprefix}autoreact remove [word]',
         aliases: ['delete', 'rm', 'del'],
         parameters: ['word'],
         example: '{guildprefix}autoreact remove hello'
@@ -117,7 +117,7 @@ module.exports = {
     } else if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'List all autoreacts',
-        usage: '{guildprefix}autoreact list',
+        syntax: '{guildprefix}autoreact list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}autoreact list'
@@ -177,7 +177,7 @@ module.exports = {
     } else if (args[0] === 'reset') {
       const subcommandInfo = {
         description: 'Remove all autoreacts',
-        usage: '{guildprefix}autoreact reset',
+        syntax: '{guildprefix}autoreact reset',
         aliases: [],
         parameters: [],
         example: '{guildprefix}autoreact reset'

@@ -14,15 +14,9 @@ module.exports = {
   description: `force a nickname on a user that will be automatically restored if they try to change it`,
   syntax: 'forcenick [user] (nickname)',
   example: 'forcenick @user NewNickname',
+  permission: 'manage guild & manage nicknames',
   isGroupCommand: true,
   run: async (client, message, args) => {
-
-    // Check for both Manage Guild AND Manage Nicknames permissions
-    if (!hasMultipleDiscordPermissions(
-      message,
-      [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageNicknames],
-      ['Manage Server', 'Manage Nicknames']
-    )) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageNicknames)) {
       return embeds.deny(message, 'I need **Manage Nicknames** permission to use this command');
@@ -40,7 +34,7 @@ module.exports = {
     if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'List all forced nicknames',
-        usage: '{guildprefix}forcenick list',
+        syntax: '{guildprefix}forcenick list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}forcenick list'
@@ -124,7 +118,7 @@ module.exports = {
     if (args[0] === 'reset') {
       const subcommandInfo = {
         description: 'Remove all forced nicknames',
-        usage: '{guildprefix}forcenick reset',
+        syntax: '{guildprefix}forcenick reset',
         aliases: [],
         parameters: [],
         example: '{guildprefix}forcenick reset'
@@ -179,7 +173,7 @@ module.exports = {
     const subcommandInfo = {
       name: 'set',
       description: 'Force a nickname on a user or remove their forced nickname',
-      usage: '{guildprefix}forcenick [@user] [nickname]',
+      syntax: '{guildprefix}forcenick [@user] [nickname]',
       aliases: [],
       parameters: ['user', 'nickname (optional)'],
       example: '{guildprefix}forcenick @user NewNickname'

@@ -28,7 +28,7 @@ module.exports = {
     if (args[0] === 'add') {
       const subcommandInfo = {
         description: 'Add or update a leave message for a channel',
-        usage: '{guildprefix}leave add [channel] [message]',
+        syntax: '{guildprefix}leave add [channel] [message]',
         aliases: [],
         parameters: ['channel', 'message'],
         example: '{guildprefix}leave add #general Goodbye {user.name}!'
@@ -73,7 +73,7 @@ module.exports = {
     } else if (args[0] === 'remove') {
       const subcommandInfo = {
         description: 'Remove a leave message from a channel',
-        usage: '{guildprefix}leave remove [channel]',
+        syntax: '{guildprefix}leave remove [channel]',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}leave remove #general'
@@ -112,7 +112,7 @@ module.exports = {
     } else if (args[0] === 'view') {
       const subcommandInfo = {
         description: 'Preview the leave message for a channel',
-        usage: '{guildprefix}leave view [channel]',
+        syntax: '{guildprefix}leave view [channel]',
         aliases: [],
         parameters: ['channel'],
         example: '{guildprefix}leave view #general'
@@ -148,7 +148,7 @@ module.exports = {
     } else if (args[0] === 'variables') {
       const subcommandInfo = {
         description: 'Shows available variables for leave messages',
-        usage: '{guildprefix}leave variables',
+        syntax: '{guildprefix}leave variables',
         aliases: [],
         parameters: [],
         example: '{guildprefix}leave variables'
@@ -167,7 +167,7 @@ module.exports = {
     } else if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'Lists all configured leave messages',
-        usage: '{guildprefix}leave list',
+        syntax: '{guildprefix}leave list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}leave list'

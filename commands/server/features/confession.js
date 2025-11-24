@@ -240,7 +240,7 @@ module.exports = {
 
         const subcommandInfo = {
           description: 'Set or view the confession channel',
-          usage: '{guildprefix}confession channel [#channel]',
+          syntax: '{guildprefix}confession channel [#channel]',
           aliases: [],
           parameters: ['channel (optional)'],
           example: '{guildprefix}confession channel #confessions'
@@ -269,7 +269,7 @@ module.exports = {
       } else if (subcommand === 'blacklist') {
         const subcommandInfo = {
           description: 'Add or remove users from the confession blacklist',
-          usage: '{guildprefix}confession blacklist [@user]',
+          syntax: '{guildprefix}confession blacklist [@user]',
           aliases: [],
           parameters: ['user (optional)'],
           example: '{guildprefix}confession blacklist @user'
@@ -294,7 +294,7 @@ module.exports = {
       } else if (subcommand === 'config') {
         const subcommandInfo = {
           description: 'View the confession system configuration',
-          usage: '{guildprefix}confession config',
+          syntax: '{guildprefix}confession config',
           aliases: [],
           parameters: [],
           example: '{guildprefix}confession config'

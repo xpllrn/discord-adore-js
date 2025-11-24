@@ -14,23 +14,17 @@ module.exports = {
   description: `Set up automatic role assign on member join`,
   syntax: 'autorole [subcommand] (parameters)',
   example: 'autorole add @Member',
+  permission: 'manage guild & manage roles',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');
-
-    // Check for both Manage Guild AND Manage Roles permissions
-    if (!hasMultipleDiscordPermissions(
-      message,
-      [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles],
-      ['Manage Server', 'Manage Roles']
-    )) return;
 
     await ensureGuildData(message.guild.id);
 
     if (args[0] === 'add') {
       const subcommandInfo = {
         description: 'Adds a autorole and assigns on join to member',
-        usage: '{guildprefix}autorole add [role]',
+        syntax: '{guildprefix}autorole add [role]',
         aliases: ['create'],
         parameters: ['role'],
         example: '{guildprefix}autorole add Member'
@@ -79,7 +73,7 @@ module.exports = {
     } else if (args[0] === 'reset') {
       const subcommandInfo = {
         description: 'Clears every autorole for guild',
-        usage: '{guildprefix}autorole reset',
+        syntax: '{guildprefix}autorole reset',
         aliases: ['clear'],
         parameters: [],
         example: '{guildprefix}autorole reset'
@@ -111,7 +105,7 @@ module.exports = {
     } else if (args[0] === 'list') {
       const subcommandInfo = {
         description: 'Lists all autoroles configured for the guild',
-        usage: '{guildprefix}autorole list',
+        syntax: '{guildprefix}autorole list',
         aliases: [],
         parameters: [],
         example: '{guildprefix}autorole list'
@@ -159,7 +153,7 @@ module.exports = {
     } else if (args[0] === 'remove' || args[0] === 'rm' || args[0] === 'delete' || args[0] === 'del') {
       const subcommandInfo = {
         description: 'Removes a autorole and stops assigning on join',
-        usage: '{guildprefix}autorole remove [role]',
+        syntax: '{guildprefix}autorole remove [role]',
         aliases: ['delete', 'del', 'rm'],
         parameters: ['role'],
         example: '{guildprefix}autorole remove Member'

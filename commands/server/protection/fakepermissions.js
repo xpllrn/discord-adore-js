@@ -33,7 +33,7 @@ module.exports = {
       case 'add': {
         const subcommandInfo = {
           description: 'Add fake permissions to a role',
-          usage: '{guildprefix}fakepermissions add [role] [permissions]',
+          syntax: '{guildprefix}fakepermissions add [role] [permissions]',
           aliases: [],
           example: '{guildprefix}fakepermissions add @Moderator ban_members'
         };
@@ -43,7 +43,7 @@ module.exports = {
       case 'remove': {
         const subcommandInfo = {
           description: 'Remove fake permissions from a role',
-          usage: '{guildprefix}fakepermissions remove [role] [permissions]',
+          syntax: '{guildprefix}fakepermissions remove [role] [permissions]',
           aliases: [],
           example: '{guildprefix}fakepermissions remove @Moderator ban_members'
         };
@@ -53,7 +53,7 @@ module.exports = {
       case 'list': {
         const subcommandInfo = {
           description: 'View fake permissions for a role',
-          usage: '{guildprefix}fakepermissions list [role]',
+          syntax: '{guildprefix}fakepermissions list [role]',
           aliases: [],
           example: '{guildprefix}fakepermissions list @Moderator'
         };
@@ -63,7 +63,7 @@ module.exports = {
       case 'reset': {
         const subcommandInfo = {
           description: 'Reset all fake permissions',
-          usage: '{guildprefix}fakepermissions reset',
+          syntax: '{guildprefix}fakepermissions reset',
           aliases: [],
           example: '{guildprefix}fakepermissions reset'
         };

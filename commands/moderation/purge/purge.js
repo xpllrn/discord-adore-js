@@ -113,7 +113,7 @@ module.exports = {
       if (args[0] === 'bots') {
         const subcommandInfo = {
           description: 'Delete messages from bots only',
-          usage: '{guildprefix}purge bots [number]',
+          syntax: '{guildprefix}purge bots [number]',
           aliases: [],
           parameters: ['number'],
           example: '{guildprefix}purge bots 50'
@@ -130,7 +130,7 @@ module.exports = {
       } else if (args[0] === 'humans') {
         const subcommandInfo = {
           description: 'Delete messages from humans only',
-          usage: '{guildprefix}purge humans [number]',
+          syntax: '{guildprefix}purge humans [number]',
           aliases: [],
           parameters: ['number'],
           example: '{guildprefix}purge humans 50'
@@ -147,7 +147,7 @@ module.exports = {
       } else if (args[0] === 'media') {
         const subcommandInfo = {
           description: 'Delete messages with attachments or embeds',
-          usage: '{guildprefix}purge media [number]',
+          syntax: '{guildprefix}purge media [number]',
           aliases: [],
           parameters: ['number'],
           example: '{guildprefix}purge media 50'
@@ -164,7 +164,7 @@ module.exports = {
       } else if (args[0] === 'between') {
         const subcommandInfo = {
           description: 'Delete messages between two message IDs',
-          usage: '{guildprefix}purge between [topMsgID] [lastMsgID]',
+          syntax: '{guildprefix}purge between [topMsgID] [lastMsgID]',
           aliases: [],
           parameters: ['topMsgID', 'lastMsgID'],
           example: '{guildprefix}purge between 123456789 987654321'

@@ -28,7 +28,7 @@ module.exports = {
         const subcommandInfo = {
           name: 'create',
           description: 'Create a new webhook in the current channel',
-          usage: '{guildprefix}webhook create [name]',
+          syntax: '{guildprefix}webhook create [name]',
           aliases: [],
           parameters: ['name'],
           example: '{guildprefix}webhook create MyBot'
@@ -40,7 +40,7 @@ module.exports = {
         const subcommandInfo = {
           name: 'delete',
           description: 'Delete a webhook by ID, name, or short ID',
-          usage: '{guildprefix}webhook delete [webhook_id/name/short_id]',
+          syntax: '{guildprefix}webhook delete [webhook_id/name/short_id]',
           aliases: ['remove'],
           parameters: ['webhook_identifier'],
           example: '{guildprefix}webhook delete abc1'
@@ -51,7 +51,7 @@ module.exports = {
         const subcommandInfo = {
           name: 'send',
           description: 'Send a message through a webhook',
-          usage: '{guildprefix}webhook send [webhook_id] [message]',
+          syntax: '{guildprefix}webhook send [webhook_id] [message]',
           aliases: [],
           parameters: ['webhook_id', 'message'],
           example: '{guildprefix}webhook send abc1 Hello world!'
@@ -62,7 +62,7 @@ module.exports = {
         const subcommandInfo = {
           name: 'edit',
           description: 'Edit a webhook message',
-          usage: '{guildprefix}webhook edit [message_link] [new_message]',
+          syntax: '{guildprefix}webhook edit [message_link] [new_message]',
           aliases: [],
           parameters: ['message_link', 'new_message'],
           example: '{guildprefix}webhook edit https://discord.com/... New content'
@@ -73,7 +73,7 @@ module.exports = {
         const subcommandInfo = {
           name: 'rename',
           description: 'Rename a webhook',
-          usage: '{guildprefix}webhook rename [webhook_id] [new_name]',
+          syntax: '{guildprefix}webhook rename [webhook_id] [new_name]',
           aliases: [],
           parameters: ['webhook_id', 'new_name'],
           example: '{guildprefix}webhook rename abc1 NewName'
@@ -84,7 +84,7 @@ module.exports = {
         const subcommandInfo = {
           name: 'avatar',
           description: 'Set a webhook\'s avatar',
-          usage: '{guildprefix}webhook avatar [webhook_id] [image_url]',
+          syntax: '{guildprefix}webhook avatar [webhook_id] [image_url]',
           aliases: [],
           parameters: ['webhook_id', 'image_url'],
           example: '{guildprefix}webhook avatar abc1 https://example.com/image.png'
@@ -95,7 +95,7 @@ module.exports = {
         const subcommandInfo = {
           name: 'list',
           description: 'List all webhooks in the server',
-          usage: '{guildprefix}webhook list',
+          syntax: '{guildprefix}webhook list',
           aliases: [],
           parameters: [],
           example: '{guildprefix}webhook list'
