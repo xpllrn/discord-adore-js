@@ -110,10 +110,10 @@ module.exports = {
       
       case 'permissions': {
         const subcommandInfo = {
-          description: 'Watch dangerous permissions (auto-watches 9 permissions)',
-          usage: '{guildprefix}antinuke permissions <on|off> [--do strip|kick|ban]',
+          description: 'Watch specific dangerous permissions',
+          usage: '{guildprefix}antinuke permissions <permission> [--do strip|kick|ban]',
           aliases: [],
-          example: '{guildprefix}antinuke permissions on --do kick'
+          example: '{guildprefix}antinuke permissions administrator --do kick'
         };
         return handlePermissions(message, args, antinukeService);
       }
@@ -323,19 +323,15 @@ async function handleConfig(message, antinukeService) {
 }
 
 async function handlePermissions(message, args, antinukeService) {
-  const action = args[1]?.toLowerCase();
+  const permissionArg = args[1]?.toLowerCase();
 
-  // If no action specified, show current watched permissions or enable with defaults
-  if (!action) {
+  // If no permission specified, show current watched permissions
+  if (!permissionArg) {
     const settings = await antinukeService.getSettings(message.guild.id);
     
-    if (!settings.modules.permissions.enabled) {
-      return embeds.warn(message, 'Permission monitoring is not enabled. Use `,antinuke permissions on` to enable with default permissions.');
-    }
-
     const watched = settings.modules.permissions.watched;
     if (watched.length === 0) {
-      return embeds.warn(message, 'No permissions are being watched');
+      return embeds.warn(message, 'No permissions are being watched. Use `,antinuke permissions <permission>` to add one.');
     }
 
     const embed = new EmbedBuilder()
@@ -348,7 +344,7 @@ async function handlePermissions(message, args, antinukeService) {
       .setDescription(watched.map(p => `\`${p}\``).join(', '))
       .addFields({
         name: '**Punishment**',
-        value: settings.modules.permissions.punishment,
+        value: settings.modules.permissions.punishment || 'strip',
         inline: true
       })
       .setFooter({ 
@@ -360,81 +356,46 @@ async function handlePermissions(message, args, antinukeService) {
     return message.channel.send({ embeds: [embed] });
   }
 
-  // Handle on/off
-  if (action === 'on' || action === 'off') {
-    const enabled = action === 'on';
-    
-    // Parse optional --do parameter
-    let punishment = 'strip';
-    const doIndex = args.findIndex(arg => arg === '--do');
-    if (doIndex !== -1 && args[doIndex + 1]) {
-      const punishmentArg = args[doIndex + 1].toLowerCase();
-      if (['strip', 'kick', 'ban'].includes(punishmentArg)) {
-        punishment = punishmentArg;
-      }
-    }
-
-    const guildService = getService('guild');
-    const guildData = await guildService.ensureGuildData(message.guild.id);
-    
-    if (!guildData.Antinuke) {
-      guildData.Antinuke = antinukeService.getDefaultSettings();
-    }
-
-    guildData.Antinuke.modules.permissions.enabled = enabled;
-    guildData.Antinuke.modules.permissions.punishment = punishment;
-
-    // Auto-add default permissions when enabling
-    if (enabled && guildData.Antinuke.modules.permissions.watched.length === 0) {
-      guildData.Antinuke.modules.permissions.watched = [
-        'Administrator',
-        'BanMembers',
-        'KickMembers',
-        'ModerateMembers',
-        'MentionEveryone',
-        'ManageGuild',
-        'ManageChannels',
-        'ManageRoles',
-        'ManageWebhooks'
-      ];
-    }
-
-    await guildService.set(message.guild.id, guildData);
-
-    // Enable antinuke system if not already enabled
-    if (!guildData.Antinuke.enabled && enabled) {
-      guildData.Antinuke.enabled = true;
-      await guildService.set(message.guild.id, guildData);
-    }
-
-    await antinukeService.logAction(
-      message.guild.id,
-      `permissions_${enabled ? 'enable' : 'disable'}`,
-      message.author.id,
-      `${enabled ? 'Enabled' : 'Disabled'} permission monitoring`
-    );
-
-    if (enabled) {
-      const watched = guildData.Antinuke.modules.permissions.watched;
-      return embeds.success(
-        message,
-        `Enabled permission monitoring with punishment: **${punishment}**\n> Watching: ${watched.map(p => `\`${p}\``).join(', ')}`
-      );
-    } else {
-      return embeds.success(message, 'Disabled permission monitoring');
-    }
-  }
-
-  // Handle grant/remove for individual permissions
-  const permission = args[2];
-
-  if (!['grant', 'remove'].includes(action)) {
-    return embeds.warn(message, 'Please specify `on`, `off`, `grant`, or `remove`: `,antinuke permissions on --do kick`');
-  }
-
-  if (!permission) {
-    return embeds.warn(message, 'Please specify a permission name: `,antinuke permissions grant Administrator`');
-  }
+  // Map of permission aliases to proper names
+  const permissionMap = {
+    'administrator': 'Administrator',
+    'admin': 'Administrator',
+    'ban_members': 'BanMembers',
+    'banmembers': 'BanMembers',
+    'ban': 'BanMembers',
+    'kick_members': 'KickMembers',
+    'kickmembers': 'KickMembers',
+    'kick': 'KickMembers',
+    'moderate_members': 'ModerateMembers',
+    'moderatembers': 'ModerateMembers',
+    'timeout': 'ModerateMembers',
+    'mention_everyone': 'MentionEveryone',
+    'mentioneveryone': 'MentionEveryone',
+    'mention': 'MentionEveryone',
+    'manage_guild': 'ManageGuild',
+    'manageguild': 'ManageGuild',
+    'manageserver': 'ManageGuild',
+    'manage_channels': 'ManageChannels',
+    'managechannels': 'ManageChannels',
+    'channels': 'ManageChannels',
+    'manage_roles': 'ManageRoles',
+    'manageroles': 'ManageRoles',
+    'roles': 'ManageRoles',
+    'view_audit_log': 'ViewAuditLog',
+    'viewauditlog': 'ViewAuditLog',
+    'auditlog': 'ViewAuditLog',
+    'manage_webhooks': 'ManageWebhooks',
+    'managewebhooks': 'ManageWebhooks',
+    'webhooks': 'ManageWebhooks',
+    'manage_expressions': 'ManageGuildExpressions',
+    'manageexpressions': 'ManageGuildExpressions',
+    'manageguildexpressions': 'ManageGuildExpressions',
+    'expressions': 'ManageGuildExpressions',
+    'emojis': 'ManageGuildExpressions',
+    'manage_nicknames': 'ManageNicknames',
+    'managenicknames': 'ManageNicknames',
+    'nicknames': 'ManageNicknames'
+  };
 
   const validPermissions = [
     'Administrator',
@@ -445,40 +406,102 @@ async function handlePermissions(message, args, antinukeService) {
     'ManageGuild',
     'ManageChannels',
     'ManageRoles',
-    'ManageWebhooks'
+    'ViewAuditLog',
+    'ManageWebhooks',
+    'ManageGuildExpressions',
+    'ManageNicknames'
   ];
 
+  // Get the proper permission name
+  const permission = permissionMap[permissionArg] || permissionArg.charAt(0).toUpperCase() + permissionArg.slice(1);
+
   if (!validPermissions.includes(permission)) {
-    return embeds.warn(message, `Invalid permission. Valid permissions:\n${validPermissions.map(p => `\`${p}\``).join(', ')}`);
+    return embeds.warn(
+      message, 
+      `Invalid permission. Valid permissions:\n${validPermissions.map(p => `\`${p}\``).join(', ')}`
+    );
   }
 
-  let success;
-  if (action === 'grant') {
-    success = await antinukeService.addWatchedPermission(message.guild.id, permission);
-    if (success) {
-      await antinukeService.logAction(
-        message.guild.id,
-        'permission_watch_add',
-        message.author.id,
-        `Added ${permission} to watched permissions`
-      );
-      return embeds.success(message, `Now watching **${permission}** permission changes`);
+  // Parse optional --do parameter
+  let punishment = null;
+  const doIndex = args.findIndex(arg => arg === '--do');
+  if (doIndex !== -1 && args[doIndex + 1]) {
+    const punishmentArg = args[doIndex + 1].toLowerCase();
+    if (['strip', 'kick', 'ban'].includes(punishmentArg)) {
+      punishment = punishmentArg;
     } else {
-      return embeds.warn(message, `**${permission}** is already being watched`);
+      return embeds.warn(message, 'Punishment must be `strip`, `kick`, or `ban`');
     }
+  }
+
+  const guildService = getService('guild');
+  const guildData = await guildService.ensureGuildData(message.guild.id);
+  
+  if (!guildData.Antinuke) {
+    guildData.Antinuke = antinukeService.getDefaultSettings();
+  }
+
+  if (!guildData.Antinuke.modules.permissions) {
+    guildData.Antinuke.modules.permissions = {
+      enabled: false,
+      watched: [],
+      punishment: 'strip'
+    };
+  }
+
+  const watched = guildData.Antinuke.modules.permissions.watched || [];
+  const isWatched = watched.includes(permission);
+
+  if (isWatched) {
+    // Remove from watch list
+    guildData.Antinuke.modules.permissions.watched = watched.filter(p => p !== permission);
+    
+    // Disable module if no permissions are being watched
+    if (guildData.Antinuke.modules.permissions.watched.length === 0) {
+      guildData.Antinuke.modules.permissions.enabled = false;
+    }
+
+    await guildService.set(message.guild.id, guildData);
+
+    await antinukeService.logAction(
+      message.guild.id,
+      'permission_watch_remove',
+      message.author.id,
+      `Removed ${permission} from watched permissions`
+    );
+
+    return embeds.success(message, `Stopped watching **${permission}** permission changes`);
   } else {
-    success = await antinukeService.removeWatchedPermission(message.guild.id, permission);
-    if (success) {
-      await antinukeService.logAction(
-        message.guild.id,
-        'permission_watch_remove',
-        message.author.id,
-        `Removed ${permission} from watched permissions`
-      );
-      return embeds.success(message, `Stopped watching **${permission}** permission changes`);
-    } else {
-      return embeds.warn(message, `**${permission}** is not being watched`);
+    // Add to watch list
+    guildData.Antinuke.modules.permissions.watched.push(permission);
+    guildData.Antinuke.modules.permissions.enabled = true;
+
+    // Update punishment if specified
+    if (punishment) {
+      guildData.Antinuke.modules.permissions.punishment = punishment;
+    } else if (!guildData.Antinuke.modules.permissions.punishment) {
+      guildData.Antinuke.modules.permissions.punishment = 'strip';
     }
+
+    // Enable antinuke system if not already enabled
+    if (!guildData.Antinuke.enabled) {
+      guildData.Antinuke.enabled = true;
+    }
+
+    await guildService.set(message.guild.id, guildData);
+
+    await antinukeService.logAction(
+      message.guild.id,
+      'permission_watch_add',
+      message.author.id,
+      `Added ${permission} to watched permissions`
+    );
+
+    const punishmentText = punishment || guildData.Antinuke.modules.permissions.punishment;
+    return embeds.success(
+      message, 
+      `Now watching **${permission}** permission changes\n> Punishment: **${punishmentText}**`
+    );
   }
 }
 

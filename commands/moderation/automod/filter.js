@@ -343,9 +343,9 @@ async function handleWordsToggleExempt(message, args) {
     return embeds.warn(message, 'No word filter found. Enable word filtering first.');
   }
 
-  const currentExemptRoles = rule.exemptRoles || [];
-  const currentExemptUsers = rule.exemptUsers || [];
-  const currentExemptChannels = rule.exemptChannels || [];
+  const currentExemptRoles = Array.isArray(rule.exemptRoles) ? rule.exemptRoles : (rule.exemptRoles?.map(r => r) || []);
+  const currentExemptUsers = Array.isArray(rule.exemptUsers) ? rule.exemptUsers : (rule.exemptUsers?.map(u => u) || []);
+  const currentExemptChannels = Array.isArray(rule.exemptChannels) ? rule.exemptChannels : (rule.exemptChannels?.map(c => c) || []);
 
   let newExemptRoles = currentExemptRoles;
   let newExemptUsers = currentExemptUsers;
@@ -486,9 +486,9 @@ async function handleInvitesToggleExempt(message, args) {
     return embeds.warn(message, 'No **invite filter** found. Enable **invite filtering** first.');
   }
 
-  const currentExemptRoles = rule.exemptRoles || [];
-  const currentExemptUsers = rule.exemptUsers || [];
-  const currentExemptChannels = rule.exemptChannels || [];
+  const currentExemptRoles = Array.isArray(rule.exemptRoles) ? rule.exemptRoles : (rule.exemptRoles?.map(r => r) || []);
+  const currentExemptUsers = Array.isArray(rule.exemptUsers) ? rule.exemptUsers : (rule.exemptUsers?.map(u => u) || []);
+  const currentExemptChannels = Array.isArray(rule.exemptChannels) ? rule.exemptChannels : (rule.exemptChannels?.map(c => c) || []);
 
   let newExemptRoles = currentExemptRoles;
   let newExemptUsers = currentExemptUsers;

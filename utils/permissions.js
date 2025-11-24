@@ -305,6 +305,111 @@ function isServerOwner(message) {
   return message.author.id === message.guild.ownerId;
 }
 
+// All Discord Permissions Reference
+const DISCORD_PERMISSIONS = {
+  // General Server Permissions
+  Administrator: PermissionFlagsBits.Administrator,
+  ViewAuditLog: PermissionFlagsBits.ViewAuditLog,
+  ManageGuild: PermissionFlagsBits.ManageGuild,
+  ManageRoles: PermissionFlagsBits.ManageRoles,
+  ManageChannels: PermissionFlagsBits.ManageChannels,
+  KickMembers: PermissionFlagsBits.KickMembers,
+  BanMembers: PermissionFlagsBits.BanMembers,
+  CreateInstantInvite: PermissionFlagsBits.CreateInstantInvite,
+  ChangeNickname: PermissionFlagsBits.ChangeNickname,
+  ManageNicknames: PermissionFlagsBits.ManageNicknames,
+  ManageGuildExpressions: PermissionFlagsBits.ManageGuildExpressions,
+  ManageWebhooks: PermissionFlagsBits.ManageWebhooks,
+  ViewChannel: PermissionFlagsBits.ViewChannel,
+  ModerateMembers: PermissionFlagsBits.ModerateMembers,
+  ViewCreatorMonetizationAnalytics: PermissionFlagsBits.ViewCreatorMonetizationAnalytics,
+  ManageEvents: PermissionFlagsBits.ManageEvents,
+
+  // Text Channel Permissions
+  SendMessages: PermissionFlagsBits.SendMessages,
+  SendMessagesInThreads: PermissionFlagsBits.SendMessagesInThreads,
+  CreatePublicThreads: PermissionFlagsBits.CreatePublicThreads,
+  CreatePrivateThreads: PermissionFlagsBits.CreatePrivateThreads,
+  EmbedLinks: PermissionFlagsBits.EmbedLinks,
+  AttachFiles: PermissionFlagsBits.AttachFiles,
+  AddReactions: PermissionFlagsBits.AddReactions,
+  UseExternalEmojis: PermissionFlagsBits.UseExternalEmojis,
+  UseExternalStickers: PermissionFlagsBits.UseExternalStickers,
+  MentionEveryone: PermissionFlagsBits.MentionEveryone,
+  ManageMessages: PermissionFlagsBits.ManageMessages,
+  ManageThreads: PermissionFlagsBits.ManageThreads,
+  ReadMessageHistory: PermissionFlagsBits.ReadMessageHistory,
+  SendTTSMessages: PermissionFlagsBits.SendTTSMessages,
+  SendVoiceMessages: PermissionFlagsBits.SendVoiceMessages,
+  UseApplicationCommands: PermissionFlagsBits.UseApplicationCommands,
+
+  // Voice Channel Permissions
+  Connect: PermissionFlagsBits.Connect,
+  Speak: PermissionFlagsBits.Speak,
+  Stream: PermissionFlagsBits.Stream,
+  UseEmbeddedActivities: PermissionFlagsBits.UseEmbeddedActivities,
+  UseSoundboard: PermissionFlagsBits.UseSoundboard,
+  UseExternalSounds: PermissionFlagsBits.UseExternalSounds,
+  UseVAD: PermissionFlagsBits.UseVAD,
+  PrioritySpeaker: PermissionFlagsBits.PrioritySpeaker,
+  MuteMembers: PermissionFlagsBits.MuteMembers,
+  DeafenMembers: PermissionFlagsBits.DeafenMembers,
+  MoveMembers: PermissionFlagsBits.MoveMembers,
+  SetVoiceChannelStatus: PermissionFlagsBits.SetVoiceChannelStatus,
+
+  // Stage Channel Permissions
+  RequestToSpeak: PermissionFlagsBits.RequestToSpeak
+};
+
+// Permission name mapping for user-friendly display
+const PERMISSION_NAMES = {
+  Administrator: 'Administrator',
+  ViewAuditLog: 'View Audit Log',
+  ManageGuild: 'Manage Server',
+  ManageRoles: 'Manage Roles',
+  ManageChannels: 'Manage Channels',
+  KickMembers: 'Kick Members',
+  BanMembers: 'Ban Members',
+  CreateInstantInvite: 'Create Invite',
+  ChangeNickname: 'Change Nickname',
+  ManageNicknames: 'Manage Nicknames',
+  ManageGuildExpressions: 'Manage Expressions',
+  ManageWebhooks: 'Manage Webhooks',
+  ViewChannel: 'View Channels',
+  ModerateMembers: 'Timeout Members',
+  ViewCreatorMonetizationAnalytics: 'View Server Insights',
+  ManageEvents: 'Manage Events',
+  SendMessages: 'Send Messages',
+  SendMessagesInThreads: 'Send Messages in Threads',
+  CreatePublicThreads: 'Create Public Threads',
+  CreatePrivateThreads: 'Create Private Threads',
+  EmbedLinks: 'Embed Links',
+  AttachFiles: 'Attach Files',
+  AddReactions: 'Add Reactions',
+  UseExternalEmojis: 'Use External Emojis',
+  UseExternalStickers: 'Use External Stickers',
+  MentionEveryone: 'Mention @everyone, @here, and All Roles',
+  ManageMessages: 'Manage Messages',
+  ManageThreads: 'Manage Threads',
+  ReadMessageHistory: 'Read Message History',
+  SendTTSMessages: 'Send Text-to-Speech Messages',
+  SendVoiceMessages: 'Send Voice Messages',
+  UseApplicationCommands: 'Use Application Commands',
+  Connect: 'Connect',
+  Speak: 'Speak',
+  Stream: 'Video',
+  UseEmbeddedActivities: 'Use Activities',
+  UseSoundboard: 'Use Soundboard',
+  UseExternalSounds: 'Use External Sounds',
+  UseVAD: 'Use Voice Activity',
+  PrioritySpeaker: 'Priority Speaker',
+  MuteMembers: 'Mute Members',
+  DeafenMembers: 'Deafen Members',
+  MoveMembers: 'Move Members',
+  SetVoiceChannelStatus: 'Set Voice Channel Status',
+  RequestToSpeak: 'Request to Speak'
+};
+
 module.exports = {
   // Permission levels
   hasPermissionLevel,
@@ -330,5 +435,9 @@ module.exports = {
   // Discord permissions
   hasDiscordPermission,
   hasMultipleDiscordPermissions,
-  PermissionFlagsBits
+  PermissionFlagsBits,
+
+  // Permission references
+  DISCORD_PERMISSIONS,
+  PERMISSION_NAMES
 };
