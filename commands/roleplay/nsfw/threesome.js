@@ -5,6 +5,7 @@ const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const { findUser } = require('../../../handlers/finder');
 const { isNSFWChannel, getOrdinal } = require('../../../utils/helpers');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "threesome",
@@ -30,12 +31,12 @@ module.exports = {
       // Find both users
       const userResult1 = await findUser(message.guild, args[0], client);
       if (!userResult1.found || !userResult1.user) {
-        return embeds.deny(message, userResult1.error || 'First user not found!');
+        return embeds.deny(message, userResult1.error);
       }
 
       const userResult2 = await findUser(message.guild, args[1], client);
       if (!userResult2.found || !userResult2.user) {
-        return embeds.deny(message, userResult2.error || 'Second user not found!');
+        return embeds.deny(message, userResult2.error);
       }
 
       const targetUser1 = userResult1.user;
@@ -111,8 +112,8 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      console.log('threesome command failed:', error.message);
-      return embeds.warn(message, 'Failed to threesome! Please try again.');
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 };

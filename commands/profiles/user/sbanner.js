@@ -2,12 +2,13 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "sbanner",
   aliases: ['serverbanner'],
   description: "show a user's server-specific banner",
-  syntax: 'sbanner <user>',
+  syntax: 'sbanner (user)',
   example: 'sbanner @vwsn',
   run: async(client, message, args) => {
 
@@ -19,7 +20,7 @@ module.exports = {
         const userResult = await findUser(message.guild, args[0], client);
 
         if (!userResult.found) {
-          return embeds.warn(message, userResult.error || 'User not found');
+          return embeds.warn(message, userResult.error);
         }
 
         // For server banner, we need a guild member, not a global user
@@ -72,7 +73,8 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      return embeds.warn(message, 'An error occurred while fetching the server banner.');
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching the server banner');
     }
   }
 }

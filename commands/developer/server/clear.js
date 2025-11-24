@@ -12,6 +12,8 @@ module.exports = {
   aliases: [],
   description: 'Clear name history for users or servers',
   permission: 'developer',
+  syntax: 'clear [subcommand] (parameters)',
+  example: 'clear names @user',
   isGroupCommand: true,
   run: async(client, message, args) => {
     // Check dev permission (silent fail if not dev)
@@ -23,26 +25,36 @@ module.exports = {
 
     const subcommand = args[0].toLowerCase();
 
-    if (subcommand === 'names' || subcommand === 'usernames') {
-      const subcommandInfo = {
-        description: 'Clear a user\'s name change history',
-        usage: '{guildprefix}clear names [@user]',
-        aliases: ['usernames'],
-        parameters: ['user'],
-        example: '{guildprefix}clear names @user'
-      };
-      await handleClearNames(client, message, args);
-    } else if (subcommand === 'servernames' || subcommand === 'guildnames') {
-      const subcommandInfo = {
-        description: 'Clear the server\'s name change history',
-        usage: '{guildprefix}clear servernames [server id]',
-        aliases: ['guildnames'],
-        parameters: ['server id'],
-        example: '{guildprefix}clear servernames 1234567890123456789'
-      };
-      await handleClearServerNames(client, message, args);
-    } else {
-      return runHelpCommand(message, 'clear');
+    switch (subcommand) {
+      case 'names':
+      case 'usernames': {
+        const subcommandInfo = {
+          description: 'Clear a user\'s name change history',
+          usage: '{guildprefix}clear names [@user]',
+          aliases: ['usernames'],
+          parameters: ['user'],
+          example: '{guildprefix}clear names @user'
+        };
+        await handleClearNames(client, message, args);
+        break;
+      }
+
+      case 'servernames':
+      case 'guildnames': {
+        const subcommandInfo = {
+          description: 'Clear the server\'s name change history',
+          usage: '{guildprefix}clear servernames [server id]',
+          aliases: ['guildnames'],
+          parameters: ['server id'],
+          example: '{guildprefix}clear servernames 1234567890123456789'
+        };
+        await handleClearServerNames(client, message, args);
+        break;
+      }
+
+      default: {
+        return runHelpCommand(message, 'clear');
+      }
     }
   }
 };
@@ -58,7 +70,7 @@ async function handleClearNames(client, message, args) {
   const userResult = await findUser(message.guild, args[1], client);
 
   if (!userResult.found) {
-    return embeds.warn(message, userResult.error || 'User not found');
+    return embeds.warn(message, userResult.error);
   }
 
   let targetUser, targetMember;

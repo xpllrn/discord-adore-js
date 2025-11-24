@@ -3,12 +3,13 @@ const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { createPagination } = require('../../../core/buttons');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "urban",
   aliases: ['ud'],
   description: "Get the Urban Dictionary definition of a word or phrase",
-  syntax: 'urban (word)',
+  syntax: 'urban [word]',
   example: 'urban pineapple',
   run: async (client, message, args) => {
     try {
@@ -109,16 +110,7 @@ module.exports = {
       );
 
     } catch (error) {
-      // Send error to webhook instead of console
-      if (client?.errorLogger) {
-        client.errorLogger.log(error, 'Urban Command', {
-          command: 'urban',
-          args: args.join(' ') || '',
-          user: message.author,
-          guild: message.guild,
-          channel: message.channel
-        });
-      }
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while fetching the Urban Dictionary definition. Please try again.');
     }
   }

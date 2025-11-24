@@ -11,6 +11,8 @@ module.exports = {
   name: "boost",
   aliases: ['boosts'],
   description: `Set up a boost message and role for when members boost the server`,
+  syntax: 'boost [subcommand] (parameters)',
+  example: 'boost add #boosts Thanks for boosting {user.mention}!',
   permission: "manage_guild",
   isGroupCommand: true,
 
@@ -180,7 +182,7 @@ module.exports = {
         findRole(message.guild, roleInput);
 
       if (!roleResult.found) {
-        return embeds.deny(message, roleResult.error || 'Could not find that role');
+        return embeds.deny(message, roleResult.error);
       }
 
       const boostRole = roleResult.role;

@@ -5,6 +5,7 @@ const { hasDiscordPermission } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const fetch = require('node-fetch');
 const Jimp = require('jimp');
+const logger = require('../../../utils/logger');
 
 // Helper function to remove invite links from text
 function removeInviteLinks(text) {
@@ -108,11 +109,15 @@ async function processImage(imageUrl, maxSize = 512) {
 
 module.exports = {
   name: "sticker",
+  aliases: [],
   description: "Manage server stickers - add, remove, and tag stickers",
+  syntax: 'sticker [subcommand]',
+  example: 'sticker add cool_sticker [attach image]',
   permission: "manage_expressions",
   isGroupCommand: true,
 
   run: async (client, message, args) => {
+    try {
     await ensureGuildData(message.guild.id);
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions')) return;
@@ -162,6 +167,10 @@ module.exports = {
       }
       default:
         return runHelpCommand(message, 'sticker');
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 };

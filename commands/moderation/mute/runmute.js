@@ -4,13 +4,14 @@ const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHi
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
+const logger = require('../../../utils/logger');
 const { getService } = require('../../../database/services');
 
 module.exports = {
   name: "runmute",
   aliases: ['runreactionmute'],
   description: `restore someone's reaction/emote perms in this channel`,
-  syntax: 'runmute (user) (reason)',
+  syntax: 'runmute [user] (reason)',
   example: 'runmute @vwsn appeal',
   permission: 'moderate_members',
   run: async(client, message, args) => {
@@ -81,6 +82,7 @@ module.exports = {
       ]).catch(() => {}); // Silent fail for background tasks
 
     } catch (error) {
+      logger.webhook.error(error, message);
       embeds.deny(message, 'An error occurred while trying to reaction unmute this user');
     }
   }

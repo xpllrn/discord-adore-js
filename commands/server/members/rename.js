@@ -3,6 +3,7 @@ const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "rename",
@@ -68,7 +69,8 @@ module.exports = {
       }
 
     } catch (error) {
-      embeds.warn(message, 'An error occurred while trying to rename this user.');
+      logger.both.error(error, message);
+      return embeds.warn(message, 'An error occurred while trying to rename this user.');
     }
   }
 }

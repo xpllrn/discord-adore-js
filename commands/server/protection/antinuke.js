@@ -2,15 +2,19 @@ const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { getService } = require('@services');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: 'antinuke',
   aliases: ['an'],
   description: 'Antinuke protection system',
+  syntax: 'antinuke [subcommand] (parameters)',
+  example: 'antinuke role on --threshold 5 --do kick',
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const antinukeService = getService('antinuke');
-    const guildService = getService('guild');
+    try {
+      const antinukeService = getService('antinuke');
+      const guildService = getService('guild');
 
     // Check permissions - only server owner or antinuke admins can use
     const isOwner = message.guild.ownerId === message.author.id;
@@ -31,7 +35,7 @@ module.exports = {
       case 'whitelist': {
         const subcommandInfo = {
           description: 'Whitelist a member or bot from triggering antinuke',
-          usage: '{guildprefix}antinuke whitelist [@user|@bot]',
+          usage: '{guildprefix}antinuke whitelist [user]',
           aliases: [],
           example: '{guildprefix}antinuke whitelist @user'
         };
@@ -41,7 +45,7 @@ module.exports = {
       case 'role': {
         const subcommandInfo = {
           description: 'Prevent mass role delete',
-          usage: '{guildprefix}antinuke role <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          usage: '{guildprefix}antinuke role [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke role on --threshold 5 --do kick'
         };
@@ -51,7 +55,7 @@ module.exports = {
       case 'kick': {
         const subcommandInfo = {
           description: 'Prevent mass member kick',
-          usage: '{guildprefix}antinuke kick <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          usage: '{guildprefix}antinuke kick [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke kick on --threshold 3 --do ban'
         };
@@ -61,7 +65,7 @@ module.exports = {
       case 'ban': {
         const subcommandInfo = {
           description: 'Prevent mass member ban',
-          usage: '{guildprefix}antinuke ban <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          usage: '{guildprefix}antinuke ban [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke ban on --threshold 3 --do ban'
         };
@@ -71,7 +75,7 @@ module.exports = {
       case 'channel': {
         const subcommandInfo = {
           description: 'Prevent mass channel create and delete',
-          usage: '{guildprefix}antinuke channel <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          usage: '{guildprefix}antinuke channel [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke channel on --threshold 5 --do kick'
         };
@@ -81,7 +85,7 @@ module.exports = {
       case 'webhook': {
         const subcommandInfo = {
           description: 'Prevent mass webhook creation',
-          usage: '{guildprefix}antinuke webhook <on|off> [--threshold 1-10] [--do strip|kick|ban]',
+          usage: '{guildprefix}antinuke webhook [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke webhook on --threshold 3 --do ban'
         };
@@ -91,7 +95,7 @@ module.exports = {
       case 'botadd': {
         const subcommandInfo = {
           description: 'Prevent new bot additions',
-          usage: '{guildprefix}antinuke botadd <on|off> [--do strip|kick|ban]',
+          usage: '{guildprefix}antinuke botadd [state] (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke botadd on --do ban'
         };
@@ -111,19 +115,19 @@ module.exports = {
       case 'permissions': {
         const subcommandInfo = {
           description: 'Watch specific dangerous permissions',
-          usage: '{guildprefix}antinuke permissions <permission> [--do strip|kick|ban]',
+          usage: '{guildprefix}antinuke permissions [permission] (punishment)',
           aliases: [],
           example: '{guildprefix}antinuke permissions administrator --do kick'
         };
         return handlePermissions(message, args, antinukeService);
       }
       
-      case 'list': {
+      case 'view': {
         const subcommandInfo = {
           description: 'View all whitelisted members & bots',
-          usage: '{guildprefix}antinuke list',
+          usage: '{guildprefix}antinuke view',
           aliases: [],
-          example: '{guildprefix}antinuke list'
+          example: '{guildprefix}antinuke view'
         };
         return handleList(message, antinukeService);
       }
@@ -131,7 +135,7 @@ module.exports = {
       case 'admin': {
         const subcommandInfo = {
           description: 'Give a user permissions to edit antinuke settings',
-          usage: '{guildprefix}antinuke admin [@user]',
+          usage: '{guildprefix}antinuke admin [user]',
           aliases: [],
           example: '{guildprefix}antinuke admin @user'
         };
@@ -152,6 +156,10 @@ module.exports = {
         const { runHelpCommand } = require('../../../utils/commandProcessor');
         return runHelpCommand(message, 'antinuke');
       }
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 };

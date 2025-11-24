@@ -4,38 +4,57 @@ const { embeds } = require('../../../core/embeds');
 const { findUser } = require('../../../handlers/finder');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { getService } = require('@services');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "timezone",
   aliases: ['tz'],
   description: "View or set timezone information",
-  syntax: 'timezone (user/set)',
+  syntax: 'timezone (subcommand)',
   example: 'timezone set London',
+  isGroupCommand: true,
   run: async (client, message, args) => {
-
-
     if (!args[0]) {
       return await showUserTimezone(message, message.author.id);
     }
 
-    // Set timezone
-    if (args[0].toLowerCase() === 'set') {
-      if (!args[1]) {
-        return runHelpCommand(message, 'timezone');
+    const subcommand = args[0].toLowerCase();
+
+    switch (subcommand) {
+      case 'set': {
+        const subcommandInfo = {
+          description: 'Set your timezone by city name',
+          usage: '{guildprefix}timezone set [city]',
+          aliases: [],
+          example: '{guildprefix}timezone set London'
+        };
+
+        if (!args[1]) {
+          return runHelpCommand(message, 'timezone');
+        }
+
+        const cityName = args.slice(1).join(' ');
+        return await setUserTimezone(message, cityName);
       }
 
-      const cityName = args.slice(1).join(' ');
-      return await setUserTimezone(message, cityName);
-    }
+      default: {
+        const subcommandInfo = {
+          description: 'View a user\'s timezone',
+          usage: '{guildprefix}timezone (user)',
+          aliases: [],
+          example: '{guildprefix}timezone @user'
+        };
 
-    // Show another user's timezone
-    const userResult = await findUser(message.guild, args[0], client);
-    if (!userResult.found) {
-      return embeds.warn(message, userResult.error);
-    }
+        // Show another user's timezone
+        const userResult = await findUser(message.guild, args[0], client);
+        if (!userResult.found) {
+          return embeds.warn(message, userResult.error);
+        }
 
-    const targetUserId = userResult.isGlobal ? userResult.user.id : userResult.user.user.id;
-    return await showUserTimezone(message, targetUserId, userResult.user);
+        const targetUserId = userResult.isGlobal ? userResult.user.id : userResult.user.user.id;
+        return await showUserTimezone(message, targetUserId, userResult.user);
+      }
+    }
   }
 };
 
@@ -68,8 +87,8 @@ async function showUserTimezone(message, userId, targetUser = null) {
     return embeds.info(message, text);
 
   } catch (error) {
-
-    return embeds.deny(message, 'An error occurred while fetching timezone information.');
+    logger.webhook.error(error, message);
+    return embeds.deny(message, 'An error occurred while fetching timezone information');
   }
 }
 
@@ -174,7 +193,7 @@ async function setUserTimezone(message, cityName) {
     return embeds.success(message, text);
 
   } catch (error) {
-
-    return embeds.deny(message, 'An error occurred while **setting** your timezone.');
+    logger.webhook.error(error, message);
+    return embeds.deny(message, 'An error occurred while **setting** your timezone');
   }
 }

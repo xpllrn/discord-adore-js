@@ -12,6 +12,8 @@ module.exports = {
   name: 'vanity',
   aliases: ['rep'],
   description: 'add vanity role to someone for reppin your server in their custom status',
+  syntax: 'vanity [subcommand] (parameters)',
+  example: 'vanity set MyServer',
   permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
@@ -362,7 +364,6 @@ module.exports = {
     }
     } catch (error) {
       await logger.webhook.error(error, message);
-      console.error('[VANITY COMMAND ERROR]', error);
       return embeds.deny(message, `An error occurred: ${error.message}`);
     }
   }

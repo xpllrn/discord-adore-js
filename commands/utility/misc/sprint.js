@@ -27,13 +27,13 @@ async function createSprint(guildId, sprintData) {
     const { getModels } = require('../../../database');
     const models = getModels();
     if (!models || !models.Guild) {
-      console.error('[createSprint] Models not available');
+      logger.webhook.error(new Error('Models not available'), null);
       return null;
     }
     
     const guildData = await models.Guild.findOne({ GuildID: guildId });
     if (!guildData) {
-      console.error('[createSprint] Guild data not found for:', guildId);
+      logger.webhook.error(new Error(`Guild data not found for: ${guildId}`), null);
       return null;
     }
     
@@ -42,7 +42,7 @@ async function createSprint(guildId, sprintData) {
     
     return guildData.Sprints[guildData.Sprints.length - 1];
   } catch (error) {
-    console.error('[createSprint] Error creating sprint:', error);
+    logger.webhook.error(error, null);
     throw error;
   }
 }
@@ -51,6 +51,8 @@ module.exports = {
   name: "sprint",
   aliases: [],
   description: 'Manage reading sprints',
+  syntax: 'sprint [subcommand] (parameters)',
+  example: 'sprint start 30m Reading Session',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const subcommand = args[0]?.toLowerCase();
@@ -226,7 +228,7 @@ async function startSprint(client, message, args) {
     });
 
     if (!sprint) {
-      console.error('[startSprint] createSprint returned null');
+      logger.webhook.error(new Error('createSprint returned null'), message);
       return embeds.warn(message, 'Failed to create sprint. Please try again.');
     }
 
@@ -234,7 +236,6 @@ async function startSprint(client, message, args) {
     scheduleSprintTimers(client, message.guild.id, sprint, durationMs);
 
   } catch (error) {
-    console.error('[startSprint] Error:', error);
     logger.webhook.error(error, message);
     return embeds.warn(message, 'Failed to start reading sprint. Please try again.');
   }

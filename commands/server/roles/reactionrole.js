@@ -11,6 +11,8 @@ module.exports = {
   name: "reactionrole",
   aliases: ['rr'],
   description: `Manage reaction roles`,
+  syntax: 'reactionrole [subcommand] (parameters)',
+  example: 'reactionrole add https://discord.com/channels/.../... 🌟 @Member',
   permission: 'manage_roles',
   isGroupCommand: true,
   run: async (client, message, args) => {

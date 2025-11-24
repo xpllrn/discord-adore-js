@@ -41,7 +41,7 @@ module.exports = {
       }
       countingData.enabled = true;
       await guildService.setCounting(message.guild.id, countingData);
-      return embeds.success(message, 'Counting system has been enabled.');
+      return embeds.success(message, 'Counting system has been **enabled**');
     }
 
     // Handle disable
@@ -52,7 +52,7 @@ module.exports = {
       }
       countingData.enabled = false;
       await guildService.setCounting(message.guild.id, countingData);
-      return embeds.success(message, 'Counting system has been disabled.');
+      return embeds.success(message, 'Counting system has been **disabled**');
     }
 
     // Handle ignore user
@@ -72,12 +72,12 @@ module.exports = {
       }
 
       if (countingData.ignoredUsers.includes(user.id)) {
-        return embeds.deny(message, `${user.tag} is already ignored in the counting system.`);
+        return embeds.deny(message, `**${user.tag}** is already **ignored** in the counting system`);
       }
 
       countingData.ignoredUsers.push(user.id);
       await guildService.setCounting(message.guild.id, countingData);
-      return embeds.success(message, `${user.tag} will now be ignored in the counting system.`);
+      return embeds.success(message, `**${user.tag}** will now be **ignored** in the counting system`);
     }
 
     // Handle unignore user
@@ -93,12 +93,12 @@ module.exports = {
       }
 
       if (!countingData.ignoredUsers || !countingData.ignoredUsers.includes(user.id)) {
-        return embeds.deny(message, `${user.tag} is not currently ignored in the counting system.`);
+        return embeds.deny(message, `**${user.tag}** is not currently **ignored** in the counting system`);
       }
 
       countingData.ignoredUsers = countingData.ignoredUsers.filter(id => id !== user.id);
       await guildService.setCounting(message.guild.id, countingData);
-      return embeds.success(message, `${user.tag} is no longer ignored in the counting system.`);
+      return embeds.success(message, `**${user.tag}** is no longer **ignored** in the counting system`);
     }
 
     // Handle strict mode toggle
@@ -112,11 +112,11 @@ module.exports = {
       if (mode === 'on') {
         countingData.strict = true;
         await guildService.setCounting(message.guild.id, countingData);
-        return embeds.success(message, 'Strict mode enabled. Wrong counts will reset the game.');
+        return embeds.success(message, '**Strict mode** has been **enabled**. Wrong counts will reset the game');
       } else if (mode === 'off') {
         countingData.strict = false;
         await guildService.setCounting(message.guild.id, countingData);
-        return embeds.success(message, 'Strict mode disabled. Wrong counts will be ignored but the game continues.');
+        return embeds.success(message, '**Strict mode** has been **disabled**. Wrong counts will be ignored but the game continues');
       } else {
         return runHelpCommand(message, 'count');
       }
@@ -141,7 +141,7 @@ module.exports = {
         enabled: true
       });
 
-      return embeds.success(message, `Counting channel has been set to ${channel} and enabled. Start counting from **1**!`);
+      return embeds.success(message, `Counting channel has been **set** to ${channel} and **enabled**. Start counting from **1**!`);
     }
 
     return runHelpCommand(message, 'count');

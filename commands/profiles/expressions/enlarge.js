@@ -2,6 +2,7 @@ const { AttachmentBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const https = require('https');
 const http = require('http');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "enlarge",
@@ -10,6 +11,7 @@ module.exports = {
   syntax: 'enlarge (emoji/emote)',
   example: 'enlarge 🥹',
   run: async (client, message, args) => {
+    try {
     
     let content = args.join(' ');
     
@@ -108,6 +110,10 @@ module.exports = {
     }
 
     return embeds.warn(message, 'No emoji or emote found in the message.');
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while processing the emoji');
+    }
   }
 };
 

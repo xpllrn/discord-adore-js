@@ -3,6 +3,7 @@ const config = require('../../../config/setup');
 const { embeds } = require('../../../core/embeds');
 const { createPagination } = require('../../../core/buttons');
 const snipeCache = require('../../../database/cache/snipeCache');
+const logger = require('../../../utils/logger');
 
 // Helper function to get relative time
 function getRelativeTime(timestamp) {
@@ -32,6 +33,7 @@ module.exports = {
   syntax: 'snipe (number)',
   example: 'snipe 2',
   run: async(_, message, args) => {
+    try {
 
     const snipes = snipeCache.getDeletedMessages(message.channel.id);
 
@@ -239,5 +241,10 @@ module.exports = {
     };
 
     await createPagination(message, snipes, formatPage, 1, 'Deleted Messages');
+
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching snipe');
+    }
   }
 }

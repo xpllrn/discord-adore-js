@@ -26,8 +26,8 @@ module.exports = {
     name: "transparent",
     aliases: ['tp'],
     description: 'Remove background from an image to make it transparent',
-    usage: '{guildprefix}transparent [attach image or reply to message with image]',
-    example: '{guildprefix}transparent',
+    syntax: 'transparent [attach image or reply to message with image]',
+    example: 'transparent',
     premiumBypass: false,
     run: async (client, message, args) => {
         let imageUrl = null;

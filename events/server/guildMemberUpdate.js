@@ -6,6 +6,7 @@ const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 const { getService } = require('@services');
 const webhookLogger = require('../../utils/webhookLogger');
 const { AuditLogEvent } = require('discord.js');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: 'guildMemberUpdate',
@@ -113,6 +114,7 @@ async function handleNicknameChanges(oldMember, newMember) {
             return; // Don't track this change since we're reverting it
           } catch (error) {
             // If we can't set the nickname (permissions, hierarchy, etc.), remove the forced nickname using service layer
+            logger.console.error(`[forcenick] Failed to enforce forced nickname for ${newMember.user.tag} in ${newMember.guild.name}:`, error.message);
             await guildService.removeForceNick(newMember.guild.id, newMember.user.id);
           }
         }

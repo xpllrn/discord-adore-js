@@ -6,6 +6,7 @@ module.exports = {
   description: `Shows bot's latency response times`,
   syntax: 'latency',
   example: 'latency',
+  global: true,
   run: async (client, message, args) => {
 
     const targets = ['no one', 'everyone', 'ur mom', 'horny asian women', 'horny asian man', 'vee', 'sin', '4 dick in jon'];

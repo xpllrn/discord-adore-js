@@ -2,14 +2,18 @@ const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { getService } = require('@services');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: 'fakepermissions',
   aliases: ['fakeperms', 'fp'],
   description: 'Restrict moderators to only use bot commands for moderation',
+  syntax: 'fakepermissions [subcommand] [parameters]',
+  example: 'fakepermissions add @Moderator ban_members',
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const guildService = getService('guild');
+    try {
+      const guildService = getService('guild');
 
     // Check permissions - only server owner can use
     const isOwner = message.guild.ownerId === message.author.id;
@@ -29,9 +33,9 @@ module.exports = {
       case 'add': {
         const subcommandInfo = {
           description: 'Add fake permissions to a role',
-          usage: '{guildprefix}fakepermissions add <role> <permissions>',
+          usage: '{guildprefix}fakepermissions add [role] [permissions]',
           aliases: [],
-          example: '{guildprefix}fakepermissions add @Moderator ban_members kick_members'
+          example: '{guildprefix}fakepermissions add @Moderator ban_members'
         };
         return handleAdd(message, args, guildService);
       }
@@ -39,7 +43,7 @@ module.exports = {
       case 'remove': {
         const subcommandInfo = {
           description: 'Remove fake permissions from a role',
-          usage: '{guildprefix}fakepermissions remove <role> <permissions>',
+          usage: '{guildprefix}fakepermissions remove [role] [permissions]',
           aliases: [],
           example: '{guildprefix}fakepermissions remove @Moderator ban_members'
         };
@@ -49,7 +53,7 @@ module.exports = {
       case 'list': {
         const subcommandInfo = {
           description: 'View fake permissions for a role',
-          usage: '{guildprefix}fakepermissions list <role>',
+          usage: '{guildprefix}fakepermissions list [role]',
           aliases: [],
           example: '{guildprefix}fakepermissions list @Moderator'
         };
@@ -70,6 +74,10 @@ module.exports = {
         const { runHelpCommand } = require('../../../utils/commandProcessor');
         return runHelpCommand(message, 'fakepermissions');
       }
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 };

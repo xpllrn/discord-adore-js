@@ -86,20 +86,55 @@ module.exports = {
   description: `Manage server prefix`,
   permission: 'administrator',
   isGroupCommand: true,
+  syntax: 'prefix [subcommand] (value)',
+  example: 'prefix set !',
 
   // PREFIX COMMAND
   run: async (_, message, args) => {
     if (!args[0]) {
-      return handleViewGuildPrefix(message);
+      const { runHelpCommand } = require('../../utils/commandProcessor');
+      return runHelpCommand(message, 'prefix');
     }
 
-    // Handle subcommands
-    if (args[0] === 'set') {
-      return handleSetGuildPrefix(message, args[1]);
-    } else if (args[0] === 'remove' || args[0] === 'reset' || args[0] === 'default') {
-      return handleRemoveGuildPrefix(message);
-    } else {
-      return false;
+    const subcommand = args[0].toLowerCase();
+
+    switch (subcommand) {
+      case 'view': {
+        const subcommandInfo = {
+          description: 'View the current server prefix',
+          usage: '{guildprefix}prefix view',
+          aliases: [],
+          example: '{guildprefix}prefix view'
+        };
+        return handleViewGuildPrefix(message);
+      }
+
+      case 'set': {
+        const subcommandInfo = {
+          description: 'Set a new server prefix',
+          usage: '{guildprefix}prefix set [prefix]',
+          aliases: [],
+          example: '{guildprefix}prefix set !'
+        };
+        return handleSetGuildPrefix(message, args[1]);
+      }
+
+      case 'remove':
+      case 'reset':
+      case 'default': {
+        const subcommandInfo = {
+          description: 'Reset server prefix to default',
+          usage: '{guildprefix}prefix remove',
+          aliases: ['reset', 'default'],
+          example: '{guildprefix}prefix remove'
+        };
+        return handleRemoveGuildPrefix(message);
+      }
+
+      default: {
+        const { runHelpCommand } = require('../../utils/commandProcessor');
+        return runHelpCommand(message, 'prefix');
+      }
     }
   },
 

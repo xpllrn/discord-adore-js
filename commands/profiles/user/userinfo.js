@@ -4,6 +4,7 @@ const { embeds } = require('../../../core/embeds');
 const config = require('../../../config/setup');
 const { getService } = require('@services');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "userinfo",
@@ -12,6 +13,7 @@ module.exports = {
   syntax: 'userinfo (user)',
   example: 'userinfo @vwsn',
   run: async (client, message, args) => {
+    try {
 
     let targetUser = null;
     let isGlobalUser = false;
@@ -105,6 +107,10 @@ module.exports = {
     });
 
     checkLastFmNowPlaying(user, embed, sentMessage);
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching user information');
+    }
   }
 };
 

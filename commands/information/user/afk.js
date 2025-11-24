@@ -2,6 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const { colors } = require('../../../config/setup');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "afk",
@@ -33,7 +34,8 @@ module.exports = {
       }
 
     } catch (error) {
-      return embeds.warn(message, 'An error occurred while setting your AFK status.');
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while setting your AFK status');
     }
   }
 }

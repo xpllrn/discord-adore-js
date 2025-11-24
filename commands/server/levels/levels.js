@@ -13,6 +13,8 @@ module.exports = {
   name: "levels",
   aliases: ['level', 'lvl', 'rank'],
   description: "Manage the leveling system for your server",
+  syntax: 'levels [subcommand] (parameters)',
+  example: 'levels unlock',
   isGroupCommand: true,
   run: async (client, message, args) => {
     try {
@@ -248,7 +250,7 @@ async function handleViewLevel(client, message, args) {
   if (args[0]) {
     const userResult = await findUser(message.guild, args[0], client);
     if (!userResult.found || !userResult.user) {
-      return embeds.deny(message, userResult.error || 'User not found!');
+      return embeds.deny(message, userResult.error);
     }
     targetUser = userResult.user.user || userResult.user;
     targetMember = userResult.user;
@@ -512,7 +514,7 @@ async function handleSetLevel(client, message, args) {
   // Find the target user
   const userResult = await findUser(message.guild, args[1], client);
   if (!userResult.found || !userResult.user) {
-    return embeds.deny(message, userResult.error || 'User not found!');
+    return embeds.deny(message, userResult.error);
   }
 
   const targetUser = userResult.user.user || userResult.user;

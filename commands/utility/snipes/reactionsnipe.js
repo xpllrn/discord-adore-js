@@ -2,6 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const config = require('../../../config/setup');
 const { embeds } = require('../../../core/embeds');
 const snipeCache = require('../../../database/cache/snipeCache');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "reactionsnipe",
@@ -10,6 +11,7 @@ module.exports = {
   syntax: 'reactionsnipe (number)',
   example: 'reactionsnipe 2',
   run: async(_, message, args) => {
+    try {
 
     const reactionsnipes = snipeCache.getRemovedReactions(message.channel.id);
 
@@ -38,9 +40,14 @@ module.exports = {
     try {
       const targetMessage = await message.channel.messages.fetch(msg.messageId);
       return targetMessage.reply({ embeds: [embed] });
-    } catch (error) {
+    } catch (fetchError) {
       // Message was deleted or not found, send directly
       return message.channel.send({ embeds: [embed] });
+    }
+
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching reactionsnipe');
     }
   }
 }

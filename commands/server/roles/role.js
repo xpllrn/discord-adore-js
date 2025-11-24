@@ -6,6 +6,7 @@ const { findRole, findUser } = require('../../../handlers/finder');
 const { PermissionFlagsBits } = require('discord.js');
 const colorLib = require('color');
 const Color = colorLib.default || colorLib;
+const logger = require('../../../utils/logger');
 
 // Map to track ongoing role operations per guild to prevent concurrent operations
 const roleOperationLocks = new Map();
@@ -13,6 +14,8 @@ const roleOperationLocks = new Map();
 module.exports = {
   name: "role",
   description: `Comprehensive role management system`,
+  syntax: 'role [user] [role] or role [subcommand] (parameters)',
+  example: 'role @user @Member',
   aliases: ['r'],
   permission: 'manage_roles',
   isGroupCommand: true,
@@ -730,7 +733,7 @@ module.exports = {
 
         return embeds.success(message, response);
       } catch (error) {
-        console.error('Error restoring roles:', error);
+        logger.webhook.error(error, message);
         return embeds.deny(message, 'Failed to restore roles. Please check my permissions.');
       }
     }

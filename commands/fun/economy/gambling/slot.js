@@ -49,7 +49,7 @@ module.exports = {
   name: "slot",
   aliases: ['slots', 'spin'],
   description: 'Play the slot machine! Match symbols to win big!',
-  syntax: 'slot (amount)',
+  syntax: 'slot [amount]',
   example: 'slot 999',
   cooldown: 5000, // 5 seconds - handled automatically by command handler
   run: async (client, message, args) => {

@@ -25,7 +25,7 @@ module.exports = {
       const userResult = await findUser(message.guild, args[0], client);
       
       if (!userResult.found) {
-        return embeds.warn(message, userResult.error || 'User not found');
+        return embeds.warn(message, userResult.error);
       }
 
       if (userResult.isGlobal) {

@@ -15,6 +15,8 @@ module.exports = {
   name: "ticket",
   aliases: ['tickets'],
   description: "Manage the ticket system for your server",
+  syntax: 'ticket [subcommand] (parameters)',
+  example: 'ticket setup',
   permission: "manage_guild",
   isGroupCommand: true,
   run: async (client, message, args) => {

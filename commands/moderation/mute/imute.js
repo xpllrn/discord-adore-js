@@ -11,7 +11,7 @@ module.exports = {
   name: "imute",
   aliases: ['imgmute', 'imagemute'],
   description: `revoke someone's attachment/embed perms in this channel`,
-  syntax: 'imute (user) (reason)',
+  syntax: 'imute [user] (reason)',
   example: 'imute @vwsn spam',
   permission: 'moderate_members',
   run: async(client, message, args) => {
@@ -82,6 +82,7 @@ module.exports = {
       ]).catch(() => {}); // Silent fail for background tasks
 
     } catch (error) {
+      logger.webhook.error(error, message);
       embeds.deny(message, 'An error occurred while trying to image mute this user');
     }
   }

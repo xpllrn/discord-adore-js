@@ -48,7 +48,7 @@ module.exports = {
   name: "deposit",
   aliases: ['dep'],
   description: 'Deposit money from your wallet to your bank',
-  syntax: 'deposit (amount)',
+  syntax: 'deposit [amount]',
   example: 'deposit 999',
   run: async(client, message, args) => {
     

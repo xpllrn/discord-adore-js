@@ -41,65 +41,97 @@ module.exports = {
   name: "blacktea",
   aliases: ['bt', 'wordgame'],
   description: 'Play a word challenge game with friends',
-  syntax: 'blacktea <start|end|exit|quit|time>',
+  syntax: 'blacktea [subcommand] (parameters)',
+  example: 'blacktea start',
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const subcommand = args[0]?.toLowerCase();
-
-    // If no subcommand or 'start', start the game
-    if (!subcommand || subcommand === 'start') {
-      // Check if game is already running in this channel
-      if (activeGames.has(message.channel.id)) {
-        return embeds.warn(message, 'A blacktea game is **already running** in this channel!');
-      }
-      
-      return startGame(client, message);
+    
+    if (!args[0]) {
+      const { runHelpCommand } = require('../../../utils/commandProcessor');
+      return runHelpCommand(message, 'blacktea');
     }
 
-    // End subcommand
-    if (subcommand === 'end') {
-      if (!activeGames.has(message.channel.id)) {
-        return embeds.warn(message, 'No blacktea game is **running** in this channel!');
+    const subcommand = args[0].toLowerCase();
+
+    switch (subcommand) {
+      case 'start': {
+        const subcommandInfo = {
+          description: 'Start a new blacktea word game',
+          usage: '{guildprefix}blacktea start',
+          aliases: [],
+          example: '{guildprefix}blacktea start'
+        };
+        // Check if game is already running in this channel
+        if (activeGames.has(message.channel.id)) {
+          return embeds.warn(message, 'A blacktea game is **already running** in this channel!');
+        }
+        
+        return startGame(client, message);
       }
 
-      activeGames.delete(message.channel.id);
-      activePlayers.delete(message.channel.id);
-      return embeds.success(message, 'Blacktea game has been ended!');
+      case 'end': {
+        const subcommandInfo = {
+          description: 'End the current blacktea game',
+          usage: '{guildprefix}blacktea end',
+          aliases: [],
+          example: '{guildprefix}blacktea end'
+        };
+        if (!activeGames.has(message.channel.id)) {
+          return embeds.warn(message, 'No blacktea game is **running** in this channel!');
+        }
+
+        activeGames.delete(message.channel.id);
+        activePlayers.delete(message.channel.id);
+        return embeds.success(message, 'Blacktea game has been **ended**!');
+      }
+
+      case 'exit':
+      case 'quit': {
+        const subcommandInfo = {
+          description: 'Leave the current blacktea game',
+          usage: '{guildprefix}blacktea exit',
+          aliases: ['quit'],
+          example: '{guildprefix}blacktea quit'
+        };
+        if (!activeGames.has(message.channel.id)) {
+          return embeds.warn(message, 'No blacktea game is **running** in this channel!');
+        }
+
+        const players = activePlayers.get(message.channel.id);
+        if (!players || !players.has(message.author.id)) {
+          return embeds.warn(message, 'You are **not** in the current game!');
+        }
+
+        // Mark player as quit
+        players.delete(message.author.id);
+        return embeds.success(message, 'You have **left** the blacktea game!');
+      }
+
+      case 'time': {
+        const subcommandInfo = {
+          description: 'Set response time for blacktea games (5-60 seconds)',
+          usage: '{guildprefix}blacktea time [seconds]',
+          aliases: [],
+          example: '{guildprefix}blacktea time 15'
+        };
+        if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) {
+          return;
+        }
+
+        const timeValue = parseInt(args[1]);
+        if (!timeValue || isNaN(timeValue) || timeValue < 5 || timeValue > 60) {
+          return embeds.warn(message, 'Please provide a valid time between **5-60 seconds**: `,blacktea time 15`');
+        }
+
+        gameSettings.set(message.guild.id, { responseTime: timeValue });
+        return embeds.success(message, `Blacktea response time set to **${timeValue} seconds**!`);
+      }
+
+      default: {
+        const { runHelpCommand } = require('../../../utils/commandProcessor');
+        return runHelpCommand(message, 'blacktea');
+      }
     }
-
-    // Exit/Quit subcommand - leave the game
-    if (subcommand === 'exit' || subcommand === 'quit') {
-      if (!activeGames.has(message.channel.id)) {
-        return embeds.warn(message, 'No blacktea game is **running** in this channel!');
-      }
-
-      const players = activePlayers.get(message.channel.id);
-      if (!players || !players.has(message.author.id)) {
-        return embeds.warn(message, 'You are not in the current game!');
-      }
-
-      // Mark player as quit
-      players.delete(message.author.id);
-      return embeds.success(message, 'You have left the blacktea game!');
-    }
-
-    // Time subcommand - set response time (guild manager only)
-    if (subcommand === 'time') {
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) {
-        return;
-      }
-
-      const timeValue = parseInt(args[1]);
-      if (!timeValue || isNaN(timeValue) || timeValue < 5 || timeValue > 60) {
-        return embeds.warn(message, 'Please provide a valid time between **5-60 seconds**: `,blacktea time 15`');
-      }
-
-      gameSettings.set(message.guild.id, { responseTime: timeValue });
-      return embeds.success(message, `Blacktea response time set to **${timeValue} seconds**!`);
-    }
-
-    // Invalid subcommand
-    return embeds.warn(message, 'Invalid subcommand! Use `blacktea start`, `blacktea end`, `blacktea exit`, or `blacktea time <5-60>`');
   }
 };
 async function startGame(client, message) {
@@ -341,7 +373,8 @@ async function startGame(client, message) {
       await message.channel.send({ embeds: [leaderboardEmbed] });
 
     } catch (error) {
-      console.error('Blacktea game error:', error);
+      const logger = require('../../../utils/logger');
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred during the game!');
     } finally {
       activeGames.delete(message.channel.id);

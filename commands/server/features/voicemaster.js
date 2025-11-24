@@ -12,6 +12,8 @@ module.exports = {
   name: "voicemaster",
   aliases: ['vm', 'voice', 'vc'],
   description: 'Voice channel management system',
+  syntax: 'voicemaster [subcommand] (parameters)',
+  example: 'voicemaster setup',
   isGroupCommand: true,
   run: async (client, message, args) => {
     // Initialize guildService
@@ -446,7 +448,6 @@ async function createVoiceManagerPanel(client, channel) {
       components: [row1, row2]
     });
   } catch (error) {
-    console.error('Failed to create voice manager panel:', error);
     // Fallback with labels only if emojis still fail
     const fallbackRow1 = new ActionRowBuilder()
       .addComponents(

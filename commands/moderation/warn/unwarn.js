@@ -8,7 +8,7 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "unwarn",
   description: `remove a warning from a user's moderation history`,
-  syntax: 'unwarn (user) (case_id) (reason)',
+  syntax: 'unwarn [user] [case_id] (reason)',
   example: 'unwarn @vwsn 5 mistake',
   permission: 'manage_messages',
   run: async(client, message, args) => {

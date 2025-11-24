@@ -7,6 +7,7 @@ module.exports = {
   aliases: ["bi", "info", "about"],
   syntax: 'botinfo',
   example: 'botinfo',
+  global: true,
 
   getBotInfoEmbed(client) {
     const servercount = client.guilds.cache.size;

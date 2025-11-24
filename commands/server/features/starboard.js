@@ -45,7 +45,7 @@ module.exports = {
         findChannel(message.guild, channelInput);
 
       if (!channelResult.found) {
-        return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
+        return embeds.warn(message, channelResult.error);
       }
 
       const starboardChannel = channelResult.channel;

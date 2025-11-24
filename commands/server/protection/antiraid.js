@@ -2,15 +2,18 @@ const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { getService } = require('@services');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: 'antiraid',
-  aliases: ['ar'],
   description: 'Anti-raid protection system',
+  syntax: 'antiraid [subcommand] (parameters)',
+  example: 'antiraid newaccount on --threshold 7 --do ban',
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const guildService = getService('guild');
-    const antinukeService = getService('antinuke');
+    try {
+      const guildService = getService('guild');
+      const antinukeService = getService('antinuke');
 
     // Check permissions - only server owner or antinuke admins can use
     const isOwner = message.guild.ownerId === message.author.id;
@@ -31,27 +34,27 @@ module.exports = {
       case 'avatar': {
         const subcommandInfo = {
           description: 'Kick members without profile pictures',
-          usage: '{guildprefix}antiraid avatar <on|off> [--do kick|ban]',
+          usage: '{guildprefix}antiraid avatar [state] (punishment)',
           aliases: [],
           example: '{guildprefix}antiraid avatar on --do kick'
         };
         return handleAvatar(message, args, guildService);
       }
 
-      case 'age': {
+      case 'newaccount': {
         const subcommandInfo = {
           description: 'Kick/ban new accounts',
-          usage: '{guildprefix}antiraid age <on|off> [--threshold 1-365] [--do kick|ban]',
+          usage: '{guildprefix}antiraid newaccount [state] (threshold) (punishment)',
           aliases: [],
-          example: '{guildprefix}antiraid age on --threshold 7 --do ban'
+          example: '{guildprefix}antiraid newaccount on --threshold 7 --do ban'
         };
-        return handleAge(message, args, guildService);
+        return handleNewAccount(message, args, guildService);
       }
 
       case 'massjoin': {
         const subcommandInfo = {
           description: 'Prevent mass join raids',
-          usage: '{guildprefix}antiraid massjoin <on|off> [--threshold 1-50] [--do kick|ban]',
+          usage: '{guildprefix}antiraid massjoin [state] (threshold) (punishment)',
           aliases: [],
           example: '{guildprefix}antiraid massjoin on --threshold 5 --do ban'
         };
@@ -61,11 +64,21 @@ module.exports = {
       case 'whitelist': {
         const subcommandInfo = {
           description: 'Whitelist a member from antiraid checks',
-          usage: '{guildprefix}antiraid whitelist [@user|list]',
+          usage: '{guildprefix}antiraid whitelist [user]',
           aliases: [],
           example: '{guildprefix}antiraid whitelist @user'
         };
         return handleWhitelist(message, args, guildService);
+      }
+
+      case 'view': {
+        const subcommandInfo = {
+          description: 'View all whitelisted members',
+          usage: '{guildprefix}antiraid view',
+          aliases: [],
+          example: '{guildprefix}antiraid view'
+        };
+        return handleView(message, guildService);
       }
 
       case 'config': {
@@ -82,6 +95,10 @@ module.exports = {
         const { runHelpCommand } = require('../../../utils/commandProcessor');
         return runHelpCommand(message, 'antiraid');
       }
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 };
@@ -113,7 +130,7 @@ async function handleAvatar(message, args, guildService) {
     guildData.Antiraid = {
       enabled: false,
       avatar: { enabled: false, punishment: 'kick' },
-      age: { enabled: false, threshold: 7, punishment: 'kick' },
+      newaccount: { enabled: false, threshold: 7, punishment: 'kick' },
       massjoin: { enabled: false, threshold: 5, punishment: 'ban', timeWindow: 30 },
       whitelist: []
     };
@@ -138,11 +155,11 @@ async function handleAvatar(message, args, guildService) {
   }
 }
 
-async function handleAge(message, args, guildService) {
+async function handleNewAccount(message, args, guildService) {
   const action = args[1]?.toLowerCase();
 
   if (!action || !['on', 'off'].includes(action)) {
-    return embeds.warn(message, 'Please specify `on` or `off`: `,antiraid age on --threshold 7 --do ban`');
+    return embeds.warn(message, 'Please specify `on` or `off`: `,antiraid newaccount on --threshold 7 --do ban`');
   }
 
   const enabled = action === 'on';
@@ -177,15 +194,15 @@ async function handleAge(message, args, guildService) {
     guildData.Antiraid = {
       enabled: false,
       avatar: { enabled: false, punishment: 'kick' },
-      age: { enabled: false, threshold: 7, punishment: 'kick' },
+      newaccount: { enabled: false, threshold: 7, punishment: 'kick' },
       massjoin: { enabled: false, threshold: 5, punishment: 'ban', timeWindow: 30 },
       whitelist: []
     };
   }
 
-  guildData.Antiraid.age.enabled = enabled;
-  guildData.Antiraid.age.threshold = threshold;
-  guildData.Antiraid.age.punishment = punishment;
+  guildData.Antiraid.newaccount.enabled = enabled;
+  guildData.Antiraid.newaccount.threshold = threshold;
+  guildData.Antiraid.newaccount.punishment = punishment;
 
   if (enabled && !guildData.Antiraid.enabled) {
     guildData.Antiraid.enabled = true;
@@ -196,10 +213,10 @@ async function handleAge(message, args, guildService) {
   if (enabled) {
     return embeds.success(
       message,
-      `Enabled **age** protection\n> Threshold: **${threshold} days**\n> Punishment: **${punishment}**\n\n-# Accounts younger than ${threshold} days will be ${punishment}ed upon joining.`
+      `Enabled **newaccount** protection\n> Threshold: **${threshold} days**\n> Punishment: **${punishment}**\n\n-# Accounts younger than ${threshold} days will be ${punishment}ed upon joining.`
     );
   } else {
-    return embeds.success(message, 'Disabled **age** protection');
+    return embeds.success(message, 'Disabled **newaccount** protection');
   }
 }
 
@@ -243,7 +260,7 @@ async function handleMassJoin(message, args, guildService) {
     guildData.Antiraid = {
       enabled: false,
       avatar: { enabled: false, punishment: 'kick' },
-      age: { enabled: false, threshold: 7, punishment: 'kick' },
+      newaccount: { enabled: false, threshold: 7, punishment: 'kick' },
       massjoin: { enabled: false, threshold: 5, punishment: 'ban', timeWindow: 30 },
       whitelist: []
     };
@@ -271,43 +288,11 @@ async function handleMassJoin(message, args, guildService) {
 }
 
 async function handleWhitelist(message, args, guildService) {
-  const action = args[1]?.toLowerCase();
-
-  // Handle list subcommand
-  if (action === 'list') {
-    const guildData = await guildService.ensureGuildData(message.guild.id);
-    
-    if (!guildData.Antiraid || !guildData.Antiraid.whitelist || guildData.Antiraid.whitelist.length === 0) {
-      return embeds.warn(message, 'No users are whitelisted from antiraid checks');
-    }
-
-    const embed = new EmbedBuilder()
-      .setColor(colors.embed)
-      .setAuthor({
-        name: `${message.guild.name} Antiraid Whitelist`,
-        iconURL: message.guild.iconURL({ dynamic: true })
-      })
-      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-      .setDescription(`**Total:** ${guildData.Antiraid.whitelist.length}`)
-      .addFields({
-        name: '**Whitelisted Users**',
-        value: guildData.Antiraid.whitelist.map(id => `<@${id}>`).join(', '),
-        inline: false
-      })
-      .setFooter({
-        text: `Requested by ${message.author.tag}`,
-        iconURL: message.author.displayAvatarURL({ dynamic: true })
-      })
-      .setTimestamp();
-
-    return message.channel.send({ embeds: [embed] });
-  }
-
   // Handle add/remove whitelist
   const target = message.mentions.users.first();
   
   if (!target) {
-    return embeds.warn(message, 'Please mention a user to whitelist or use `list`: `,antiraid whitelist @user`');
+    return embeds.warn(message, 'Please mention a user to whitelist: `,antiraid whitelist @user`');
   }
 
   const guildData = await guildService.ensureGuildData(message.guild.id);
@@ -316,7 +301,7 @@ async function handleWhitelist(message, args, guildService) {
     guildData.Antiraid = {
       enabled: false,
       avatar: { enabled: false, punishment: 'kick' },
-      age: { enabled: false, threshold: 7, punishment: 'kick' },
+      newaccount: { enabled: false, threshold: 7, punishment: 'kick' },
       massjoin: { enabled: false, threshold: 5, punishment: 'ban', timeWindow: 30 },
       whitelist: []
     };
@@ -341,6 +326,35 @@ async function handleWhitelist(message, args, guildService) {
   }
 }
 
+async function handleView(message, guildService) {
+  const guildData = await guildService.ensureGuildData(message.guild.id);
+  
+  if (!guildData.Antiraid || !guildData.Antiraid.whitelist || guildData.Antiraid.whitelist.length === 0) {
+    return embeds.warn(message, 'No users are whitelisted from antiraid checks');
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(colors.embed)
+    .setAuthor({
+      name: `${message.guild.name} Antiraid Whitelist`,
+      iconURL: message.guild.iconURL({ dynamic: true })
+    })
+    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+    .setDescription(`**Total:** ${guildData.Antiraid.whitelist.length}`)
+    .addFields({
+      name: '**Whitelisted Users**',
+      value: guildData.Antiraid.whitelist.map(id => `<@${id}>`).join(', '),
+      inline: false
+    })
+    .setFooter({
+      text: `Requested by ${message.author.tag}`,
+      iconURL: message.author.displayAvatarURL({ dynamic: true })
+    })
+    .setTimestamp();
+
+  return message.channel.send({ embeds: [embed] });
+}
+
 async function handleConfig(message, guildService) {
   const { emojis } = require('../../../config/setup');
   const guildData = await guildService.ensureGuildData(message.guild.id);
@@ -349,7 +363,7 @@ async function handleConfig(message, guildService) {
     guildData.Antiraid = {
       enabled: false,
       avatar: { enabled: false, punishment: 'kick' },
-      age: { enabled: false, threshold: 7, punishment: 'kick' },
+      newaccount: { enabled: false, threshold: 7, punishment: 'kick' },
       massjoin: { enabled: false, threshold: 5, punishment: 'ban', timeWindow: 30 },
       whitelist: []
     };
@@ -378,7 +392,7 @@ async function handleConfig(message, guildService) {
         name: '**Protection Modules**',
         value: [
           `**Avatar Check:** ${formatModule(settings.avatar)}`,
-          `**Age Check:** ${formatModule(settings.age, settings.age.enabled ? `Threshold: ${settings.age.threshold} days` : '')}`,
+          `**New Account Check:** ${formatModule(settings.newaccount, settings.newaccount.enabled ? `Threshold: ${settings.newaccount.threshold} days` : '')}`,
           `**Mass Join:** ${formatModule(settings.massjoin, settings.massjoin.enabled ? `Threshold: ${settings.massjoin.threshold} in ${settings.massjoin.timeWindow}s` : '')}`
         ].join('\n'),
         inline: false

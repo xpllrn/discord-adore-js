@@ -10,6 +10,8 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "webhook",
   description: "Manage webhooks for the server",
+  syntax: 'webhook [subcommand] (parameters)',
+  example: 'webhook create MyBot',
   permission: "manage_webhooks",
   isGroupCommand: true,
   run: async (client, message, args) => {

@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../../core/embeds');
 const { getService } = require('@services');
 const { getGuildPrefix } = require('../../../../utils/commandProcessor');
+const logger = require('../../../../utils/logger');
 
 // Cooldown map to track user cooldowns
 const cooldowns = new Map();
@@ -49,7 +50,7 @@ module.exports = {
   name: "coinflip",
   aliases: ['cf', 'flip', 'gamble'],
   description: 'Flip a coin and bet on the outcome (bot chooses heads or tails randomly)',
-  syntax: 'coinflip (amount)',
+  syntax: 'coinflip [amount]',
   example: 'coinflip 999',
   run: async(client, message, args) => {
     // Check cooldown
@@ -154,16 +155,7 @@ module.exports = {
       }
       
     } catch (error) {
-      // Send error to webhook instead of console
-      if (client?.errorLogger) {
-        client.errorLogger.log(error, 'Coinflip Command', {
-          command: 'coinflip',
-          args: args.join(' ') || '',
-          user: message.author,
-          guild: message.guild,
-          channel: message.channel
-        });
-      }
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while gambling');
     }
   }

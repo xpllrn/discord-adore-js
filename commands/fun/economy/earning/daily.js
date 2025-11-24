@@ -3,6 +3,7 @@ const { embeds } = require('../../../../core/embeds');
 const { getService } = require('@services');
 const { emojis } = require('../../../../config/setup');
 const { getGuildPrefix } = require('../../../../utils/commandProcessor');
+const logger = require('../../../../utils/logger');
 
 
 // Utility functions embedded within the command
@@ -91,16 +92,7 @@ module.exports = {
       return embeds.success(message, description.replace(`${emojis.success} <@${message.author.id}>: `, ''));
 
     } catch (error) {
-      // Send error to webhook instead of console
-      if (client?.errorLogger) {
-        client.errorLogger.log(error, 'Daily Command', {
-          command: 'daily',
-          args: '',
-          user: message.author,
-          guild: message.guild,
-          channel: message.channel
-        });
-      }
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while claiming your daily reward');
     }
   }

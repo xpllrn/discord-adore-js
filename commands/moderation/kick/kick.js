@@ -11,7 +11,7 @@ module.exports = {
   name: "kick",
   aliases: ['boot'],
   description: 'Kicks the mentioned user from the server',
-  syntax: 'kick (user) (reason)',
+  syntax: 'kick [user] (reason)',
   example: 'kick @vwsn spam',
   permission: 'kick_members',
   run: async(client, message, args) => {
@@ -33,7 +33,7 @@ module.exports = {
     const userResult = await findUser(message.guild, args[0], client);
 
     if (!userResult.found) {
-      return embeds.deny(message, userResult.error || 'User not found');
+      return embeds.deny(message, userResult.error);
     }
 
     if (userResult.isGlobal) {

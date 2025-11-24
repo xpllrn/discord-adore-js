@@ -729,33 +729,17 @@ async function handleVleedMention(client, message) {
             return message.react('❤️');
         }
     } catch (error) {
-        if (client.errorLogger) {
-            client.errorLogger.log(error, 'adore Downloader', {
-                command: 'adore',
-                args: url,
-                user: message.author,
-                guild: message.guild,
-                channel: message.channel
-            });
-        }
+        logger.webhook.error(error, message);
         return message.react('❤️');
     }
 }
 
 async function handleInstagram(message, url, client) {
     try {
-        const result = await InstagramScraper.saveInsta(url, console);
+        const result = await InstagramScraper.saveInsta(url, logger);
 
         if (!result.status) {
-            if (client.errorLogger) {
-                client.errorLogger.log(`Instagram download failed: ${result.msg}`, 'Instagram Downloader', {
-                    command: 'adore (Instagram)',
-                    args: url,
-                    user: message.author,
-                    guild: message.guild,
-                    channel: message.channel
-                });
-            }
+            logger.webhook.error(new Error(`Instagram download failed: ${result.msg}`), message);
             return message.react('❤️');
         }
 
@@ -780,15 +764,7 @@ async function handleInstagram(message, url, client) {
 
                 attachments.push(new AttachmentBuilder(buffer, { name: filename }));
             } catch (downloadError) {
-                if (client.errorLogger) {
-                    client.errorLogger.log(`Instagram file download error: ${downloadError.message}`, 'Instagram File Download', {
-                        command: 'adore (Instagram File)',
-                        args: `${url} - File ${i + 1}`,
-                        user: message.author,
-                        guild: message.guild,
-                        channel: message.channel
-                    });
-                }
+                logger.webhook.error(downloadError, message);
             }
         }
 
@@ -799,15 +775,7 @@ async function handleInstagram(message, url, client) {
         }
 
     } catch (error) {
-        if (client.errorLogger) {
-            client.errorLogger.log(`Instagram download error: ${error.message}`, 'Instagram Download', {
-                command: 'adore (Instagram)',
-                args: url,
-                user: message.author,
-                guild: message.guild,
-                channel: message.channel
-            });
-        }
+        logger.webhook.error(error, message);
         return message.react('❤️');
     }
 }
@@ -865,15 +833,7 @@ async function handleTikTok(message, url, client) {
         return await processTikTokVideo(message, videoData, client);
 
     } catch (error) {
-        if (client.errorLogger) {
-            client.errorLogger.log(`TikTok download error: ${error.message}`, 'TikTok Download', {
-                command: 'adore (TikTok)',
-                args: url,
-                user: message.author,
-                guild: message.guild,
-                channel: message.channel
-            });
-        }
+        logger.webhook.error(error, message);
         return message.react('❤️');
     }
 }
@@ -913,28 +873,12 @@ async function processTikTokVideo(message, videoData, client) {
             return message.reply({ files: [attachment] });
 
         } catch (downloadError) {
-            if (client.errorLogger) {
-                client.errorLogger.log(`TikTok video download error: ${downloadError.message}`, 'TikTok Video Download', {
-                    command: 'adore (TikTok Video)',
-                    args: videoUrl,
-                    user: message.author,
-                    guild: message.guild,
-                    channel: message.channel
-                });
-            }
+            logger.webhook.error(downloadError, message);
             return message.react('❤️');
         }
 
     } catch (error) {
-        if (client.errorLogger) {
-            client.errorLogger.log(`TikTok processing error: ${error.message}`, 'TikTok Processing', {
-                command: 'adore (TikTok Processing)',
-                args: 'Video data processing',
-                user: message.author,
-                guild: message.guild,
-                channel: message.channel
-            });
-        }
+        logger.webhook.error(error, message);
         return message.react('❤️');
     }
 }

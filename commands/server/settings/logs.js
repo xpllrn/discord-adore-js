@@ -10,6 +10,8 @@ module.exports = {
   name: "logs",
   aliases: ['logging', 'audit'],
   description: `Set up logging channels with webhooks for different log types`,
+  syntax: 'logs [subcommand] (parameters)',
+  example: 'logs add #logs all',
   permission: "manage_guild",
   isGroupCommand: true,
   run: async (client, message, args) => {

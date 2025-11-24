@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { fetch } = require('undici');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "roblox",
@@ -11,14 +12,12 @@ module.exports = {
   syntax: 'roblox (username)',
   example: 'roblox Builderman',
   run: async(client, message, args) => {
-
-    if (!args[0]) {
-      return runHelpCommand(message, 'roblox');
-    }
-
-    const username = args.join(' ');
-
     try {
+      if (!args[0]) {
+        return runHelpCommand(message, 'roblox');
+      }
+
+      const username = args.join(' ');
       const msg = await embeds.loading(message, `Searching for player **${username}**...`);
 
       // Get user ID from username
@@ -30,7 +29,7 @@ module.exports = {
       }).then((response) => response.json());
 
       if (!userSearchResponse.data || userSearchResponse.data.length === 0) {
-        const errorEmbed = embeds.createWarn(message, `Roblox player **${username}** was not found`);
+        const errorEmbed = embeds.createWarn(message, `Roblox player **${username}** was **not found**`);
         return msg.edit({ embeds: [errorEmbed] });
       }
 
@@ -238,8 +237,8 @@ module.exports = {
       return msg.edit({ embeds: [successEmbed] });
 
     } catch (error) {
-      console.error('Roblox command error:', error);
-      return embeds.warn(message, `Failed to fetch Roblox profile for **${username}**. Please try again later.`);
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching the Roblox profile');
     }
   }
 }

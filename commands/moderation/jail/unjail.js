@@ -10,7 +10,7 @@ const { getService } = require('@services');
 module.exports = {
   name: "unjail",
   description: `unjails the specified member`,
-  syntax: 'unjail (user) (reason)',
+  syntax: 'unjail [user] (reason)',
   example: 'unjail @vwsn appeal',
   permission: 'manage_roles',
   run: async(client, message, args) => {

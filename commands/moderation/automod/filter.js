@@ -10,6 +10,8 @@ module.exports = {
   name: "filter",
   aliases: ['automod'],
   description: "Manage Discord's built-in AutoMod filtering system",
+  syntax: 'filter [subcommand] (parameters)',
+  example: 'filter add badword',
   permission: "manage_guild",
   isGroupCommand: true,
   run: async (client, message, args) => {

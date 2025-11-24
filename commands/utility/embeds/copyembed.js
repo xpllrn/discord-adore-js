@@ -3,6 +3,7 @@ const { colors } = require('../../../config/setup')
 const { ensureGuildData } = require('../../../database')
 const { embeds } = require('../../../core/embeds')
 const { runHelpCommand } = require('../../../utils/commandProcessor')
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "copyembed",
@@ -10,7 +11,7 @@ module.exports = {
   description: 'copy an embed custom syntax code',
   syntax: 'copyembed (message)',
   example: 'copyembed 12345678...',
-  permission: "manage_messages",
+  permission: "Manage Messages",
   run: async(client, message, args) => {
 
     await ensureGuildData(message.guild.id);
@@ -109,7 +110,7 @@ module.exports = {
       return message.channel.send({ embeds: [copiedembed] })
 
     } catch (error) {
-
+      logger.webhook.error(error, message);
       return embeds.warn(message, 'An error occurred while copying the embed');
     }
 

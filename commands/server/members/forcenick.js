@@ -6,11 +6,14 @@ const { getService } = require('@services');
 const { createPagination, createConfirmation } = require('../../../core/buttons');
 const config = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "forcenick",
   aliases: ['fn'],
   description: `force a nickname on a user that will be automatically restored if they try to change it`,
+  syntax: 'forcenick [user] (nickname)',
+  example: 'forcenick @user NewNickname',
   isGroupCommand: true,
   run: async (client, message, args) => {
 
@@ -111,6 +114,7 @@ module.exports = {
         }
 
       } catch (error) {
+        logger.both.error(error, message);
         return embeds.warn(message, 'An error occurred while fetching forced nicknames.');
       }
       return;
@@ -151,6 +155,7 @@ module.exports = {
         );
 
       } catch (error) {
+        logger.both.error(error, message);
         return embeds.warn(message, 'An error occurred while resetting forced nicknames.');
       }
       return;
@@ -219,7 +224,8 @@ module.exports = {
       }
 
     } catch (error) {
-      embeds.warn(message, 'An error occurred while setting the forced nickname.');
+      logger.both.error(error, message);
+      return embeds.warn(message, 'An error occurred while setting the forced nickname.');
     }
   }
 }

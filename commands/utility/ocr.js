@@ -1,5 +1,6 @@
 const { embeds } = require('../../core/embeds');
 const { runHelpCommand } = require('../../utils/commandProcessor');
+const logger = require('../../utils/logger');
 const Optiic = require('optiic');
 
 const OPTIIC_API_KEY=YOUR_KEY_HERE
@@ -59,26 +60,19 @@ module.exports = {
     try {
       message.channel.sendTyping();
 
-      console.log('[OCR] Processing image:', imageUrl);
-
       // Process with Optiic
       const result = await optiic.process({ url: imageUrl });
-      
-      console.log('[OCR] Optiic response:', JSON.stringify(result, null, 2));
 
       if (!result || !result.text || result.text.trim().length === 0) {
-        console.log('[OCR] No text detected');
         return embeds.warn(message, 'No text detected in the image.');
       }
-
-      console.log('[OCR] SUCCESS - Text length:', result.text.length);
 
       // Reply with just the text (no embed)
       return message.reply(result.text.length > 2000 ? result.text.substring(0, 1997) + '...' : result.text);
 
     } catch (error) {
-      console.error('[OCR] Error:', error);
-      return embeds.deny(message, `An error occurred: ${error.message}`);
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while processing the image');
     }
   }
 };

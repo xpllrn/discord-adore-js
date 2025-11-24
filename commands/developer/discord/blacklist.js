@@ -11,6 +11,8 @@ module.exports = {
   aliases: ['bl', 'globalban'],
   description: 'Universal blacklist system for users and servers',
   permission: 'developer',
+  syntax: 'blacklist [subcommand] (parameters)',
+  example: 'blacklist users @user spam',
   isGroupCommand: true,
   run: async(client, message, args) => {
 
@@ -20,40 +22,46 @@ module.exports = {
 
     const subcommand = args[0].toLowerCase();
 
-    if (subcommand === 'users' || subcommand === 'user') {
-      const subcommandInfo = {
-        description: 'Manage user blacklist - add/remove users or list all blacklisted users',
-        usage: '{guildprefix}blacklist users [user.id] [reason]',
-        aliases: ['user'],
-        parameters: ['user.id', 'reason'],
-        example: '{guildprefix}blacklist users @jonathan jon pork'
-      };
+    switch (subcommand) {
+      case 'users':
+      case 'user': {
+        const subcommandInfo = {
+          description: 'Manage user blacklist - add/remove users or list all blacklisted users',
+          usage: '{guildprefix}blacklist users [user.id] [reason]',
+          aliases: ['user'],
+          parameters: ['user.id', 'reason'],
+          example: '{guildprefix}blacklist users @jonathan jon pork'
+        };
 
-      if (args[1]) {
-
-        await handleUserBlacklist(client, message, args);
-      } else {
-
-        await listBlacklistedUsers(client, message);
+        if (args[1]) {
+          await handleUserBlacklist(client, message, args);
+        } else {
+          await listBlacklistedUsers(client, message);
+        }
+        break;
       }
-    } else if (subcommand === 'servers' || subcommand === 'server') {
-      const subcommandInfo = {
-        description: 'Manage server blacklist - add/remove servers or list all blacklisted servers',
-        usage: '{guildprefix}blacklist servers [server.id] [reason]',
-        aliases: ['server'],
-        parameters: ['server.id', 'reason'],
-        example: '{guildprefix}blacklist servers 987654321 abuse'
-      };
 
-      if (args[1]) {
+      case 'servers':
+      case 'server': {
+        const subcommandInfo = {
+          description: 'Manage server blacklist - add/remove servers or list all blacklisted servers',
+          usage: '{guildprefix}blacklist servers [server.id] [reason]',
+          aliases: ['server'],
+          parameters: ['server.id', 'reason'],
+          example: '{guildprefix}blacklist servers 987654321 abuse'
+        };
 
-        await handleServerBlacklist(client, message, args);
-      } else {
-
-        await listBlacklistedServers(client, message);
+        if (args[1]) {
+          await handleServerBlacklist(client, message, args);
+        } else {
+          await listBlacklistedServers(client, message);
+        }
+        break;
       }
-    } else {
-      return runHelpCommand(message, 'blacklist');
+
+      default: {
+        return runHelpCommand(message, 'blacklist');
+      }
     }
   }
 };

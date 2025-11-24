@@ -17,6 +17,8 @@ module.exports = {
   name: "boostrole",
   aliases: ['br', 'boosterrole'],
   description: `Manage booster roles`,
+  syntax: 'boostrole [subcommand] (parameters)',
+  example: 'boostrole create My Cool Role',
   isGroupCommand: true,
   run: async (client, message, args) => {
     // Get service instances

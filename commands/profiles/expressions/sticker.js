@@ -36,11 +36,12 @@ module.exports = {
   name: "sticker",
   aliases: [],
   description: "Manage server stickers - steal, remove, and archive",
-  syntax: 'sticker (subcommand)',
+  syntax: 'sticker [subcommand]',
   example: 'sticker steal (reply)',
   permission: 'manage_expressions',
   isGroupCommand: true,
   run: async (client, message, args) => {
+    try {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Emojis and Stickers')) return;
 
@@ -60,6 +61,10 @@ module.exports = {
         return await handleArchive(client, message, args.slice(1));
       default:
         return runHelpCommand(message, 'sticker');
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 };

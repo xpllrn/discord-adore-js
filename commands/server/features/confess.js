@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const config = require('../../../config/setup');
+const logger = require('../../../utils/logger');
 
 // SHARED LOGIC: Submit a confession
 async function submitConfession(context, confessionText) {
@@ -84,6 +85,8 @@ module.exports = {
   name: "confess",
   aliases: [],
   description: "Submit an anonymous confession",
+  syntax: 'confess [confession text]',
+  example: 'confess I love this server!',
   run: async (client, message, args) => {
     try {
       if (args.length === 0) {
@@ -93,7 +96,7 @@ module.exports = {
       const confessionText = args.join(' ');
       return await submitConfession(message, confessionText);
     } catch (error) {
-      console.error('Error in confess command:', error);
+      logger.webhook.error(error, message);
 
       if (client?.errorLogger) {
         client.errorLogger.log(error, 'Confess Command', {

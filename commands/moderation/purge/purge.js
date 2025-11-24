@@ -7,6 +7,8 @@ module.exports = {
   name: "purge",
   aliases: ['clear', 'c'],
   description: `bulk delete messages from a channel`,
+  syntax: 'purge [number/subcommand] (parameters)',
+  example: 'purge 50',
   permission: 'manage_messages',
   isGroupCommand: true,
   run: async(client, message, args) => {

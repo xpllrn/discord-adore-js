@@ -2,12 +2,13 @@ const { ensureGuildData } = require('../../../database');
 const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const ytsearch = require("yt-search");
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "youtube",
   aliases: ['yt'],
   description: `search for a song/video on youtube`,
-  syntax: 'youtube (query)',
+  syntax: 'youtube [query]',
   example: 'youtube never gonna give you up',
   run: async(client, message, args) => {
 
@@ -23,19 +24,20 @@ module.exports = {
       const res = await ytsearch(youtubesearch);
 
       if (!res || !res.videos || res.videos.length === 0) {
-        return embeds.warn(message, 'No results found for your search');
+        return embeds.warn(message, 'No **results** found for your search');
       }
 
       const video = res.videos[0];
 
       if (!video || !video.url) {
-        return embeds.warn(message, 'No video found');
+        return embeds.warn(message, 'No **video** found');
       }
 
       return message.channel.send(`||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​|| _ _ _ _ _ _  ${video.url}`);
 
     } catch (error) {
-      return embeds.warn(message, 'There\'s some issue with **YouTube API**, Please try again later');
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while searching YouTube');
     }
   }
 }

@@ -1,5 +1,6 @@
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, PermissionFlagsBits } = require('../../../utils/permissions');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "setsplash",
@@ -9,6 +10,7 @@ module.exports = {
   example: 'setsplash [attach image]',
   permission: "manage_guild",
   run: async (client, message, args) => {
+    try {
 
     // Check user permissions
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) {
@@ -81,8 +83,13 @@ module.exports = {
       } else if (error.code === 50013) {
         return embeds.warn(message, 'Missing permissions to change server splash.');
       } else {
-        return embeds.warn(message, 'An error occurred while setting the server invite splash screen.');
+        logger.webhook.error(error, message);
+        return embeds.deny(message, 'An error occurred while setting the server invite splash screen');
       }
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 }

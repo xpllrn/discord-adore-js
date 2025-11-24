@@ -11,8 +11,11 @@ module.exports = {
   name: "spotify",
   aliases: ['sp'],
   description: 'Manage Spotify playback and account',
+  syntax: 'spotify [subcommand] (parameters)',
+  example: 'spotify play never gonna give you up',
   isGroupCommand: true,
   run: async (client, message, args) => {
+    try {
     const spotifyService = getService('spotify');
     const guildprefix = await getGuildPrefix(message.guild.id);
     const subcommand = String(args[0] || '').toLowerCase();
@@ -47,7 +50,7 @@ module.exports = {
       case 'play': {
         const subcommandInfo = {
           description: 'Play a track, search query, or from another user',
-          usage: '{guildprefix}spotify play <track link|search query|@user>',
+          usage: '{guildprefix}spotify play [track link|search query|@user]',
           aliases: [],
           example: '{guildprefix}spotify play never gonna give you up'
         };
@@ -90,7 +93,7 @@ module.exports = {
       case 'vol': {
         const subcommandInfo = {
           description: 'Set playback volume (0-100)',
-          usage: '{guildprefix}spotify volume <0-100>',
+          usage: '{guildprefix}spotify volume [0-100]',
           aliases: ['vol'],
           example: '{guildprefix}spotify volume 50'
         };
@@ -101,7 +104,7 @@ module.exports = {
       case 'loop': {
         const subcommandInfo = {
           description: 'Set repeat mode (track, context, or off)',
-          usage: '{guildprefix}spotify repeat <track|context|off>',
+          usage: '{guildprefix}spotify repeat [mode]',
           aliases: ['loop'],
           example: '{guildprefix}spotify repeat track'
         };
@@ -111,7 +114,7 @@ module.exports = {
       case 'shuffle': {
         const subcommandInfo = {
           description: 'Toggle shuffle mode on or off',
-          usage: '{guildprefix}spotify shuffle <on|off>',
+          usage: '{guildprefix}spotify shuffle [state]',
           aliases: [],
           example: '{guildprefix}spotify shuffle on'
         };
@@ -122,7 +125,7 @@ module.exports = {
       case 'q': {
         const subcommandInfo = {
           description: 'Add a track to your queue',
-          usage: '{guildprefix}spotify queue <track link|search query>',
+          usage: '{guildprefix}spotify queue [track link|search query]',
           aliases: ['q'],
           example: '{guildprefix}spotify queue bohemian rhapsody'
         };
@@ -132,7 +135,7 @@ module.exports = {
       case 'search': {
         const subcommandInfo = {
           description: 'Search for a track and get its Spotify link',
-          usage: '{guildprefix}spotify search <search query|@user>',
+          usage: '{guildprefix}spotify search [search query|@user]',
           aliases: [],
           example: '{guildprefix}spotify search the beatles'
         };
@@ -175,6 +178,10 @@ module.exports = {
       default:
         return runHelpCommand(message, 'spotify');
     }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
+    }
   }
 };
 
@@ -185,7 +192,7 @@ async function handleLogin(message, spotifyService, guildprefix) {
     const isLinked = await spotifyService.isLinked(message.author.id);
 
     if (isLinked) {
-      return embeds.warn(message, 'Your **Spotify** account is already linked. Use `' + guildprefix + 'spotify logout` to unlink it first.');
+      return embeds.warn(message, 'Your **Spotify** account is **already linked**. Use `' + guildprefix + 'spotify logout` to unlink it first.');
     }
 
     const { authUrl, stateToken } = await spotifyService.createAuthSession(
@@ -251,7 +258,7 @@ async function handleLogout(message, spotifyService, guildprefix) {
     const isLinked = await spotifyService.isLinked(message.author.id);
 
     if (!isLinked) {
-      return embeds.warn(message, 'You don\'t have a **Spotify** account linked. Use `' + guildprefix + 'spotify login` to link one.');
+      return embeds.warn(message, 'You **don\'t have** a **Spotify** account linked. Use `' + guildprefix + 'spotify login` to link one.');
     }
 
     const { createConfirmation } = require('../../../core/buttons');
@@ -378,7 +385,7 @@ async function playFromUser(client, message, args, spotifyService, accessToken) 
   const userResult = await findUser(message.guild, args[0], client);
   
   if (!userResult.found) {
-    return embeds.warn(message, userResult.error || 'User not found.');
+    return embeds.warn(message, userResult.error);
   }
 
   const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
@@ -600,7 +607,7 @@ async function handleShuffle(message, args, spotifyService) {
     const isLinked = await spotifyService.isLinked(message.author.id);
     
     if (!isLinked) {
-      return embeds.warn(message, 'You haven\'t linked your **Spotify** account. Use `,spotify login` to get started.');
+      return embeds.warn(message, 'You **haven\'t linked** your **Spotify** account. Use `,spotify login` to get started.');
     }
 
     const accessToken = await spotifyService.getAccessToken(message.author.id);
@@ -756,7 +763,7 @@ async function getLinkFromUser(client, message, args) {
   const userResult = await findUser(message.guild, args[0], client);
   
   if (!userResult.found) {
-    return embeds.warn(message, userResult.error || 'User not found.');
+    return embeds.warn(message, userResult.error);
   }
 
   const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
@@ -793,7 +800,7 @@ async function handleRecents(message, spotifyService) {
     const recentTracks = await spotifyService.getRecentlyPlayed(accessToken, 10);
 
     if (!recentTracks || recentTracks.length === 0) {
-      return embeds.warn(message, 'No recently played tracks found.');
+      return embeds.warn(message, '**No recently played tracks** found.');
     }
 
     const trackList = recentTracks.map((item, index) => {
@@ -844,7 +851,7 @@ async function handleTopTracks(message, args, spotifyService) {
     const topTracks = await spotifyService.getTopTracks(accessToken, timeRange, 10);
 
     if (!topTracks || topTracks.length === 0) {
-      return embeds.warn(message, 'No top tracks found for this time period.');
+      return embeds.warn(message, '**No top tracks** found for this time period.');
     }
 
     const trackList = topTracks.map((track, index) => {
@@ -894,7 +901,7 @@ async function handleTopArtists(message, args, spotifyService) {
     const topArtists = await spotifyService.getTopArtists(accessToken, timeRange, 10);
 
     if (!topArtists || topArtists.length === 0) {
-      return embeds.warn(message, 'No top artists found for this time period.');
+      return embeds.warn(message, '**No top artists** found for this time period.');
     }
 
     const artistList = topArtists.map((artist, index) => {

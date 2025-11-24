@@ -11,6 +11,8 @@ module.exports = {
   name: "leave",
   aliases: ['bye'],
   description: `Set up a leave message for when members leave`,
+  syntax: 'leave [subcommand] (parameters)',
+  example: 'leave add #general Goodbye {user.name}!',
   permission: "manage_guild",
   isGroupCommand: true,
 
@@ -43,7 +45,7 @@ module.exports = {
         findChannel(message.guild, channelInput);
 
       if (!channelResult.found) {
-        return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
+        return embeds.warn(message, channelResult.error);
       }
 
       const leavechannel = channelResult.channel;
@@ -86,7 +88,7 @@ module.exports = {
         findChannel(message.guild, channelInput);
 
       if (!channelResult.found) {
-        return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
+        return embeds.warn(message, channelResult.error);
       }
 
       const leavechannel = channelResult.channel;
@@ -125,7 +127,7 @@ module.exports = {
         findChannel(message.guild, channelInput);
 
       if (!channelResult.found) {
-        return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
+        return embeds.warn(message, channelResult.error);
       }
 
       const leavechannel = channelResult.channel;

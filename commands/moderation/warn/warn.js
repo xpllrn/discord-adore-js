@@ -9,7 +9,7 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "warn",
   description: `warn a user and add it to their moderation history`,
-  syntax: 'warn (user) (reason)',
+  syntax: 'warn [user] (reason)',
   example: 'warn @vwsn spam',
   permission: 'manage_messages',
   run: async(client, message, args) => {

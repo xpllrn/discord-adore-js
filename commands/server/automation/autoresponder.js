@@ -11,6 +11,8 @@ module.exports = {
   name: "autoresponder",
   aliases: ['autoresponse', 'autorespond', 'trigger'],
   description: `automatically respond to specific triggers`,
+  syntax: 'autoresponder [subcommand] (parameters)',
+  example: 'autoresponder add hello, Hi there! --reply',
   permission: 'manage_channels',
   isGroupCommand: true,
   run: async(client, message, args) => {

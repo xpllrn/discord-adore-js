@@ -3,6 +3,7 @@ const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const config = require('../../../config/setup');
+const logger = require('../../../utils/logger');
 
 // SHARED LOGIC: Set confession channel
 async function setConfessionChannelShared(context, channel, confessionService) {
@@ -30,7 +31,7 @@ async function setConfessionChannelShared(context, channel, confessionService) {
   try {
     await sentMessage.pin();
   } catch (error) {
-    console.error('Error pinning confession message:', error);
+    // Ignore pinning errors
   }
 
   return embeds.success(context, `Set ${channel} as the **confession channel** and sent the confession button`, false);
@@ -224,6 +225,8 @@ module.exports = {
   name: "confession",
   aliases: [],
   description: "Manage the confession system",
+  syntax: 'confession [subcommand] (parameters)',
+  example: 'confession channel #confessions',
   permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
@@ -322,7 +325,7 @@ module.exports = {
         return runHelpCommand(message, 'confession');
       }
     } catch (error) {
-      console.error('Error in confession command:', error);
+      logger.webhook.error(error, message);
 
       if (client?.errorLogger) {
         client.errorLogger.log(error, 'Confession Command', {
@@ -452,7 +455,7 @@ module.exports = {
       }
 
     } catch (error) {
-      console.error('Error in /confession command:', error);
+      logger.webhook.error(error, { author: interaction.user, guild: interaction.guild, channel: interaction.channel });
 
       if (interaction.client?.errorLogger) {
         interaction.client.errorLogger.log(error, 'Slash Confession Command', {

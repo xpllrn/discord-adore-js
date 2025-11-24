@@ -232,8 +232,8 @@ module.exports = {
   name: "ask",
   aliases: ['adore', 'question'],
   description: 'Ask adore anything',
-  usage: '{guildprefix}ask [question]',
-  example: '{guildprefix}ask what is adore?',
+  syntax: 'ask [question]',
+  example: 'ask what is adore?',
   premiumBypass: true,
   run: async (client, message, args) => {
     if (!args.length) {

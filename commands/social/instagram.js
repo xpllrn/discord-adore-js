@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { fetch } = require('undici');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "instagram",
@@ -11,14 +12,13 @@ module.exports = {
   syntax: 'instagram (username)',
   example: 'instagram @cristiano',
   run: async(client, message, args) => {
-
-    if (!args[0]) {
-      return runHelpCommand(message, 'instagram');
-    }
-
-    const username = String(args[0]).toLowerCase().replace('@', '');
-
     try {
+      if (!args[0]) {
+        return runHelpCommand(message, 'instagram');
+      }
+
+      const username = String(args[0]).toLowerCase().replace('@', '');
+
       message.channel.sendTyping();
 
       const response = await fetch(`https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
@@ -36,13 +36,13 @@ module.exports = {
       });
 
       if (!response.ok) {
-        return embeds.warn(message, `Instagram profile **${username}** was not found or the service is temporarily unavailable.`);
+        return embeds.warn(message, `Instagram profile **${username}** was **not found** or the service is temporarily unavailable`);
       }
 
       const results = await response.json();
 
       if (!results.data || !results.data.user) {
-        return embeds.warn(message, `Instagram profile **${username}** was not found`);
+        return embeds.warn(message, `Instagram profile **${username}** was **not found**`);
       }
 
       const user = results.data.user;
@@ -88,7 +88,8 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      return embeds.warn(message, `Failed to fetch Instagram profile for **${username}**. Please try again later.`);
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching the Instagram profile');
     }
   }
 }

@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { fetch } = require('undici');
+const logger = require('../../utils/logger');
 
 const parse = (str) => {
     const regex = /^([a-zA-Z0-9_ ]{1,16})#([a-zA-Z0-9_]{1,5})$/;
@@ -25,20 +26,18 @@ module.exports = {
   syntax: 'valorant (username#tag)',
   example: 'valorant fuck#valo',
   run: async(client, message, args) => {
-
-    if (!args[0]) {
-      return runHelpCommand(message, 'valorant');
-    }
-
-    const parsed = parse(args.join(' '));
-
-    if (!parsed) {
-      return embeds.warn(message, 'Please provide a **valid Valorant** username');
-    }
-
-    const { username, tagline } = parsed;
-
     try {
+      if (!args[0]) {
+        return runHelpCommand(message, 'valorant');
+      }
+
+      const parsed = parse(args.join(' '));
+
+      if (!parsed) {
+        return embeds.warn(message, 'Please provide a **valid Valorant username**');
+      }
+
+      const { username, tagline } = parsed;
       const url = `https://tracker.gg/valorant/profile/riot/${encodeURIComponent(`${username}#${tagline}`)}/overview`;
 
       const msg = await embeds.loading(message, `Searching for player \`${username}#${tagline}\``);
@@ -55,20 +54,20 @@ module.exports = {
       }).then((response) => response.json());
 
       if (!accountResponse) {
-        const errorEmbed = embeds.createWarn(message, `Valorant API is currently unavailable. Please try again later.`);
+        const errorEmbed = embeds.createWarn(message, `**Valorant API** is currently unavailable. Please try again later`);
         return msg.edit({ embeds: [errorEmbed] });
       }
 
       if (accountResponse.status !== 200) {
-        let errorMessage = `Could not find Valorant player \`${username}#${tagline}\``;
+        let errorMessage = `Could **not find** Valorant player \`${username}#${tagline}\``;
 
         // Provide more specific error messages based on API response
         if (accountResponse.status === 404) {
-          errorMessage = `Valorant player \`${username}#${tagline}\` was not found. Please check the username and tag.`;
+          errorMessage = `Valorant player \`${username}#${tagline}\` was **not found**. Please check the username and tag`;
         } else if (accountResponse.status === 429) {
-          errorMessage = `Valorant API rate limit exceeded. Please try again in a few minutes.`;
+          errorMessage = `**Valorant API** rate limit exceeded. Please try again in a few minutes`;
         } else if (accountResponse.errors && accountResponse.errors.length > 0) {
-          errorMessage = `Valorant API error: ${accountResponse.errors[0].message}`;
+          errorMessage = `**Valorant API** error: ${accountResponse.errors[0].message}`;
         }
 
         const errorEmbed = embeds.createWarn(message, errorMessage);
@@ -202,7 +201,7 @@ module.exports = {
       } else {
         embed.addFields({
           name: 'Recent Matches',
-          value: 'No recent **competitive matches** found',
+          value: 'No recent **competitive** matches found',
           inline: false
         });
       }
@@ -215,7 +214,8 @@ module.exports = {
       return msg.edit({ embeds: [successEmbed] });
 
     } catch (error) {
-      return embeds.warn(message, `Failed to **fetch Valorant** profile for \`${username}#${tagline}\`. Please try again later.`);
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching the Valorant profile');
     }
   }
 }

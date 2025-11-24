@@ -51,8 +51,8 @@ module.exports = {
   name: "ttt",
   aliases: ['tictactoe', 'tic'],
   description: `Play tic tac toe with another user with optional betting`,
-  syntax: 'ttt @user (amount)',
-  example: 'ttt @vwsn',
+  syntax: 'ttt [user] (amount)',
+  example: 'ttt @vwsn 1000',
   cooldown: 3000,
   
   run: async (client, message, args) => {

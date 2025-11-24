@@ -8,6 +8,8 @@ module.exports = {
   name: "settings",
   aliases: [],
   description: `View and manage server settings`,
+  syntax: 'settings [subcommand] (parameters)',
+  example: 'settings config',
   permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {

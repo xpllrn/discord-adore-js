@@ -11,6 +11,8 @@ module.exports = {
   name: "autoreact",
   aliases: ['react'],
   description: `automatically react to messages containing specific words`,
+  syntax: 'autoreact [subcommand] (parameters)',
+  example: 'autoreact add :star: hello',
   permission: 'manage_channels',
   isGroupCommand: true,
   run: async(client, message, args) => {

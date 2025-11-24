@@ -2,12 +2,13 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findGuild } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "guildsplash",
   aliases: ['serversplash', 'splash'],
   description: "show a server's invite splash screen",
-  syntax: 'guildsplash <server>',
+  syntax: 'guildsplash (server)',
   example: 'guildsplash',
   run: async(client, message, args) => {
 
@@ -19,7 +20,7 @@ module.exports = {
         const guildResult = await findGuild(client, args[0]);
 
         if (!guildResult.found) {
-          return embeds.warn(message, guildResult.error || 'Server not found');
+          return embeds.warn(message, guildResult.error);
         }
 
         targetGuild = guildResult.guild;
@@ -46,7 +47,8 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      return embeds.warn(message, 'An error occurred while fetching the server splash screen.');
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching the server splash screen');
     }
   }
 }

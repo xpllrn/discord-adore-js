@@ -7,6 +7,7 @@ module.exports = {
   description: `Send an invite link of the bot`,
   syntax: 'invite',
   example: 'invite',
+  global: true,
   run: async(client, message, args) => {
 
     const embed = new EmbedBuilder()

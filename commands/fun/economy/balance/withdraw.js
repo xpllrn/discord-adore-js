@@ -48,7 +48,7 @@ module.exports = {
   name: "withdraw",
   aliases: ['with'],
   description: 'Withdraw money from your bank to your wallet',
-  syntax: 'withdraw (amount)',
+  syntax: 'withdraw [amount]',
   example: 'withdraw 999',
   run: async(client, message, args) => {
     

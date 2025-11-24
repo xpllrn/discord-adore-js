@@ -1,5 +1,6 @@
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, PermissionFlagsBits } = require('../../../utils/permissions');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "setbanner",
@@ -9,6 +10,7 @@ module.exports = {
   example: 'setbanner [attach image]',
   permission: "manage_guild",
   run: async(client, message, args) => {
+    try {
 
     // Check user permissions
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) {
@@ -81,8 +83,13 @@ module.exports = {
       } else if (error.code === 50013) {
         return embeds.warn(message, 'Missing permissions to change server banner.');
       } else {
-        return embeds.warn(message, 'An error occurred while setting the server banner.');
+        logger.webhook.error(error, message);
+        return embeds.deny(message, 'An error occurred while setting the server banner');
       }
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 }

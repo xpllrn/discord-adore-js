@@ -3,11 +3,14 @@ const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const { colors } = require('../../../config/setup');
 const { hasDiscordPermission } = require('../../../utils/permissions');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "alias",
   aliases: [],
   description: 'Create your own shortcuts for commands',
+  syntax: 'alias [subcommand] (parameters)',
+  example: 'alias add bal balance',
   permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
@@ -153,7 +156,7 @@ async function handleAddAlias(message, args) {
       return embeds.success(message, `Added **${shortcut}** for command \`${command}\``);
     }
   } catch (error) {
-    console.error('Error adding alias:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to **create alias**');
   }
 }
@@ -184,7 +187,7 @@ async function handleRemoveAlias(message, args) {
     
     return embeds.success(message, `Removed **alias** \`${shortcut}\``);
   } catch (error) {
-    console.error('Error removing alias:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to **remove alias**');
   }
 }
@@ -206,7 +209,7 @@ async function handleRemoveAllAliases(message) {
     
     return embeds.success(message, `Cleared **all aliases** for **commands**`);
   } catch (error) {
-    console.error('Error removing all aliases:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to **remove aliases**');
   }
 }
@@ -239,7 +242,7 @@ async function handleResetAliases(message) {
             components: []
           });
         } catch (error) {
-          console.error('Error resetting aliases:', error);
+          logger.webhook.error(error, message);
           await interaction.update({
             embeds: [embeds.deny(message, 'Failed to **reset aliases**').embeds[0]],
             components: []
@@ -248,7 +251,7 @@ async function handleResetAliases(message) {
       }
     );
   } catch (error) {
-    console.error('Error in reset aliases:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to **reset aliases**');
   }
 }
@@ -298,7 +301,7 @@ async function handleListAliases(message) {
 
     return message.channel.send({ embeds: [embed] });
   } catch (error) {
-    console.error('Error listing aliases:', error);
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to **list aliases**');
   }
 }

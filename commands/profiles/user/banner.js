@@ -2,12 +2,13 @@ const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "banner",
   aliases: ['userbanner'],
   description: "show a user's global banner",
-  syntax: 'banner <user>',
+  syntax: 'banner (user)',
   example: 'banner @vwsn',
   run: async(client, message, args) => {
 
@@ -50,7 +51,8 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      return embeds.warn(message, 'An error occurred while fetching the banner.');
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching the banner');
     }
   }
 }

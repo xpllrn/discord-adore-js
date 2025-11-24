@@ -385,6 +385,7 @@ module.exports = {
   description: `View extended help for commands`,
   syntax: 'help (command)',
   example: 'help crash',
+  global: true,
 
   // PREFIX COMMAND
   run: async (client, message, args) => {

@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const { embeds } = require('../../../core/embeds');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "advice",
@@ -21,10 +22,11 @@ module.exports = {
       if (advice) {
         message.channel.send({ content: advice });
       } else {
-        return embeds.warn(message, 'Failed to get advice. Try again later.');
+        return embeds.warn(message, 'Failed to get **advice**. Try again later.');
       }
     } catch (error) {
-      return embeds.warn(message, 'Failed to get advice. Try again later.');
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching advice');
     }
   }
 }

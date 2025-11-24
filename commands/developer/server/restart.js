@@ -6,8 +6,9 @@ const execAsync = promisify(exec);
 module.exports = {
   name: "restart",
   aliases: ['reboot'],
-  description: 'restart your mom',
-  syntax: 'bozo u can not use it',
+  description: 'Restart the bot process',
+  syntax: 'restart',
+  example: 'restart',
   permission: 'developer',
   run: async (client, message, args) => {
     // Check dev permission (silent fail if not dev)

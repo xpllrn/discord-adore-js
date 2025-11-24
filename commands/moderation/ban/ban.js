@@ -11,7 +11,7 @@ module.exports = {
   name: "ban",
   aliases: ['deport', 'hackban', 'hban', 'hb'],
   description: 'ban the mentioned user from the server (works with user IDs for users not in server)',
-  syntax: 'ban (user) (reason)',
+  syntax: 'ban [user] (reason)',
   example: 'ban @vwsn spam',
   permission: 'ban_members',
   run: async(client, message, args) => {

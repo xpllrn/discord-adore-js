@@ -11,6 +11,8 @@ module.exports = {
   aliases: [],
   description: 'Fetch server information and invites',
   permission: 'developer',
+  syntax: 'fetch [subcommand] [parameters]',
+  example: 'fetch invite 1234567890123456789',
   isGroupCommand: true,
   run: async(client, message, args) => {
     // Check dev permission (silent fail if not dev)
@@ -22,26 +24,36 @@ module.exports = {
 
     const subcommand = args[0].toLowerCase();
 
-    if (subcommand === 'invite' || subcommand === 'inv') {
-      const subcommandInfo = {
-        description: 'Fetch an invite link for a server by ID',
-        usage: '{guildprefix}fetch invite [server id]',
-        aliases: ['inv'],
-        parameters: ['server id'],
-        example: '{guildprefix}fetch invite 1234567890123456789'
-      };
-      await handleInvite(client, message, args);
-    } else if (subcommand === 'confession' || subcommand === 'confess') {
-      const subcommandInfo = {
-        description: 'Reveal who submitted a confession',
-        usage: '{guildprefix}fetch confession [server id] [confession id]',
-        aliases: ['confess'],
-        parameters: ['server id', 'confession id'],
-        example: '{guildprefix}fetch confession 1234567890123456789 5'
-      };
-      await handleConfession(client, message, args);
-    } else {
-      return runHelpCommand(message, 'fetch');
+    switch (subcommand) {
+      case 'invite':
+      case 'inv': {
+        const subcommandInfo = {
+          description: 'Fetch an invite link for a server by ID',
+          usage: '{guildprefix}fetch invite [server id]',
+          aliases: ['inv'],
+          parameters: ['server id'],
+          example: '{guildprefix}fetch invite 1234567890123456789'
+        };
+        await handleInvite(client, message, args);
+        break;
+      }
+
+      case 'confession':
+      case 'confess': {
+        const subcommandInfo = {
+          description: 'Reveal who submitted a confession',
+          usage: '{guildprefix}fetch confession [server id] [confession id]',
+          aliases: ['confess'],
+          parameters: ['server id', 'confession id'],
+          example: '{guildprefix}fetch confession 1234567890123456789 5'
+        };
+        await handleConfession(client, message, args);
+        break;
+      }
+
+      default: {
+        return runHelpCommand(message, 'fetch');
+      }
     }
   }
 };

@@ -9,7 +9,7 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "unban",
   description: `unban the mentioned user from the server`,
-  syntax: 'unban (user) (reason)',
+  syntax: 'unban [user] (reason)',
   example: 'unban @vwsn appeal',
   permission: 'ban_members',
   run: async(client, message, args) => {

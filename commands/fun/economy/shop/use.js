@@ -13,7 +13,7 @@ module.exports = {
   name: "use",
   aliases: ['consume'],
   description: 'Use items from your inventory',
-  syntax: 'use <number> [quantity]',
+  syntax: 'use [number] (quantity)',
   example: 'use 1 1',
   run: async (client, message, args) => {
     

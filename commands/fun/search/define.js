@@ -8,7 +8,7 @@ module.exports = {
   name: "define",
   aliases: ['def'],
   description: "Get the definition of a word",
-  syntax: 'define (word)',
+  syntax: 'define [word]',
   example: 'define serendipity',
   run: async (client, message, args) => {
     try {
@@ -23,7 +23,7 @@ module.exports = {
       
       if (!response.ok) {
         if (response.status === 404) {
-          return embeds.warn(message, `No definition found for **${word}**`);
+          return embeds.warn(message, `No **definition** found for **${word}**`);
         }
         throw new Error(`API returned ${response.status}`);
       }
@@ -31,7 +31,7 @@ module.exports = {
       const data = await response.json();
       
       if (!data || data.length === 0) {
-        return embeds.warn(message, `No definition found for **${word}**`);
+        return embeds.warn(message, `No **definition** found for **${word}**`);
       }
 
       const entry = data[0];

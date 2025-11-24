@@ -11,6 +11,8 @@ module.exports = {
   name: "welcome",
   aliases: ['welc'],
   description: `Set up a welcome message for when new members join`,
+  syntax: 'welcome [subcommand] (parameters)',
+  example: 'welcome add #general Welcome {user.mention}!',
   permission: "manage_guild",
   isGroupCommand: true,
 
@@ -43,7 +45,7 @@ module.exports = {
           findChannel(message.guild, channelInput);
 
         if (!channelResult.found) {
-          return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
+          return embeds.warn(message, channelResult.error);
         }
 
         const welcomechannel = channelResult.channel;
@@ -84,7 +86,7 @@ module.exports = {
         findChannel(message.guild, channelInput);
 
       if (!channelResult.found) {
-        return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
+        return embeds.warn(message, channelResult.error);
       }
 
       const welcomechannel = channelResult.channel;
@@ -119,7 +121,7 @@ module.exports = {
         findChannel(message.guild, channelInput);
 
       if (!channelResult.found) {
-        return embeds.warn(message, channelResult.error || `I was unable to find a channel with the name: ${channelInput}`);
+        return embeds.warn(message, channelResult.error);
       }
 
       const welcomechannel = channelResult.channel;

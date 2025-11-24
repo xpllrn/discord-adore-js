@@ -14,7 +14,7 @@ module.exports = {
   name: "buy",
   aliases: ['purchase'],
   description: 'Buy items from the gambling store',
-  syntax: 'buy <number> [quantity]',
+  syntax: 'buy [number] (quantity)',
   example: 'buy 1 2',
   run: async (client, message, args) => {
     

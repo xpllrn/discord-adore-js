@@ -5,6 +5,8 @@ const { colors } = require('../../../config/setup');
 module.exports = {
   name: "roles",
   description: `View all roles in the server`,
+  syntax: 'roles',
+  example: 'roles',
   aliases: [],
   run: async (client, message, args) => {
     // List all roles in the server with pagination

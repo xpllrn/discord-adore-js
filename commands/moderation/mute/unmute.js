@@ -11,7 +11,7 @@ module.exports = {
   name: "unmute",
   aliases: ['untimeout', 'uto'],
   description: `remove timeout from a user using Discord's built-in timeout feature`,
-  syntax: 'unmute (user) (reason)',
+  syntax: 'unmute [user] (reason)',
   example: 'unmute @vwsn appeal',
   permission: 'moderate_members',
   run: async (client, message, args) => {

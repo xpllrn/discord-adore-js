@@ -1,6 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors, emojis } = require('../../../config/setup');
+const logger = require('../../../utils/logger');
 
 const activeGames = new Map();
 
@@ -13,29 +14,30 @@ module.exports = {
   cooldown: 3000,
   
   run: async (client, message, args) => {
-    // Check if there's already a game in this channel by this user
-    const gameKey = `${message.channel.id}-${message.author.id}`;
-    if (activeGames.has(gameKey)) {
-      return embeds.warn(message, 'You already have an active game in this channel!');
-    }
-
-    let opponent = null;
-    let isSolo = true;
-
-    // Check if user mentioned someone
-    if (args[0]) {
-      const mention = message.mentions.users.first();
-      if (mention) {
-        if (mention.id === message.author.id) {
-          return embeds.warn(message, 'You cannot play against yourself!');
-        }
-        if (mention.bot) {
-          return embeds.warn(message, 'You cannot play against bots!');
-        }
-        opponent = mention;
-        isSolo = false;
+    try {
+      // Check if there's already a game in this channel by this user
+      const gameKey = `${message.channel.id}-${message.author.id}`;
+      if (activeGames.has(gameKey)) {
+        return embeds.warn(message, 'You already have an **active game** in this channel!');
       }
-    }
+
+      let opponent = null;
+      let isSolo = true;
+
+      // Check if user mentioned someone
+      if (args[0]) {
+        const mention = message.mentions.users.first();
+        if (mention) {
+          if (mention.id === message.author.id) {
+            return embeds.warn(message, 'You **cannot** play against yourself!');
+          }
+          if (mention.bot) {
+            return embeds.warn(message, 'You **cannot** play against bots!');
+          }
+          opponent = mention;
+          isSolo = false;
+        }
+      }
 
     // Create game embed
     const gameEmbed = new EmbedBuilder()
@@ -194,6 +196,10 @@ module.exports = {
         }
       }
     });
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while starting the game');
+    }
   }
 };
 

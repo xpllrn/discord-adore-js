@@ -1,4 +1,5 @@
 const { embeds } = require('../../../core/embeds');
+const logger = require('../../../utils/logger');
 
 // Helper function to remove invite links from text
 function removeInviteLinks(text) {
@@ -48,7 +49,7 @@ module.exports = {
   permission: "manage_expressions",
 
   run: async(client, message, args) => {
-
+    try {
     // Check if this is a reply to another message
     if (!message.reference || !message.reference.messageId) {
       return embeds.warn(message, 'Please **reply to a message** containing stickers or emotes');
@@ -404,7 +405,12 @@ module.exports = {
       }
 
     } catch (error) {
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while trying to steal the items');
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 }

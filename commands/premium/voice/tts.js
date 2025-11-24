@@ -51,8 +51,8 @@ module.exports = {
   name: "tts",
   aliases: ['speak', 'voice', 'say'],
   description: 'Convert text to high-quality voice message',
-  usage: '{guildprefix}tts [text]',
-  example: '{guildprefix}tts Hello, this is a test message',
+  syntax: 'tts [text]',
+  example: 'tts Hello, this is a test message',
   premiumBypass: true, // Free for everyone
   run: async (client, message, args) => {
     if (!args.length) {

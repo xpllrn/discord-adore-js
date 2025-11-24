@@ -2,13 +2,14 @@ const { embeds } = require('../../../../core/embeds');
 const { createConfirmation } = require('../../../../core/buttons');
 const { getService } = require('@services');
 const { findUser } = require('../../../../handlers/finder');
+const { hasDiscordPermission } = require('../../../../utils/permissions');
 const logger = require('../../../../utils/logger');
 
 module.exports = {
   name: "marry",
   aliases: ['propose'],
   description: 'Propose marriage to someone with a ring',
-  syntax: 'marry <user> [ring]',
+  syntax: 'marry [user] (ring)',
   example: 'marry @vwsn diamond ring',
   run: async (client, message, args) => {
     
@@ -32,8 +33,10 @@ module.exports = {
       return embeds.deny(message, 'You **cannot** marry yourself!');
     }
 
-    // Check if trying to marry the bot
-    if (!permissions.checkBotAction(message, targetUser)) return;
+    // Check if trying to marry the bot (specific check first)
+    if (targetUser.id === message.guild.members.me.id) {
+      return message.channel.send('Leave me alone!');
+    }
 
     // Prevent bot marriage
     if (targetUser.bot) {

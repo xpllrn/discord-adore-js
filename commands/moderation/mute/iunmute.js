@@ -11,7 +11,7 @@ module.exports = {
   name: "iunmute",
   aliases: ['imgunmute', 'imageunmute'],
   description: `restore someone's attachment/embed perms in this channel`,
-  syntax: 'iunmute (user) (reason)',
+  syntax: 'iunmute [user] (reason)',
   example: 'iunmute @vwsn appeal',
   permission: 'moderate_members',
   run: async(client, message, args) => {
@@ -82,6 +82,7 @@ module.exports = {
       ]).catch(() => {}); // Silent fail for background tasks
 
     } catch (error) {
+      logger.webhook.error(error, message);
       embeds.deny(message, 'An error occurred while trying to image unmute this user');
     }
   }

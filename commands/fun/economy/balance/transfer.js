@@ -49,7 +49,7 @@ module.exports = {
   name: "transfer",
   aliases: ['give', 'pay'],
   description: 'Transfer money from your wallet to another user',
-  syntax: 'transfer (user) (amount)',
+  syntax: 'transfer [user] [amount]',
   example: 'transfer @vwsn 999',
   run: async(client, message, args) => {
     

@@ -50,7 +50,7 @@ module.exports = {
   name: "rob",
   aliases: ['steal'],
   description: 'Attempt to rob money from another user',
-  syntax: 'rob (user)',
+  syntax: 'rob [user]',
   example: 'rob @vwsn',
   run: async(client, message, args) => {
     

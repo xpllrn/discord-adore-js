@@ -9,9 +9,9 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "quote",
   aliases: ['q'],
-  description: "Quote a message",
-  syntax: 'quote (text)',
-  example: 'quote hello world',
+  description: "Quote a message by replying, message ID, or mentioning a user",
+  syntax: 'quote [message_id|@user text]',
+  example: 'quote @vwsn hello world',
   permission: "attach_files",
   run: async (client, message, args) => {
     try {
@@ -26,7 +26,7 @@ module.exports = {
           targetUser = referencedMessage.author;
           quoteText = referencedMessage.content;
         } catch (error) {
-          return embeds.deny(message, 'Could not fetch the referenced message.');
+          return embeds.deny(message, 'Could not fetch the **referenced message**.');
         }
       }
       // Check if message ID provided
@@ -36,7 +36,7 @@ module.exports = {
           targetUser = referencedMessage.author;
           quoteText = referencedMessage.content;
         } catch (error) {
-          return embeds.deny(message, 'Could not find a message with that ID.');
+          return embeds.deny(message, 'Could not find a message with that **ID**.');
         }
       }
       // Check if user mention provided
@@ -45,17 +45,17 @@ module.exports = {
         quoteText = args.slice(1).join(' ');
 
         if (!quoteText) {
-          return embeds.warn(message, 'Please provide text to quote after mentioning the user.');
+          return embeds.warn(message, 'Please provide **text to quote** after mentioning the user.');
         }
       }
       // No valid input
       else {
-        return embeds.warn(message, 'Please reply to a message, provide a message ID, or mention a user with text to quote.');
+        return embeds.warn(message, 'Please **reply to a message**, provide a **message ID**, or **mention a user** with text to quote.');
       }
 
       // Validate quote text
       if (!quoteText || quoteText.trim().length === 0) {
-        return embeds.deny(message, 'The message has no text content to quote.');
+        return embeds.deny(message, 'The message has **no text content** to quote.');
       }
 
       if (quoteText.length > 500) {

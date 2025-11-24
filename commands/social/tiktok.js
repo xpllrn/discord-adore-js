@@ -3,6 +3,7 @@ const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
 const { fetch } = require('undici');
+const logger = require('../../utils/logger');
 
 module.exports = {
   name: "tiktok",
@@ -11,14 +12,13 @@ module.exports = {
   syntax: 'tiktok (username)',
   example: 'tiktok @vwsn',
   run: async(client, message, args) => {
-
-    if (!args[0]) {
-      return runHelpCommand(message, 'tiktok');
-    }
-
-    const username = String(args[0]).toLowerCase().replace('@', '');
-
     try {
+      if (!args[0]) {
+        return runHelpCommand(message, 'tiktok');
+      }
+
+      const username = String(args[0]).toLowerCase().replace('@', '');
+
       message.channel.sendTyping();
 
       const results = await fetch(`https://www.tikwm.com/api/user/info?unique_id=${username}`, {
@@ -26,7 +26,7 @@ module.exports = {
       }).then((response) => response.json());
 
       if (!results.data) {
-        return embeds.warn(message, `TikTok profile **${username}** was not found`);
+        return embeds.warn(message, `TikTok profile **${username}** was **not found**`);
       }
 
       const { user, stats } = results.data;
@@ -67,7 +67,8 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      return embeds.warn(message, `Failed to fetch TikTok profile for **${username}**. Please try again later.`);
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while fetching the TikTok profile');
     }
   }
 }

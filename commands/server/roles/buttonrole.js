@@ -11,6 +11,8 @@ module.exports = {
   name: "buttonrole",
   aliases: ['br'],
   description: `Manage button roles`,
+  syntax: 'buttonrole [subcommand] (parameters)',
+  example: 'buttonrole add https://discord.com/channels/.../... @Member primary 🌟 "Get Member Role"',
   permission: 'manage_roles',
   isGroupCommand: true,
   run: async (client, message, args) => {

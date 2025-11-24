@@ -31,7 +31,7 @@ module.exports = {
       if (channelMention) {
         const channelResult = findChannel(message.guild, channelMention[1]);
         if (!channelResult.found) {
-          return embeds.deny(message, channelResult.error || `Channel with ID ${channelMention[1]} not found`);
+          return embeds.deny(message, channelResult.error);
         }
         targetChannel = channelResult.channel;
       } else {

@@ -4,6 +4,7 @@ const config = require('../../../config/setup');
 const { getService } = require('@services');
 const { getGuildPrefix } = require('../../../utils/commandProcessor');
 const { findUser } = require('../../../handlers/finder');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "fm",
@@ -12,6 +13,7 @@ module.exports = {
   syntax: 'fm (user)',
   example: 'fm @vwsn',
   run: async(client, message, args) => {
+    try {
     const userService = getService('user');
     const guildprefix = await getGuildPrefix(message.guild.id);
 
@@ -36,8 +38,8 @@ module.exports = {
     if (!fmuser) {
       const isOwnProfile = targetUserId === message.author.id;
       const pronoun = isOwnProfile ? 'You' : `**${targetUser.displayName || targetUser.username || 'User'}**`;
-      const verb = isOwnProfile ? "don't" : "doesn't";
-      return embeds.warn(message, `${pronoun} ${verb} have a **Last.fm** username set`);
+      const verb = isOwnProfile ? "**don't have**" : "**doesn't have**";
+      return embeds.warn(message, `${pronoun} ${verb} a **Last.fm** username set`);
     }
 
     try {
@@ -54,13 +56,13 @@ module.exports = {
 
       if (recentData.error) {
         if (recentData.error === 6) {
-          return embeds.warn(message, `The **Last.fm** user **${fmuser}** doesn't exist`);
+          return embeds.warn(message, `The **Last.fm** user **${fmuser}** **doesn't exist**`);
         }
         throw new Error(`Last.fm API error: ${recentData.message}`);
       }
 
       if (!recentData.recenttracks || !recentData.recenttracks.track || recentData.recenttracks.track.length === 0) {
-        return embeds.warn(message, `**${fmuser}** hasn't played any tracks recently`);
+        return embeds.warn(message, `**${fmuser}** **hasn't played** any tracks recently`);
       }
 
       const track = recentData.recenttracks.track[0];
@@ -137,13 +139,17 @@ module.exports = {
       const sentMessage = await message.channel.send(messageOptions);
 
     } catch (error) {
-
+      logger.webhook.error(error, message);
 
       if (error.message.includes('doesn\'t exist')) {
-        return embeds.warn(message, `The **Last.fm** user **${fmuser}** doesn't exist`);
+        return embeds.warn(message, `The **Last.fm** user **${fmuser}** **doesn't exist**`);
       }
 
       return embeds.warn(message, `**Last.fm** service is currently unavailable, please try again later. For updates, check [@lastfmstatus](https://twitter.com/lastfmstatus)`);
+    }
+    } catch (error) {
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 }

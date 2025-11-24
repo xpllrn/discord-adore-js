@@ -12,7 +12,7 @@ module.exports = {
   name: "servernames",
   aliases: ['gnames', 'guildhistory'],
   description: `view the server's name change history`,
-  syntax: 'servernames [server id]',
+  syntax: 'servernames (server id)',
   example: 'servernames 1431034951909904435',
   run: async(client, message, args) => {
     const guildService = getService('guild');

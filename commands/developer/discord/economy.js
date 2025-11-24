@@ -4,41 +4,53 @@ const { hasPermissionLevel } = require('../../../utils/permissions');
 const logger = require('../../../utils/logger');
 
 module.exports = {
-  name: "eco",
-  aliases: ['economy'],
+  name: "economy",
+  aliases: ['eco'],
   description: 'Economy management utilities',
   permission: 'developer',
+  syntax: 'economy [subcommand] [parameters]',
+  example: 'economy addbal @user 1000',
   isGroupCommand: true,
   run: async(client, message, args) => {
     // Check dev permission (silent fail if not dev)
     if (!await hasPermissionLevel(message, 'dev')) return;
 
     if (!args[0]) {
-      return runHelpCommand(message, 'eco');
+      return runHelpCommand(message, 'economy');
     }
 
     const subcommand = args[0].toLowerCase();
 
-    if (subcommand === 'addbal' || subcommand === 'addbalance') {
-      const subcommandInfo = {
-        description: 'Add balance to a user\'s wallet',
-        usage: '{guildprefix}eco addbal [@user] [amount]',
-        aliases: ['addbalance'],
-        parameters: ['user', 'amount'],
-        example: '{guildprefix}eco addbal @user 1000'
-      };
-      await handleAddBalance(client, message, args);
-    } else if (subcommand === 'cleanbal' || subcommand === 'removebal') {
-      const subcommandInfo = {
-        description: 'Remove balance from a user\'s wallet',
-        usage: '{guildprefix}eco cleanbal [@user] [amount]',
-        aliases: ['removebal'],
-        parameters: ['user', 'amount'],
-        example: '{guildprefix}eco cleanbal @user 100'
-      };
-      await handleCleanBalance(client, message, args);
-    } else {
-      return runHelpCommand(message, 'eco');
+    switch (subcommand) {
+      case 'addbal':
+      case 'addbalance': {
+        const subcommandInfo = {
+          description: 'Add balance to a user\'s wallet',
+          usage: '{guildprefix}economy addbal [@user] [amount]',
+          aliases: ['addbalance'],
+          parameters: ['user', 'amount'],
+          example: '{guildprefix}economy addbal @user 1000'
+        };
+        await handleAddBalance(client, message, args);
+        break;
+      }
+
+      case 'cleanbal':
+      case 'removebal': {
+        const subcommandInfo = {
+          description: 'Remove balance from a user\'s wallet',
+          usage: '{guildprefix}economy cleanbal [@user] [amount]',
+          aliases: ['removebal'],
+          parameters: ['user', 'amount'],
+          example: '{guildprefix}economy cleanbal @user 100'
+        };
+        await handleCleanBalance(client, message, args);
+        break;
+      }
+
+      default: {
+        return runHelpCommand(message, 'economy');
+      }
     }
   }
 };

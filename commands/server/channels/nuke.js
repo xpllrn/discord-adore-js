@@ -177,8 +177,7 @@ module.exports = {
           await embeds.success(successContext, `Channel nuked by **${message.author.tag}**`);
 
         } catch (error) {
-          console.error('Nuke command error:', error);
-          console.error('Error details:', error.stack);
+          logger.webhook.error(error, message);
           // Try to send error message in any available channel
           try {
             // Try to find a channel to send the error to
@@ -196,7 +195,6 @@ module.exports = {
             }
           } catch (sendError) {
             // Can't send error anywhere
-            console.error('Could not send error message:', sendError);
           }
         }
       }

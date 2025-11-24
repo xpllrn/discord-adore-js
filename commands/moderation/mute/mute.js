@@ -12,7 +12,7 @@ module.exports = {
   name: "mute",
   aliases: ['shh', 'timeout', 'tu'],
   description: `timeout a user using Discord's built-in timeout feature`,
-  syntax: 'mute (user) (duration) (reason)',
+  syntax: 'mute [user] (duration) (reason)',
   example: 'mute @vwsn 10m spam',
   permission: 'moderate_members',
   run: async(client, message, args) => {
@@ -36,7 +36,7 @@ module.exports = {
     }
 
     if (!userResult || typeof userResult !== 'object' || !userResult.found) {
-      return embeds.deny(message, userResult?.error || 'User not found');
+      return embeds.deny(message, userResult?.error);
     }
 
     if (userResult.isGlobal) {

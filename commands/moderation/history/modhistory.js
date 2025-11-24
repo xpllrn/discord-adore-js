@@ -12,7 +12,7 @@ module.exports = {
   name: "modhistory",
   aliases: ['mhistory', 'mh'],
   description: `view moderation actions performed by moderators`,
-  syntax: 'modhistory (moderator) (action)',
+  syntax: 'modhistory [moderator] (action)',
   example: 'modhistory @vwsn warn',
   permission: 'manage_messages',
   run: async(client, message, args) => {

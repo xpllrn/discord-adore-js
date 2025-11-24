@@ -58,10 +58,12 @@ module.exports = {
       // No confirmation message - delete silently
 
     } catch (error) {
+      const logger = require('../../../utils/logger');
+      logger.webhook.error(error, message);
       if (error.code === 50034) {
-        embeds.deny(message, 'Cannot delete messages **older than 14 days** due to Discord limitations.');
+        embeds.deny(message, 'Cannot delete messages **older than 14 days** due to Discord limitations');
       } else {
-        embeds.deny(message, 'An error occurred while trying to clean up messages.');
+        embeds.deny(message, 'An error occurred while trying to clean up messages');
       }
     }
   }

@@ -275,7 +275,7 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
       if (args[0]) {
         const userResult = await findUser(message.guild, args[0], client);
         if (!userResult.found || !userResult.user) {
-          return embeds.deny(message, userResult.error || 'User not found!');
+          return embeds.deny(message, userResult.error);
         }
         targetUser = userResult.user;
       } else {

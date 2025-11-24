@@ -72,6 +72,8 @@ module.exports = {
   name: "selfprefix",
   aliases: ['selfp'],
   description: `Manage your personal prefix`,
+  syntax: 'selfprefix [subcommand] (prefix)',
+  example: 'selfprefix set !',
   isGroupCommand: true,
 
   // PREFIX COMMAND

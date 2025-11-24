@@ -47,6 +47,8 @@ module.exports = {
   name: "customize",
   aliases: ['custom'],
   description: 'Customize the bot\'s server profile (avatar, banner, bio)',
+  syntax: 'customize [subcommand] (value)',
+  example: 'customize avatar https://example.com/image.png',
   permission: "Server Owner",
   isGroupCommand: true,
 
@@ -113,7 +115,6 @@ module.exports = {
           return embeds.success(message, 'Reset my **server avatar** to the global avatar');
         } catch (error) {
           logger.webhook.error(error, message);
-          logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to reset avatar: ${error.message}`);
         }
       }
@@ -165,9 +166,6 @@ module.exports = {
         return embeds.success(message, 'Updated my **server avatar** successfully');
 
       } catch (error) {
-        logger.webhook.error(error, message);
-        logger.webhook.error(error, message);
-        logger.webhook.error(error, message);
         logger.webhook.error(error, message);
 
         if (error.code === 50035) {
@@ -225,7 +223,6 @@ module.exports = {
           return embeds.success(message, 'Reset my **server banner** to the global banner');
         } catch (error) {
           logger.webhook.error(error, message);
-          logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to reset banner: ${error.message}`);
         }
       }
@@ -279,8 +276,6 @@ module.exports = {
       } catch (error) {
         logger.webhook.error(error, message);
         logger.webhook.error(error, message);
-        logger.webhook.error(error, message);
-        logger.webhook.error(error, message);
 
         if (error.code === 50035) {
           return embeds.deny(message, 'Invalid image format. Please use PNG, JPG, or GIF');
@@ -328,7 +323,6 @@ module.exports = {
           return embeds.success(message, 'Reset my **server bio** to the global bio');
         } catch (error) {
           logger.webhook.error(error, message);
-          logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to reset bio: ${error.message}`);
         }
       }
@@ -359,9 +353,6 @@ module.exports = {
         return embeds.success(message, `Updated my **server bio** to:\n\`\`\`${bioText}\`\`\``);
 
       } catch (error) {
-        logger.webhook.error(error, message);
-        logger.webhook.error(error, message);
-        logger.webhook.error(error, message);
         logger.webhook.error(error, message);
 
         if (error.code === 50035) {

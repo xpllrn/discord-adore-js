@@ -9,7 +9,7 @@ module.exports = {
   name: "img",
   aliases: ['image', 'search'],
   description: `Search for images using Google Custom Search`,
-  syntax: 'img (query)',
+  syntax: 'img [query]',
   example: 'img cats',
   cooldown: 3000,
   run: async (client, message, args) => {
