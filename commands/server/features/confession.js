@@ -224,7 +224,7 @@ module.exports = {
   name: "confession",
   aliases: [],
   description: "Manage the confession system",
-  permission: 'Manage Server',
+  permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
     try {

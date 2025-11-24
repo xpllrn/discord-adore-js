@@ -10,7 +10,7 @@ module.exports = {
   description: 'hides the channel for default/selected role',
   syntax: 'hide (channel) (role)',
   example: 'hide #general @Members',
-  permission: 'Manage Channels',
+  permission: 'manage_channels',
   run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;

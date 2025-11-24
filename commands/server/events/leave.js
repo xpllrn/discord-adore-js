@@ -11,7 +11,7 @@ module.exports = {
   name: "leave",
   aliases: ['bye'],
   description: `Set up a leave message for when members leave`,
-  permission: "Manage Guild",
+  permission: "manage_guild",
   isGroupCommand: true,
 
   run: async(client, message, args) => {

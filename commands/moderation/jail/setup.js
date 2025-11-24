@@ -11,7 +11,7 @@ module.exports = {
   description: `automatically setup jail role and channel with proper permissions`,
   syntax: 'setup',
   example: 'setup',
-  permission: 'Administrator',
+  permission: 'administrator',
   cooldown: 900000, // 15 minutes in milliseconds
   run: async (client, message, args) => {
 

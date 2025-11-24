@@ -12,7 +12,7 @@ module.exports = {
   description: `Set up a starboard system for highlighting popular messages`,
   syntax: 'starboard (set/threshold/emoji/check/unset) <value>',
   example: 'starboard set #starboard',
-  permission: "Manage Guild",
+  permission: "manage_guild",
   isGroupCommand: true,
 
   run: async(client, message, args) => {

@@ -10,7 +10,7 @@ module.exports = {
   name: "blacklist",
   aliases: ['bl', 'globalban'],
   description: 'Universal blacklist system for users and servers',
-  permission: 'dev',
+  permission: 'developer',
   isGroupCommand: true,
   run: async(client, message, args) => {
 

@@ -11,7 +11,7 @@ module.exports = {
   name: "buttonrole",
   aliases: ['br'],
   description: `Manage button roles`,
-  permission: 'Manage Roles',
+  permission: 'manage_roles',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');

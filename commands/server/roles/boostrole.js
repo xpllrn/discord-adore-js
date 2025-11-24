@@ -17,7 +17,6 @@ module.exports = {
   name: "boostrole",
   aliases: ['br', 'boosterrole'],
   description: `Manage booster roles`,
-  permission: 'Server Booster',
   isGroupCommand: true,
   run: async (client, message, args) => {
     // Get service instances

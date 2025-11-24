@@ -11,7 +11,7 @@ module.exports = {
   description: 'locks the channel for default/selected role',
   syntax: 'lock (channel) (role)',
   example: 'lock #general @Members',
-  permission: 'Manage Channels',
+  permission: 'manage_channels',
   run: async(client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;

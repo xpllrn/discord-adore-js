@@ -11,7 +11,7 @@ module.exports = {
   name: "autoreact",
   aliases: ['react'],
   description: `automatically react to messages containing specific words`,
-  permission: 'Manage Channels',
+  permission: 'manage_channels',
   isGroupCommand: true,
   run: async(client, message, args) => {
     const guildService = getService('guild');

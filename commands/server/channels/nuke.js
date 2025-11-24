@@ -10,7 +10,7 @@ module.exports = {
   description: 'Deletes and recreates the channel with the same settings',
   syntax: 'nuke',
   example: 'nuke',
-  permission: 'Manage Channels',
+  permission: 'manage_channels',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

@@ -11,7 +11,7 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "history",
   description: `view and manage moderation history`,
-  permission: 'Manage Messages',
+  permission: 'manage_messages',
   isGroupCommand: true,
   run: async(client, message, args) => {
     const guildService = getService('guild');

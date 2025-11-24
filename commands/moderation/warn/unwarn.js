@@ -10,7 +10,7 @@ module.exports = {
   description: `remove a warning from a user's moderation history`,
   syntax: 'unwarn (user) (case_id) (reason)',
   example: 'unwarn @vwsn 5 mistake',
-  permission: 'Manage Messages',
+  permission: 'manage_messages',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

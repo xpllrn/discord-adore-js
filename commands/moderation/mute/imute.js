@@ -13,7 +13,7 @@ module.exports = {
   description: `revoke someone's attachment/embed perms in this channel`,
   syntax: 'imute (user) (reason)',
   example: 'imute @vwsn spam',
-  permission: 'Moderate Members',
+  permission: 'moderate_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

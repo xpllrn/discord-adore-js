@@ -11,7 +11,7 @@ module.exports = {
   name: "reactionrole",
   aliases: ['rr'],
   description: `Manage reaction roles`,
-  permission: 'Manage Roles',
+  permission: 'manage_roles',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');

@@ -12,7 +12,7 @@ module.exports = {
   description: `restore someone's reaction/emote perms in this channel`,
   syntax: 'runmute (user) (reason)',
   example: 'runmute @vwsn appeal',
-  permission: 'Moderate Members',
+  permission: 'moderate_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

@@ -10,7 +10,7 @@ module.exports = {
   name: "logs",
   aliases: ['logging', 'audit'],
   description: `Set up logging channels with webhooks for different log types`,
-  permission: "Manage Guild",
+  permission: "manage_guild",
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');

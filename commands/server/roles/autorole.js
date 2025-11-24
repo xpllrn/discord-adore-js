@@ -1,6 +1,6 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
-const { checkUserRoleHierarchy, checkBotRoleHierarchy } = require('../../../utils/permissions');
+const { checkUserRoleHierarchy, checkBotRoleHierarchy, hasMultipleDiscordPermissions } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { ensureGuildData } = require('../../../database');
 const { createConfirmation } = require('../../../core/buttons');
@@ -12,10 +12,16 @@ module.exports = {
   name: "autorole",
   aliases: ['ar'],
   description: `Set up automatic role assign on member join`,
-  permission: 'Manage Guild & Manage Roles',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');
+
+    // Check for both Manage Guild AND Manage Roles permissions
+    if (!hasMultipleDiscordPermissions(
+      message,
+      [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles],
+      ['Manage Server', 'Manage Roles']
+    )) return;
 
     await ensureGuildData(message.guild.id);
 

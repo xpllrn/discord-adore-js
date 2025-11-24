@@ -262,7 +262,7 @@ function hasDiscordPermission(message, permission, permissionName, customMessage
   }
 
   if (!message.member.permissions.has(permission)) {
-    const errorMessage = customMessage || `You need **${permissionName}** permission to use this command!`;
+    const errorMessage = customMessage || `You need \`${permissionName}\` permission to use this command!`;
     embeds.warn(message, errorMessage);
     return false;
   }
@@ -286,8 +286,8 @@ function hasMultipleDiscordPermissions(message, permissions, permissionNames) {
 
   if (missingPermissions.length > 0) {
     const permissionText = missingPermissions.length === 1
-      ? `**${missingPermissions[0]}** permission`
-      : `**${missingPermissions.join('** and **')}** permissions`;
+      ? `\`${missingPermissions[0]}\` permission`
+      : `\`${missingPermissions.join('\` and \`')}\` permissions`;
     embeds.warn(message, `You need ${permissionText} to use this command!`);
     return false;
   }

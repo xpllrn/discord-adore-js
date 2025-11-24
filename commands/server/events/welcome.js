@@ -11,7 +11,7 @@ module.exports = {
   name: "welcome",
   aliases: ['welc'],
   description: `Set up a welcome message for when new members join`,
-  permission: "Manage Guild",
+  permission: "manage_guild",
   isGroupCommand: true,
 
   run: async(client, message, args) => {

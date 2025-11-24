@@ -12,7 +12,7 @@ module.exports = {
   description: "Quote a message",
   syntax: 'quote (text)',
   example: 'quote hello world',
-  permission: "Send Messages",
+  permission: "attach_files",
   run: async (client, message, args) => {
     try {
       let targetUser = null;

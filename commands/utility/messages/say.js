@@ -7,7 +7,7 @@ module.exports = {
   description: "Say a message",
   syntax: 'say (message)',
   example: 'say hello world',
-  permission: "Administrator",
+  permission: "administrator",
   run: async (client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;

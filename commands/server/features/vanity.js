@@ -12,7 +12,7 @@ module.exports = {
   name: 'vanity',
   aliases: ['rep'],
   description: 'add vanity role to someone for reppin your server in their custom status',
-  permission: 'Manage Guild',
+  permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
     try {

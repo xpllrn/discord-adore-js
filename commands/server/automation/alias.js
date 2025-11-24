@@ -8,7 +8,7 @@ module.exports = {
   name: "alias",
   aliases: [],
   description: 'Create your own shortcuts for commands',
-  permission: 'Manage Guild',
+  permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
     if (!args[0]) {

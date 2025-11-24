@@ -14,7 +14,7 @@ module.exports = {
   description: `timeout a user using Discord's built-in timeout feature`,
   syntax: 'mute (user) (duration) (reason)',
   example: 'mute @vwsn 10m spam',
-  permission: 'Moderate Members',
+  permission: 'moderate_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

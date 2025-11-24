@@ -1,6 +1,6 @@
 const { PermissionFlagsBits } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
-const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
+const { hasDiscordPermission, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findUser } = require('../../../handlers/finder');
 
@@ -10,10 +10,7 @@ module.exports = {
   description: `change a member's nickname`,
   syntax: 'rename (user) <nickname>',
   example: 'rename @vwsn NewName',
-  permission: "Manage Nicknames",
   run: async(client, message, args) => {
-
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageNicknames)) {
       return embeds.deny(message, 'I need **Manage Nicknames** permission to use this command');
@@ -44,12 +41,22 @@ module.exports = {
       nickname = null;
     }
 
-    if (!checkSelfAction(message, member, 'rename')) return;
-    if (!checkBotAction(message, member)) return;
+    // Check if user is trying to rename themselves
+    const isSelf = member.id === message.author.id;
 
-    // Hierarchy checks
-    if (!checkUserMemberHierarchy(message, member)) return;
-    if (!checkBotMemberHierarchy(message, member)) return;
+    if (isSelf) {
+      // Renaming self - check for ChangeNickname permission
+      if (!hasDiscordPermission(message, PermissionFlagsBits.ChangeNickname, 'Change Nickname')) return;
+    } else {
+      // Renaming others - check for ManageNicknames permission
+      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames')) return;
+      
+      if (!checkBotAction(message, member)) return;
+
+      // Hierarchy checks (only for renaming others)
+      if (!checkUserMemberHierarchy(message, member)) return;
+      if (!checkBotMemberHierarchy(message, member)) return;
+    }
 
     try {
       await member.setNickname(nickname, `Renamed by ${message.author.tag}`);

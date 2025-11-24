@@ -84,7 +84,7 @@ module.exports = {
   name: "prefix",
   aliases: ['setprefix'],
   description: `Manage server prefix`,
-  permission: 'Administrator',
+  permission: 'administrator',
   isGroupCommand: true,
 
   // PREFIX COMMAND

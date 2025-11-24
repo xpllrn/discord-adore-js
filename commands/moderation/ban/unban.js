@@ -11,7 +11,7 @@ module.exports = {
   description: `unban the mentioned user from the server`,
   syntax: 'unban (user) (reason)',
   example: 'unban @vwsn appeal',
-  permission: 'Ban Members',
+  permission: 'ban_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

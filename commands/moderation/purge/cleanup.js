@@ -8,7 +8,7 @@ module.exports = {
   description: `clean up bot messages and user commands in the channel`,
   syntax: 'cleanup (number)',
   example: 'cleanup 50',
-  permission: 'Manage Messages',
+  permission: 'manage_messages',
   run: async(client, message, args) => {
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageMessages)) {

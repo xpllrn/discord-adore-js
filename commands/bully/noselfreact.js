@@ -7,7 +7,7 @@ module.exports = {
   name: "nsr",
   aliases: ["noselfreact"],
   description: "Prevent members from reacting to their own messages",
-  permission: "Manage Server",
+  permission: "manage_guild",
   isGroupCommand: true,
   run: async (client, message, args) => {
 

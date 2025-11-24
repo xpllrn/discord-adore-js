@@ -38,7 +38,7 @@ module.exports = {
   description: "Manage server stickers - steal, remove, and archive",
   syntax: 'sticker (subcommand)',
   example: 'sticker steal (reply)',
-  permission: 'Manage Stickers',
+  permission: 'manage_expressions',
   isGroupCommand: true,
   run: async (client, message, args) => {
 

@@ -1,6 +1,6 @@
 const { PermissionFlagsBits, EmbedBuilder } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
-const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
+const { hasMultipleDiscordPermissions, checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
 
 const { getService } = require('@services');
 const { createPagination, createConfirmation } = require('../../../core/buttons');
@@ -11,11 +11,15 @@ module.exports = {
   name: "forcenick",
   aliases: ['fn'],
   description: `force a nickname on a user that will be automatically restored if they try to change it`,
-  permission: "Manage Nicknames",
   isGroupCommand: true,
   run: async (client, message, args) => {
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames')) return;
+    // Check for both Manage Guild AND Manage Nicknames permissions
+    if (!hasMultipleDiscordPermissions(
+      message,
+      [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageNicknames],
+      ['Manage Server', 'Manage Nicknames']
+    )) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageNicknames)) {
       return embeds.deny(message, 'I need **Manage Nicknames** permission to use this command');

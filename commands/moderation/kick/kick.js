@@ -13,7 +13,7 @@ module.exports = {
   description: 'Kicks the mentioned user from the server',
   syntax: 'kick (user) (reason)',
   example: 'kick @vwsn spam',
-  permission: 'Kick Members',
+  permission: 'kick_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

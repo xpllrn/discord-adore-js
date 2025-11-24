@@ -42,7 +42,6 @@ module.exports = {
   aliases: ['bt', 'wordgame'],
   description: 'Play a word challenge game with friends',
   syntax: 'blacktea <start|end|exit|quit|time>',
-  permission: 'user',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const subcommand = args[0]?.toLowerCase();

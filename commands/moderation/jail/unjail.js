@@ -12,7 +12,7 @@ module.exports = {
   description: `unjails the specified member`,
   syntax: 'unjail (user) (reason)',
   example: 'unjail @vwsn appeal',
-  permission: 'Manage Roles',
+  permission: 'manage_roles',
   run: async(client, message, args) => {
 
     const guildService = getService('guild');

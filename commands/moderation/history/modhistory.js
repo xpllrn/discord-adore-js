@@ -14,7 +14,7 @@ module.exports = {
   description: `view moderation actions performed by moderators`,
   syntax: 'modhistory (moderator) (action)',
   example: 'modhistory @vwsn warn',
-  permission: 'Manage Messages',
+  permission: 'manage_messages',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

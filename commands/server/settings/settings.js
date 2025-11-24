@@ -8,7 +8,7 @@ module.exports = {
   name: "settings",
   aliases: [],
   description: `View and manage server settings`,
-  permission: 'Manage Server',
+  permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');

@@ -109,7 +109,7 @@ async function processImage(imageUrl, maxSize = 512) {
 module.exports = {
   name: "sticker",
   description: "Manage server stickers - add, remove, and tag stickers",
-  permission: "Manage Expressions",
+  permission: "manage_expressions",
   isGroupCommand: true,
 
   run: async (client, message, args) => {

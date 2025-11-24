@@ -8,7 +8,7 @@ module.exports = {
   aliases: ['reboot'],
   description: 'restart your mom',
   syntax: 'bozo u can not use it',
-  permission: 'dev',
+  permission: 'developer',
   run: async (client, message, args) => {
     // Check dev permission (silent fail if not dev)
     if (!await hasPermissionLevel(message, 'dev')) return;

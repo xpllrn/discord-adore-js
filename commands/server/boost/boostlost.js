@@ -11,7 +11,7 @@ module.exports = {
   description: 'View boost tracking information',
   syntax: 'boosters (lost/new)',
   example: 'boosters lost',
-  permission: "Manage Guild",
+  permission: "manage_guild",
   run: async (client, message, args) => {
     const guildService = getService('guild');
 

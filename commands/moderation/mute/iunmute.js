@@ -13,7 +13,7 @@ module.exports = {
   description: `restore someone's attachment/embed perms in this channel`,
   syntax: 'iunmute (user) (reason)',
   example: 'iunmute @vwsn appeal',
-  permission: 'Moderate Members',
+  permission: 'moderate_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

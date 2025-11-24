@@ -10,7 +10,7 @@ module.exports = {
   description: 'toggles `NSFW` status on a channel',
   syntax: 'naughty (channel)',
   example: 'naughty #channel',
-  permission: 'Manage Channels',
+  permission: 'manage_channels',
   run: async (client, message, args) => {
 
     // Check user permissions

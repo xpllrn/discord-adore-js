@@ -12,7 +12,7 @@ module.exports = {
   description: `revoke someone's reaction/emote perms in this channel`,
   syntax: 'rmute (user) (reason)',
   example: 'rmute @vwsn spam',
-  permission: 'Moderate Members',
+  permission: 'moderate_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

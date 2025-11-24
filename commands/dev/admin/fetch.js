@@ -10,7 +10,7 @@ module.exports = {
   name: "fetch",
   aliases: [],
   description: 'Fetch server information and invites',
-  permission: 'dev',
+  permission: 'developer',
   isGroupCommand: true,
   run: async(client, message, args) => {
     // Check dev permission (silent fail if not dev)

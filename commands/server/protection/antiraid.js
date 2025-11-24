@@ -10,13 +10,14 @@ module.exports = {
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');
+    const antinukeService = getService('antinuke');
 
-    // Check permissions - only server owner or administrators
+    // Check permissions - only server owner or antinuke admins can use
     const isOwner = message.guild.ownerId === message.author.id;
-    const isAdmin = message.member.permissions.has(PermissionFlagsBits.Administrator);
+    const isAntinukeAdmin = await antinukeService.isAdmin(message.guild.id, message.author.id);
 
-    if (!isOwner && !isAdmin) {
-      return embeds.deny(message, 'Only the **server owner** or **administrators** can use this command');
+    if (!isOwner && !isAntinukeAdmin) {
+      return embeds.deny(message, 'Only the **server owner** or **antinuke admins** can use this command');
     }
 
     if (!args[0]) {

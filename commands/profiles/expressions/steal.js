@@ -45,7 +45,7 @@ module.exports = {
   description: `Steal stickers and emotes from messages by replying to them`,
   syntax: 'steal (reply to message)',
   example: 'steal (reply to a message with stickers/emotes)',
-  permission: "Manage Expressions",
+  permission: "manage_expressions",
 
   run: async(client, message, args) => {
 

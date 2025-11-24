@@ -11,7 +11,7 @@ module.exports = {
   name: "clear",
   aliases: [],
   description: 'Clear name history for users or servers',
-  permission: 'dev',
+  permission: 'developer',
   isGroupCommand: true,
   run: async(client, message, args) => {
     // Check dev permission (silent fail if not dev)

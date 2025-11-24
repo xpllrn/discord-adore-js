@@ -7,7 +7,7 @@ module.exports = {
   description: 'set the server banner (requires boost level 2+)',
   syntax: 'setbanner (image)',
   example: 'setbanner [attach image]',
-  permission: "Manage Guild",
+  permission: "manage_guild",
   run: async(client, message, args) => {
 
     // Check user permissions

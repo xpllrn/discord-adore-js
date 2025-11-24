@@ -13,7 +13,7 @@ module.exports = {
   description: `remove timeout from a user using Discord's built-in timeout feature`,
   syntax: 'unmute (user) (reason)',
   example: 'unmute @vwsn appeal',
-  permission: 'Moderate Members',
+  permission: 'moderate_members',
   run: async (client, message, args) => {
     const guildService = getService('guild');
 

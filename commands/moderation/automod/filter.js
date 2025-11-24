@@ -10,7 +10,7 @@ module.exports = {
   name: "filter",
   aliases: ['automod'],
   description: "Manage Discord's built-in AutoMod filtering system",
-  permission: "Manage Guild",
+  permission: "manage_guild",
   isGroupCommand: true,
   run: async (client, message, args) => {
 

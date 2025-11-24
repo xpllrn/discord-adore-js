@@ -10,6 +10,7 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "webhook",
   description: "Manage webhooks for the server",
+  permission: "manage_webhooks",
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');
@@ -19,9 +20,6 @@ module.exports = {
     if (!subcommand) {
       return false;
     }
-
-    // All webhook commands require Manage Webhooks permission
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageWebhooks, 'Manage Webhooks')) return;
 
     switch (subcommand) {
       case 'create': {

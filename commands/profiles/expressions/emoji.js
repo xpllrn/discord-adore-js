@@ -38,7 +38,7 @@ module.exports = {
   description: "Manage server emojis",
   syntax: 'emoji (subcommand)',
   example: 'emoji list',
-  permission: 'Manage Emojis',
+  permission: 'manage_expressions',
   isGroupCommand: true,
   run: async (client, message, args) => {
 

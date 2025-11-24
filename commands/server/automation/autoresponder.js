@@ -11,7 +11,7 @@ module.exports = {
   name: "autoresponder",
   aliases: ['autoresponse', 'autorespond', 'trigger'],
   description: `automatically respond to specific triggers`,
-  permission: 'Manage Channels',
+  permission: 'manage_channels',
   isGroupCommand: true,
   run: async(client, message, args) => {
     const guildService = getService('guild');

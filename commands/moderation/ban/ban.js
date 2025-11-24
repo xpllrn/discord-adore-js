@@ -13,7 +13,7 @@ module.exports = {
   description: 'ban the mentioned user from the server (works with user IDs for users not in server)',
   syntax: 'ban (user) (reason)',
   example: 'ban @vwsn spam',
-  permission: 'Ban Members',
+  permission: 'ban_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
 

@@ -13,7 +13,7 @@ module.exports = {
   name: "giveaways",
   aliases: ['giveaway', 'gw'],
   description: `Manage server giveaways`,
-  permission: "Manage Channels",
+  permission: "manage_channels",
   isGroupCommand: true,
 
   run: async(client, message, args) => {

@@ -7,7 +7,7 @@ module.exports = {
   description: 'set the server invite splash screen (requires boost level 1+)',
   syntax: 'setsplash (image)',
   example: 'setsplash [attach image]',
-  permission: "Manage Guild",
+  permission: "manage_guild",
   run: async (client, message, args) => {
 
     // Check user permissions

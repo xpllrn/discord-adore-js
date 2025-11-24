@@ -11,7 +11,7 @@ module.exports = {
   name: "boost",
   aliases: ['boosts'],
   description: `Set up a boost message and role for when members boost the server`,
-  permission: "Manage Guild",
+  permission: "manage_guild",
   isGroupCommand: true,
 
   run: async(client, message, args) => {

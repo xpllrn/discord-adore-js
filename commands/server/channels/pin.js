@@ -8,7 +8,7 @@ module.exports = {
   description: 'pin a message in the current channel',
   syntax: 'pin',
   example: 'pin (reply to message)',
-  permission: "Manage Messages",
+  permission: "manage_messages",
   run: async(client, message) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;

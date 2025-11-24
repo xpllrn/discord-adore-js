@@ -14,7 +14,7 @@ module.exports = {
   name: "role",
   description: `Comprehensive role management system`,
   aliases: ['r'],
-  permission: 'Manage Roles',
+  permission: 'manage_roles',
   isGroupCommand: true,
   run: async (client, message, args) => {
 

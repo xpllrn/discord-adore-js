@@ -7,7 +7,7 @@ module.exports = {
   description: 'set the server icon',
   syntax: 'seticon (image)',
   example: 'seticon [attach image]',
-  permission: "Manage Guild",
+  permission: "manage_guild",
   run: async(client, message, args) => {
 
     // Check user permissions

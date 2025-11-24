@@ -9,7 +9,7 @@ module.exports = {
   description: 'Set or clear the topic/description of a channel',
   syntax: 'topic (channel) (description)',
   example: 'topic #general Welcome to our server',
-  permission: 'Manage Channels',
+  permission: 'manage_channels',
   run: async(client, message, args) => {
 
     if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
