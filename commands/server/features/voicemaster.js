@@ -48,7 +48,7 @@ module.exports = {
       if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
       if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageChannels)) {
-        return embeds.deny(message, 'I need **Manage Channels** permission to manage voice manager');
+        return embeds.deny(message, 'I need **Manage Channels** permission to manage voicemaster');
       }
 
       if (subcommand === 'setup') {
@@ -73,17 +73,17 @@ module.exports = {
     // All other commands require the user to be in a voice channel
     const member = message.member;
     if (!member.voice.channel) {
-      return embeds.warn(message, 'You must be in a voice channel to use this command');
+      return embeds.warn(message, 'You must be in a **voice channel** to use this command');
     }
 
     const voiceManager = await guildService.getVoiceManager(message.guild.id);
     if (!voiceManager.enabled) {
-      return embeds.warn(message, 'Voice manager is not setup in this server. Use `,vm setup` first.');
+      return embeds.warn(message, '**voicemaster** is **not setup** in this server. Use `,vm setup` first.');
     }
 
     const tempChannel = await guildService.getTempVoiceChannel(message.guild.id, member.voice.channel.id);
     if (!tempChannel) {
-      return embeds.warn(message, 'You can only use this command in a temporary voice channel created by the bot');
+      return embeds.warn(message, 'You can only use this command **in a voicemaster** channels');
     }
 
     // Check if user is the owner of the channel (except for claim command)
@@ -274,7 +274,7 @@ async function handleSetupCommand(message, client) {
   const guildService = getService('guild');
   const voiceManager = await guildService.getVoiceManager(message.guild.id);
   if (voiceManager.enabled) {
-    return embeds.warn(message, 'Voice manager is already setup in this server. Use `,vm reset` to recreate.');
+    return embeds.warn(message, 'voicemaster is already **setup in this server**. Use `,vm reset` to recreate.');
   }
 
   try {
@@ -328,11 +328,11 @@ async function handleSetupCommand(message, client) {
     // Create voice manager panel
     await createVoiceManagerPanel(client, menuChannel);
 
-    return embeds.success(message, 'Finished setting up the VoiceMaster channels. A category and two channels have been created.');
+    return embeds.success(message, '**Voicemaster interface** has been **setup**.');
 
   } catch (error) {
     logger.webhook.error(error, message);
-    return embeds.deny(message, 'Failed to setup voice manager. Please check my permissions and try again.');
+    return embeds.deny(message, '**Failed** to setup **voice manager**.');
   }
 }
 
@@ -342,7 +342,7 @@ async function handleResetCommand(message) {
   const guildService = getService('guild');
   const voiceManager = await guildService.getVoiceManager(message.guild.id);
   if (!voiceManager.enabled) {
-    return embeds.warn(message, 'Voice manager is not setup in this server. Use `,vm setup` first.');
+    return embeds.warn(message, 'Voice manager **is not setup** in this server. Use `,vm setup` first.');
   }
 
   try {
@@ -374,11 +374,11 @@ async function handleResetCommand(message) {
     // Clear database configuration
     await guildService.disableVoiceManager(message.guild.id);
 
-    return embeds.success(message, 'Voice manager has been reset. Use `,vm setup` to create a new voice manager system.');
+    return embeds.success(message, '**Voicemaster interface** has been **reset**.');
 
   } catch (error) {
     logger.webhook.error(error, message);
-    return embeds.deny(message, 'Failed to reset voice manager. Please check my permissions and try again.');
+    return embeds.deny(message, 'Failed to **reset** voicemaster. Please **check my permissions**.');
   }
 }
 
