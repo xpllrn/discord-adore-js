@@ -81,7 +81,6 @@ async function submitConfession(context, confessionText) {
 }
 
 module.exports = {
-  // PREFIX COMMAND
   name: "confess",
   aliases: [],
   description: "Submit an anonymous confession",

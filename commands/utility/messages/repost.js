@@ -1,4 +1,4 @@
-const { AttachmentBuilder } = require('discord.js');
+const { AttachmentBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { Buffer } = require('buffer');
@@ -692,14 +692,73 @@ class InstagramScraper {
 }
 
 module.exports = {
-    name: "responder",
+    name: "repost",
     aliases: [],
-    description: 'Download content when "adore" is mentioned with links',
-    syntax: 'adore (link)',
-    example: 'adore https://instagram.com/p/example',
+    description: 'Download content from Instagram or TikTok',
+    syntax: 'repost (link)',
+    example: 'repost https://instagram.com/p/example',
     run: async (client, message, args) => {
-        // This function is called from message listener, not as a command
-        // The actual logic is in the message event handler
+        const url = args[0];
+
+        if (!url || !url.match(/^https?:\/\/.+/)) {
+            return message.reply('Please provide a valid Instagram or TikTok URL');
+        }
+
+        await message.channel.sendTyping();
+
+        try {
+            if (url.match(/instagram\.com\/(p|reel|tv)/)) {
+                return await handleInstagram(message, url, client);
+            } else if (url.match(/tiktok\.com/)) {
+                return await handleTikTok(message, url, client);
+            } else {
+                return message.reply('Please provide a valid Instagram or TikTok URL');
+            }
+        } catch (error) {
+            logger.webhook.error(error, message);
+            return message.reply('An error occurred while downloading the content');
+        }
+    },
+
+    data: new SlashCommandBuilder()
+        .setName('repost')
+        .setDescription('Download content from Instagram or TikTok')
+        .setIntegrationTypes([
+            ApplicationIntegrationType.GuildInstall,
+            ApplicationIntegrationType.UserInstall
+        ])
+        .setContexts([
+            InteractionContextType.Guild,
+            InteractionContextType.BotDM,
+            InteractionContextType.PrivateChannel
+        ])
+        .addStringOption(option =>
+            option.setName('url')
+                .setDescription('Instagram or TikTok URL')
+                .setRequired(true)
+        ),
+
+    async execute(interaction) {
+        const url = interaction.options.getString('url');
+
+        if (!url || !url.match(/^https?:\/\/.+/)) {
+            return interaction.reply({ content: 'Please provide a valid Instagram or TikTok URL', ephemeral: true });
+        }
+
+        await interaction.deferReply();
+
+        try {
+            if (url.match(/instagram\.com\/(p|reel|tv)/)) {
+                return await handleInstagramSlash(interaction, url);
+            } else if (url.match(/tiktok\.com/)) {
+                return await handleTikTokSlash(interaction, url);
+            } else {
+                return interaction.editReply({ content: 'Please provide a valid Instagram or TikTok URL' });
+            }
+        } catch (error) {
+            logger.webhook.error(error, interaction);
+            return interaction.editReply({ content: 'An error occurred while downloading the content' });
+        }
     }
 };
 
@@ -777,6 +836,52 @@ async function handleInstagram(message, url, client) {
     } catch (error) {
         logger.webhook.error(error, message);
         return message.react('❤️');
+    }
+}
+
+async function handleInstagramSlash(interaction, url) {
+    try {
+        const result = await InstagramScraper.saveInsta(url, logger);
+
+        if (!result.status) {
+            logger.webhook.error(new Error(`Instagram download failed: ${result.msg}`), interaction);
+            return interaction.editReply({ content: 'Failed to download Instagram content' });
+        }
+
+        const { data } = result;
+        const filesToSend = data.slice(0, 3);
+        const attachments = [];
+
+        for (let i = 0; i < filesToSend.length; i++) {
+            const item = filesToSend[i];
+            try {
+                const response = await axios.get(item.url, {
+                    responseType: 'arraybuffer',
+                    timeout: 30000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+
+                const buffer = Buffer.from(response.data);
+                const extension = item.type === 'video' ? 'mp4' : 'jpg';
+                const filename = `instagram_${Date.now()}_${i + 1}.${extension}`;
+
+                attachments.push(new AttachmentBuilder(buffer, { name: filename }));
+            } catch (downloadError) {
+                logger.webhook.error(downloadError, interaction);
+            }
+        }
+
+        if (attachments.length > 0) {
+            return interaction.editReply({ files: attachments });
+        } else {
+            return interaction.editReply({ content: 'Failed to download Instagram content' });
+        }
+
+    } catch (error) {
+        logger.webhook.error(error, interaction);
+        return interaction.editReply({ content: 'An error occurred while downloading Instagram content' });
     }
 }
 
@@ -880,6 +985,82 @@ async function processTikTokVideo(message, videoData, client) {
     } catch (error) {
         logger.webhook.error(error, message);
         return message.react('❤️');
+    }
+}
+
+async function handleTikTokSlash(interaction, url) {
+    try {
+        let cleanUrl = url;
+
+        if (url.includes('vm.tiktok.com') || url.includes('vt.tiktok.com')) {
+            try {
+                const response = await axios.get(url, {
+                    maxRedirects: 5,
+                    timeout: 10000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+                cleanUrl = response.request.res.responseUrl || url;
+            } catch (redirectError) {
+                // Silent fail for URL expansion
+            }
+        }
+
+        const response = await axios.post('https://www.tikwm.com/api/',
+            new URLSearchParams({
+                url: cleanUrl,
+                count: 12,
+                cursor: 0,
+                web: 1,
+                hd: 1
+            }), {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 15000
+        });
+
+        if (!response.data || response.data.code !== 0) {
+            return interaction.editReply({ content: 'Failed to download TikTok content' });
+        }
+
+        const videoData = response.data.data;
+        let videoUrl = videoData.play || videoData.download_addr || videoData.video?.downloadAddr;
+
+        if (!videoUrl) {
+            return interaction.editReply({ content: 'Failed to download TikTok content' });
+        }
+
+        if (videoUrl.startsWith('/')) {
+            videoUrl = 'https://www.tikwm.com' + videoUrl;
+        }
+
+        const videoResponse = await axios.get(videoUrl, {
+            responseType: 'arraybuffer',
+            timeout: 60000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://www.tikwm.com/'
+            }
+        });
+
+        const buffer = Buffer.from(videoResponse.data);
+        const fileSizeMB = buffer.length / (1024 * 1024);
+
+        if (fileSizeMB > 25) {
+            return interaction.editReply({ content: 'Video file is too large (max 25MB)' });
+        }
+
+        const filename = `tiktok_${Date.now()}.mp4`;
+        const attachment = new AttachmentBuilder(buffer, { name: filename });
+
+        return interaction.editReply({ files: [attachment] });
+
+    } catch (error) {
+        logger.webhook.error(error, interaction);
+        return interaction.editReply({ content: 'An error occurred while downloading TikTok content' });
     }
 }
 

@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js');
 const { colors, bot } = require('../../config/setup')
 
 module.exports = {
@@ -8,14 +8,12 @@ module.exports = {
   syntax: 'invite',
   example: 'invite',
   global: true,
+  
   run: async(client, message, args) => {
-
     const embed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setDescription(`> Contact **[vee](https://discord.com/users/1243888419403206660)** if you have any questions..`)
 
-    .setColor(colors.embed)
-    .setDescription(`> Contact **[vee](https://discord.com/users/1243888419403206660)** if you have any questions..`)
-
-    // Create button
     const row = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
@@ -24,7 +22,31 @@ module.exports = {
           .setURL(bot.inviteLink)
       );
 
-    // Send message with embed and button
     message.channel.send({ embeds: [embed], components: [row] });
+  },
+
+  // SLASH COMMAND
+  data: new SlashCommandBuilder()
+    .setName('invite')
+    .setDescription('Send an invite link of the bot')
+    .setIntegrationTypes([
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    ]),
+
+  async execute(interaction) {
+    const embed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setDescription(`> Contact **[vee](https://discord.com/users/1243888419403206660)** if you have any questions..`)
+
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setLabel('Invite me')
+          .setStyle(ButtonStyle.Link)
+          .setURL(bot.inviteLink)
+      );
+
+    await interaction.reply({ embeds: [embed], components: [row] });
   }
 }

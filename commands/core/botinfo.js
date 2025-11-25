@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js');
 const { colors, bot } = require("../../config/setup");
 
 module.exports = {
@@ -39,7 +39,11 @@ module.exports = {
   // SLASH COMMAND
   data: new SlashCommandBuilder()
     .setName('botinfo')
-    .setDescription('Gets basic information about the bot'),
+    .setDescription('Gets basic information about the bot')
+    .setIntegrationTypes([
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    ]),
 
   async execute(interaction) {
     const { embed, row } = this.getBotInfoEmbed(interaction.client);

@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findGuild } = require('../../../handlers/finder');
@@ -49,6 +49,49 @@ module.exports = {
     } catch (error) {
       logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while fetching the server icon');
+    }
+  },
+
+  data: new SlashCommandBuilder()
+    .setName('guildicon')
+    .setDescription("Show a server's icon")
+    .setIntegrationTypes([
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    ])
+    .setContexts([InteractionContextType.Guild]),
+
+  async execute(interaction) {
+    try {
+      if (!interaction.guild) {
+        return embeds.warn(interaction, 'This command can only be used in a server');
+      }
+
+      const targetGuild = interaction.guild;
+
+      const iconURL = targetGuild.iconURL({
+        dynamic: true,
+        size: 4096
+      });
+
+      if (!iconURL) {
+        return embeds.warn(interaction, `**${targetGuild.name}** doesn't have an icon set`);
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(colors.embed)
+        .setTitle(`${targetGuild.name}'s Icon`)
+        .setImage(iconURL)
+        .setFooter({
+          text: `Requested by ${interaction.user.username}`,
+          iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+        });
+
+      return interaction.reply({ embeds: [embed] });
+
+    } catch (error) {
+      logger.webhook.error(error, interaction);
+      return embeds.deny(interaction, 'An error occurred while fetching the server icon');
     }
   }
 }

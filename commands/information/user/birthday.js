@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { findUser } = require('../../../handlers/finder');
 const { ensureUserData } = require('../../../database');
@@ -296,3 +296,106 @@ async function getNextBirthdayTimestamp(userId) {
   // Return Unix timestamp (seconds)
   return Math.floor(nextBirthday.getTime() / 1000);
 }
+
+// Add slash command data
+module.exports.data = new SlashCommandBuilder()
+  .setName('birthday')
+  .setDescription('View or set birthday')
+  .setIntegrationTypes([
+    ApplicationIntegrationType.GuildInstall,
+    ApplicationIntegrationType.UserInstall
+  ])
+  .addUserOption(option =>
+    option
+      .setName('user')
+      .setDescription('The user to view (leave empty to set/view your own)')
+      .setRequired(false)
+  )
+  .addIntegerOption(option =>
+    option
+      .setName('day')
+      .setDescription('Day of the month (1-31) - only for setting your birthday')
+      .setRequired(false)
+      .setMinValue(1)
+      .setMaxValue(31)
+  )
+  .addStringOption(option =>
+    option
+      .setName('month')
+      .setDescription('Month - only for setting your birthday')
+      .setRequired(false)
+      .addChoices(
+        { name: 'January', value: '1' },
+        { name: 'February', value: '2' },
+        { name: 'March', value: '3' },
+        { name: 'April', value: '4' },
+        { name: 'May', value: '5' },
+        { name: 'June', value: '6' },
+        { name: 'July', value: '7' },
+        { name: 'August', value: '8' },
+        { name: 'September', value: '9' },
+        { name: 'October', value: '10' },
+        { name: 'November', value: '11' },
+        { name: 'December', value: '12' }
+      )
+  );
+
+// Add slash command execute
+module.exports.execute = async function(interaction) {
+  const userService = getService('user');
+  const targetUser = interaction.options.getUser('user');
+  const day = interaction.options.getInteger('day');
+  const monthString = interaction.options.getString('month');
+  const month = monthString ? parseInt(monthString) : null;
+
+  try {
+    // If day and month are provided, set birthday
+    if (day && month) {
+      if (targetUser) {
+        return embeds.warn(interaction, 'You can only set your own birthday, not someone else\'s', false);
+      }
+
+      // Validate day for specific month
+      if ((month === 2 && day > 29) ||
+        ([4, 6, 9, 11].includes(month) && day > 30)) {
+        return embeds.warn(interaction, 'Invalid day for the specified month', false);
+      }
+
+      await ensureUserData(interaction.user.id);
+
+      const existingBirthday = await userService.getBirthday(interaction.user.id);
+
+      if (existingBirthday && existingBirthday.day && existingBirthday.month) {
+        const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
+        return embeds.warn(interaction, `You already have a birthday set to **${formattedBirthday}**. Birthdays cannot be changed once set.`, false);
+      }
+
+      await userService.setBirthday(interaction.user.id, day, month);
+      const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
+      return embeds.success(interaction, `Set your birthday to **${formattedBirthday}**`, false);
+    }
+
+    // Otherwise, view birthday
+    const userToView = targetUser || interaction.user;
+    const formattedBirthday = await userService.getFormattedBirthday(userToView.id);
+    const username = userToView.username;
+
+    if (!formattedBirthday) {
+      return embeds.info(interaction, `🎂 **${username}** has no birthday set`, false);
+    }
+
+    const isBirthdayToday = await userService.isBirthday(userToView.id);
+
+    if (isBirthdayToday) {
+      const birthdayText = `🎂 **${username}**'s birthday is **${formattedBirthday}** (Today!)`;
+      return embeds.info(interaction, birthdayText, false);
+    } else {
+      const nextBirthdayTimestamp = await getNextBirthdayTimestamp(userToView.id);
+      const birthdayText = `🎂 **${username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
+      return embeds.info(interaction, birthdayText, false);
+    }
+  } catch (error) {
+    logger.webhook.error(error, { author: interaction.user, guild: interaction.guild, channel: interaction.channel });
+    return embeds.deny(interaction, 'An error occurred while processing your request', false);
+  }
+};

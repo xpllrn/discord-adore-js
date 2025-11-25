@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js');
 const axios = require('axios');
 const { colors, emojis } = require('../../../config/setup');
 const { embeds } = require('../../../core/embeds');
@@ -177,6 +177,110 @@ function getLanguageName(code) {
   return languageNames[code] || code.toUpperCase();
 }
 
+// Shared logic for translate command
+async function handleTranslateShared(context, targetLanguageInput, textToTranslate, repliedMessage) {
+  const isInteraction = !!context.user;
+  let targetLanguage = 'en';
+  let finalText = '';
+
+  // Handle replied message
+  if (repliedMessage) {
+    if (!repliedMessage.content) {
+      return embeds.warn(context, 'The replied message has no text content to translate', false);
+    }
+    
+    finalText = repliedMessage.content;
+    
+    if (targetLanguageInput) {
+      const langCode = getLanguageCode(targetLanguageInput);
+      if (langCode) {
+        targetLanguage = langCode;
+      } else {
+        return embeds.warn(context, `Language "${targetLanguageInput}" not recognized. Try languages like: english, spanish, french, german, etc.`, false);
+      }
+    }
+  } else {
+    // No reply, use provided text
+    if (!textToTranslate || !textToTranslate.trim()) {
+      return embeds.warn(context, 'Please provide text to translate', false);
+    }
+    
+    finalText = textToTranslate;
+    
+    if (targetLanguageInput) {
+      const langCode = getLanguageCode(targetLanguageInput);
+      if (langCode) {
+        targetLanguage = langCode;
+      } else {
+        return embeds.warn(context, `Language "${targetLanguageInput}" not recognized. Try languages like: english, spanish, french, german, etc.`, false);
+      }
+    }
+  }
+
+  if (finalText.length > 1000) {
+    return embeds.warn(context, 'Text is too long to translate (max 1000 characters)', false);
+  }
+
+  // Show loading message
+  const loadingEmbed = new EmbedBuilder()
+    .setColor('#7985cd')
+    .setDescription(`${emojis.loading} Translating...`);
+
+  let loadingMessage;
+  if (isInteraction) {
+    await context.reply({ embeds: [loadingEmbed] });
+    loadingMessage = await context.fetchReply();
+  } else {
+    loadingMessage = await context.channel.send({ embeds: [loadingEmbed] });
+  }
+
+  try {
+    const result = await translateText(finalText, targetLanguage);
+
+    if (!result.success) {
+      const errorEmbed = embeds.createDeny(context, `Translation failed: ${result.error}`);
+      if (isInteraction) {
+        return context.editReply({ embeds: [errorEmbed] });
+      } else {
+        await loadingMessage.delete().catch(() => {});
+        return context.channel.send({ embeds: [errorEmbed] });
+      }
+    }
+
+    const sourceLangName = getLanguageName(result.sourceLang);
+    const targetLangName = getLanguageName(result.targetLang);
+    const user = isInteraction ? context.user : context.author;
+
+    const embed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setAuthor({
+        name: user.displayName || user.username,
+        iconURL: user.displayAvatarURL({ dynamic: true })
+      })
+      .setTitle(`Translated from ${sourceLangName} to ${targetLangName}`)
+      .setDescription(`\`\`\`${result.translatedText}\`\`\``)
+      .setFooter({
+        text: 'Google Translate',
+        iconURL: 'https://cdn.discordapp.com/emojis/1385950785975746684.png'
+      });
+
+    if (isInteraction) {
+      return context.editReply({ embeds: [embed] });
+    } else {
+      return loadingMessage.edit({ embeds: [embed] });
+    }
+
+  } catch (error) {
+    if (isInteraction) {
+      const errorEmbed = embeds.createDeny(context, 'An error occurred while translating the text');
+      return context.editReply({ embeds: [errorEmbed] });
+    } else {
+      await loadingMessage.delete().catch(() => {});
+      return embeds.deny(context, 'An error occurred while translating the text');
+    }
+  }
+}
+
 module.exports = {
   name: "translate",
   aliases: ['tr'],
@@ -185,28 +289,14 @@ module.exports = {
   example: 'translate spanish hello',
   run: async (client, message, args) => {
     let textToTranslate = '';
-    let targetLanguage = 'en';
-    
+    let targetLanguageInput = null;
+    let repliedMessage = null;
+
     // Check if this is a reply to a message
     if (message.reference && message.reference.messageId) {
       try {
-        const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
-        
-        if (!repliedMessage.content) {
-          return embeds.warn(message, 'The replied message has no text content to translate');
-        }
-        
-        textToTranslate = repliedMessage.content;
-        
-        // If args provided, first arg is target language
-        if (args[0]) {
-          const langCode = getLanguageCode(args[0]);
-          if (langCode) {
-            targetLanguage = langCode;
-          } else {
-            return embeds.warn(message, `Language "${args[0]}" not recognized. Try languages like: english, spanish, french, german, etc.`);
-          }
-        }
+        repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+        targetLanguageInput = args[0] || null;
       } catch (error) {
         return embeds.warn(message, 'Could not fetch the replied message');
       }
@@ -215,67 +305,79 @@ module.exports = {
       if (!args[0]) {
         return runHelpCommand(message, 'translate');
       }
-      
+
       // Check if first arg is a language
       const possibleLangCode = getLanguageCode(args[0]);
-      
+
       if (possibleLangCode && args.length === 1) {
         // Only language provided, no text
         return embeds.warn(message, 'Please provide text to translate or reply to a message');
       } else if (possibleLangCode && args.length > 1) {
         // Language + text provided
-        targetLanguage = possibleLangCode;
+        targetLanguageInput = args[0];
         textToTranslate = args.slice(1).join(' ');
       } else {
         // No language, just text (translate to English)
         textToTranslate = args.join(' ');
       }
     }
-    
-    if (!textToTranslate.trim()) {
-      return embeds.warn(message, 'Please provide text to translate');
-    }
-    
-    if (textToTranslate.length > 1000) {
-      return embeds.warn(message, 'Text is too long to translate (max 1000 characters)');
-    }
-    
-    // Show loading message
-    const loadingEmbed = new EmbedBuilder()
-      .setColor('#7985cd')
-      .setDescription(`${emojis.loading} Translating...`);
-    
-    const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
-    
-    try {
-      const result = await translateText(textToTranslate, targetLanguage);
-      
-      if (!result.success) {
-        await loadingMessage.delete().catch(() => {});
-        return embeds.deny(message, `Translation failed: ${result.error}`);
-      }
-      
-      const sourceLangName = getLanguageName(result.sourceLang);
-      const targetLangName = getLanguageName(result.targetLang);
-      
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setAuthor({ 
-          name: message.author.displayName, 
-          iconURL: message.author.displayAvatarURL({ dynamic: true }) 
-        })
-        .setTitle(`Translated from ${sourceLangName} to ${targetLangName}`)
-        .setDescription(`\`\`\`${result.translatedText}\`\`\``)
-        .setFooter({
-          text: 'Google Translate',
-          iconURL: 'https://cdn.discordapp.com/emojis/1385950785975746684.png'
-        });
-      
-      await loadingMessage.edit({ embeds: [embed] });
-      
-    } catch (error) {
-      await loadingMessage.delete().catch(() => {});
-      return embeds.deny(message, 'An error occurred while translating the text');
-    }
+
+    return await handleTranslateShared(message, targetLanguageInput, textToTranslate, repliedMessage);
+  },
+
+  // SLASH COMMAND
+  data: new SlashCommandBuilder()
+    .setName('translate')
+    .setDescription('Translate text to different languages')
+    .setIntegrationTypes([
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    ])
+    .addStringOption(option =>
+      option
+        .setName('text')
+        .setDescription('The text to translate')
+        .setRequired(true)
+        .setMaxLength(1000)
+    )
+    .addStringOption(option =>
+      option
+        .setName('language')
+        .setDescription('Target language (default: English)')
+        .setRequired(false)
+        .addChoices(
+          { name: 'English', value: 'en' },
+          { name: 'Spanish', value: 'es' },
+          { name: 'French', value: 'fr' },
+          { name: 'German', value: 'de' },
+          { name: 'Italian', value: 'it' },
+          { name: 'Portuguese', value: 'pt' },
+          { name: 'Russian', value: 'ru' },
+          { name: 'Japanese', value: 'ja' },
+          { name: 'Korean', value: 'ko' },
+          { name: 'Chinese', value: 'zh' },
+          { name: 'Arabic', value: 'ar' },
+          { name: 'Hindi', value: 'hi' },
+          { name: 'Dutch', value: 'nl' },
+          { name: 'Swedish', value: 'sv' },
+          { name: 'Turkish', value: 'tr' },
+          { name: 'Polish', value: 'pl' },
+          { name: 'Greek', value: 'el' },
+          { name: 'Thai', value: 'th' },
+          { name: 'Vietnamese', value: 'vi' },
+          { name: 'Indonesian', value: 'id' },
+          { name: 'Filipino', value: 'tl' },
+          { name: 'Czech', value: 'cs' },
+          { name: 'Hungarian', value: 'hu' },
+          { name: 'Romanian', value: 'ro' },
+          { name: 'Ukrainian', value: 'uk' }
+        )
+    ),
+
+  async execute(interaction) {
+    const text = interaction.options.getString('text');
+    const targetLanguage = interaction.options.getString('language');
+
+    return await handleTranslateShared(interaction, targetLanguage, text, null);
   }
 };

@@ -24,11 +24,17 @@ async function hasPermissionLevel(message, level) {
   const userId = message.author.id;
   const config = require('../config/setup');
 
+  // Check if it's the dev level - ONLY bot owner (DEV_ID) can use developer commands
+  if (level === 'dev') {
+    return userId === config.bot.ownerId;
+  }
+
+  // For other permission levels (like premium), check normally
   if (userId === config.bot.ownerId) {
     return true;
   }
 
-  // Server owner bypasses permission level checks in their own server
+  // Server owner bypasses permission level checks in their own server (except dev)
   if (isServerOwner(message)) {
     return true;
   }
@@ -36,34 +42,6 @@ async function hasPermissionLevel(message, level) {
   // Check instance-based permissions first
   if (await hasInstancePermission(userId, level)) {
     return true;
-  }
-
-  // Check if it's the dev user or has dev role
-  if (level === 'dev') {
-    if (userId === PERMISSION_LEVELS.dev?.userId) {
-      return true;
-    }
-
-    // Check if user has dev role in dev server
-    try {
-      if (!PERMISSION_LEVELS.dev?.roleId || !config.bot.devServerId) {
-        return false;
-      }
-
-      const devServer = message.client.guilds.cache.get(config.bot.devServerId);
-      if (!devServer) {
-        return false;
-      }
-
-      const member = await devServer.members.fetch(userId).catch(() => null);
-      if (member && member.roles.cache.has(PERMISSION_LEVELS.dev.roleId)) {
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      return false;
-    }
   }
 
   // Check if it's premium level

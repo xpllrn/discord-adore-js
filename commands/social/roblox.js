@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const config = require('../../config/setup');
 const { runHelpCommand } = require('../../utils/commandProcessor');
@@ -239,6 +239,243 @@ module.exports = {
     } catch (error) {
       logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while fetching the Roblox profile');
+    }
+  },
+
+  data: new (require('discord.js').SlashCommandBuilder)()
+    .setName('roblox')
+    .setDescription('Get information about a Roblox player')
+    .setIntegrationTypes([
+      require('discord.js').ApplicationIntegrationType.GuildInstall,
+      require('discord.js').ApplicationIntegrationType.UserInstall
+    ])
+    .setContexts([
+      require('discord.js').InteractionContextType.Guild,
+      require('discord.js').InteractionContextType.BotDM,
+      require('discord.js').InteractionContextType.PrivateChannel
+    ])
+    .addStringOption(option =>
+      option.setName('username')
+        .setDescription('Roblox username')
+        .setRequired(true)
+    ),
+
+  async execute(interaction) {
+    try {
+      const username = interaction.options.getString('username');
+      const msg = await embeds.loading(interaction, `Searching for player **${username}**...`);
+
+      // Get user ID from username
+      const userSearchResponse = await fetch(`https://users.roblox.com/v1/users/search?keyword=${encodeURIComponent(username)}&limit=10`, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      }).then((response) => response.json());
+
+      if (!userSearchResponse.data || userSearchResponse.data.length === 0) {
+        return embeds.warn(interaction, `Roblox player **${username}** was **not found**`);
+      }
+
+      // Find exact match or use first result
+      let user = userSearchResponse.data.find(u => u.name.toLowerCase() === username.toLowerCase());
+      if (!user) user = userSearchResponse.data[0];
+
+      const userId = user.id;
+
+      // Fetch detailed user info
+      const [userDetails, friendsCount, followersCount, followingCount] = await Promise.all([
+        fetch(`https://users.roblox.com/v1/users/${userId}`).then(r => r.json()),
+        fetch(`https://friends.roblox.com/v1/users/${userId}/friends/count`).then(r => r.json()).catch(() => ({ count: 0 })),
+        fetch(`https://friends.roblox.com/v1/users/${userId}/followers/count`).then(r => r.json()).catch(() => ({ count: 0 })),
+        fetch(`https://friends.roblox.com/v1/users/${userId}/followings/count`).then(r => r.json()).catch(() => ({ count: 0 }))
+      ]);
+
+      // Get full body avatar
+      const avatarResponse = await fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=420x420&format=Png`).then(r => r.json());
+      const avatarUrl = avatarResponse.data?.[0]?.imageUrl || null;
+
+      // Get user presence
+      const presenceResponse = await fetch(`https://presence.roblox.com/v1/presence/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userIds: [userId] })
+      }).then(r => r.json()).catch(() => {
+        return { userPresences: [] };
+      });
+
+      const presence = presenceResponse.userPresences?.[0];
+      const isOnline = presence && presence.userPresenceType && presence.userPresenceType > 0;
+
+      // Get Roblox badges
+      const badgesResponse = await fetch(`https://badges.roblox.com/v1/users/${userId}/badges?limit=100&sortOrder=Asc`).then(r => r.json()).catch(() => {
+        return { data: [] };
+      });
+
+      // Get RAP and Value from Rolimons API
+      let rapValue = 'N/A';
+      let totalValue = 'N/A';
+      let rolimonsData = null;
+      
+      try {
+        const rolimonsResponse = await fetch(`https://api.rolimons.com/players/v1/playerinfo/${userId}`).then(r => r.json()).catch(() => {
+          return null;
+        });
+        
+        if (rolimonsResponse && rolimonsResponse.success) {
+          rolimonsData = rolimonsResponse;
+          const rap = rolimonsResponse.rap;
+          const value = rolimonsResponse.value;
+          
+          if (rap && rap > 0) {
+            rapValue = `[${rap.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
+          }
+          if (value && value > 0) {
+            totalValue = `[${value.toLocaleString()}](https://www.rolimons.com/player/${userId})`;
+          }
+        }
+      } catch (error) {
+        // Silent fail
+      }
+
+      // Get player badges from Roblox API
+      let playerBadgesResponse = null;
+      try {
+        playerBadgesResponse = await fetch(`https://accountinformation.roblox.com/v1/users/${userId}/roblox-badges`).then(r => r.json()).catch(() => null);
+      } catch (err) {
+        // Silent fail
+      }
+
+      // Map Roblox official badges
+      const robloxBadgeEmotes = {
+        'Welcome To The Club': config.emojis.robloxWelcomeToTheClub,
+        'Warrior': config.emojis.robloxWarrior,
+        'Veteran': config.emojis.robloxVeteran,
+        'Administrator': config.emojis.robloxPremium,
+        'Inviter': config.emojis.robloxInviter,
+        'Homestead': config.emojis.robloxHomestead,
+        'Friendship': config.emojis.robloxFriendship,
+        'Combat Initiation': config.emojis.robloxCombat,
+        'Bricksmith': config.emojis.robloxBricksmith,
+        'Bloxxer': config.emojis.robloxBloxxer
+      };
+
+      let badgeEmotesList = [];
+      
+      if (playerBadgesResponse && Array.isArray(playerBadgesResponse)) {
+        playerBadgesResponse.forEach(badge => {
+          const emote = robloxBadgeEmotes[badge.name];
+          if (emote && !badgeEmotesList.includes(emote)) {
+            badgeEmotesList.push(emote);
+          }
+        });
+      }
+      
+      if (badgeEmotesList.length === 0 && badgesResponse.data && badgesResponse.data.length > 0) {
+        badgesResponse.data.forEach(badge => {
+          const emote = robloxBadgeEmotes[badge.name];
+          if (emote && !badgeEmotesList.includes(emote)) {
+            badgeEmotesList.push(emote);
+          }
+        });
+      }
+
+      const embed = new (require('discord.js').EmbedBuilder)()
+        .setColor(config.colors.info)
+        .setAuthor({
+          name: interaction.user.displayName || interaction.user.username,
+          iconURL: interaction.user.displayAvatarURL({ dynamic: true })
+        })
+        .setTitle(`${userDetails.name} • ${userId}`)
+        .setURL(`https://www.roblox.com/users/${userId}/profile`)
+        .setThumbnail(avatarUrl);
+
+      const createdTimestamp = Math.floor(new Date(userDetails.created).getTime() / 1000);
+      let description = '';
+      
+      if (userDetails.description) {
+        description += `${userDetails.description}\n\n`;
+      }
+      
+      description += `<t:${createdTimestamp}:D> (<t:${createdTimestamp}:R>)`;
+      
+      if (isOnline) {
+        description += ` ${config.emojis.online}`;
+      }
+
+      embed.setDescription(description);
+
+      let lastSeenText = 'Unknown';
+      const lastOnlineTimestamp = rolimonsData?.last_online || null;
+      
+      if (isOnline) {
+        lastSeenText = 'Currently Online';
+      } else if (lastOnlineTimestamp) {
+        const now = Math.floor(Date.now() / 1000);
+        const diff = now - lastOnlineTimestamp;
+        const hours = diff / 3600;
+        const days = diff / 86400;
+        
+        if (hours < 1) {
+          lastSeenText = 'Last seen few minutes ago';
+        } else if (hours < 24) {
+          lastSeenText = 'Last seen today';
+        } else if (days < 2) {
+          lastSeenText = 'Last seen yesterday';
+        } else if (days < 7) {
+          lastSeenText = 'Last seen this week';
+        } else {
+          const date = new Date(lastOnlineTimestamp * 1000);
+          const options = { month: 'short', day: 'numeric', year: 'numeric' };
+          lastSeenText = `Last seen on ${date.toLocaleDateString('en-US', options)}`;
+        }
+      }
+
+      embed.addFields(
+        {
+          name: 'RAP',
+          value: rapValue,
+          inline: true
+        },
+        {
+          name: 'Value',
+          value: totalValue,
+          inline: true
+        },
+        {
+          name: `Badges (${badgeEmotesList.length})`,
+          value: badgeEmotesList.length > 0 ? badgeEmotesList.join(' ') : 'No badges',
+          inline: true
+        },
+        {
+          name: 'Followers',
+          value: followersCount.count?.toLocaleString() || '0',
+          inline: true
+        },
+        {
+          name: 'Follows',
+          value: followingCount.count?.toLocaleString() || '0',
+          inline: true
+        },
+        {
+          name: 'Friends',
+          value: friendsCount.count?.toLocaleString() || '0',
+          inline: true
+        }
+      );
+
+      embed.setFooter({
+        text: lastSeenText,
+        iconURL: 'https://images.rbxcdn.com/c69b74f49c6738f0a0d01b1db0b8e95c.png'
+      });
+
+      return interaction.editReply({ embeds: [embed] });
+
+    } catch (error) {
+      logger.webhook.error(error, interaction);
+      return embeds.deny(interaction, 'An error occurred while fetching the Roblox profile');
     }
   }
 }

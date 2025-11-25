@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
@@ -53,6 +53,56 @@ module.exports = {
     } catch (error) {
       logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while fetching the banner');
+    }
+  },
+
+  data: new SlashCommandBuilder()
+    .setName('banner')
+    .setDescription("Show a user's global banner")
+    .setIntegrationTypes([
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    ])
+    .setContexts([
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    ])
+    .addUserOption(option =>
+      option.setName('user')
+        .setDescription('The user to get the banner of')
+        .setRequired(false)
+    ),
+
+  async execute(interaction) {
+    try {
+      const targetUser = interaction.options.getUser('user') || interaction.user;
+
+      const fullUser = await interaction.client.users.fetch(targetUser.id, { force: true });
+      
+      const bannerURL = fullUser.bannerURL({ 
+        dynamic: true, 
+        size: 4096 
+      });
+
+      if (!bannerURL) {
+        return embeds.warn(interaction, `**${fullUser.username}** doesn't have a banner set`);
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(colors.embed)
+        .setTitle(`${fullUser.username}'s Banner`)
+        .setImage(bannerURL)
+        .setFooter({ 
+          text: `Requested by ${interaction.user.username}`, 
+          iconURL: interaction.user.displayAvatarURL({ dynamic: true }) 
+        });
+
+      return interaction.reply({ embeds: [embed] });
+
+    } catch (error) {
+      logger.webhook.error(error, interaction);
+      return embeds.deny(interaction, 'An error occurred while fetching the banner');
     }
   }
 }

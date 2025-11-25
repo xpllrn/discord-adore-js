@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js');
 
 module.exports = {
   name: "latency",
@@ -38,7 +38,11 @@ module.exports = {
   // SLASH COMMAND
   data: new SlashCommandBuilder()
     .setName('latency')
-    .setDescription("Shows bot's latency response times"),
+    .setDescription("Shows bot's latency response times")
+    .setIntegrationTypes([
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    ]),
 
   execute: async (interaction) => {
     const targets = ['no one', 'everyone', 'ur mom', 'horny asian women', 'horny asian man', 'vee', 'sin', '4 dick in jon'];

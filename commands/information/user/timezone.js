@@ -1,4 +1,5 @@
 const { DateTime } = require('luxon');
+const { SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js');
 const timezone = require('node-location-timezone');
 const { embeds } = require('../../../core/embeds');
 const { findUser } = require('../../../handlers/finder');
@@ -195,5 +196,185 @@ async function setUserTimezone(message, cityName) {
   } catch (error) {
     logger.webhook.error(error, message);
     return embeds.deny(message, 'An error occurred while **setting** your timezone');
+  }
+}
+
+// Add slash command data
+module.exports.data = new SlashCommandBuilder()
+  .setName('timezone')
+  .setDescription('View or set timezone')
+  .setIntegrationTypes([
+    ApplicationIntegrationType.GuildInstall,
+    ApplicationIntegrationType.UserInstall
+  ])
+  .addUserOption(option =>
+    option
+      .setName('user')
+      .setDescription('The user to view (leave empty to set/view your own)')
+      .setRequired(false)
+  )
+  .addStringOption(option =>
+    option
+      .setName('city')
+      .setDescription('City name to set your timezone (e.g., London, New York, Tokyo)')
+      .setRequired(false)
+  );
+
+// Add slash command execute
+module.exports.execute = async function(interaction) {
+  const targetUser = interaction.options.getUser('user');
+  const cityName = interaction.options.getString('city');
+
+  try {
+    // If city is provided, set timezone
+    if (cityName) {
+      if (targetUser) {
+        return embeds.warn(interaction, 'You can only set your own timezone, not someone else\'s', false);
+      }
+      return await setUserTimezoneSlash(interaction, cityName);
+    }
+
+    // Otherwise, view timezone
+    const userToView = targetUser || interaction.user;
+    return await showUserTimezoneSlash(interaction, userToView.id, userToView);
+  } catch (error) {
+    logger.webhook.error(error, { author: interaction.user, guild: interaction.guild, channel: interaction.channel });
+    return embeds.deny(interaction, 'An error occurred while processing your request', false);
+  }
+};
+
+// Slash command version of showUserTimezone
+async function showUserTimezoneSlash(interaction, userId, targetUser) {
+  try {
+    const userService = getService('user');
+    const userTimezone = await userService.getTimezone(userId);
+
+    if (!userTimezone) {
+      const displayName = targetUser.id === interaction.user.id ? 'You' : targetUser.username;
+      return embeds.warn(interaction, `**${displayName}** ${targetUser.id === interaction.user.id ? 'have' : 'has'} not set a **timezone** yet. Use \`/timezone set\` to set one.`, false);
+    }
+
+    const tz = userTimezone;
+    const now = DateTime.now().setZone(tz);
+
+    if (!now.isValid) {
+      return embeds.deny(interaction, `**Invalid** timezone data stored. Please set your **timezone** again.`, false);
+    }
+
+    const displayName = targetUser.id === interaction.user.id ? 'Your' : `**${targetUser.username}**'s`;
+    const timeString = now.toFormat('LLLL dd, hh:mm a');
+    const text = `${displayName} current time is **${timeString}**`;
+
+    return embeds.info(interaction, text, false);
+
+  } catch (error) {
+    logger.webhook.error(error, interaction);
+    return embeds.deny(interaction, 'An error occurred while fetching timezone information', false);
+  }
+}
+
+// Slash command version of setUserTimezone
+async function setUserTimezoneSlash(interaction, cityName) {
+  try {
+    const userService = getService('user');
+    let timezoneId = null;
+    let locationName = cityName;
+    const searchTerm = cityName.toLowerCase();
+
+    // First, try to find the best matching city by searching all locations
+    const locations = timezone.getLocations();
+    
+    // Priority matching for common ambiguous names
+    const priorityMatches = {
+      'london': 'United Kingdom of Great Britain and Northern Ireland',
+      'paris': 'France',
+      'berlin': 'Germany',
+      'moscow': 'Russian Federation'
+    };
+
+    if (priorityMatches[searchTerm]) {
+      const priorityLocation = locations.find(loc => 
+        loc.city && loc.city.toLowerCase() === searchTerm && 
+        loc.country.name === priorityMatches[searchTerm]
+      );
+      if (priorityLocation) {
+        timezoneId = priorityLocation.timezone;
+        locationName = `${priorityLocation.city}, ${priorityLocation.country.name}`;
+      }
+    }
+
+    // If no priority match, try exact city name match (first result)
+    if (!timezoneId) {
+      const cityMatch = locations.find(loc => 
+        loc.city && loc.city.toLowerCase() === searchTerm
+      );
+      if (cityMatch) {
+        timezoneId = cityMatch.timezone;
+        locationName = `${cityMatch.city}, ${cityMatch.country.name}`;
+      }
+    }
+
+    // Try common location aliases and regions
+    if (!timezoneId) {
+      const aliases = {
+        'england': 'Europe/London',
+        'uk': 'Europe/London',
+        'britain': 'Europe/London',
+        'great britain': 'Europe/London',
+        'united kingdom': 'Europe/London',
+        'maine': 'America/New_York',
+        'california': 'America/Los_Angeles',
+        'texas': 'America/Chicago',
+        'florida': 'America/New_York',
+        'new york state': 'America/New_York',
+        'ontario': 'America/Toronto',
+        'quebec': 'America/Montreal',
+        'british columbia': 'America/Vancouver'
+      };
+
+      if (aliases[searchTerm]) {
+        timezoneId = aliases[searchTerm];
+        locationName = cityName;
+      }
+    }
+
+    // Try by country name with fuzzy matching
+    if (!timezoneId) {
+      const countries = timezone.getCountries();
+
+      const matchedCountry = countries.find(country =>
+        country.name.toLowerCase() === searchTerm ||
+        country.name.toLowerCase().includes(searchTerm) ||
+        searchTerm.includes(country.name.toLowerCase()) ||
+        (country.officialName && country.officialName.toLowerCase().includes(searchTerm))
+      );
+
+      if (matchedCountry && matchedCountry.timezones && matchedCountry.timezones.length > 0) {
+        timezoneId = matchedCountry.timezones[0];
+        locationName = matchedCountry.name;
+      }
+    }
+
+    if (!timezoneId) {
+      return embeds.warn(interaction, `**${cityName}** was not found. Please try a major city name like **Madrid**, **London**, **New York**, **Tokyo**, etc.`, false);
+    }
+
+    // Validate the timezone with Luxon
+    const testTime = DateTime.now().setZone(timezoneId);
+    if (!testTime.isValid) {
+      return embeds.deny(interaction, `Invalid timezone data for **${cityName}**. Please try a **different** city.`, false);
+    }
+
+    // Update user timezone using service layer
+    await userService.setTimezone(interaction.user.id, timezoneId);
+
+    const timeString = testTime.toFormat('LLLL dd, hh:mm a');
+    const text = `Timezone set to **${locationName}**. Your current time is **${timeString}**`;
+
+    return embeds.success(interaction, text, false);
+
+  } catch (error) {
+    logger.webhook.error(error, interaction);
+    return embeds.deny(interaction, 'An error occurred while **setting** your timezone', false);
   }
 }

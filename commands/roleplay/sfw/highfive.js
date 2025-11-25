@@ -1,4 +1,5 @@
 const { createRoleplayCommand, getRoleplaySlashData, executeRoleplaySlash } = require('../../../utils/helpers');
+const { ApplicationIntegrationType } = require('discord.js');
 
 module.exports = {
   name: "highfive",
@@ -7,6 +8,10 @@ module.exports = {
   syntax: 'highfive (user)',
   example: 'highfive @vwsn',
   run: createRoleplayCommand('highfive', 'high-fived'),
-  data: getRoleplaySlashData('highfive', 'Give someone a high five'),
+  data: getRoleplaySlashData('highfive', 'Give someone a high five')
+    .setIntegrationTypes([
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    ]),
   execute: executeRoleplaySlash('highfive', 'high-fived')
 };

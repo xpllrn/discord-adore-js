@@ -118,12 +118,13 @@ async function processCommand(message, isEdit = false) {
     }
 
     // Execute command (support both execute and run methods)
-    // Prioritize run() for prefix commands (execute() is for slash commands)
+    // Prioritize run() for prefix commands, but also support unified execute()
     let commandResult;
     if (command.run) {
       commandResult = await command.run(client, message, args);
     } else if (command.execute) {
-      commandResult = await command.execute(message, args, client);
+      // Unified execute method that works for both prefix and slash
+      commandResult = await command.execute(message, args);
     } else {
       throw new Error(`Command ${command.name} has no execute or run method`);
     }

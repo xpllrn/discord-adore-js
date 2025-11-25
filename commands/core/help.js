@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js')
+const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js')
 const path = require('path')
 const fs = require('fs')
 const config = require('../../config/setup')
@@ -449,6 +449,10 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('help')
     .setDescription('View extended help for commands')
+    .setIntegrationTypes([
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    ])
     .addStringOption(option =>
       option
         .setName('command')
