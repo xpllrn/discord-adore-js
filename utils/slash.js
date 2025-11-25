@@ -5,8 +5,8 @@
  * Run this whenever you add/modify/remove slash commands.
  * 
  * Usage:
- *   node utils/slash.js              - Clear and deploy to dev server (instant, default)
- *   node utils/slash.js --global     - Deploy globally (takes up to 1 hour)
+ *   node utils/slash.js              - Deploy globally (takes up to 1 hour, default)
+ *   node utils/slash.js --dev        - Deploy to dev server only (instant)
  *   node utils/slash.js --clear      - Clear dev server commands only
  *   node utils/slash.js --clear-all  - Clear ALL commands (dev server + global) - removes duplicates
  */
@@ -20,10 +20,11 @@ const path = require('path');
 const config = require('../config/setup');
 
 const args = process.argv.slice(2);
-const isGlobalDeploy = args.includes('--global');
+const isDevDeploy = args.includes('--dev');
 const isClearOnly = args.includes('--clear');
 const isClearAll = args.includes('--clear-all');
-const isGuildDeploy = !isGlobalDeploy; // Default to guild deploy
+const isGlobalDeploy = !isDevDeploy && !isClearOnly && !isClearAll; // Default to global deploy
+const isGuildDeploy = isDevDeploy; // Only deploy to guild if --dev flag is used
 
 const commands = [];
 const commandsPath = path.join(__dirname, '../commands');
@@ -176,13 +177,15 @@ const rest = new REST().setToken(config.bot.token);
       return;
     }
 
-    // Step 1: Clear old commands from dev server
-    console.log('\n🗑️  Clearing old dev server commands...');
-    await rest.put(
-      Routes.applicationGuildCommands(config.bot.clientId, config.bot.devServerId),
-      { body: [] }
-    );
-    console.log('✅ Cleared old commands.\n');
+    // Step 1: Clear old commands (only if deploying to dev server)
+    if (isGuildDeploy) {
+      console.log('\n🗑️  Clearing old dev server commands...');
+      await rest.put(
+        Routes.applicationGuildCommands(config.bot.clientId, config.bot.devServerId),
+        { body: [] }
+      );
+      console.log('✅ Cleared old commands.\n');
+    }
 
     // Step 2: Deploy new commands
     console.log(`🚀 Started refreshing ${commands.length} application (/) commands.`);
@@ -218,7 +221,7 @@ const rest = new REST().setToken(config.bot.token);
     
     if (isGlobalDeploy) {
       console.log('⏰ Note: Global commands may take up to 1 hour to appear in all servers.');
-      console.log('💡 Tip: Run without --global flag for instant deployment to dev server.\n');
+      console.log('💡 Tip: Use --dev flag for instant deployment to dev server for testing.\n');
     }
   } catch (error) {
     console.error('❌ Error deploying slash commands:', error);
