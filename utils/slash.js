@@ -28,6 +28,29 @@ const isGuildDeploy = !isGlobalDeploy; // Default to guild deploy
 const commands = [];
 const commandsPath = path.join(__dirname, '../commands');
 
+/**
+ * Process command data to automatically add contexts for UserInstall commands
+ * If a command has UserInstall but no contexts set, add all three contexts
+ */
+function processCommandData(slashData) {
+  const commandJson = slashData.toJSON();
+  
+  // Check if command has UserInstall integration type
+  const hasUserInstall = commandJson.integration_types && 
+    commandJson.integration_types.includes(1); // 1 = UserInstall
+  
+  // Check if contexts are already set
+  const hasContexts = commandJson.contexts && commandJson.contexts.length > 0;
+  
+  // If UserInstall is present but no contexts are set, add all three contexts
+  if (hasUserInstall && !hasContexts) {
+    commandJson.contexts = [0, 1, 2]; // 0 = Guild, 1 = BotDM, 2 = PrivateChannel
+    console.log(`   ↳ Auto-added DM contexts for user-installable command`);
+  }
+  
+  return commandJson;
+}
+
 // Recursively load all slash command files from commands folder
 function loadSlashCommands(dirPath, relativePath = '') {
   const { statSync } = require('fs');
@@ -49,11 +72,13 @@ function loadSlashCommands(dirPath, relativePath = '') {
           // Support both single command and array of commands
           if (Array.isArray(command.data)) {
             command.data.forEach(slashData => {
-              commands.push(slashData.toJSON());
+              const commandJson = processCommandData(slashData);
+              commands.push(commandJson);
               console.log(`✅ Loaded slash command: ${slashData.name} (${commandPath})`);
             });
           } else {
-            commands.push(command.data.toJSON());
+            const commandJson = processCommandData(command.data);
+            commands.push(commandJson);
             console.log(`✅ Loaded slash command: ${command.data.name} (${commandPath})`);
           }
         }
