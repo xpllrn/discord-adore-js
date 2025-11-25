@@ -65,10 +65,11 @@ module.exports = {
           await logStickerUpdate(auditLogEntry, guild);
           break;
 
-        case AuditLogEvent.MessageDelete:
-        case AuditLogEvent.MessageBulkDelete:
-          await logManualMessageDelete(auditLogEntry, guild);
-          break;
+        // Message deletions are handled by the messageDelete event
+        // case AuditLogEvent.MessageDelete:
+        // case AuditLogEvent.MessageBulkDelete:
+        //   await logManualMessageDelete(auditLogEntry, guild);
+        //   break;
 
         default:
           // Ignore other audit log events
@@ -341,27 +342,29 @@ async function logStickerUpdate(auditLogEntry, guild) {
   }
 }
 
-async function logManualMessageDelete(auditLogEntry, guild) {
-  try {
-    // Only log if it's a manual deletion (not by the message author)
-    if (auditLogEntry.executor?.id === auditLogEntry.target?.id) return;
+// Removed - message deletions are now only handled by the messageDelete event
+// to avoid duplicate logs and to include message content
+// async function logManualMessageDelete(auditLogEntry, guild) {
+//   try {
+//     // Only log if it's a manual deletion (not by the message author)
+//     if (auditLogEntry.executor?.id === auditLogEntry.target?.id) return;
 
-    // Skip if the target is a bot
-    if (auditLogEntry.target?.bot) return;
+//     // Skip if the target is a bot
+//     if (auditLogEntry.target?.bot) return;
 
-    let actionName = 'Message Deleted';
-    if (auditLogEntry.action === 73) actionName = 'Messages Bulk Deleted'; // MessageBulkDelete
+//     let actionName = 'Message Deleted';
+//     if (auditLogEntry.action === 73) actionName = 'Messages Bulk Deleted'; // MessageBulkDelete
 
-    const embed = webhookLogger.createServerEventLog({
-      action: auditLogEntry.action === 73 ? 'messageBulkDelete' : 'messageDelete',
-      executor: auditLogEntry.executor,
-      target: auditLogEntry.target,
-      changes: auditLogEntry.changes,
-      guild: guild
-    });
+//     const embed = webhookLogger.createServerEventLog({
+//       action: auditLogEntry.action === 73 ? 'messageBulkDelete' : 'messageDelete',
+//       executor: auditLogEntry.executor,
+//       target: auditLogEntry.target,
+//       changes: auditLogEntry.changes,
+//       guild: guild
+//     });
 
-    await webhookLogger.sendLog(guild.id, 'message', embed);
-  } catch (error) {
-    // Silent fail to avoid infinite loops
-  }
-}
+//     await webhookLogger.sendLog(guild.id, 'message', embed);
+//   } catch (error) {
+//     // Silent fail to avoid infinite loops
+//   }
+// }

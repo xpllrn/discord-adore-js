@@ -23,6 +23,11 @@ module.exports = {
       return embeds.deny(message, 'Only the **server owner** or **antinuke admins** can use this command');
     }
 
+    // Even antinuke admins need Manage Guild permission
+    if (!isOwner && !message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+      return embeds.deny(message, 'You need **Manage Guild** permission to use this command');
+    }
+
     if (!args[0]) {
       const { runHelpCommand } = require('../../../utils/commandProcessor');
       return runHelpCommand(message, 'antiraid');

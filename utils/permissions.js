@@ -28,6 +28,11 @@ async function hasPermissionLevel(message, level) {
     return true;
   }
 
+  // Server owner bypasses permission level checks in their own server
+  if (isServerOwner(message)) {
+    return true;
+  }
+
   // Check instance-based permissions first
   if (await hasInstancePermission(userId, level)) {
     return true;
@@ -261,6 +266,11 @@ function hasDiscordPermission(message, permission, permissionName, customMessage
     return true;
   }
 
+  // Server owner bypasses all Discord permission checks in their own server
+  if (isServerOwner(message)) {
+    return true;
+  }
+
   if (!message.member.permissions.has(permission)) {
     const errorMessage = customMessage || `You need \`${permissionName}\` permission to use this command!`;
     embeds.warn(message, errorMessage);
@@ -273,6 +283,11 @@ function hasDiscordPermission(message, permission, permissionName, customMessage
 function hasMultipleDiscordPermissions(message, permissions, permissionNames) {
   // DEV_ID user bypasses all Discord permission checks
   if (isGlobalDev(message.author.id)) {
+    return true;
+  }
+
+  // Server owner bypasses all Discord permission checks in their own server
+  if (isServerOwner(message)) {
     return true;
   }
 

@@ -431,6 +431,9 @@ module.exports = {
               // Remove the footer with page numbers since it's a single page
               singleSubcommandEmbed.setFooter({ text: `Module: ${command.name}` });
               return message.channel.send({ embeds: [singleSubcommandEmbed] });
+            } else {
+              // Subcommand not found - show error
+              return embeds.warn(message, `Command \`${commandName} ${requestedSubcommand}\` does not exist`, false);
             }
           }
         } catch (e) {

@@ -34,7 +34,7 @@ async function setConfessionChannelShared(context, channel, confessionService) {
     // Ignore pinning errors
   }
 
-  return embeds.success(context, `Set ${channel} as the **confession channel** and sent the confession button`, false);
+  return embeds.success(context, `Set ${channel} as the **confession channel**`, false);
 }
 
 // SHARED LOGIC: View confession channel
