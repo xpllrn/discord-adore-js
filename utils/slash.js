@@ -5,10 +5,11 @@
  * Run this whenever you add/modify/remove slash commands.
  * 
  * Usage:
- *   node utils/slash.js              - Deploy globally (takes up to 1 hour, default)
- *   node utils/slash.js --dev        - Deploy to dev server only (instant)
- *   node utils/slash.js --clear      - Clear dev server commands only
- *   node utils/slash.js --clear-all  - Clear ALL commands (dev server + global) - removes duplicates
+ *   node utils/slash.js                        - Deploy globally (takes up to 1 hour, default)
+ *   node utils/slash.js --dev                  - Deploy to dev server only (instant)
+ *   node utils/slash.js --clear                - Clear dev server commands only
+ *   node utils/slash.js --clear-all            - Clear ALL commands (dev server + global) - removes duplicates
+ *   node utils/slash.js --only birthday timezone - Deploy only specific commands (by name)
  */
 
 // Initialize module aliases first (required for slash commands that use @services, etc.)
@@ -25,6 +26,10 @@ const isClearOnly = args.includes('--clear');
 const isClearAll = args.includes('--clear-all');
 const isGlobalDeploy = !isDevDeploy && !isClearOnly && !isClearAll; // Default to global deploy
 const isGuildDeploy = isDevDeploy; // Only deploy to guild if --dev flag is used
+
+// Check for --only flag to filter specific commands
+const onlyIndex = args.indexOf('--only');
+const specificCommands = onlyIndex !== -1 ? args.slice(onlyIndex + 1).filter(arg => !arg.startsWith('--')) : [];
 
 const commands = [];
 const commandsPath = path.join(__dirname, '../commands');
@@ -73,11 +78,21 @@ function loadSlashCommands(dirPath, relativePath = '') {
           // Support both single command and array of commands
           if (Array.isArray(command.data)) {
             command.data.forEach(slashData => {
+              // Filter by specific commands if --only flag is used
+              if (specificCommands.length > 0 && !specificCommands.includes(slashData.name)) {
+                return; // Skip this command
+              }
+              
               const commandJson = processCommandData(slashData);
               commands.push(commandJson);
               console.log(`✅ Loaded slash command: ${slashData.name} (${commandPath})`);
             });
           } else {
+            // Filter by specific commands if --only flag is used
+            if (specificCommands.length > 0 && !specificCommands.includes(command.data.name)) {
+              return; // Skip this command
+            }
+            
             const commandJson = processCommandData(command.data);
             commands.push(commandJson);
             console.log(`✅ Loaded slash command: ${command.data.name} (${commandPath})`);
@@ -93,10 +108,18 @@ function loadSlashCommands(dirPath, relativePath = '') {
 // Load all slash command files
 if (!isClearOnly) {
   try {
+    if (specificCommands.length > 0) {
+      console.log(`🎯 Filtering for specific commands: ${specificCommands.join(', ')}\n`);
+    }
+    
     loadSlashCommands(commandsPath);
     
     if (commands.length === 0) {
-      console.log('⚠️  No slash commands found in commands folder.');
+      if (specificCommands.length > 0) {
+        console.log(`⚠️  No matching commands found for: ${specificCommands.join(', ')}`);
+      } else {
+        console.log('⚠️  No slash commands found in commands folder.');
+      }
       console.log('💡 Make sure your commands export both "data" and "execute" properties.');
     }
   } catch (error) {
