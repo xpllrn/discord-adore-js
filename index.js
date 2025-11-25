@@ -38,7 +38,12 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ],
   allowedMentions: { parse: ['users', 'roles'] },
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction]
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction],
+  ws: {
+    properties: {
+      browser: 'Discord iOS'
+    }
+  }
 })
 
 // Set global client reference to avoid circular dependencies

@@ -105,7 +105,7 @@ module.exports = {
     vmIncrease: '<:increase:1439540962954055791>',
     vmDecrease: '<:decrease:1439540954607652924>',
     vmInfo: '<:info:1439540965655445606>',
-    vmRename: '<:rename:1431572358971261071>',
+    vmRename: '<:disconnect:1439540958831050812>',
 
     // Level Progress Bar Emojis
     blueLeftRounded: '<:blue_left_rounded:1439546259366215680>',
