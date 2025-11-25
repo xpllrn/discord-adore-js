@@ -23,6 +23,7 @@ module.exports = {
 
     if (args[0] === 'add') {
       const subcommandInfo = {
+        name: 'add',
         description: 'Adds a autorole and assigns on join to member',
         syntax: '{guildprefix}autorole add [role]',
         aliases: ['create'],
@@ -72,6 +73,7 @@ module.exports = {
 
     } else if (args[0] === 'reset') {
       const subcommandInfo = {
+        name: 'reset',
         description: 'Clears every autorole for guild',
         syntax: '{guildprefix}autorole reset',
         aliases: ['clear'],
@@ -104,6 +106,7 @@ module.exports = {
 
     } else if (args[0] === 'list') {
       const subcommandInfo = {
+        name: 'list',
         description: 'Lists all autoroles configured for the guild',
         syntax: '{guildprefix}autorole list',
         aliases: [],
@@ -152,6 +155,7 @@ module.exports = {
 
     } else if (args[0] === 'remove' || args[0] === 'rm' || args[0] === 'delete' || args[0] === 'del') {
       const subcommandInfo = {
+        name: 'remove',
         description: 'Removes a autorole and stops assigning on join',
         syntax: '{guildprefix}autorole remove [role]',
         aliases: ['delete', 'del', 'rm'],

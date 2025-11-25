@@ -63,27 +63,27 @@ async function showUserTimezone(message, userId, targetUser = null) {
   try {
     const userService = getService('user');
     const userTimezone = await userService.getTimezone(userId);
+    const isOwnTimezone = !targetUser;
 
     if (!userTimezone) {
-      const displayName = targetUser ?
-        (targetUser.displayName || targetUser.username || targetUser.user?.username) :
-        'You';
-      return embeds.warn(message, `**${displayName}** ${targetUser ? 'has' : 'have'} not set a **timezone** yet. Use \`tz set [city]\` to set one.`);
+      if (isOwnTimezone) {
+        return embeds.warn(message, `You have not set a **timezone** yet. Use \`tz set [city]\` to set one.`);
+      } else {
+        const displayName = targetUser.displayName || targetUser.username || targetUser.user?.username;
+        return embeds.warn(message, `**${displayName}** has not set a **timezone** yet.`);
+      }
     }
 
-    const timezone = userTimezone;
-    const now = DateTime.now().setZone(timezone);
+    const tz = userTimezone;
+    const now = DateTime.now().setZone(tz);
 
     if (!now.isValid) {
       return embeds.deny(message, `**Invalid** timezone data stored. Please set your **timezone** again.`);
     }
 
-    const displayName = targetUser ?
-      (targetUser.displayName || targetUser.username || targetUser.user?.username) :
-      'Your';
-
+    const displayName = isOwnTimezone ? 'Your' : `**${targetUser.displayName || targetUser.username || targetUser.user?.username}**'s`;
     const timeString = now.toFormat('LLLL dd, hh:mm a');
-    const text = `**${displayName}** current time is **${timeString}**`;
+    const text = `${displayName} current time is **${timeString}**`;
 
     return embeds.info(message, text);
 
@@ -202,7 +202,7 @@ async function setUserTimezone(message, cityName) {
 // Add slash command data
 module.exports.data = new SlashCommandBuilder()
   .setName('timezone')
-  .setDescription('View or set timezone')
+  .setDescription('View a user\'s timezone')
   .setIntegrationTypes([
     ApplicationIntegrationType.GuildInstall,
     ApplicationIntegrationType.UserInstall
@@ -210,33 +210,15 @@ module.exports.data = new SlashCommandBuilder()
   .addUserOption(option =>
     option
       .setName('user')
-      .setDescription('The user to view (leave empty to set/view your own)')
-      .setRequired(false)
-  )
-  .addStringOption(option =>
-    option
-      .setName('city')
-      .setDescription('City name to set your timezone (e.g., London, New York, Tokyo)')
+      .setDescription('The user to view (leave empty for your own)')
       .setRequired(false)
   );
 
 // Add slash command execute
 module.exports.execute = async function(interaction) {
-  const targetUser = interaction.options.getUser('user');
-  const cityName = interaction.options.getString('city');
-
   try {
-    // If city is provided, set timezone
-    if (cityName) {
-      if (targetUser) {
-        return embeds.warn(interaction, 'You can only set your own timezone, not someone else\'s', false);
-      }
-      return await setUserTimezoneSlash(interaction, cityName);
-    }
-
-    // Otherwise, view timezone
-    const userToView = targetUser || interaction.user;
-    return await showUserTimezoneSlash(interaction, userToView.id, userToView);
+    const targetUser = interaction.options.getUser('user') || interaction.user;
+    return await showUserTimezoneSlash(interaction, targetUser.id, targetUser);
   } catch (error) {
     logger.webhook.error(error, { author: interaction.user, guild: interaction.guild, channel: interaction.channel });
     return embeds.deny(interaction, 'An error occurred while processing your request', false);
@@ -248,10 +230,14 @@ async function showUserTimezoneSlash(interaction, userId, targetUser) {
   try {
     const userService = getService('user');
     const userTimezone = await userService.getTimezone(userId);
+    const isOwnTimezone = targetUser.id === interaction.user.id;
 
     if (!userTimezone) {
-      const displayName = targetUser.id === interaction.user.id ? 'You' : targetUser.username;
-      return embeds.warn(interaction, `**${displayName}** ${targetUser.id === interaction.user.id ? 'have' : 'has'} not set a **timezone** yet. Use \`/timezone set\` to set one.`, false);
+      if (isOwnTimezone) {
+        return embeds.warn(interaction, `You have not set a **timezone** yet. Use \`/timezone-set\` to set one.`, false);
+      } else {
+        return embeds.warn(interaction, `**${targetUser.username}** has not set a **timezone** yet.`, false);
+      }
     }
 
     const tz = userTimezone;
@@ -261,7 +247,7 @@ async function showUserTimezoneSlash(interaction, userId, targetUser) {
       return embeds.deny(interaction, `**Invalid** timezone data stored. Please set your **timezone** again.`, false);
     }
 
-    const displayName = targetUser.id === interaction.user.id ? 'Your' : `**${targetUser.username}**'s`;
+    const displayName = isOwnTimezone ? 'Your' : `**${targetUser.username}**'s`;
     const timeString = now.toFormat('LLLL dd, hh:mm a');
     const text = `${displayName} current time is **${timeString}**`;
 

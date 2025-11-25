@@ -300,7 +300,7 @@ async function getNextBirthdayTimestamp(userId) {
 // Add slash command data
 module.exports.data = new SlashCommandBuilder()
   .setName('birthday')
-  .setDescription('View or set birthday')
+  .setDescription('View a user\'s birthday')
   .setIntegrationTypes([
     ApplicationIntegrationType.GuildInstall,
     ApplicationIntegrationType.UserInstall
@@ -308,91 +308,42 @@ module.exports.data = new SlashCommandBuilder()
   .addUserOption(option =>
     option
       .setName('user')
-      .setDescription('The user to view (leave empty to set/view your own)')
+      .setDescription('The user to view (leave empty for your own)')
       .setRequired(false)
-  )
-  .addIntegerOption(option =>
-    option
-      .setName('day')
-      .setDescription('Day of the month (1-31) - only for setting your birthday')
-      .setRequired(false)
-      .setMinValue(1)
-      .setMaxValue(31)
-  )
-  .addStringOption(option =>
-    option
-      .setName('month')
-      .setDescription('Month - only for setting your birthday')
-      .setRequired(false)
-      .addChoices(
-        { name: 'January', value: '1' },
-        { name: 'February', value: '2' },
-        { name: 'March', value: '3' },
-        { name: 'April', value: '4' },
-        { name: 'May', value: '5' },
-        { name: 'June', value: '6' },
-        { name: 'July', value: '7' },
-        { name: 'August', value: '8' },
-        { name: 'September', value: '9' },
-        { name: 'October', value: '10' },
-        { name: 'November', value: '11' },
-        { name: 'December', value: '12' }
-      )
   );
 
 // Add slash command execute
 module.exports.execute = async function(interaction) {
   const userService = getService('user');
-  const targetUser = interaction.options.getUser('user');
-  const day = interaction.options.getInteger('day');
-  const monthString = interaction.options.getString('month');
-  const month = monthString ? parseInt(monthString) : null;
 
   try {
-    // If day and month are provided, set birthday
-    if (day && month) {
-      if (targetUser) {
-        return embeds.warn(interaction, 'You can only set your own birthday, not someone else\'s', false);
-      }
-
-      // Validate day for specific month
-      if ((month === 2 && day > 29) ||
-        ([4, 6, 9, 11].includes(month) && day > 30)) {
-        return embeds.warn(interaction, 'Invalid day for the specified month', false);
-      }
-
-      await ensureUserData(interaction.user.id);
-
-      const existingBirthday = await userService.getBirthday(interaction.user.id);
-
-      if (existingBirthday && existingBirthday.day && existingBirthday.month) {
-        const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
-        return embeds.warn(interaction, `You already have a birthday set to **${formattedBirthday}**. Birthdays cannot be changed once set.`, false);
-      }
-
-      await userService.setBirthday(interaction.user.id, day, month);
-      const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
-      return embeds.success(interaction, `Set your birthday to **${formattedBirthday}**`, false);
-    }
-
-    // Otherwise, view birthday
-    const userToView = targetUser || interaction.user;
-    const formattedBirthday = await userService.getFormattedBirthday(userToView.id);
-    const username = userToView.username;
+    const targetUser = interaction.options.getUser('user') || interaction.user;
+    const isOwnBirthday = targetUser.id === interaction.user.id;
+    const formattedBirthday = await userService.getFormattedBirthday(targetUser.id);
 
     if (!formattedBirthday) {
-      return embeds.info(interaction, `🎂 **${username}** has no birthday set`, false);
+      if (isOwnBirthday) {
+        return embeds.info(interaction, `🎂 No birthday set. Use \`/birthday-set\` to set it`, false);
+      } else {
+        return embeds.info(interaction, `🎂 **${targetUser.username}** has no birthday set`, false);
+      }
     }
 
-    const isBirthdayToday = await userService.isBirthday(userToView.id);
+    const isBirthdayToday = await userService.isBirthday(targetUser.id);
 
     if (isBirthdayToday) {
-      const birthdayText = `🎂 **${username}**'s birthday is **${formattedBirthday}** (Today!)`;
-      return embeds.info(interaction, birthdayText, false);
+      if (isOwnBirthday) {
+        return embeds.info(interaction, `🎂 Your birthday is today! Happy birthday!`, false);
+      } else {
+        return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}** (Today!)`, false);
+      }
     } else {
-      const nextBirthdayTimestamp = await getNextBirthdayTimestamp(userToView.id);
-      const birthdayText = `🎂 **${username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
-      return embeds.info(interaction, birthdayText, false);
+      const nextBirthdayTimestamp = await getNextBirthdayTimestamp(targetUser.id);
+      if (isOwnBirthday) {
+        return embeds.info(interaction, `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`, false);
+      } else {
+        return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`, false);
+      }
     }
   } catch (error) {
     logger.webhook.error(error, { author: interaction.user, guild: interaction.guild, channel: interaction.channel });
