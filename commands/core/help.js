@@ -365,7 +365,7 @@ async function showHelpShared(context, client, commandQuery) {
     }
 
   } else {
-    const msg = `Use adore [**website**](https://nationcost.github.io/adore-website/#/commands) to check all commands, and [**support server**](https://discord.gg/8XajeEMH) for more info`;
+    const msg = `Use https://adore.rest/ for command list and https://adore.rest/server the server`;
     if (isInteraction) {
       if (context.deferred || context.replied) {
         return context.editReply({ content: msg });
