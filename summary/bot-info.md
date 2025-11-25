@@ -11,9 +11,13 @@
 8. [Role Systems](#role-systems)
 9. [Message Automation](#message-automation)
 10. [Integrations](#integrations)
-11. [Economy & Gambling System](#economy-gambling-system)
-12. [Utility Commands](#utility-commands)
-13. [Common Issues](#common-issues)
+11. [Music & Integration System](#music--integration-system)
+12. [Anti-Bully System (NSR)](#anti-bully-system-no-self-react)
+13. [Core Bot Commands](#core-bot-commands)
+14. [Developer Commands](#developer-commands)
+15. [Economy & Gambling System](#economy--gambling-system)
+16. [Utility Commands](#utility-commands)
+17. [Common Issues](#common-issues)
 
 ---
 
@@ -121,7 +125,7 @@ This creates four roles:
 
 #### Kick System
 
-**`,kick @user [reason]`**
+**`,kick @user [reason]`** (aliases: `boot`)
 - **Permission Required:** Kick Members
 - **What it does:** Removes member from server (they can rejoin)
 - **Example:** `,kick @user Breaking rules`
@@ -142,9 +146,11 @@ This creates four roles:
 
 #### Mute System
 
+**Role-Based Mutes (Custom Roles):**
+
 **`,mute @user [duration] [reason]`** (Text Mute)
 - **Permission Required:** Moderate Members
-- **What it does:** Prevents user from sending messages
+- **What it does:** Prevents user from sending messages using custom role
 - **Duration formats:** `1h`, `30m`, `1d`, `1w`
 - **Examples:**
   - `,mute @user 1h Spamming` - 1 hour mute
@@ -196,12 +202,73 @@ This creates four roles:
 
 ---
 
+**Discord Timeout System (Native):**
+
+**`,mute @user [duration] [reason]`** (aliases: `timeout`, `tu`, `shh`)
+- **Permission Required:** Moderate Members
+- **What it does:** Uses Discord's built-in timeout feature
+- **Duration formats:** `1h`, `30m`, `1d`, `1w` (max 28 days)
+- **Examples:**
+  - `,timeout @user 1h Spamming` - 1 hour timeout
+  - `,mute @user 10m Cool down` - 10 minute timeout
+- **How it works:**
+  - Uses Discord's native timeout system
+  - User cannot send messages, react, join voice, or update profile
+  - Shows "Timed Out" status in member list
+  - Auto-removes after duration
+- **Features:**
+  - Creates case log
+  - DMs user with reason and duration
+  - More restrictive than role-based mutes
+  - Cannot be bypassed with permissions
+
+**`,unmute @user [reason]`** (aliases: `untimeout`, `uto`)
+- **Permission Required:** Moderate Members
+- **What it does:** Removes Discord timeout
+- **Example:** `,unmute @user Good behavior`
+
+**Channel-Specific Mutes:**
+
+**`,imute @user [reason]`** (aliases: `imgmute`, `imagemute`)
+- **Permission Required:** Moderate Members
+- **What it does:** Revoke attachment/embed permissions in current channel only
+- **Example:** `,imute @user Inappropriate images`
+- **How it works:**
+  - Modifies channel permissions for specific user
+  - Denies `Attach Files` and `Embed Links` in this channel only
+  - User can still post images in other channels
+- **Use case:** Channel-specific image restrictions
+
+**`,iunmute @user [reason]`** (aliases: `imgunmute`, `imageunmute`)
+- **Permission Required:** Moderate Members
+- **What it does:** Restore attachment/embed permissions in current channel
+- **Example:** `,iunmute @user`
+
+**`,rmute @user [reason]`** (aliases: `reactmute`, `reactionmute`, `emojimute`, `emotemute`, `emute`)
+- **Permission Required:** Moderate Members
+- **What it does:** Revoke reaction/emote permissions in current channel only
+- **Example:** `,rmute @user Reaction spam`
+- **How it works:**
+  - Modifies channel permissions for specific user
+  - Denies `Add Reactions` in this channel only
+  - User can still react in other channels
+- **Use case:** Channel-specific reaction restrictions
+
+**`,runmute @user [reason]`** (aliases: `runreactionmute`)
+- **Permission Required:** Moderate Members
+- **What it does:** Restore reaction/emote permissions in current channel
+- **Example:** `,runmute @user`
+
+---
+
 #### Jail System
 
-**`,jail @user [reason]`**
-- **Permission Required:** Moderate Members
+**`,jail @user [reason]`** (aliases: `basement`)
+- **Permission Required:** Manage Roles
 - **What it does:** Restricts user to #jail channel only
-- **Example:** `,jail @user Needs timeout to cool down`
+- **Examples:**
+  - `,jail @user Needs timeout to cool down`
+  - `,jail list` - View all jailed users
 - **How it works:**
   - Adds `Jailed` role
   - Role denies access to all channels except #jail
@@ -215,11 +282,24 @@ This creates four roles:
   - User can see #jail channel
   - Can communicate with mods in #jail
   - No duration limit (manual unjail required)
+  - Can list all jailed users with `,jail list`
 
 **`,unjail @user [reason]`**
-- **Permission Required:** Moderate Members
+- **Permission Required:** Manage Roles
 - **What it does:** Removes user from jail
 - **Example:** `,unjail @user Discussed behavior`
+
+**`,setup`** (aliases: `setme`)
+- **Permission Required:** Administrator
+- **What it does:** Automatically setup jail role and channel with proper permissions
+- **Example:** `,setup`
+- **What it creates:**
+  - `Jailed` role with restricted permissions
+  - `#jail` channel visible only to jailed users
+  - `#jail-log` channel for moderation logs
+  - Proper permission overrides in all channels
+- **Use case:** Quick setup for new servers
+- **Note:** This is the recommended way to set up the jail system
 
 ---
 
@@ -235,6 +315,16 @@ This creates four roles:
   - Warnings are permanent record
   - Can view all warnings later
 - **Use case:** Document rule violations without punishment
+
+**`,unwarn @user [case_id] [reason]`**
+- **Permission Required:** Manage Messages
+- **What it does:** Remove a specific warning from user's history
+- **Example:** `,unwarn @user 42 Appeal accepted`
+- **Features:**
+  - Removes warning from moderation history
+  - Creates log entry for removal
+  - Requires case ID from history
+- **Use case:** Remove warnings after appeal or mistake
 
 **`,warnings @user`**
 - **Permission Required:** Moderate Members
@@ -257,7 +347,7 @@ This creates four roles:
 #### Moderation History
 
 **`,history @user`**
-- **Permission Required:** Moderate Members
+- **Permission Required:** Manage Messages
 - **What it does:** View complete moderation history
 - **Example:** `,history @user`
 - **Shows:**
@@ -268,10 +358,10 @@ This creates four roles:
   - Reasons for each action
   - Current active punishments
 
-**`,case [case ID]`**
-- **Permission Required:** Moderate Members
+**`,history view [caseid]`**
+- **Permission Required:** Manage Messages
 - **What it does:** View specific case details
-- **Example:** `,case 42`
+- **Example:** `,history view 42`
 - **Shows:**
   - Case type (ban, kick, mute, etc.)
   - Target user
@@ -280,6 +370,37 @@ This creates four roles:
   - Date/time
   - Duration (if applicable)
   - Status (active/expired)
+
+**`,history remove [user] [caseid]`**
+- **Permission Required:** Manage Messages
+- **What it does:** Remove a specific case from user's history
+- **Example:** `,history remove @user 42`
+- **Use case:** Remove incorrect or appealed cases
+
+**`,history removeall [user]`**
+- **Permission Required:** Manage Messages
+- **What it does:** Remove all cases from user's history
+- **Example:** `,history removeall @user`
+- **Use case:** Complete history wipe for clean slate
+
+**`,modhistory [moderator] [action]`** (aliases: `mhistory`, `mh`)
+- **Permission Required:** Manage Messages
+- **What it does:** View moderation actions performed by specific moderators
+- **Examples:**
+  - `,modhistory @mod` - View all actions by moderator
+  - `,modhistory @mod ban` - View only bans by moderator
+- **Shows:**
+  - All actions performed by the moderator
+  - Case numbers and types
+  - Dates and targets
+  - Reasons given
+- **Use case:** Audit moderator activity and accountability
+
+**`,case [case ID]`**
+- **Permission Required:** Moderate Members
+- **What it does:** View specific case details (legacy command)
+- **Example:** `,case 42`
+- **Note:** Use `,history view [caseid]` instead
 
 ---
 
@@ -302,11 +423,39 @@ This creates four roles:
   - Remove bot command spam
   - Clear channel after raid
 
-**`,cleanup`**
+**`,purge bots [amount]`**
 - **Permission Required:** Manage Messages
-- **What it does:** Delete all bot messages in channel
-- **Example:** `,cleanup`
-- **Use case:** Remove bot responses and command clutter
+- **What it does:** Delete only bot messages
+- **Example:** `,purge bots 50`
+- **Use case:** Clean up bot spam while keeping user messages
+
+**`,purge humans [amount]`**
+- **Permission Required:** Manage Messages
+- **What it does:** Delete only human messages
+- **Example:** `,purge humans 50`
+- **Use case:** Clean up user messages while keeping bot responses
+
+**`,purge media [amount]`**
+- **Permission Required:** Manage Messages
+- **What it does:** Delete messages with attachments or embeds
+- **Example:** `,purge media 50`
+- **Use case:** Remove image spam or media content
+
+**`,purge between [topMsgID] [lastMsgID]`**
+- **Permission Required:** Manage Messages
+- **What it does:** Delete all messages between two message IDs
+- **Example:** `,purge between 123456789 987654321`
+- **How to get message IDs:**
+  1. Enable Developer Mode in Discord settings
+  2. Right-click message
+  3. Click "Copy ID"
+- **Use case:** Delete specific conversation range
+
+**`,cleanup [amount]`**
+- **Permission Required:** Manage Messages
+- **What it does:** Delete bot messages and user commands
+- **Example:** `,cleanup 50`
+- **Use case:** Remove bot command clutter
 
 ---
 
@@ -1836,6 +1985,416 @@ nage Roles permission
 
 ---
 
+## 🎵 Music & Integration System
+
+adore includes Last.fm and Spotify integration for music tracking and playback control.
+
+### Last.fm Integration
+
+**`,fm [user]`** (aliases: `np`)
+- **Permission Required:** None
+- **What it does:** Shows current or last played track from Last.fm
+- **Examples:**
+  - `,fm` - Show your current track
+  - `,fm @user` - Show another user's current track
+- **Features:**
+  - Shows track name, artist, album
+  - Shows album artwork
+  - Shows play count and loved status
+  - Links to Last.fm profile
+- **Setup:** Link your Last.fm account first (see bot setup)
+- **Use case:** Share what you're listening to
+
+---
+
+### Spotify Integration
+
+**`,spotify`** (aliases: `sp`)
+- **Permission Required:** None
+- **What it does:** Main Spotify command hub
+- **Example:** `,spotify`
+- **Shows:** Current playback status and available subcommands
+
+**`,spotify link`**
+- **What it does:** Link your Spotify account to control playback
+- **Example:** `,spotify link`
+- **How it works:**
+  1. Click the authorization link
+  2. Log in to Spotify
+  3. Authorize the bot
+  4. Account is linked
+- **Required:** Spotify Premium account
+- **Use case:** Control Spotify from Discord
+
+**`,spotify unlink`**
+- **What it does:** Unlink your Spotify account
+- **Example:** `,spotify unlink`
+- **Use case:** Remove bot access to your Spotify
+
+---
+
+#### Playback Control
+
+**`,spotify play [track link|search query|@user]`**
+- **What it does:** Play a track, search for music, or play what another user is listening to
+- **Examples:**
+  - `,spotify play https://open.spotify.com/track/...` - Play specific track
+  - `,spotify play never gonna give you up` - Search and play
+  - `,spotify play @user` - Play what they're listening to
+- **Features:**
+  - Direct Spotify link support
+  - Smart search with results
+  - Copy other users' music
+- **Requires:** Linked Spotify Premium account
+
+**`,spotify pause`**
+- **What it does:** Pause current playback
+- **Example:** `,spotify pause`
+
+**`,spotify skip`**
+- **What it does:** Skip to next track
+- **Example:** `,spotify skip`
+
+**`,spotify previous`**
+- **What it does:** Go back to previous track
+- **Example:** `,spotify previous`
+
+**`,spotify volume [0-100]`**
+- **What it does:** Set playback volume
+- **Example:** `,spotify volume 50`
+- **Range:** 0-100
+
+**`,spotify repeat [mode]`**
+- **What it does:** Set repeat mode
+- **Modes:** `track`, `context`, `off`
+- **Examples:**
+  - `,spotify repeat track` - Repeat current track
+  - `,spotify repeat context` - Repeat playlist/album
+  - `,spotify repeat off` - No repeat
+
+**`,spotify shuffle [state]`**
+- **What it does:** Toggle shuffle mode
+- **States:** `on`, `off`
+- **Example:** `,spotify shuffle on`
+
+**`,spotify queue [track link|search query]`**
+- **What it does:** Add track to your queue
+- **Examples:**
+  - `,spotify queue https://open.spotify.com/track/...`
+  - `,spotify queue bohemian rhapsody`
+
+---
+
+#### Discovery & Stats
+
+**`,spotify search [search query|@user]`**
+- **What it does:** Search for tracks and get Spotify links
+- **Examples:**
+  - `,spotify search never gonna give you up`
+  - `,spotify search @user` - Search what they're listening to
+- **Use case:** Find Spotify links without playing
+
+**`,spotify recents`**
+- **What it does:** View your recently played tracks
+- **Example:** `,spotify recents`
+- **Shows:** Last 10 tracks with timestamps
+
+**`,spotify toptracks [short|medium|long]`**
+- **What it does:** View your top tracks
+- **Time ranges:**
+  - `short` - Last 4 weeks
+  - `medium` - Last 6 months
+  - `long` - All time
+- **Example:** `,spotify toptracks long`
+- **Shows:** Your most played tracks
+
+**`,spotify topartists [short|medium|long]`**
+- **What it does:** View your top artists
+- **Time ranges:**
+  - `short` - Last 4 weeks
+  - `medium` - Last 6 months
+  - `long` - All time
+- **Example:** `,spotify topartists medium`
+- **Shows:** Your most listened artists
+
+---
+
+### Music System Tips
+
+1. **Spotify Premium Required** - Free accounts cannot use playback control
+2. **Link Once** - Account stays linked until you unlink
+3. **Privacy** - Only you can control your playback
+4. **Share Music** - Use `,spotify play @user` to discover new music
+5. **Queue Management** - Add multiple tracks to queue for continuous play
+
+---
+
+## 🛡️ Anti-Bully System (No Self React)
+
+The NSR (No Self React) system prevents members from reacting to their own messages, reducing attention-seeking behavior.
+
+### What is NSR?
+
+**Purpose:** Prevents users from adding reactions to their own messages
+**Use case:** Reduce self-promotion, attention-seeking, or reaction farming
+**How it works:** Bot automatically removes reactions users add to their own messages
+
+---
+
+### NSR Commands
+
+**`,nsr`** (aliases: `noselfreact`)
+- **Permission Required:** Manage Guild
+- **What it does:** View NSR system status
+- **Example:** `,nsr`
+- **Shows:**
+  - System status (enabled/disabled)
+  - Bypassed users
+  - Configuration
+
+**`,nsr on`**
+- **Permission Required:** Manage Guild
+- **What it does:** Enable no self-react system
+- **Example:** `,nsr on`
+- **Effect:** Users cannot react to their own messages
+- **Note:** Bypassed users are exempt
+
+**`,nsr off`**
+- **Permission Required:** Manage Guild
+- **What it does:** Disable no self-react system
+- **Example:** `,nsr off`
+- **Effect:** Users can react to their own messages again
+
+**`,nsr bypass [user]`**
+- **Permission Required:** Manage Guild
+- **What it does:** Toggle bypass for a specific user
+- **Example:** `,nsr bypass @user`
+- **Effect:** User can react to their own messages even when NSR is enabled
+- **Use case:** Allow trusted users or bots to self-react
+
+---
+
+### NSR Best Practices
+
+1. **Announce the rule** - Tell members about NSR before enabling
+2. **Bypass bots** - Some bots need to self-react for functionality
+3. **Bypass staff** - Consider bypassing moderators for announcements
+4. **Monitor reactions** - Check if system is working as intended
+5. **Explain purpose** - Help members understand why NSR exists
+
+**Common bypass candidates:**
+- Bots that use reactions for menus
+- Moderators making announcements
+- Event organizers
+- Server owner
+
+---
+
+## 🤖 Core Bot Commands
+
+Essential commands for bot information and configuration.
+
+---
+
+### Bot Information
+
+**`,help [command]`** (aliases: `h`, `command`)
+- **Permission Required:** None
+- **What it does:** View extended help for commands
+- **Examples:**
+  - `,help` - Show all command categories
+  - `,help ban` - Show detailed help for ban command
+  - `,help spotify` - Show Spotify command help
+- **Features:**
+  - Shows command syntax
+  - Shows aliases
+  - Shows required permissions
+  - Shows examples
+- **Use case:** Learn how to use commands
+
+**`,botinfo`** (aliases: `bi`, `info`, `about`)
+- **Permission Required:** None
+- **What it does:** Get basic information about the bot
+- **Example:** `,botinfo`
+- **Shows:**
+  - Bot name and description
+  - Total servers
+  - Total users
+  - Uptime
+  - Invite link
+- **Use case:** Learn about adore
+
+**`,invite`** (aliases: `addme`)
+- **Permission Required:** None
+- **What it does:** Get bot invite link
+- **Example:** `,invite`
+- **Features:**
+  - Direct invite link
+  - Support server link
+  - Required permissions included
+- **Use case:** Add bot to other servers
+
+**`,latency`** (aliases: `ping`, `ms`)
+- **Permission Required:** None
+- **What it does:** Show bot's latency and response times
+- **Example:** `,latency`
+- **Shows:**
+  - Bot latency (ms)
+  - API latency (ms)
+  - Websocket latency (ms)
+- **Use case:** Check if bot is responsive
+
+---
+
+### Prefix Management
+
+**`,prefix`** (aliases: `setprefix`)
+- **Permission Required:** Administrator
+- **What it does:** Manage server prefix
+- **Example:** `,prefix`
+- **Shows:** Current server prefix
+
+**`,prefix view`**
+- **Permission Required:** Administrator
+- **What it does:** View current server prefix
+- **Example:** `,prefix view`
+- **Shows:** Current prefix and how to change it
+
+**`,prefix set [prefix]`**
+- **Permission Required:** Administrator
+- **What it does:** Set a new server prefix
+- **Examples:**
+  - `,prefix set !` - Change prefix to !
+  - `,prefix set ?` - Change prefix to ?
+  - `,prefix set a.` - Change prefix to a.
+- **Rules:**
+  - Maximum 3 characters
+  - No spaces allowed
+  - Cannot be only numbers
+  - Case-sensitive
+- **Use case:** Avoid conflicts with other bots
+
+**`,prefix remove`** (aliases: `prefix reset`)
+- **Permission Required:** Administrator
+- **What it does:** Reset prefix to default (`,`)
+- **Example:** `,prefix remove`
+- **Use case:** Return to default prefix
+
+---
+
+## 🔧 Developer Commands
+
+**⚠️ RESTRICTED ACCESS** - These commands are only available to bot developers and owners.
+
+### Blacklist System
+
+**`,blacklist`** (aliases: `bl`, `globalban`)
+- **Permission Required:** Developer
+- **What it does:** Universal blacklist system for users and servers
+- **Example:** `,blacklist`
+- **Use case:** Prevent abuse across all servers
+
+**`,blacklist users [user.id] [reason]`**
+- **Permission Required:** Developer
+- **What it does:** Add/remove users from global blacklist or list all blacklisted users
+- **Examples:**
+  - `,blacklist users 123456789 Abuse` - Blacklist user
+  - `,blacklist users 123456789` - Remove from blacklist
+  - `,blacklist users` - List all blacklisted users
+- **Effect:** User cannot use bot in any server
+
+**`,blacklist servers [server.id] [reason]`**
+- **Permission Required:** Developer
+- **What it does:** Add/remove servers from global blacklist or list all blacklisted servers
+- **Examples:**
+  - `,blacklist servers 987654321 TOS violation` - Blacklist server
+  - `,blacklist servers 987654321` - Remove from blacklist
+  - `,blacklist servers` - List all blacklisted servers
+- **Effect:** Bot leaves server and cannot be re-added
+
+---
+
+### Economy Management
+
+**`,economy`** (aliases: `eco`)
+- **Permission Required:** Developer
+- **What it does:** Economy management utilities
+- **Example:** `,economy`
+
+**`,economy addbal [@user] [amount]`**
+- **Permission Required:** Developer
+- **What it does:** Add balance to a user's wallet
+- **Example:** `,economy addbal @user 10000`
+- **Use case:** Compensate for bugs or reward testers
+
+**`,economy cleanbal [@user] [amount]`**
+- **Permission Required:** Developer
+- **What it does:** Remove balance from a user's wallet
+- **Example:** `,economy cleanbal @user 5000`
+- **Use case:** Remove exploited coins
+
+---
+
+### Data Management
+
+**`,fetch`**
+- **Permission Required:** Developer
+- **What it does:** Fetch server information and invites
+- **Example:** `,fetch`
+
+**`,fetch invite [server id]`**
+- **Permission Required:** Developer
+- **What it does:** Fetch an invite link for a server by ID
+- **Example:** `,fetch invite 123456789`
+- **Use case:** Access servers for support or investigation
+
+**`,fetch confession [server id] [confession id]`**
+- **Permission Required:** Developer
+- **What it does:** Reveal who submitted a confession
+- **Example:** `,fetch confession 123456789 42`
+- **Use case:** Investigate abuse or TOS violations
+- **Privacy note:** Only used for serious violations
+
+**`,clear`**
+- **Permission Required:** Developer
+- **What it does:** Clear name history for users or servers
+- **Example:** `,clear`
+
+**`,clear names [@user]`**
+- **Permission Required:** Developer
+- **What it does:** Clear a user's name history
+- **Example:** `,clear names @user`
+- **Use case:** Privacy requests or data cleanup
+
+**`,clear servernames [server id]`**
+- **Permission Required:** Developer
+- **What it does:** Clear server's name history
+- **Example:** `,clear servernames 123456789`
+- **Use case:** Privacy requests or data cleanup
+
+---
+
+### System Management
+
+**`,restart`** (aliases: `reboot`)
+- **Permission Required:** Developer
+- **What it does:** Restart the bot process
+- **Example:** `,restart`
+- **Use case:** Apply updates or fix issues
+- **Note:** Bot will be offline briefly
+
+---
+
+### Developer Notes
+
+- These commands are logged and monitored
+- Abuse of developer commands results in access removal
+- Use responsibly and only when necessary
+- Always provide clear reasons for blacklists
+- Respect user privacy with data commands
+
+---
+
 ## 💰 Economy & Gambling System
 
 adore includes a full economy system with gambling, earning, and trading features.
@@ -2285,19 +2844,22 @@ Simply delete the confession channel or stop using the commands. The system is p
 ## 🎯 Quick Start Guide
 
 **For New Servers:**
-1. Run `,setup` - Creates moderation infrastructure
-2. Run `,setupmute` - Creates mute roles
+1. Run `,setup` - Creates moderation infrastructure (jail role, channels, logs)
+2. Run `,setupmute` - Creates mute roles (optional, for role-based mutes)
 3. Configure antinuke: `,antinuke ban on --threshold 3 --do ban`
-4. Set up logging: `,logs set #logs`
+4. Set up logging: `,logs add #logs all`
 5. Add welcome message: `,welcome add #general {embed}$v{title: Welcome!}$v{description: Welcome {user.mention}!}$v{color: #5865F2}`
 6. Customize bot: `,customize avatar [url]`
+7. Set prefix (optional): `,prefix set !`
 
 **For Moderation:**
 1. Use `,ban`, `,kick`, `,mute` for punishments
-2. Use `,warn` for warnings
+2. Use `,warn` for warnings, `,unwarn` to remove
 3. Use `,jail` for timeouts
-4. Check history: `,history @user`
-5. View cases: `,case [ID]`
+4. Use `,purge` variants for message cleanup
+5. Check history: `,history @user`
+6. View mod activity: `,modhistory @mod`
+7. Remove cases: `,history remove @user [caseid]`
 
 **For Security:**
 1. Enable all antinuke modules
@@ -2305,15 +2867,152 @@ Simply delete the confession channel or stop using the commands. The system is p
 3. Whitelist only when necessary
 4. Monitor #jail-log channel
 5. Regular permission audits
+6. Enable NSR if needed: `,nsr on`
+
+**For Music & Fun:**
+1. Link Spotify: `,spotify link` (Premium required)
+2. Link Last.fm for music tracking
+3. Use `,fm` to share what you're listening to
+4. Control Spotify from Discord with `,spotify play`
+
+---
+
+## 🔧 Common Issues & Troubleshooting
+
+### "Mute not working"
+**Solution:**
+1. Run `,setupmute` to create mute roles
+2. Ensure bot has Manage Roles permission
+3. Ensure bot role is above mute roles in hierarchy
+4. Verify channel permissions are set correctly
+5. Don't rename the mute roles after creation
+6. For Discord timeout: Use `,timeout` or `,mute` with duration
+
+### "Purge not deleting messages"
+**Solution:**
+1. Bot needs Manage Messages permission
+2. Cannot delete messages older than 14 days (Discord limitation)
+3. Check if you're using correct syntax: `,purge [amount]`
+4. Try specific variants: `,purge bots 50` or `,purge humans 50`
+5. Use `,purge between [id1] [id2]` for specific range
+
+### "History commands not showing cases"
+**Solution:**
+1. Ensure moderation actions were logged (`,setup` creates log channel)
+2. Check if #jail-log channel exists
+3. Use `,history @user` not `,history user`
+4. Cases only appear after `,setup` was run
+5. Use `,modhistory @mod` to see moderator actions
+
+### "Spotify commands not working"
+**Solution:**
+1. Link your account first: `,spotify link`
+2. Spotify Premium required for playback control
+3. Check if authorization expired - relink if needed
+4. Ensure you're using correct syntax
+5. Some commands require active playback
+
+### "NSR not removing reactions"
+**Solution:**
+1. Enable NSR first: `,nsr on`
+2. Bot needs Manage Messages permission
+3. Check if user is bypassed: `,nsr bypass @user` to toggle
+4. Bot must be able to see the channel
+5. Reactions on old messages may not be caught
+
+### "Antinuke punishing legitimate actions"
+**Solution:**
+1. Whitelist trusted users: `,antinuke whitelist @user`
+2. Increase thresholds: `,antinuke ban on --threshold 5`
+3. Use less severe punishment: `--do strip` instead of `--do ban`
+4. Remove whitelist after mass actions complete
+5. Adjust thresholds based on server activity
+
+### "Setup command not working"
+**Solution:**
+1. Ensure you have Administrator permission
+2. Bot needs Manage Channels and Manage Roles permissions
+3. Check if channels already exist (may conflict)
+4. Try deleting old #jail and #jail-log channels first
+5. Ensure bot role is high enough in hierarchy
+
+### "Embed variables not working"
+**Solution:**
+1. Check spelling: `{user.mention}` not `{user.ping}`
+2. Some variables may be empty (e.g., `{server.banner}` if no banner)
+3. Use proper syntax: `$v` between parameters
+4. Ensure URLs are valid for images
+5. Test with `,createembed` command
+
+### "Custom avatar/banner not showing"
+**Solution:**
+1. Only server owner can customize
+2. Wait 5 minutes between changes (cooldown)
+3. Ensure image URL is valid and accessible
+4. Check image format (PNG, JPG, GIF, WebP)
+5. Max file size: 8MB
+6. Try with attachment instead of URL
+
+### "Welcome messages not sending"
+**Solution:**
+1. Check bot has Send Messages permission in channel
+2. Verify bot has Embed Links permission
+3. Test embed syntax with `,createembed`
+4. Check channel isn't deleted
+5. Verify welcome message is added: `,welcome list`
+
+### "Prefix not changing"
+**Solution:**
+1. Ensure you have Administrator permission
+2. Use correct syntax: `,prefix set !`
+3. Prefix cannot be more than 3 characters
+4. Cannot use spaces in prefix
+5. Try `,prefix remove` then set new prefix
+
+### "Confession system not working"
+**Solution:**
+1. Set confession channel first: `,confession channel #confessions`
+2. Bot needs Send Messages and Embed Links permissions
+3. Check if user is ignored: `,confession ignore @user`
+4. Ensure channel still exists
+5. Check `,confession config` for status
+
+### "Music integration not linking"
+**Solution:**
+1. For Spotify: Ensure you have Premium account
+2. Click the authorization link provided
+3. Complete OAuth flow in browser
+4. Check if authorization expired
+5. Try unlinking and relinking: `,spotify unlink` then `,spotify link`
 
 ---
 
 ## 📞 Support
 
-- Support Server: https://dsc.gg/s-invite
-- Use `,ask` command for quick help
-- Check `,help [command]` for command details
-- Read this documentation thoroughly
+- **Support Server:** https://dsc.gg/s-invite
+- **Quick Help:** Use `,ask [question]` command
+- **Command Help:** Use `,help [command]` for detailed info
+- **Documentation:** Read this guide thoroughly
+- **Bot Invite:** Use `,invite` command
+
+---
+
+## 📊 Documentation Summary
+
+This documentation now covers:
+- ✅ Complete moderation system (ban, kick, mute, jail, warn, purge)
+- ✅ All mute variants (role-based, timeout, channel-specific)
+- ✅ Comprehensive history and case management
+- ✅ Full antinuke system with all modules
+- ✅ Music integration (Spotify & Last.fm)
+- ✅ Anti-bully/NSR system
+- ✅ Core bot commands (help, invite, latency, prefix)
+- ✅ Developer commands (blacklist, economy, fetch)
+- ✅ Economy & gambling system
+- ✅ Confession system
+- ✅ Embed system with variables
+- ✅ Customization options
+- ✅ Troubleshooting guide
 
 ---
 
