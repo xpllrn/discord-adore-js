@@ -70,6 +70,11 @@ ${question}`;
 async function processAskShared(context, question) {
   const isInteraction = !!context.user;
 
+  // Defer reply for interactions to prevent timeout
+  if (isInteraction && !context.deferred && !context.replied) {
+    await context.deferReply();
+  }
+
   // Get context from replied message (prefix only)
   let contextText = '';
   if (!isInteraction && context.reference) {
@@ -111,16 +116,20 @@ async function processAskShared(context, question) {
     if (aiResponse.length > 2000) {
       const chunks = aiResponse.match(/[\s\S]{1,2000}/g) || [];
       
-      for (const chunk of chunks) {
+      for (let i = 0; i < chunks.length; i++) {
         if (isInteraction) {
-          await context.followUp(chunk);
+          if (i === 0) {
+            await context.editReply(chunks[i]);
+          } else {
+            await context.followUp(chunks[i]);
+          }
         } else {
-          await context.channel.send(chunk);
+          await context.channel.send(chunks[i]);
         }
       }
     } else {
       if (isInteraction) {
-        return context.reply(aiResponse);
+        return context.editReply(aiResponse);
       } else {
         return context.channel.send(aiResponse);
       }
