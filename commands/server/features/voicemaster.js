@@ -2,7 +2,8 @@ const { PermissionFlagsBits, ChannelType, EmbedBuilder, ActionRowBuilder, Button
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, isGlobalDev } = require('../../../utils/permissions');
 const { getService } = require('@services');
-const { colors, emojis } = require('../../../config/setup');
+const config = require('../../../config/setup');
+const { colors, emojis } = config;
 const logger = require('../../../utils/logger');
 
 // Command execution tracker to prevent multiple executions
@@ -279,7 +280,7 @@ async function handleSetupCommand(message, client) {
   try {
     // Create voice category
     const category = await message.guild.channels.create({
-      name: 'Voice Channels',
+      name: 'voice channel',
       type: ChannelType.GuildCategory,
       permissionOverwrites: [
         {
@@ -291,7 +292,7 @@ async function handleSetupCommand(message, client) {
 
     // Create "Join 2 create" voice channel
     const joinChannel = await message.guild.channels.create({
-      name: 'Join 2 create',
+      name: 'create',
       type: ChannelType.GuildVoice,
       parent: category.id,
       permissionOverwrites: [
@@ -304,7 +305,7 @@ async function handleSetupCommand(message, client) {
 
     // Create "menu" text channel
     const menuChannel = await message.guild.channels.create({
-      name: 'menu',
+      name: 'panel',
       type: ChannelType.GuildText,
       parent: category.id,
       permissionOverwrites: [
