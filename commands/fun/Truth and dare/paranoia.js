@@ -6,7 +6,6 @@ const logger = require('../../../utils/logger');
 const axios = require('axios');
 
 const API_BASE = 'https://api.truthordarebot.xyz/v1';
-const activeGames = new Map();
 
 async function fetchQuestion(type, rating = 'pg') {
   try {
@@ -53,6 +52,64 @@ function createSingleButton(label) {
     );
 }
 
+function createDisabledButton(label) {
+  return new ActionRowBuilder()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId('paranoia_next_disabled')
+        .setLabel(label)
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(true)
+    );
+}
+
+async function setupCollector(message, user, channel, rating) {
+  const collector = message.createMessageComponentCollector({
+    time: 120000
+  });
+
+  collector.on('collect', async (interaction) => {
+    if (interaction.user.id !== user.id) {
+      return interaction.reply({
+        content: `${interaction.client.config?.emojis?.error || '❌'} This game is not for you!`,
+        ephemeral: true
+      });
+    }
+
+    const newQuestion = await fetchQuestion('paranoia', rating);
+    if (!newQuestion) {
+      return interaction.reply({
+        content: 'Failed to fetch question. Please try again.',
+        ephemeral: true
+      });
+    }
+
+    const newEmbed = createQuestionEmbed(newQuestion, user.username, user.displayAvatarURL({ dynamic: true }));
+    const newButtons = createSingleButton('Paranoia');
+
+    // Disable old button
+    try {
+      await interaction.update({ components: [createDisabledButton('Paranoia')] });
+    } catch (error) {
+      // Ignore
+    }
+
+    // Send new message
+    const newMessage = await channel.send({ embeds: [newEmbed], components: [newButtons] });
+    
+    // Setup collector for new message recursively
+    await setupCollector(newMessage, user, channel, rating);
+  });
+
+  collector.on('end', async () => {
+    try {
+      await message.edit({ components: [createDisabledButton('Paranoia')] });
+    } catch (error) {
+      // Ignore
+    }
+  });
+}
+
 async function handleParanoiaGame(context, rating) {
   const isInteraction = !!context.user;
   const user = isInteraction ? context.user : context.author;
@@ -82,123 +139,7 @@ async function handleParanoiaGame(context, rating) {
     gameMessage = await context.channel.send({ embeds: [embed], components: [buttons] });
   }
 
-  const gameKey = `${channel.id}-${gameMessage.id}`;
-  activeGames.set(gameKey, { userId: user.id, rating, messageId: gameMessage.id });
-
-  const collector = gameMessage.createMessageComponentCollector({ time: 120000 });
-
-  collector.on('collect', async (interaction) => {
-    if (interaction.user.id !== user.id) {
-      return interaction.reply({
-        content: `${interaction.client.config?.emojis?.error || '❌'} This game is not for you!`,
-        ephemeral: true
-      });
-    }
-
-    const newQuestion = await fetchQuestion('paranoia', rating);
-    if (!newQuestion) {
-      return interaction.reply({
-        content: 'Failed to fetch question. Please try again.',
-        ephemeral: true
-      });
-    }
-
-    const newEmbed = createQuestionEmbed(newQuestion, user.username, user.displayAvatarURL({ dynamic: true }));
-    const newButtons = createSingleButton('Paranoia');
-
-    // Disable old button first
-    try {
-      const disabledButtons = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('paranoia_next_disabled')
-            .setLabel('Paranoia')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true)
-        );
-      await interaction.update({ components: [disabledButtons] });
-    } catch (error) {
-      // Ignore
-    }
-
-    // Send new message with new question
-    const newGameMessage = await channel.send({ embeds: [newEmbed], components: [newButtons] });
-    
-    // Create new collector for the new message
-    const newCollector = newGameMessage.createMessageComponentCollector({
-      time: 120000
-    });
-    
-    newCollector.on('collect', async (newInteraction) => {
-      if (newInteraction.user.id !== user.id) {
-        return newInteraction.reply({
-          content: `${newInteraction.client.config?.emojis?.error || '❌'} This game is not for you!`,
-          ephemeral: true
-        });
-      }
-
-      const nextQuestion = await fetchQuestion('paranoia', rating);
-      if (!nextQuestion) {
-        return newInteraction.reply({
-          content: 'Failed to fetch question. Please try again.',
-          ephemeral: true
-        });
-      }
-
-      const nextEmbed = createQuestionEmbed(nextQuestion, user.username, user.displayAvatarURL({ dynamic: true }));
-      const nextButtons = createSingleButton('Paranoia');
-
-      try {
-        const disabledButtons = new ActionRowBuilder()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId('paranoia_next_disabled')
-              .setLabel('Paranoia')
-              .setStyle(ButtonStyle.Secondary)
-              .setDisabled(true)
-          );
-        await newInteraction.update({ components: [disabledButtons] });
-      } catch (error) {
-        // Ignore
-      }
-
-      await channel.send({ embeds: [nextEmbed], components: [nextButtons] });
-    });
-
-    newCollector.on('end', async () => {
-      try {
-        const disabledButtons = new ActionRowBuilder()
-          .addComponents(
-            new ButtonBuilder()
-              .setCustomId('paranoia_next_disabled')
-              .setLabel('Paranoia')
-              .setStyle(ButtonStyle.Secondary)
-              .setDisabled(true)
-          );
-        await newGameMessage.edit({ components: [disabledButtons] });
-      } catch (error) {
-        // Ignore
-      }
-    });
-  });
-
-  collector.on('end', async () => {
-    try {
-      const disabledButtons = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setCustomId('paranoia_next_disabled')
-            .setLabel('Paranoia')
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(true)
-        );
-
-      await gameMessage.edit({ components: [disabledButtons] });
-      activeGames.delete(gameKey);
-    } catch (error) {
-      // Ignore
-    }
-  });
+  await setupCollector(gameMessage, user, channel, rating);
 }
 
 module.exports = {
