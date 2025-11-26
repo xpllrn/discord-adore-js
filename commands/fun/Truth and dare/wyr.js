@@ -169,8 +169,8 @@ module.exports = {
         .setDescription('Question rating')
         .setRequired(false)
         .addChoices(
-          { name: 'PG/PG13', value: 'pg' },
-          { name: 'R (18+)', value: 'r' }
+          { name: 'PG', value: 'pg' },
+          { name: 'R', value: 'r' }
         )
     ),
 
