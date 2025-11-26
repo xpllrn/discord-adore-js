@@ -23,6 +23,24 @@ async function getProfile(username) {
   }
 }
 
+async function getProfileByDiscordId(discordId) {
+  try {
+    // Get all profiles and find by Discord ID
+    const response = await axios.get(`${API_BASE_URL}/profiles`, {
+      headers: {
+        'X-API-Key': BOT_API_KEY
+      }
+    });
+    
+    if (response.data && response.data.profiles) {
+      return response.data.profiles.find(p => p.discordId === discordId);
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
 async function updateProfile(data) {
   const response = await axios.post(`${API_BASE_URL}/profile/update`, data, {
     headers: {
@@ -74,6 +92,12 @@ function detectPlatform(url) {
   return 'link';
 }
 
+// Rate limiting maps to prevent spam
+const createCooldowns = new Map();
+const updateCooldowns = new Map();
+const COOLDOWN_TIME = 60000; // 1 minute cooldown for create
+const UPDATE_COOLDOWN = 10000; // 10 seconds cooldown for updates
+
 module.exports = {
   name: "about",
   aliases: ['profile', 'bio'],
@@ -95,15 +119,32 @@ module.exports = {
         const username = args[1];
         if (!username) return runHelpCommand(message, 'about');
 
+        // Check cooldown to prevent spam
+        const now = Date.now();
+        const cooldownEnd = createCooldowns.get(message.author.id);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.warn(message, `Please wait **${timeLeft} seconds** before trying to create a profile again`);
+        }
+
         // Validate username format
         if (!/^[a-zA-Z0-9_]+$/.test(username)) {
           return embeds.warn(message, 'Username can only contain letters, numbers, and underscores!');
         }
 
-        // Check if user already has a profile
-        const existingProfile = await getProfile(message.author.username);
-        if (existingProfile && existingProfile.discordId === message.author.id) {
-          return embeds.warn(message, `You already have a profile at **https://adore.rest/${existingProfile.username}**\nProfiles can only be created once.`);
+        // Validate username length
+        if (username.length < 3) {
+          return embeds.warn(message, 'Username must be at least **3 characters** long');
+        }
+
+        if (username.length > 20) {
+          return embeds.warn(message, 'Username **cannot** be longer than **20 characters**');
+        }
+
+        // Check if user already has a profile by Discord ID (most important check)
+        const existingProfileByDiscordId = await getProfileByDiscordId(message.author.id);
+        if (existingProfileByDiscordId) {
+          return embeds.warn(message, `You already have a profile at **https://adore.rest/${existingProfileByDiscordId.username}**\nProfiles can only be created **once** per account.`);
         }
 
         // Check if username is taken
@@ -111,6 +152,9 @@ module.exports = {
         if (usernameCheck) {
           return embeds.warn(message, `Username **${username}** is already taken!`);
         }
+
+        // Set cooldown
+        createCooldowns.set(message.author.id, now + COOLDOWN_TIME);
 
         const profileData = {
           username: username.toLowerCase(),
@@ -123,6 +167,9 @@ module.exports = {
         };
 
         await updateProfile(profileData);
+
+        // Clear cooldown on success
+        createCooldowns.delete(message.author.id);
 
         return embeds.success(message, `Created your ADORE profile!\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
 
@@ -138,9 +185,20 @@ module.exports = {
         const bio = args.slice(1).join(' ');
         if (!bio) return runHelpCommand(message, 'about');
 
+        // Check cooldown
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-bio`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.warn(message, `Please wait **${timeLeft} seconds** before updating your bio again`);
+        }
+
         if (bio.length > 200) {
           return embeds.warn(message, `Bio is too long! Maximum 200 characters (yours is ${bio.length})`);
         }
+
+        // Set cooldown
+        updateCooldowns.set(`${message.author.id}-bio`, now + UPDATE_COOLDOWN);
 
         const profileData = {
           username: message.author.username.toLowerCase(),
@@ -161,9 +219,20 @@ module.exports = {
           example: '{guildprefix}about avatar @user'
         };
 
+        // Check cooldown
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-avatar`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.warn(message, `Please wait **${timeLeft} seconds** before updating your avatar again`);
+        }
+
         let avatarUrl;
         const mentionedUser = message.mentions.users.first();
         const attachment = message.attachments.first();
+
+        // Set cooldown
+        updateCooldowns.set(`${message.author.id}-avatar`, now + UPDATE_COOLDOWN);
 
         if (attachment) {
           // Validate file type
@@ -225,9 +294,20 @@ module.exports = {
           example: '{guildprefix}about banner @user'
         };
 
+        // Check cooldown
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-banner`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.warn(message, `Please wait **${timeLeft} seconds** before updating your banner again`);
+        }
+
         let bannerUrl = null;
         const mentionedUser = message.mentions.users.first();
         const attachment = message.attachments.first();
+
+        // Set cooldown
+        updateCooldowns.set(`${message.author.id}-banner`, now + UPDATE_COOLDOWN);
 
         if (attachment) {
           // Validate file type
@@ -294,6 +374,17 @@ module.exports = {
         const input = args.slice(1).join(' ');
         if (!input) return runHelpCommand(message, 'about');
 
+        // Check cooldown
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-music`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.warn(message, `Please wait **${timeLeft} seconds** before updating your song again`);
+        }
+
+        // Set cooldown
+        updateCooldowns.set(`${message.author.id}-music`, now + UPDATE_COOLDOWN);
+
         // Check if input is a Spotify link
         const spotifyRegex = /spotify\.com\/track\/([a-zA-Z0-9]+)/;
         const match = input.match(spotifyRegex);
@@ -353,6 +444,17 @@ module.exports = {
 
         const fullInput = args.slice(1).join(' ');
         if (!fullInput) return runHelpCommand(message, 'about');
+
+        // Check cooldown
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-social`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.warn(message, `Please wait **${timeLeft} seconds** before adding another link`);
+        }
+
+        // Set cooldown
+        updateCooldowns.set(`${message.author.id}-social`, now + UPDATE_COOLDOWN);
 
         // Parse platform flag
         const platformMatch = fullInput.match(/--(\w+)$/);
