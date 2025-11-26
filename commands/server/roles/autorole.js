@@ -37,9 +37,7 @@ module.exports = {
         return runHelpCommand(message, 'autorole');
       }
 
-      const roleResult = message.mentions.roles.first() ?
-        { found: true, role: message.mentions.roles.first() } :
-        findRole(message.guild, roleName);
+      const roleResult = findRole(message.guild, roleName);
 
       if (!roleResult.found) {
         return embeds.deny(message, roleResult.error);
@@ -169,9 +167,7 @@ module.exports = {
         return runHelpCommand(message, 'autorole');
       }
 
-      const roleResult = message.mentions.roles.first() ?
-        { found: true, role: message.mentions.roles.first() } :
-        findRole(message.guild, roleName);
+      const roleResult = findRole(message.guild, roleName);
 
       if (!roleResult.found) {
         return embeds.deny(message, roleResult.error);

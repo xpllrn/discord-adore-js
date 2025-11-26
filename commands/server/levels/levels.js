@@ -448,9 +448,7 @@ async function handleAddRole(client, message, args) {
     return runHelpCommand(message, 'levels');
   }
 
-  const roleResult = message.mentions.roles.first() ?
-    { found: true, role: message.mentions.roles.first() } :
-    findRole(message.guild, args[1]);
+  const roleResult = findRole(message.guild, args[1]);
 
   if (!roleResult.found) {
     return embeds.deny(message, roleResult.error);
@@ -628,7 +626,8 @@ async function handleMessageMode(client, message, args) {
 
   if (mode === 'channel') {
     // Find the target channel
-    const targetChannel = message.mentions.channels.first() ||
+    const mentionedChannel = message.mentions.channels.first();
+    const targetChannel = (mentionedChannel && mentionedChannel.guild.id === message.guild.id) ? mentionedChannel :
       message.guild.channels.cache.get(args[2]) ||
       message.guild.channels.cache.find(ch => ch.name.toLowerCase() === args[2].toLowerCase());
 
@@ -837,9 +836,7 @@ async function handleUpdateRole(client, message, args) {
     return runHelpCommand(message, 'levels');
   }
 
-  const roleResult = message.mentions.roles.first() ?
-    { found: true, role: message.mentions.roles.first() } :
-    findRole(message.guild, args[1]);
+  const roleResult = findRole(message.guild, args[1]);
 
   if (!roleResult.found) {
     return embeds.deny(message, roleResult.error);

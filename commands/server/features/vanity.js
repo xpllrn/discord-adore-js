@@ -78,9 +78,7 @@ module.exports = {
       } else {
         // Use role finder for role detection
         const roleName = args.slice(1).join(' ');
-        const roleResult = message.mentions.roles.first() ?
-          { found: true, role: message.mentions.roles.first() } :
-          findRole(message.guild, roleName);
+        const roleResult = findRole(message.guild, roleName);
 
         if (!roleResult.found) {
           return embeds.warn(message, roleResult.error);
@@ -127,9 +125,7 @@ module.exports = {
       if (!channelInput || !vanitymessage) return false;
 
       // Use universal finder for channel detection
-      const channelResult = message.mentions.channels.first() ?
-        { found: true, channel: message.mentions.channels.first() } :
-        findChannel(message.guild, channelInput);
+      const channelResult = findChannel(message.guild, channelInput);
 
       if (!channelResult.found) return false;
 
@@ -169,9 +165,7 @@ module.exports = {
       if (!channelInput) return false;
 
       // Use universal finder for channel detection
-      const channelResult = message.mentions.channels.first() ?
-        { found: true, channel: message.mentions.channels.first() } :
-        findChannel(message.guild, channelInput);
+      const channelResult = findChannel(message.guild, channelInput);
 
       if (!channelResult.found) return false;
 
@@ -208,9 +202,7 @@ module.exports = {
       if (!channelInput) return false;
 
       // Use universal finder for channel detection
-      const channelResult = message.mentions.channels.first() ?
-        { found: true, channel: message.mentions.channels.first() } :
-        findChannel(message.guild, channelInput);
+      const channelResult = findChannel(message.guild, channelInput);
 
       if (!channelResult.found) return false;
 

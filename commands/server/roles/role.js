@@ -181,8 +181,8 @@ module.exports = {
       // Check if there's a role mention in the arguments
       const roleMention = message.mentions.roles.first();
 
-      if (roleMention) {
-        // If there's a role mention, use it and find the color arguments
+      if (roleMention && roleMention.guild.id === message.guild.id) {
+        // If there's a role mention from this guild, use it and find the color arguments
         role = roleMention;
         // Find the color arguments (should be all non-mention arguments after the role)
         const nonMentionArgs = args.filter(arg => !arg.startsWith('<@&'));
@@ -263,7 +263,7 @@ module.exports = {
       // Check if there's a role mention in the arguments
       const roleMention = message.mentions.roles.first();
 
-      if (roleMention) {
+      if (roleMention && roleMention.guild.id === message.guild.id) {
         role = roleMention;
         const nonMentionArgs = args.filter(arg => !arg.startsWith('<@&'));
         colorArgs = nonMentionArgs.slice(1); // Skip the 'gradient' command
@@ -437,8 +437,8 @@ module.exports = {
       // Check if there's a role mention in the arguments
       const roleMention = message.mentions.roles.first();
 
-      if (roleMention) {
-        // If there's a role mention, use it and find the emoji argument
+      if (roleMention && roleMention.guild.id === message.guild.id) {
+        // If there's a role mention from this guild, use it and find the emoji argument
         role = roleMention;
         // Find the emoji argument (should be the last non-mention argument)
         const nonMentionArgs = args.filter(arg => !arg.startsWith('<@&'));

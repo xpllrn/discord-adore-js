@@ -89,7 +89,8 @@ async function handleAdd(message, args, guildService) {
     return embeds.warn(message, 'Please specify a role: `,fakepermissions add @Moderator ban_members`');
   }
 
-  const role = message.mentions.roles.first() || 
+  const mentionedRole = message.mentions.roles.first();
+  const role = (mentionedRole && mentionedRole.guild.id === message.guild.id) ? mentionedRole :
                 message.guild.roles.cache.get(roleArg) ||
                 message.guild.roles.cache.find(r => r.name.toLowerCase() === roleArg.toLowerCase());
 
@@ -233,7 +234,8 @@ async function handleRemove(message, args, guildService) {
     return embeds.warn(message, 'Please specify a role: `,fakepermissions remove @Moderator ban_members`');
   }
 
-  const role = message.mentions.roles.first() || 
+  const mentionedRole = message.mentions.roles.first();
+  const role = (mentionedRole && mentionedRole.guild.id === message.guild.id) ? mentionedRole :
                 message.guild.roles.cache.get(roleArg) ||
                 message.guild.roles.cache.find(r => r.name.toLowerCase() === roleArg.toLowerCase());
 
@@ -335,7 +337,8 @@ async function handleList(message, args, guildService) {
     return embeds.warn(message, 'Please specify a role: `,fakepermissions list @Moderator`');
   }
 
-  const role = message.mentions.roles.first() || 
+  const mentionedRole = message.mentions.roles.first();
+  const role = (mentionedRole && mentionedRole.guild.id === message.guild.id) ? mentionedRole :
                 message.guild.roles.cache.get(roleArg) ||
                 message.guild.roles.cache.find(r => r.name.toLowerCase() === roleArg.toLowerCase());
 

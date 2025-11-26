@@ -39,9 +39,7 @@ module.exports = {
       if (!channelInput || !boostmessage) return false;
 
       // Use universal finder for channel detection
-      const channelResult = message.mentions.channels.first() ?
-        { found: true, channel: message.mentions.channels.first() } :
-        findChannel(message.guild, channelInput);
+      const channelResult = findChannel(message.guild, channelInput);
 
       if (!channelResult.found) return false;
 
@@ -80,9 +78,7 @@ module.exports = {
       if (!channelInput) return false;
 
       // Use universal finder for channel detection
-      const channelResult = message.mentions.channels.first() ?
-        { found: true, channel: message.mentions.channels.first() } :
-        findChannel(message.guild, channelInput);
+      const channelResult = findChannel(message.guild, channelInput);
 
       if (!channelResult.found) return false;
 
@@ -118,9 +114,7 @@ module.exports = {
       if (!channelInput) return false;
 
       // Use universal finder for channel detection
-      const channelResult = message.mentions.channels.first() ?
-        { found: true, channel: message.mentions.channels.first() } :
-        findChannel(message.guild, channelInput);
+      const channelResult = findChannel(message.guild, channelInput);
 
       if (!channelResult.found) return false;
 
@@ -177,9 +171,7 @@ module.exports = {
       }
 
       // Find the role using universal finder
-      const roleResult = message.mentions.roles.first() ?
-        { found: true, role: message.mentions.roles.first() } :
-        findRole(message.guild, roleInput);
+      const roleResult = findRole(message.guild, roleInput);
 
       if (!roleResult.found) {
         return embeds.deny(message, roleResult.error);

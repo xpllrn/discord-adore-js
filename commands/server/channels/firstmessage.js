@@ -16,7 +16,7 @@ module.exports = {
     if (args[0]) {
       // Check for channel mention first
       const mentionedChannel = message.mentions.channels.first();
-      if (mentionedChannel) {
+      if (mentionedChannel && mentionedChannel.guild.id === message.guild.id) {
         targetChannel = mentionedChannel;
       } else {
         // Use universal channel finder

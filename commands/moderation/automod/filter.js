@@ -571,26 +571,26 @@ async function handleInvitesToggle(message, enable) {
 // Helper function to find either a role, user, or channel
 async function findRoleUserOrChannel(message, input) {
   // Check for channel mention first
-  if (message.mentions.channels.first()) {
-    const channel = message.mentions.channels.first();
+  const mentionedChannel = message.mentions.channels.first();
+  if (mentionedChannel && mentionedChannel.guild.id === message.guild.id) {
     return {
       found: true,
       type: 'channel',
-      id: channel.id,
-      name: channel.name,
-      object: channel
+      id: mentionedChannel.id,
+      name: mentionedChannel.name,
+      object: mentionedChannel
     };
   }
 
   // Check for role mention
-  if (message.mentions.roles.first()) {
-    const role = message.mentions.roles.first();
+  const mentionedRole = message.mentions.roles.first();
+  if (mentionedRole && mentionedRole.guild.id === message.guild.id) {
     return {
       found: true,
       type: 'role',
-      id: role.id,
-      name: role.name,
-      object: role
+      id: mentionedRole.id,
+      name: mentionedRole.name,
+      object: mentionedRole
     };
   }
 

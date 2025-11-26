@@ -62,9 +62,7 @@ module.exports = {
       }
 
       // Find role
-      const roleResult = message.mentions.roles.first() ?
-        { found: true, role: message.mentions.roles.first() } :
-        findRole(message.guild, roleName);
+      const roleResult = findRole(message.guild, roleName);
 
       if (!roleResult.found) {
         return embeds.deny(message, roleResult.error);

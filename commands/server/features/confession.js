@@ -255,7 +255,9 @@ module.exports = {
           return await viewConfessionChannelShared(message, confessionService);
         }
 
-        const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[1]);
+        const mentionedChannel = message.mentions.channels.first();
+        const channel = (mentionedChannel && mentionedChannel.guild.id === message.guild.id) ? mentionedChannel :
+                        message.guild.channels.cache.get(args[1]);
         if (!channel) {
           return embeds.deny(message, 'Invalid channel provided', false);
         }

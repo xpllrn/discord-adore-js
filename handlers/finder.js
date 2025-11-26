@@ -16,7 +16,14 @@ function findRole(guild, roleInput) {
   const mentionMatch = roleInput.match(/^<@&(\d+)>$/);
   if (mentionMatch) {
     const role = guild.roles.cache.get(mentionMatch[1]);
-    return role ? { found: true, role } : { found: false, role: null, error: `Role with ID ${mentionMatch[1]} not found` };
+    if (!role) {
+      return { found: false, role: null, error: `Role with ID ${mentionMatch[1]} not found` };
+    }
+    // Validate that the role belongs to the current guild
+    if (role.guild.id !== guild.id) {
+      return { found: false, role: null, error: 'That role is not in this server' };
+    }
+    return { found: true, role };
   }
 
   // Try to find by ID
@@ -135,13 +142,18 @@ async function findUser(guild, userInput, client = null) {
 function findChannel(guild, channelInput) {
   if (!guild || !channelInput) return { found: false, channel: null, error: 'Invalid input' };
 
-
-
   // Try to find by mention first
   const mentionMatch = channelInput.match(/^<#(\d+)>$/);
   if (mentionMatch) {
     const channel = guild.channels.cache.get(mentionMatch[1]);
-    return channel ? { found: true, channel } : { found: false, channel: null, error: `Channel with ID ${mentionMatch[1]} not found` };
+    if (!channel) {
+      return { found: false, channel: null, error: `Channel with ID ${mentionMatch[1]} not found` };
+    }
+    // Validate that the channel belongs to the current guild
+    if (channel.guild.id !== guild.id) {
+      return { found: false, channel: null, error: 'That channel is not in this server' };
+    }
+    return { found: true, channel };
   }
 
   // Try to find by ID
