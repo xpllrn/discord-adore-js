@@ -62,7 +62,7 @@ async function handleParanoiaGame(context, rating) {
   if (rating === 'r') {
     const allowed = await canUseRRating(guild, channel);
     if (!allowed) {
-      return embeds.deny(context, 'R-rated content is only available in **NSFW channels** or servers with **NSFW bypass** enabled', false);
+      return embeds.deny(context, 'This command can **only be used** in `NSFW` channels!', false);
     }
   }
 
@@ -85,7 +85,7 @@ async function handleParanoiaGame(context, rating) {
   const gameKey = `${channel.id}-${gameMessage.id}`;
   activeGames.set(gameKey, { userId: user.id, rating, messageId: gameMessage.id });
 
-  const collector = gameMessage.createMessageComponentCollector({ time: 60000 });
+  const collector = gameMessage.createMessageComponentCollector({ time: 120000 });
 
   collector.on('collect', async (interaction) => {
     if (interaction.user.id !== user.id) {
@@ -106,7 +106,23 @@ async function handleParanoiaGame(context, rating) {
     const newEmbed = createQuestionEmbed(newQuestion, user.username, user.displayAvatarURL({ dynamic: true }));
     const newButtons = createSingleButton('Paranoia');
 
-    await interaction.update({ embeds: [newEmbed], components: [newButtons] });
+    // Disable old button first
+    try {
+      const disabledButtons = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('paranoia_next_disabled')
+            .setLabel('Paranoia')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true)
+        );
+      await interaction.update({ components: [disabledButtons] });
+    } catch (error) {
+      // Ignore
+    }
+
+    // Send new message with new question
+    await channel.send({ embeds: [newEmbed], components: [newButtons] });
   });
 
   collector.on('end', async () => {
