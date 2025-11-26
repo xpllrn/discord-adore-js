@@ -63,8 +63,9 @@ module.exports = {
 
       await interaction.deferReply({ ephemeral: true });
 
+      const spotifyService = getService('spotify');
+
       try {
-        const spotifyService = getService('spotify');
 
         // Verify state token
         const authSession = await spotifyService.getAuthSession(state);
