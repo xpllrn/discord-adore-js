@@ -6,28 +6,43 @@ const { fetch } = require('undici');
 const logger = require('../../utils/logger');
 
 async function fetchInstagramProfile(username, requester) {
-  const response = await fetch(`https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
-    method: 'GET',
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'X-IG-App-ID': '936619743392459',
-      'Accept': '*/*',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Referer': 'https://www.instagram.com/',
-      'Sec-Fetch-Dest': 'empty',
-      'Sec-Fetch-Mode': 'cors',
-      'Sec-Fetch-Site': 'same-site'
+  try {
+    const response = await fetch(`https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'X-IG-App-ID': '936619743392459',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.instagram.com/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Instagram profile "@${username}" not found`);
+      } else if (response.status === 429) {
+        throw new Error('Instagram rate limit reached. Please try again later');
+      } else if (response.status === 401 || response.status === 403) {
+        throw new Error('Instagram API access denied. The service may be temporarily unavailable');
+      }
+      throw new Error(`Failed to fetch profile (Status: ${response.status})`);
     }
-  });
 
-  if (!response.ok) {
-    throw new Error('Profile not found');
-  }
+    const results = await response.json();
 
-  const results = await response.json();
-
-  if (!results.data || !results.data.user) {
-    throw new Error('Profile not found');
+    if (!results.data || !results.data.user) {
+      throw new Error(`Profile data unavailable for "@${username}"`);
+    }
+  } catch (error) {
+    // Re-throw with more context if it's a network error
+    if (error.message.includes('fetch failed')) {
+      throw new Error('Unable to connect to Instagram. Please check your internet connection');
+    }
+    throw error;
   }
 
   const user = results.data.user;
@@ -94,7 +109,8 @@ module.exports = {
 
     } catch (error) {
       logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while fetching the Instagram profile');
+      const errorMessage = error.message || 'An error occurred while fetching the Instagram profile';
+      return embeds.deny(message, errorMessage);
     }
   },
 
@@ -127,7 +143,8 @@ module.exports = {
 
     } catch (error) {
       logger.webhook.error(error, interaction);
-      return embeds.deny(interaction, 'An error occurred while fetching the Instagram profile');
+      const errorMessage = error.message || 'An error occurred while fetching the Instagram profile';
+      return embeds.deny(interaction, errorMessage);
     }
   }
 }

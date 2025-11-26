@@ -406,19 +406,19 @@ async function createVoiceManagerPanel(client, channel) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_lock')
-        .setEmoji(config.emojis.vmLock)
+        .setEmoji(emojis.vmLock)
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_unlock')
-        .setEmoji(config.emojis.vmUnlock)
+        .setEmoji(emojis.vmUnlock)
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_hide')
-        .setEmoji(config.emojis.vmHide)
+        .setEmoji(emojis.vmHide)
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_unhide')
-        .setEmoji(config.emojis.vmUnhide)
+        .setEmoji(emojis.vmUnhide)
         .setStyle(ButtonStyle.Secondary)
     );
 
@@ -426,19 +426,19 @@ async function createVoiceManagerPanel(client, channel) {
     .addComponents(
       new ButtonBuilder()
         .setCustomId('vm_increase')
-        .setEmoji(config.emojis.vmIncrease)
+        .setEmoji(emojis.vmIncrease)
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_decrease')
-        .setEmoji(config.emojis.vmDecrease)
+        .setEmoji(emojis.vmDecrease)
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_rename')
-        .setEmoji(config.emojis.vmRename)
+        .setEmoji(emojis.vmRename)
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('vm_info')
-        .setEmoji(config.emojis.vmInfo)
+        .setEmoji(emojis.vmInfo)
         .setStyle(ButtonStyle.Secondary)
     );
 
