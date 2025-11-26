@@ -43,7 +43,7 @@ function createQuestionEmbed(data, authorName, authorIcon) {
   const embed = new EmbedBuilder()
     .setColor(colors.embed || '#242429')
     .setAuthor({
-      name: `${authorName}: requested by ${authorName}`,
+      name: `requested by ${authorName}`,
       iconURL: authorIcon
     })
     .setTitle(data.question)
@@ -172,7 +172,91 @@ async function handleTruthDareGame(context, initialType, rating) {
     }
 
     // Send new message with new question
-    await channel.send({ embeds: [newEmbed], components: [newButtons] });
+    const newGameMessage = await channel.send({ embeds: [newEmbed], components: [newButtons] });
+    
+    // Create new collector for the new message
+    const newCollector = newGameMessage.createMessageComponentCollector({
+      time: 120000
+    });
+    
+    newCollector.on('collect', async (newInteraction) => {
+      if (newInteraction.user.id !== user.id) {
+        return newInteraction.reply({
+          content: `${newInteraction.client.config?.emojis?.error || '❌'} This game is not for you!`,
+          ephemeral: true
+        });
+      }
+
+      const newButtonType = newInteraction.customId.split('_')[1];
+      let nextType = newButtonType;
+
+      if (newButtonType === 'random') {
+        nextType = Math.random() < 0.5 ? 'truth' : 'dare';
+      }
+
+      const nextQuestion = await fetchQuestion(nextType, rating);
+      if (!nextQuestion) {
+        return newInteraction.reply({
+          content: 'Failed to fetch question. Please try again.',
+          ephemeral: true
+        });
+      }
+
+      const nextEmbed = createQuestionEmbed(nextQuestion, user.username, user.displayAvatarURL({ dynamic: true }));
+      const nextButtons = createTruthDareButtons();
+
+      try {
+        const disabledButtons = new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('tod_truth_disabled')
+              .setLabel('Truth')
+              .setStyle(ButtonStyle.Success)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('tod_random_disabled')
+              .setLabel('Random')
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('tod_dare_disabled')
+              .setLabel('Dare')
+              .setStyle(ButtonStyle.Danger)
+              .setDisabled(true)
+          );
+        await newInteraction.update({ components: [disabledButtons] });
+      } catch (error) {
+        // Ignore
+      }
+
+      await channel.send({ embeds: [nextEmbed], components: [nextButtons] });
+    });
+
+    newCollector.on('end', async () => {
+      try {
+        const disabledButtons = new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('tod_truth_disabled')
+              .setLabel('Truth')
+              .setStyle(ButtonStyle.Success)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('tod_random_disabled')
+              .setLabel('Random')
+              .setStyle(ButtonStyle.Secondary)
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('tod_dare_disabled')
+              .setLabel('Dare')
+              .setStyle(ButtonStyle.Danger)
+              .setDisabled(true)
+          );
+        await newGameMessage.edit({ components: [disabledButtons] });
+      } catch (error) {
+        // Ignore
+      }
+    });
   });
 
   collector.on('end', async () => {
