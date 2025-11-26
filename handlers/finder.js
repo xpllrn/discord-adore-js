@@ -17,11 +17,12 @@ function findRole(guild, roleInput) {
   if (mentionMatch) {
     const role = guild.roles.cache.get(mentionMatch[1]);
     if (!role) {
-      return { found: false, role: null, error: `Role with ID ${mentionMatch[1]} not found` };
+      // Role mention format detected but not found in this server
+      return { found: false, role: null, error: `I was unable to find a **role** with the ID: **${mentionMatch[1]}**` };
     }
     // Validate that the role belongs to the current guild
     if (role.guild.id !== guild.id) {
-      return { found: false, role: null, error: 'That role is not in this server' };
+      return { found: false, role: null, error: `I was unable to find a **role** with the ID: **${mentionMatch[1]}**` };
     }
     return { found: true, role };
   }
@@ -147,11 +148,12 @@ function findChannel(guild, channelInput) {
   if (mentionMatch) {
     const channel = guild.channels.cache.get(mentionMatch[1]);
     if (!channel) {
-      return { found: false, channel: null, error: `Channel with ID ${mentionMatch[1]} not found` };
+      // Channel mention format detected but not found in this server
+      return { found: false, channel: null, error: `I was unable to find a **channel** with the ID: **${mentionMatch[1]}**` };
     }
     // Validate that the channel belongs to the current guild
     if (channel.guild.id !== guild.id) {
-      return { found: false, channel: null, error: 'That channel is not in this server' };
+      return { found: false, channel: null, error: `I was unable to find a **channel** with the ID: **${mentionMatch[1]}**` };
     }
     return { found: true, channel };
   }
