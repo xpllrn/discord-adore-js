@@ -190,7 +190,11 @@ async function loadBotStatusFromDatabase(client) {
 
   // Set bot status
   client.user.setPresence({
-    activities: [{ name: '🔗 adore.rest', type: ActivityType.Custom }],
+    activities: [{ 
+      name: 'Custom Status',
+      type: ActivityType.Custom,
+      state: '🔗 adore.rest'
+    }],
     status: 'online'
   });
 }
