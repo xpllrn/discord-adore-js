@@ -26,7 +26,11 @@ module.exports = {
 
   // Set loading status
   client.user.setPresence({
-    activities: [{ name: 'Starting up...', type: ActivityType.Custom }],
+    activities: [{ 
+      name: 'Custom Status',
+      type: ActivityType.Custom,
+      state: 'Starting up...'
+    }],
     status: 'idle'
   });
 

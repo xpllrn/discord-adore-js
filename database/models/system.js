@@ -58,22 +58,6 @@ const systemSchema = new mongoose.Schema({
       type: String,
       default: null // Custom bot bio/description
     },
-    botStatus: {
-      activity: {
-        type: String,
-        default: null // Activity text
-      },
-      type: {
-        type: String,
-        enum: ['Playing', 'Streaming', 'Listening', 'Watching', 'Competing'],
-        default: 'Watching'
-      },
-      status: {
-        type: String,
-        enum: ['online', 'idle', 'dnd', 'invisible'],
-        default: 'online'
-      }
-    },
     permissions: {
       type: [String],
       default: [] // Array of permission strings for this instance owner
