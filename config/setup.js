@@ -75,7 +75,7 @@ module.exports = {
     warn: '#f29c1e',
     info: '#242429',
     embed: '#242429',
-    spotify: '#030403'
+    spotify: '#1DB954'
   },
 
   // Emojis Configuration
@@ -117,7 +117,7 @@ module.exports = {
 
     // Custom Emojis
     google: '<:google:1439546269847650345>',
-    spotify: '<:spotify:1433468387824238712>',
+    spotify: '<:spotify:1443252410414796884>',
 
     // Roblox Badge Emojis
     online: '<a:online:1441833868045979670>',

@@ -336,22 +336,24 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
 
 /**
  * Check if user is linked and get access token
- * @param {Message} message - Discord message
+ * @param {Message|Interaction} context - Discord message or interaction
  * @returns {Promise<{isLinked: boolean, accessToken: string|null}>}
  */
-async function checkSpotifyAccess(message) {
+async function checkSpotifyAccess(context) {
   const spotifyService = getService('spotify');
-  const isLinked = await spotifyService.isLinked(message.author.id);
+  // Support both message (prefix) and interaction (slash) commands
+  const userId = context.user ? context.user.id : context.author.id;
+  const isLinked = await spotifyService.isLinked(userId);
 
   if (!isLinked) {
-    embeds.warn(message, 'You haven\'t linked your **Spotify** account. Use `,spotify login` to get started.');
+    embeds.warn(context, 'You haven\'t linked your **Spotify** account. Use `,spotify login` to get started.');
     return { isLinked: false, accessToken: null };
   }
 
-  const accessToken = await spotifyService.getAccessToken(message.author.id);
+  const accessToken = await spotifyService.getAccessToken(userId);
 
   if (!accessToken) {
-    embeds.warn(message, 'Failed to get **Spotify** access token. Please try linking your account again with `,spotify login`.');
+    embeds.warn(context, 'Failed to get **Spotify** access token. Please try linking your account again with `,spotify login`.');
     return { isLinked: true, accessToken: null };
   }
 
@@ -360,16 +362,16 @@ async function checkSpotifyAccess(message) {
 
 /**
  * Check for active Spotify devices
- * @param {Message} message - Discord message
+ * @param {Message|Interaction} context - Discord message or interaction
  * @param {string} accessToken - Spotify access token
  * @returns {Promise<Array|null>} Array of devices or null if none found
  */
-async function checkActiveDevices(message, accessToken) {
+async function checkActiveDevices(context, accessToken) {
   const spotifyService = getService('spotify');
   const devices = await spotifyService.getActiveDevices(accessToken);
 
   if (!devices || devices.length === 0) {
-    embeds.warn(message, '**Player command failed**: No `active device` found!');
+    embeds.warn(context, '**Player command failed**: No `active device` found!');
     return null;
   }
 
@@ -378,44 +380,51 @@ async function checkActiveDevices(message, accessToken) {
 
 /**
  * Handle Spotify service errors with user-friendly messages
- * @param {Message} message - Discord message
+ * @param {Message|Interaction} context - Discord message or interaction
  * @param {Error} error - Error object
  */
-function handleSpotifyError(message, error) {
+function handleSpotifyError(context, error) {
   const errorCode = error.message || error.code;
 
   if (errorCode === 'NO_ACTIVE_DEVICE') {
-    return embeds.warn(message, '**Player command failed**: No `active device` found!');
+    return embeds.warn(context, '**Player command failed**: No `active device` found!');
   }
 
   if (errorCode === 'PREMIUM_REQUIRED') {
-    return embeds.warn(message, '**Premium** is required for **playback** feature.');
+    return embeds.warn(context, '**Premium** is required for **playback** feature.');
   }
 
   if (errorCode === 'TOKEN_EXPIRED') {
-    return embeds.warn(message, 'Your **Spotify** session expired. Please run `,spotify login` again.');
+    return embeds.warn(context, 'Your **Spotify** session expired. Please run `,spotify login` again.');
   }
 
   if (errorCode === 'PLAYBACK_ERROR') {
-    return embeds.warn(message, '**Player command failed**: No `active device` found!');
+    return embeds.warn(context, '**Player command failed**: No `active device` found!');
   }
 
   // Check if it's an authorization error (user not in beta list)
   if (errorCode.includes('403') || errorCode.includes('Forbidden') || errorCode.includes('unauthorized')) {
     const { EmbedBuilder } = require('discord.js');
     const config = require('../config/setup');
+    // Support both message and interaction
+    const user = context.user || context.author;
 
     const errorEmbed = new EmbedBuilder()
       .setColor(config.colors.error)
       .setDescription(
-        `❌ ${message.author}: Your **Spotify account** is not approved for **adore** yet.\n\n` +
+        `❌ ${user}: Your **Spotify account** is not approved for **adore** yet.\n\n` +
         `**Create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) and provide your **Spotify email** to get added to the beta list.`
       );
 
-    return message.channel.send({ embeds: [errorEmbed] });
+    // Handle both message and interaction reply
+    if (context.reply) {
+      return context.reply({ embeds: [errorEmbed] });
+    } else {
+      return context.channel.send({ embeds: [errorEmbed] });
+    }
   }
 
-  return embeds.warn(message, error.message || 'An error occurred with **Spotify**.');
+  return embeds.warn(context, error.message || 'An error occurred with **Spotify**.');
 }
 
 module.exports = {
