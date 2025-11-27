@@ -13,7 +13,25 @@ const BOT_API_KEY = 'YOUR_API_KEY'
 // Helper functions
 async function getProfile(discordId) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/profile/${discordId}`);
+    // Get all profiles and find by Discord ID
+    const response = await axios.get(`${API_BASE_URL}/profiles`, {
+      headers: {
+        'X-API-Key': BOT_API_KEY
+      }
+    });
+
+    if (response.data && response.data.profiles) {
+      return response.data.profiles.find(p => p.discordId === discordId);
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function getProfileByUsername(username) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/profile/${username.toLowerCase()}`);
     return response.data;
   } catch (error) {
     if (error.response?.status === 404) {
