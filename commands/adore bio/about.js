@@ -11,33 +11,15 @@ const API_BASE_URL = process.env.API_BASE_URL || 'https://adore-api.vwsnxy.worke
 const BOT_API_KEY = 'YOUR_API_KEY'
 
 // Helper functions
-async function getProfile(username) {
+async function getProfile(discordId) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/profile/${username.toLowerCase()}`);
+    const response = await axios.get(`${API_BASE_URL}/profile/${discordId}`);
     return response.data;
   } catch (error) {
     if (error.response?.status === 404) {
       return null;
     }
     throw error;
-  }
-}
-
-async function getProfileByDiscordId(discordId) {
-  try {
-    // Get all profiles and find by Discord ID
-    const response = await axios.get(`${API_BASE_URL}/profiles`, {
-      headers: {
-        'X-API-Key': BOT_API_KEY
-      }
-    });
-    
-    if (response.data && response.data.profiles) {
-      return response.data.profiles.find(p => p.discordId === discordId);
-    }
-    return null;
-  } catch (error) {
-    return null;
   }
 }
 
@@ -54,12 +36,12 @@ async function updateProfile(data) {
 async function getSpotifyToken() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  
+
   if (!clientId || !clientSecret) {
     throw new Error('Spotify credentials not configured');
   }
 
-  const response = await axios.post('https://accounts.spotify.com/api/token', 
+  const response = await axios.post('https://accounts.spotify.com/api/token',
     'grant_type=client_credentials',
     {
       headers: {
@@ -105,26 +87,51 @@ module.exports = {
   syntax: 'about [subcommand] (parameters)',
   example: 'about create username',
   isGroupCommand: true,
-  run: async(client, message, args) => {
+  run: async (client, message, args) => {
     try {
       if (args[0] === 'create') {
-        const subcommandInfo = {
-          description: 'Create your ADORE profile (can only be created once)',
-          syntax: '{guildprefix}about create [username]',
-          aliases: [],
-          parameters: ['username'],
-          example: '{guildprefix}about create johndoe'
-        };
-
-        const username = args[1];
-        if (!username) return runHelpCommand(message, 'about');
-
         // Check cooldown to prevent spam
         const now = Date.now();
         const cooldownEnd = createCooldowns.get(message.author.id);
         if (cooldownEnd && now < cooldownEnd) {
           const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
           return embeds.warn(message, `Please wait **${timeLeft} seconds** before trying to create a profile again`);
+        }
+
+        // Check if user already has a profile
+        const existingProfile = await getProfile(message.author.id);
+        if (existingProfile) {
+          return embeds.warn(message, `You already have a profile at **https://adore.rest/${message.author.id}**\nProfiles can only be created **once** per account.`);
+        }
+
+        // Set cooldown
+        createCooldowns.set(message.author.id, now + COOLDOWN_TIME);
+
+        const profileData = {
+          username: message.author.username,
+          displayName: message.author.username,
+          discordId: message.author.id,
+          avatar: message.author.displayAvatarURL({ size: 512, extension: 'png' }),
+          links: [
+            { type: 'discord', url: `https://discord.com/users/${message.author.id}` }
+          ]
+        };
+
+        await updateProfile(profileData);
+
+        // Clear cooldown on success
+        createCooldowns.delete(message.author.id);
+
+        return embeds.success(message, `Created your ADORE profile!\n\n**Username:** ${message.author.username}\n**Profile:** https://adore.rest/${message.author.id}`);
+
+      } else if (args[0] === 'username') {
+        const username = args.slice(1).join(' ');
+        if (!username) return runHelpCommand(message, 'about');
+
+        // Check if user has a profile
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to create a profile first! Use `about create`');
         }
 
         // Validate username format
@@ -141,37 +148,56 @@ module.exports = {
           return embeds.warn(message, 'Username **cannot** be longer than **20 characters**');
         }
 
-        // Check if user already has a profile by Discord ID (most important check)
-        const existingProfileByDiscordId = await getProfileByDiscordId(message.author.id);
-        if (existingProfileByDiscordId) {
-          return embeds.warn(message, `You already have a profile at **https://adore.rest/${existingProfileByDiscordId.username}**\nProfiles can only be created **once** per account.`);
-        }
-
-        // Check if username is taken
-        const usernameCheck = await getProfile(username);
-        if (usernameCheck) {
-          return embeds.warn(message, `Username **${username}** is already taken!`);
+        // Check cooldown
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-username`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.warn(message, `Please wait **${timeLeft} seconds** before updating your username again`);
         }
 
         // Set cooldown
-        createCooldowns.set(message.author.id, now + COOLDOWN_TIME);
+        updateCooldowns.set(`${message.author.id}-username`, now + UPDATE_COOLDOWN);
 
-        const profileData = {
-          username: username.toLowerCase(),
+        await updateProfile({
           discordId: message.author.id,
-          displayName: username,
-          avatar: message.author.displayAvatarURL({ size: 512, extension: 'png' }),
-          links: [
-            { type: 'discord', url: `https://discord.com/users/${message.author.id}` }
-          ]
-        };
+          username: username
+        });
 
-        await updateProfile(profileData);
+        return embeds.success(message, `Updated your username to **${username}**!`);
 
-        // Clear cooldown on success
-        createCooldowns.delete(message.author.id);
+      } else if (args[0] === 'name') {
+        const name = args.slice(1).join(' ');
+        if (!name) return runHelpCommand(message, 'about');
 
-        return embeds.success(message, `Created your ADORE profile!\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
+        // Check if user has a profile
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to create a profile first! Use `about create`');
+        }
+
+        // Validate name length
+        if (name.length > 32) {
+          return embeds.warn(message, 'Display name **cannot** be longer than **32 characters**');
+        }
+
+        // Check cooldown
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-name`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.warn(message, `Please wait **${timeLeft} seconds** before updating your name again`);
+        }
+
+        // Set cooldown
+        updateCooldowns.set(`${message.author.id}-name`, now + UPDATE_COOLDOWN);
+
+        await updateProfile({
+          discordId: message.author.id,
+          displayName: name
+        });
+
+        return embeds.success(message, `Updated your display name to **${name}**!`);
 
       } else if (args[0] === 'bio') {
         const subcommandInfo = {
@@ -184,6 +210,12 @@ module.exports = {
 
         const bio = args.slice(1).join(' ');
         if (!bio) return runHelpCommand(message, 'about');
+
+        // Check if user has a profile
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to create a profile first! Use `about create`');
+        }
 
         // Check cooldown
         const now = Date.now();
@@ -200,13 +232,10 @@ module.exports = {
         // Set cooldown
         updateCooldowns.set(`${message.author.id}-bio`, now + UPDATE_COOLDOWN);
 
-        const profileData = {
-          username: message.author.username.toLowerCase(),
+        await updateProfile({
           discordId: message.author.id,
           bio: bio
-        };
-
-        await updateProfile(profileData);
+        });
 
         return embeds.success(message, `Updated your bio!\n\n${bio}`);
 
@@ -218,6 +247,12 @@ module.exports = {
           parameters: ['attachment or user mention (optional)'],
           example: '{guildprefix}about avatar @user'
         };
+
+        // Check if user has a profile
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to create a profile first! Use `about create`');
+        }
 
         // Check cooldown
         const now = Date.now();
@@ -273,7 +308,6 @@ module.exports = {
 
         // Update profile
         await updateProfile({
-          username: message.author.username.toLowerCase(),
           discordId: message.author.id,
           avatar: avatarUrl
         });
@@ -293,6 +327,12 @@ module.exports = {
           parameters: ['attachment or user mention (optional)'],
           example: '{guildprefix}about banner @user'
         };
+
+        // Check if user has a profile
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to create a profile first! Use `about create`');
+        }
 
         // Check cooldown
         const now = Date.now();
@@ -347,7 +387,6 @@ module.exports = {
 
         // Update profile
         await updateProfile({
-          username: message.author.username.toLowerCase(),
           discordId: message.author.id,
           banner: bannerUrl
         });
@@ -373,6 +412,12 @@ module.exports = {
 
         const input = args.slice(1).join(' ');
         if (!input) return runHelpCommand(message, 'about');
+
+        // Check if user has a profile
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to create a profile first! Use `about create`');
+        }
 
         // Check cooldown
         const now = Date.now();
@@ -417,7 +462,6 @@ module.exports = {
 
         // Update profile with song data
         await updateProfile({
-          username: message.author.username.toLowerCase(),
           discordId: message.author.id,
           song: trackData.name,
           songArtist: trackData.artists[0].name,
@@ -464,8 +508,8 @@ module.exports = {
         if (!link) return runHelpCommand(message, 'about');
 
         // Get current profile
-        const profile = await getProfile(message.author.username);
-        
+        const profile = await getProfile(message.author.id);
+
         if (!profile) {
           return embeds.deny(message, 'You need to create a profile first! Use `about create`');
         }
@@ -473,7 +517,7 @@ module.exports = {
         // Add new link
         const links = profile.links || [];
         const detectedPlatform = platform || detectPlatform(link);
-        
+
         links.push({
           type: detectedPlatform === 'auto' ? 'auto' : detectedPlatform,
           url: link
@@ -481,7 +525,6 @@ module.exports = {
 
         // Update profile
         await updateProfile({
-          username: message.author.username.toLowerCase(),
           discordId: message.author.id,
           links: links
         });
@@ -498,16 +541,16 @@ module.exports = {
         };
 
         const targetUser = message.mentions.users.first() || message.author;
-        const profile = await getProfile(targetUser.username);
+        const profile = await getProfile(targetUser.id);
 
         if (!profile) {
-          return embeds.deny(message, `${targetUser.username} doesn't have an ADORE profile yet!`);
+          return embeds.deny(message, `<@${targetUser.id}> doesn't have an ADORE profile yet!`);
         }
 
         const embed = new EmbedBuilder()
           .setColor(config.colors.embed)
           .setTitle(`${profile.displayName || profile.username}'s Profile`)
-          .setURL(`https://adore.rest/${profile.username}`)
+          .setURL(`https://adore.rest/${targetUser.id}`)
           .setThumbnail(profile.avatar);
 
         if (profile.banner) {
@@ -548,12 +591,18 @@ module.exports = {
           example: '{guildprefix}about delete'
         };
 
+        // Check if user has a profile
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You don\'t have a profile to delete!');
+        }
+
         await createConfirmation(
           message,
           'Are you sure you want to **delete your profile**? This action cannot be undone.',
           async (interaction) => {
             try {
-              await axios.delete(`${API_BASE_URL}/profile/${message.author.username.toLowerCase()}`, {
+              await axios.delete(`${API_BASE_URL}/profile/${message.author.id}`, {
                 headers: {
                   'X-API-Key': BOT_API_KEY,
                   'Content-Type': 'application/json'
