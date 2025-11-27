@@ -90,6 +90,8 @@ module.exports = {
   run: async (client, message, args) => {
     try {
       if (args[0] === 'create') {
+        const username = args[1] || message.author.username;
+
         // Check cooldown to prevent spam
         const now = Date.now();
         const cooldownEnd = createCooldowns.get(message.author.id);
@@ -101,37 +103,7 @@ module.exports = {
         // Check if user already has a profile
         const existingProfile = await getProfile(message.author.id);
         if (existingProfile) {
-          return embeds.warn(message, `You already have a profile at **https://adore.rest/${message.author.id}**\nProfiles can only be created **once** per account.`);
-        }
-
-        // Set cooldown
-        createCooldowns.set(message.author.id, now + COOLDOWN_TIME);
-
-        const profileData = {
-          username: message.author.username,
-          displayName: message.author.username,
-          discordId: message.author.id,
-          avatar: message.author.displayAvatarURL({ size: 512, extension: 'png' }),
-          links: [
-            { type: 'discord', url: `https://discord.com/users/${message.author.id}` }
-          ]
-        };
-
-        await updateProfile(profileData);
-
-        // Clear cooldown on success
-        createCooldowns.delete(message.author.id);
-
-        return embeds.success(message, `Created your ADORE profile!\n\n**Username:** ${message.author.username}\n**Profile:** https://adore.rest/${message.author.id}`);
-
-      } else if (args[0] === 'username') {
-        const username = args.slice(1).join(' ');
-        if (!username) return runHelpCommand(message, 'about');
-
-        // Check if user has a profile
-        const existingProfile = await getProfile(message.author.id);
-        if (!existingProfile) {
-          return embeds.deny(message, 'You need to create a profile first! Use `about create`');
+          return embeds.warn(message, `You already have a profile at **https://adore.rest/${existingProfile.username}**\nProfiles can only be created **once** per account.`);
         }
 
         // Validate username format
@@ -148,25 +120,27 @@ module.exports = {
           return embeds.warn(message, 'Username **cannot** be longer than **20 characters**');
         }
 
-        // Check cooldown
-        const now = Date.now();
-        const cooldownEnd = updateCooldowns.get(`${message.author.id}-username`);
-        if (cooldownEnd && now < cooldownEnd) {
-          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
-          return embeds.warn(message, `Please wait **${timeLeft} seconds** before updating your username again`);
-        }
-
         // Set cooldown
-        updateCooldowns.set(`${message.author.id}-username`, now + UPDATE_COOLDOWN);
+        createCooldowns.set(message.author.id, now + COOLDOWN_TIME);
 
-        await updateProfile({
+        const profileData = {
+          username: username.toLowerCase(),
+          displayName: username,
           discordId: message.author.id,
-          username: username
-        });
+          avatar: message.author.displayAvatarURL({ size: 512, extension: 'png' }),
+          links: [
+            { type: 'discord', url: `https://discord.com/users/${message.author.id}` }
+          ]
+        };
 
-        return embeds.success(message, `Updated your username to **${username}**!`);
+        await updateProfile(profileData);
 
-      } else if (args[0] === 'name') {
+        // Clear cooldown on success
+        createCooldowns.delete(message.author.id);
+
+        return embeds.success(message, `Created your ADORE profile!\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
+
+      } else if (args[0] === 'rename') {
         const name = args.slice(1).join(' ');
         if (!name) return runHelpCommand(message, 'about');
 
@@ -183,14 +157,14 @@ module.exports = {
 
         // Check cooldown
         const now = Date.now();
-        const cooldownEnd = updateCooldowns.get(`${message.author.id}-name`);
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-rename`);
         if (cooldownEnd && now < cooldownEnd) {
           const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
           return embeds.warn(message, `Please wait **${timeLeft} seconds** before updating your name again`);
         }
 
         // Set cooldown
-        updateCooldowns.set(`${message.author.id}-name`, now + UPDATE_COOLDOWN);
+        updateCooldowns.set(`${message.author.id}-rename`, now + UPDATE_COOLDOWN);
 
         await updateProfile({
           discordId: message.author.id,
@@ -550,7 +524,7 @@ module.exports = {
         const embed = new EmbedBuilder()
           .setColor(config.colors.embed)
           .setTitle(`${profile.displayName || profile.username}'s Profile`)
-          .setURL(`https://adore.rest/${targetUser.id}`)
+          .setURL(`https://adore.rest/${profile.username}`)
           .setThumbnail(profile.avatar);
 
         if (profile.banner) {
@@ -602,7 +576,7 @@ module.exports = {
           'Are you sure you want to **delete your profile**? This action cannot be undone.',
           async (interaction) => {
             try {
-              await axios.delete(`${API_BASE_URL}/profile/${message.author.id}`, {
+              await axios.delete(`${API_BASE_URL}/profile`, {
                 headers: {
                   'X-API-Key': BOT_API_KEY,
                   'Content-Type': 'application/json'
