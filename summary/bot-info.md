@@ -109,8 +109,8 @@ This creates four roles:
   - Skips users that can't be banned
 
 **`,unban [user ID] [reason]`**
-- **Permission Required:** Ban Members
-- **What it does:** Removes a ban from a user
+- **Permission Required:** Ban Members (regular bans) or Antinuke Admin/Server Owner (hardbans)
+- **What it does:** Removes a ban from a user (automatically detects hardbans)
 - **Example:** `,unban 123456789012345678 Appeal accepted`
 - **How to get user ID:**
   1. Enable Developer Mode in Discord settings
@@ -120,6 +120,161 @@ This creates four roles:
   - Creates case log entry
   - Notifies in #jail-log
   - User can rejoin server immediately
+  - **Hardban detection:** If user is hardbanned, requires antinuke admin or server owner permission
+- **Hardban behavior:**
+  - Regular moderators cannot unban hardbanned users
+  - Shows warning message if user is hardbanned
+  - Automatically removes from hardban list when unbanned by authorized user
+
+---
+
+#### Hardban System (Persistent Bans)
+
+**What is a Hardban?**
+
+A hardban is a **permanent, persistent ban** that provides extra protection against ban evasion and unauthorized unbans. Unlike regular bans:
+- **Cannot be removed by regular moderators** - Only antinuke admins and server owner can unhardban
+- **Automatically re-enforced** - If someone removes the user from Discord's ban list, they'll be banned again when they try to join
+- **Stored in bot database** - Persists even if Discord ban is manually removed
+- **Tracked separately** - Has its own moderation case type and history
+
+**When to Use Hardbans:**
+- Serious offenses (raiding, doxxing, severe harassment)
+- Repeat offenders who keep evading bans
+- Users you never want back in the server
+- Protection against compromised moderator accounts unbanning dangerous users
+
+**`,hardban @user [reason]`**
+- **Permission Required:** Antinuke Admin or Server Owner ONLY
+- **What it does:** Permanently bans a user with persistent enforcement
+- **Examples:**
+  - `,hardban @raider Coordinated raid attack`
+  - `,hardban 123456789012345678 Doxxing members`
+- **How it works:**
+  1. Adds user to persistent hardban list in database
+  2. Bans user from Discord
+  3. Creates moderation case with type "hardban"
+  4. Logs to #jail-log channel
+  5. If user is ever unbanned from Discord, they'll be auto-banned on rejoin attempt
+- **Features:**
+  - Works with both members and user IDs
+  - Creates case log entry
+  - Persistent across bot restarts
+  - Cannot be bypassed by regular moderators
+  - Automatic enforcement on join attempts
+- **Limitations:**
+  - Only antinuke admins and server owner can use
+  - Cannot hardban server owner
+  - Cannot hardban users with higher roles than bot
+  - Cannot hardban yourself
+
+**`,hardban list`**
+- **Permission Required:** Antinuke Admin or Server Owner
+- **What it does:** View all hardbanned users in the server
+- **Example:** `,hardban list`
+- **Shows:**
+  - User ID and username
+  - Reason for hardban
+  - Who issued the hardban
+  - When they were hardbanned (relative timestamp)
+  - Paginated list (10 per page)
+- **Features:**
+  - Supports unlimited hardbans with pagination
+  - Shows relative timestamps (e.g., "2 days ago")
+  - Fetches current usernames from Discord
+  - Falls back to user ID if user not found
+- **Use case:** Audit hardbanned users, review old hardbans
+
+**`,unban [user ID] [reason]`** (Hardban Removal)
+- **Permission Required:** Antinuke Admin or Server Owner ONLY (for hardbanned users)
+- **What it does:** Removes hardban and unbans from Discord
+- **Example:** `,unban 123456789012345678 Appeal accepted`
+- **How it works:**
+  1. Detects if user is hardbanned
+  2. Checks if executor has permission (antinuke admin or owner)
+  3. Removes from hardban list
+  4. Unbans from Discord
+  5. Creates "unhardban" moderation case
+  6. Logs to #jail-log
+- **Regular moderator behavior:**
+  - If user is hardbanned, shows error message
+  - Cannot proceed with unban
+  - Must contact antinuke admin or server owner
+- **Features:**
+  - Automatic hardban detection
+  - Clear permission error messages
+  - Creates proper case log
+  - User can rejoin after unhardban
+
+**How Hardban Enforcement Works:**
+
+When a user tries to join your server:
+1. Bot checks if user is in hardban list
+2. If hardbanned:
+   - User is immediately banned again
+   - Original ban reason is used
+   - Enforcement is logged to #jail-log
+   - Shows who originally hardbanned them
+3. If not hardbanned:
+   - Normal join processing continues
+   - Welcome messages, autoroles, etc.
+
+**This means:**
+- Even if someone manually removes the Discord ban, the user can't rejoin
+- Even if a compromised moderator account unbans them, they're re-banned on join
+- Hardban persists until explicitly removed by authorized user
+- No way to bypass without antinuke admin or owner permission
+
+**Real-World Scenarios:**
+
+**Scenario 1: Raid Protection**
+```
+1. Server gets raided by coordinated group
+2. Owner hardbans all raiders: ,hardban @raider1 Raid attack
+3. Raiders are banned and added to hardban list
+4. Later, compromised mod account unbans them from Discord
+5. Raiders try to rejoin
+6. Bot detects hardban and immediately bans them again
+7. Enforcement logged, owner notified
+```
+
+**Scenario 2: Persistent Troublemaker**
+```
+1. User keeps ban evading with alt accounts
+2. Owner hardbans main account: ,hardban @user Repeated ban evasion
+3. User's main account can never rejoin
+4. Even if they get a mod to unban them, they're re-banned on join
+5. Only owner can remove hardban after genuine appeal
+```
+
+**Scenario 3: Compromised Moderator**
+```
+1. Moderator account gets hacked
+2. Attacker tries to unban dangerous users
+3. Bot detects users are hardbanned
+4. Unban attempt fails with permission error
+5. Dangerous users remain banned
+6. Owner gets notified of unban attempt
+```
+
+**Best Practices:**
+
+1. **Use sparingly** - Hardbans are for serious offenses only
+2. **Document reasons** - Always provide clear, detailed reasons
+3. **Review regularly** - Use `,hardban list` to audit hardbans
+4. **Grant antinuke admin carefully** - They can remove hardbans
+5. **Communicate with team** - Let moderators know who is hardbanned and why
+
+**Hardban vs Regular Ban:**
+
+| Feature | Regular Ban | Hardban |
+|---------|------------|---------|
+| Who can ban | Moderators with Ban Members | Antinuke admins + Owner only |
+| Who can unban | Moderators with Ban Members | Antinuke admins + Owner only |
+| Persistence | Discord ban list only | Database + Discord ban list |
+| Enforcement | Manual re-ban if removed | Automatic re-ban on join |
+| Use case | Standard moderation | Serious offenses, protection |
+| Bypass risk | Compromised mod can unban | Cannot be bypassed |
 
 ---
 
