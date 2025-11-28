@@ -216,18 +216,27 @@ class CustomEmbedBuilder {
                         } else {
                             // Style button
                             let style = ButtonStyle.Secondary; // Default
-                            switch (styleOrUrl.toLowerCase()) {
+                            const styleLower = styleOrUrl.toLowerCase();
+                            switch (styleLower) {
                                 case 'primary':
+                                case 'blurple':
                                     style = ButtonStyle.Primary;
                                     break;
                                 case 'secondary':
+                                case 'grey':
+                                case 'gray':
                                     style = ButtonStyle.Secondary;
                                     break;
                                 case 'success':
+                                case 'green':
                                     style = ButtonStyle.Success;
                                     break;
                                 case 'danger':
+                                case 'red':
                                     style = ButtonStyle.Danger;
+                                    break;
+                                case 'link':
+                                    style = ButtonStyle.Link;
                                     break;
                             }
 

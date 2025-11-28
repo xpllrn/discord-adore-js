@@ -80,15 +80,15 @@ async function processAskShared(context, question) {
   if (!isInteraction && context.reference) {
     try {
       const repliedMessage = await context.channel.messages.fetch(context.reference.messageId);
-      
+
       if (repliedMessage.content) {
         contextText += `\n\nReplied message content: "${repliedMessage.content}"`;
       }
-      
+
       if (repliedMessage.embeds && repliedMessage.embeds.length > 0) {
         const embed = repliedMessage.embeds[0];
         let embedText = '\n\nReplied message embed:';
-        
+
         if (embed.title) embedText += `\nTitle: ${embed.title}`;
         if (embed.description) embedText += `\nDescription: ${embed.description}`;
         if (embed.fields && embed.fields.length > 0) {
@@ -97,7 +97,7 @@ async function processAskShared(context, question) {
             embedText += `\n- ${field.name}: ${field.value}`;
           });
         }
-        
+
         contextText += embedText;
       }
     } catch (error) {
@@ -115,7 +115,7 @@ async function processAskShared(context, question) {
     // Split response if it's too long (Discord message limit is 2000)
     if (aiResponse.length > 2000) {
       const chunks = aiResponse.match(/[\s\S]{1,2000}/g) || [];
-      
+
       for (let i = 0; i < chunks.length; i++) {
         if (isInteraction) {
           if (i === 0) {
@@ -136,7 +136,7 @@ async function processAskShared(context, question) {
     }
   } catch (error) {
     logger.webhook.error(error, context);
-    
+
     if (error.response?.status === 429) {
       return embeds.deny(context, 'Sorry, I am really tired rn. (429)', false);
     } else if (error.response?.status === 400) {
@@ -175,6 +175,11 @@ module.exports = {
         .setRequired(true)
     ),
 
+  // Prefix command handler
+  async run(client, message, args) {
+    return await this.execute(message, args);
+  },
+
   // Unified handler for both prefix and slash commands
   async execute(context, args) {
     try {
@@ -205,7 +210,7 @@ module.exports = {
         });
       }
 
-      return embeds.deny(context, 'An error occurred while executing the command.', false).catch(() => {});
+      return embeds.deny(context, 'An error occurred while executing the command.', false).catch(() => { });
     }
   }
 };
