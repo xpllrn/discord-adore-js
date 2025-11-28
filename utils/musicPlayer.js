@@ -75,7 +75,14 @@ class MusicPlayer {
 
     if (!player.connected) await player.connect();
 
-    const res = await player.search({ query }, message.author);
+    let res;
+    try {
+      res = await player.search({ query }, message.author);
+    } catch (error) {
+      logger.console.error('Lavalink search error:', error);
+      if (!player.queue.current) player.destroy();
+      return null;
+    }
 
     if (res.loadType === 'error' || res.loadType === 'empty') {
       if (!player.queue.current) player.destroy();
