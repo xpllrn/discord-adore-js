@@ -9,7 +9,7 @@ const { findRole } = require('../../../handlers/finder');
 
 module.exports = {
   name: "buttonrole",
-  aliases: ['br'],
+  aliases: [],
   description: `Manage button roles`,
   syntax: 'buttonrole [subcommand] (parameters)',
   example: 'buttonrole add https://discord.com/channels/.../... @Member primary 🌟 "Get Member Role"',
