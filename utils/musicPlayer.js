@@ -5,10 +5,9 @@ const {
   AudioPlayerStatus,
   VoiceConnectionStatus,
   entersState,
-  getVoiceConnection
+  StreamType
 } = require('@discordjs/voice');
-const ytdl = require('@distube/ytdl-core');
-const ytSearch = require('yt-search');
+const play = require('play-dl');
 const logger = require('./logger');
 
 class MusicPlayer {
@@ -108,31 +107,34 @@ class MusicPlayer {
       }
 
       // Check if it's a YouTube URL
-      if (ytdl.validateURL(cleanQuery)) {
-        const info = await ytdl.getInfo(cleanQuery);
+      if (play.yt_validate(cleanQuery) === 'video') {
+        const info = await play.video_info(cleanQuery);
+        const video = info.video_details;
+        
         return {
-          title: info.videoDetails.title,
-          url: info.videoDetails.video_url,
-          duration: this.formatDuration(parseInt(info.videoDetails.lengthSeconds)),
-          thumbnail: info.videoDetails.thumbnails[0]?.url,
-          author: info.videoDetails.author.name
+          title: video.title,
+          url: video.url,
+          duration: this.formatDuration(video.durationInSec),
+          thumbnail: video.thumbnails[0]?.url,
+          author: video.channel.name
         };
       }
 
       // Search YouTube
-      const searchResults = await ytSearch(cleanQuery);
-      const video = searchResults.videos[0];
-
-      if (!video) {
+      const searchResults = await play.search(cleanQuery, { limit: 1 });
+      
+      if (!searchResults || searchResults.length === 0) {
         return null;
       }
 
+      const video = searchResults[0];
+      
       return {
         title: video.title,
         url: video.url,
-        duration: video.timestamp,
-        thumbnail: video.thumbnail,
-        author: video.author.name
+        duration: this.formatDuration(video.durationInSec),
+        thumbnail: video.thumbnails[0]?.url,
+        author: video.channel.name
       };
     } catch (error) {
       logger.console.error('Search error:', error);
@@ -179,21 +181,13 @@ class MusicPlayer {
     queue.isPlaying = true;
 
     try {
-      // Create HIGHEST quality audio stream - optimized for best audio quality
-      const stream = ytdl(song.url, {
-        filter: 'audioonly',
-        quality: 'highestaudio',
-        highWaterMark: 1 << 25, // 32MB buffer for ultra-smooth playback
-        dlChunkSize: 0 // Download entire file for maximum quality
+      // Create HIGHEST quality audio stream using play-dl
+      const stream = await play.stream(song.url, {
+        quality: 2 // Highest quality
       });
 
-      // Handle stream errors
-      stream.on('error', (error) => {
-        logger.console.error(`Stream error for ${song.title}:`, error);
-        this.playNext(guildId);
-      });
-
-      const resource = createAudioResource(stream, {
+      const resource = createAudioResource(stream.stream, {
+        inputType: stream.type,
         inlineVolume: true
       });
 
