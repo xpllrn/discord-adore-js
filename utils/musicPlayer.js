@@ -12,18 +12,10 @@ class MusicPlayer {
   init(client) {
     this.distube = new DisTube(client, {
       emitNewSongOnly: true,
-      leaveOnEmpty: true,
-      leaveOnFinish: false,
-      leaveOnStop: true,
       savePreviousSongs: true,
       searchSongs: 1,
       nsfw: false,
       emptyCooldown: 60,
-      ytdlOptions: {
-        quality: 'highestaudio',
-        highWaterMark: 1 << 25,
-        dlChunkSize: 0
-      },
       plugins: [new YtDlpPlugin()]
     });
 
