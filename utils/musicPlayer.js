@@ -6,15 +6,9 @@ const {
   VoiceConnectionStatus,
   entersState
 } = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
-const { google } = require('googleapis');
+const play = require('play-dl');
 const logger = require('./logger');
 const config = require('../config/setup');
-
-const youtube = google.youtube({
-  version: 'v3',
-  auth: process.env.GOOGLE_IMG // Using the Google API key from .env
-});
 
 class MusicPlayer {
   constructor() {
@@ -98,84 +92,51 @@ class MusicPlayer {
 
   async searchSong(query) {
     try {
-      // Extract video ID from YouTube URL if provided
-      if (query.includes('youtube.com') || query.includes('youtu.be')) {
-        const videoIdMatch = query.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-        if (videoIdMatch) {
-          const videoId = videoIdMatch[1];
-          
-          // Get video details from YouTube API
-          const response = await youtube.videos.list({
-            part: 'snippet,contentDetails',
-            id: videoId
-          });
-
-          if (response.data.items && response.data.items.length > 0) {
-            const video = response.data.items[0];
-            return {
-              title: video.snippet.title,
-              url: `https://www.youtube.com/watch?v=${videoId}`,
-              duration: this.parseDuration(video.contentDetails.duration),
-              thumbnail: video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default?.url,
-              author: video.snippet.channelTitle
-            };
-          }
+      // Check if it's a YouTube URL
+      const isURL = play.yt_validate(query) === 'video';
+      
+      let video;
+      
+      if (isURL) {
+        // Get video info from URL
+        video = await play.video_info(query);
+      } else {
+        // Search YouTube
+        const searchResults = await play.search(query, { limit: 1, source: { youtube: 'video' } });
+        
+        if (!searchResults || searchResults.length === 0) {
+          return null;
         }
+        
+        video = searchResults[0];
       }
 
-      // Search YouTube using API
-      const searchResponse = await youtube.search.list({
-        part: 'snippet',
-        q: query,
-        maxResults: 1,
-        type: 'video',
-        videoCategoryId: '10' // Music category
-      });
-
-      if (!searchResponse.data.items || searchResponse.data.items.length === 0) {
+      if (!video) {
         return null;
       }
 
-      const video = searchResponse.data.items[0];
-      const videoId = video.id.videoId;
-
-      // Get full video details
-      const videoResponse = await youtube.videos.list({
-        part: 'snippet,contentDetails',
-        id: videoId
-      });
-
-      if (videoResponse.data.items && videoResponse.data.items.length > 0) {
-        const videoDetails = videoResponse.data.items[0];
-        return {
-          title: videoDetails.snippet.title,
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-          duration: this.parseDuration(videoDetails.contentDetails.duration),
-          thumbnail: videoDetails.snippet.thumbnails.high?.url || videoDetails.snippet.thumbnails.default?.url,
-          author: videoDetails.snippet.channelTitle
-        };
-      }
-
-      return null;
+      return {
+        title: video.title,
+        url: video.url,
+        duration: this.formatDuration(video.durationInSec),
+        thumbnail: video.thumbnails?.[0]?.url || null,
+        author: video.channel?.name || 'Unknown'
+      };
     } catch (error) {
       logger.console.error('Search error:', error);
       return null;
     }
   }
 
-  parseDuration(duration) {
-    // Parse ISO 8601 duration format (PT1H2M10S)
-    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-    if (!match) return '0:00';
-
-    const hours = parseInt(match[1] || 0);
-    const minutes = parseInt(match[2] || 0);
-    const seconds = parseInt(match[3] || 0);
+  formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
 
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   }
 
   async addSong(guildId, song, requestedBy) {
@@ -205,20 +166,11 @@ class MusicPlayer {
     queue.isPlaying = true;
 
     try {
-      // Create HIGHEST quality audio stream with ytdl-core
-      const stream = ytdl(song.url, {
-        filter: 'audioonly',
-        quality: 'highestaudio',
-        highWaterMark: 1 << 25,
-        dlChunkSize: 0
-      });
+      // Create audio stream with play-dl
+      const stream = await play.stream(song.url);
 
-      stream.on('error', (error) => {
-        logger.console.error(`Stream error for ${song.title}:`, error);
-        this.playNext(guildId);
-      });
-
-      const resource = createAudioResource(stream, {
+      const resource = createAudioResource(stream.stream, {
+        inputType: stream.type,
         inlineVolume: true
       });
 
