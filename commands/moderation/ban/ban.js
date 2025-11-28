@@ -73,7 +73,7 @@ module.exports = {
           command: 'hardban',
           args: `${user.tag} - ${reason}`
         });
-        embeds.deny(message, 'An error occurred while trying to hardban this user.');
+        throw error;
       }
     } else {
       // Regular ban - user is in server
@@ -112,7 +112,7 @@ module.exports = {
           command: 'ban',
           args: `${user.user.tag} - ${reason}`
         });
-        embeds.deny(message, 'An error occurred while trying to ban this user.');
+        throw error;
       }
     }
   }

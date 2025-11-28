@@ -63,7 +63,7 @@ module.exports = {
       if (error.code === 50034) {
         embeds.deny(message, 'Cannot delete messages **older than 14 days** due to Discord limitations');
       } else {
-        embeds.deny(message, 'An error occurred while trying to clean up messages');
+        throw error;
       }
     }
   }

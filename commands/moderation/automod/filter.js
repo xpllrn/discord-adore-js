@@ -96,8 +96,7 @@ module.exports = {
           return runHelpCommand(message, 'filter');
       }
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while managing the filter. Please try again.');
+      throw error;
     }
   }
 };

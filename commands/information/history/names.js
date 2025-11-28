@@ -75,8 +75,7 @@ module.exports = {
       // Use pagination system with 5 items per page
       await createPagination(message, sortedHistory, formatPage, 5, 'Name History');
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'Failed to retrieve name history');
+      throw error;
     }
   }
 }

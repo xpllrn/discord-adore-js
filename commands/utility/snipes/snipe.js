@@ -243,8 +243,7 @@ module.exports = {
     await createPagination(message, snipes, formatPage, 1, 'Deleted Messages');
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while fetching snipe');
+      throw error;
     }
   }
 }

@@ -158,7 +158,7 @@ async function processCommand(message, isEdit = false) {
 
     // Try to send error message with fallback chain
     try {
-      await embeds.deny(message, 'There was an error **executing** that command, Please report this to [**here**](https://discord.gg/uW7ETHXu4k) immediately.');
+      await embeds.deny(message, 'There was an error **executing** that command, Please report this to [**here**](https://adore.rest/server) immediately.');
     } catch (embedError) {
       if (embedError.code === 50013) {
         await handlePermissionError(message, 'There was an error executing that command.');

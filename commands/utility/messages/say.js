@@ -21,8 +21,7 @@ module.exports = {
 
       await message.channel.send(text);
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while sending the message');
+      throw error;
     }
   },
 };

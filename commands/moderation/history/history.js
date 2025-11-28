@@ -67,8 +67,7 @@ module.exports = {
         return message.channel.send({ embeds: [embed] });
 
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'An error occurred while retrieving the case');
+        throw error;
       }
     }
 
@@ -115,8 +114,7 @@ module.exports = {
         return embeds.success(message, `Removed case #${caseId} for **${userResult.user.user.username}**`);
 
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'An error occurred while removing the case');
+        throw error;
       }
     }
 
@@ -153,8 +151,7 @@ module.exports = {
         return embeds.success(message, `Removed **${result.deletedCount}** case${result.deletedCount === 1 ? '' : 's'} for **${userResult.user.user.username}**`);
 
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'An error occurred while removing cases');
+        throw error;
       }
     }
 
@@ -209,8 +206,7 @@ module.exports = {
         return await createPagination(message, moderationHistory, formatPage, 3, `${actionFilter} History for ${user.user.username}`);
 
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'An error occurred while retrieving moderation history.');
+        throw error;
       }
     }
 
@@ -269,7 +265,7 @@ module.exports = {
       if (error.message.includes('Database connection timeout') || error.message.includes('buffering timed out')) {
         embeds.deny(message, 'Database is still connecting. Please wait a moment and try again.');
       } else {
-        embeds.deny(message, 'An error occurred while retrieving moderation history.');
+        throw error;
       }
     }
   }

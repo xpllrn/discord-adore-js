@@ -169,8 +169,7 @@ module.exports = {
         return runHelpCommand(message, 'sticker');
     }
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while executing this command');
+      throw error;
     }
   }
 };
@@ -263,7 +262,7 @@ async function handleAdd(client, message, args) {
     }
 
   } catch (error) {
-    return embeds.deny(message, 'An error occurred while processing the sticker.');
+    throw error;
   }
 }
 
@@ -358,7 +357,7 @@ async function handleRemove(client, message, args) {
     }
 
   } catch (error) {
-    return embeds.deny(message, 'An error occurred while removing the sticker.');
+    throw error;
   }
 }
 
@@ -453,6 +452,6 @@ async function handleTag(client, message, args) {
     });
 
   } catch (error) {
-    return embeds.deny(message, 'An error occurred while tagging stickers.');
+    throw error;
   }
 }

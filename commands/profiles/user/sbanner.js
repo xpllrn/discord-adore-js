@@ -73,8 +73,7 @@ module.exports = {
       return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while fetching the server banner');
+      throw error;
     }
   },
 

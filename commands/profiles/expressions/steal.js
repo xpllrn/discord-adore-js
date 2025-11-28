@@ -405,12 +405,10 @@ module.exports = {
       }
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while trying to steal the items');
+      throw error;
     }
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while executing this command');
+      throw error;
     }
   }
 }

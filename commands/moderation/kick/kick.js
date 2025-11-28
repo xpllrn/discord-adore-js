@@ -84,7 +84,7 @@ module.exports = {
         command: 'kick',
         args: `${user.user.tag} - ${reason}`
       });
-      embeds.deny(message, 'An error occurred while trying to kick this user.');
+      throw error;
     }
   }
 }

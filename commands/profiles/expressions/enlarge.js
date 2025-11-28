@@ -111,8 +111,7 @@ module.exports = {
 
     return embeds.warn(message, 'No emoji or emote found in the message.');
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while processing the emoji');
+      throw error;
     }
   }
 };

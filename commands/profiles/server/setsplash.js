@@ -83,13 +83,11 @@ module.exports = {
       } else if (error.code === 50013) {
         return embeds.warn(message, 'Missing permissions to change server splash.');
       } else {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'An error occurred while setting the server invite splash screen');
+        throw error;
       }
     }
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while executing this command');
+      throw error;
     }
   }
 }

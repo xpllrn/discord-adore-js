@@ -83,13 +83,11 @@ module.exports = {
       } else if (error.code === 50013) {
         return embeds.warn(message, 'Missing permissions to change server banner.');
       } else {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'An error occurred while setting the server banner');
+        throw error;
       }
     }
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while executing this command');
+      throw error;
     }
   }
 }

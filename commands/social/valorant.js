@@ -214,8 +214,7 @@ module.exports = {
       return msg.edit({ embeds: [successEmbed] });
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while fetching the Valorant profile');
+      throw error;
     }
   },
 

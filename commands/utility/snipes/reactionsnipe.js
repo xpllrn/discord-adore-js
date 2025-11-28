@@ -46,8 +46,7 @@ module.exports = {
     }
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while fetching reactionsnipe');
+      throw error;
     }
   }
 }

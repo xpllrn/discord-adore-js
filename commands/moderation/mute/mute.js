@@ -32,7 +32,7 @@ module.exports = {
     try {
       userResult = await findUser(message.guild, args[0], client);
     } catch (error) {
-      return embeds.deny(message, 'An error occurred while searching for the user. Please try again.');
+      throw error;
     }
 
     if (!userResult || typeof userResult !== 'object' || !userResult.found) {

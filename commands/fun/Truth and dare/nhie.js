@@ -155,8 +155,7 @@ module.exports = {
       const rating = args.includes('--r') ? 'r' : 'pg';
       await handleNhieGame(message, rating);
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while starting the game');
+      throw error;
     }
   },
 

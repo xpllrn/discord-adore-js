@@ -81,8 +81,7 @@ module.exports = {
       embeds.success(message, `**Warning case #${caseId}** has been removed from **${user.user.username}** for ${reason}`);
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      embeds.deny(message, `An error occurred while removing the warning`);
+      throw error;
     }
   }
 };

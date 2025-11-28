@@ -82,8 +82,7 @@ module.exports = {
       ]).catch(() => {}); // Silent fail for background tasks
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      embeds.deny(message, 'An error occurred while trying to reaction unmute this user');
+      throw error;
     }
   }
 }

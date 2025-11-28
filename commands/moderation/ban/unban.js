@@ -115,7 +115,7 @@ module.exports = {
         command: 'unban',
         args: `${targetBan?.user?.tag || args[0]} - ${reason}`
       });
-      embeds.deny(message, 'An error occurred while trying to unban this user.');
+      throw error;
     }
   }
 }

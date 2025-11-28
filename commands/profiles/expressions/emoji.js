@@ -239,7 +239,7 @@ async function handleSteal(client, message, args) {
     }
 
   } catch (error) {
-    return embeds.deny(message, 'An error occurred while trying to steal the emojis');
+    throw error;
   }
 }
 

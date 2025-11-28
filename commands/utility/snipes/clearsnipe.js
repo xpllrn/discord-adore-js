@@ -37,8 +37,7 @@ module.exports = {
         embeds.success(message, 'Successfully **cleared** all snipe data for this channel');
       }
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while clearing snipe data');
+      throw error;
     }
   }
 }

@@ -164,8 +164,7 @@ module.exports = {
 
       checkLastFmNowPlaying(user, embed, sentMessage);
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while fetching user information');
+      throw error;
     }
   },
 

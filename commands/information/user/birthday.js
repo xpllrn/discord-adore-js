@@ -37,8 +37,7 @@ module.exports = {
           return embeds.info(message, birthdayText);
         }
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to get birthday');
+        throw error;
       }
     }
 
@@ -114,8 +113,7 @@ module.exports = {
           const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
           return embeds.success(message, `Set your birthday to **${formattedBirthday}**`);
         } catch (error) {
-          logger.webhook.error(error, message);
-          return embeds.deny(message, 'Failed to set birthday');
+          throw error;
         }
         break;
       }
@@ -211,8 +209,7 @@ module.exports = {
           await createPagination(message, birthdayData, formatPage, 10, 'Server Birthdays');
 
         } catch (error) {
-          logger.webhook.error(error, message);
-          return embeds.deny(message, 'Failed to list birthdays');
+          throw error;
         }
         break;
       }
@@ -265,8 +262,7 @@ module.exports = {
             return embeds.info(message, birthdayText);
           }
         } catch (error) {
-          logger.webhook.error(error, message);
-          return embeds.deny(message, 'Failed to get birthday');
+          throw error;
         }
         break;
       }

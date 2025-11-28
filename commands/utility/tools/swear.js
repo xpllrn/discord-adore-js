@@ -123,8 +123,7 @@ module.exports = {
 
         await createPagination(message, sortedSwears, formatPage, 10, 'Swear List');
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to retrieve swear list');
+        throw error;
       }
 
     } else if (args[0] === 'leaderboard' || args[0] === 'lb') {
@@ -213,8 +212,7 @@ module.exports = {
 
         await createPagination(message, leaderboardWithUsernames, formatPage, 10, 'Swear Leaderboard');
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to retrieve swear leaderboard');
+        throw error;
       }
 
     } else if (args[0] === 'reset') {
@@ -248,8 +246,7 @@ module.exports = {
           }
         );
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to reset swear data');
+        throw error;
       }
 
     } else if (args[0]) {
@@ -290,8 +287,7 @@ module.exports = {
         const username = targetMember ? targetMember.displayName : targetUser.username;
         return embeds.info(message, `**${username}** has sweared **${calculatedTotal}** times`);
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to retrieve user swear data');
+        throw error;
       }
 
     } else {
@@ -312,8 +308,7 @@ module.exports = {
 
         return embeds.info(message, `You have sweared **${calculatedTotal}** times`);
       } catch (error) {
-        logger.webhook.error(error, message);
-        return embeds.deny(message, 'Failed to retrieve swear data');
+        throw error;
       }
     }
   },

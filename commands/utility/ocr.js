@@ -71,8 +71,7 @@ module.exports = {
       return message.reply(result.text.length > 2000 ? result.text.substring(0, 1997) + '...' : result.text);
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while processing the image');
+      throw error;
     }
   }
 };

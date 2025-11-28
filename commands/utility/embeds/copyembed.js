@@ -110,8 +110,7 @@ module.exports = {
       return message.channel.send({ embeds: [copiedembed] })
 
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.warn(message, 'An error occurred while copying the embed');
+      throw error;
     }
 
 

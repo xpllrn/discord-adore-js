@@ -220,8 +220,7 @@ module.exports = {
         await performBulkDelete(messages);
       }
     } catch (error) {
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while executing the purge command');
+      throw error;
     }
   }
 }
