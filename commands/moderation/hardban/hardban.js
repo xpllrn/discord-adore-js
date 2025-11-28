@@ -11,7 +11,7 @@ const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "hardban",
-  aliases: [],
+  aliases: ['hb', 'hackban'],
   description: 'permanently ban a user from the server',
   syntax: 'hardban [subcommand] (parameters)',
   example: 'hardban @vwsn raiding',
