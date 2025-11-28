@@ -14,7 +14,7 @@ module.exports = {
   aliases: ['hb', 'hackban'],
   description: 'permanently ban a user from the server',
   syntax: 'hardban [subcommand] (parameters)',
-  example: 'hardban @vwsn raiding',
+  example: 'hardban @lami racist',
   permission: 'antinuke_admin',
   isGroupCommand: true,
   run: async(client, message, args) => {
