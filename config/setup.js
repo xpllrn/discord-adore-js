@@ -118,6 +118,7 @@ module.exports = {
     // Custom Emojis
     google: '<:google:1439546269847650345>',
     spotify: '<:spotify:1443252410414796884>',
+    music: '<:music:1443893612239912991>',
 
     // Roblox Badge Emojis
     online: '<a:online:1441833868045979670>',
