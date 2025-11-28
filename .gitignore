@@ -23,7 +23,3 @@ build/
 *.db
 *.sqlite
 
-# Selfbot
-deman/context/*.txt
-deman/self.json
-

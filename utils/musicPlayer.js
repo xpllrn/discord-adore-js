@@ -13,8 +13,8 @@ class MusicPlayer {
       nodes: [
         {
           authorization: 'youshallnotpass',
-          host: 'lava.link',
-          port: 80,
+          host: 'localhost',
+          port: 2333,
           id: 'main-node'
         }
       ],
