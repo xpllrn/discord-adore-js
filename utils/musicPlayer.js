@@ -160,17 +160,20 @@ class MusicPlayer {
     }
 
     // If Spotify link, get metadata then search SoundCloud
-    if (isSpotifyLink && res.loadType === 'track' && res.data.info.sourceName === 'spotify') {
-      logger.console.log(`Resolving Spotify track to SoundCloud: ${res.data.info.title} by ${res.data.info.author}`);
-      try {
-        const scQuery = `scsearch:${res.data.info.author} ${res.data.info.title}`;
-        const scRes = await player.search({ query: scQuery }, message.author);
-        if (scRes.loadType !== 'error' && scRes.loadType !== 'empty') {
-          res = scRes;
-          logger.console.log('Successfully resolved to SoundCloud');
+    if (isSpotifyLink && res.loadType === 'track' && res.tracks && res.tracks[0]) {
+      const track = res.tracks[0];
+      if (track.info.sourceName === 'spotify') {
+        logger.console.log(`Resolving Spotify track to SoundCloud: ${track.info.title} by ${track.info.author}`);
+        try {
+          const scQuery = `scsearch:${track.info.author} ${track.info.title}`;
+          const scRes = await player.search({ query: scQuery }, message.author);
+          if (scRes.loadType !== 'error' && scRes.loadType !== 'empty') {
+            res = scRes;
+            logger.console.log('Successfully resolved to SoundCloud');
+          }
+        } catch (error) {
+          logger.console.error('SoundCloud resolution error:', error);
         }
-      } catch (error) {
-        logger.console.error('SoundCloud resolution error:', error);
       }
     }
 
