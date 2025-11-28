@@ -6,6 +6,8 @@ const { fetch } = require('undici');
 const logger = require('../../utils/logger');
 
 async function fetchInstagramProfile(username, requester) {
+  let results;
+  
   try {
     const response = await fetch(`https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`, {
       method: 'GET',
@@ -32,7 +34,7 @@ async function fetchInstagramProfile(username, requester) {
       throw new Error(`Failed to fetch profile (Status: ${response.status})`);
     }
 
-    const results = await response.json();
+    results = await response.json();
 
     if (!results.data || !results.data.user) {
       throw new Error(`Profile data unavailable for "@${username}"`);

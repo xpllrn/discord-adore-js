@@ -57,6 +57,16 @@ class MusicPlayer {
     this.manager.on('trackStart', (player, track) => {
       logger.console.log(`Track started: ${track.info.title} (${track.info.duration}ms)`);
       logger.console.log(`Track source: ${track.info.sourceName}, identifier: ${track.info.identifier}`);
+      
+      // Update voice channel status
+      const guild = client.guilds.cache.get(player.guildId);
+      if (guild) {
+        const voiceChannel = guild.channels.cache.get(player.voiceChannelId);
+        if (voiceChannel && voiceChannel.isVoiceBased()) {
+          voiceChannel.setStatus(`🎵 ${track.info.title}`).catch(() => {});
+        }
+      }
+      
       const channel = client.channels.cache.get(player.textChannelId);
       if (channel) {
         const embed = new EmbedBuilder()
@@ -81,10 +91,10 @@ class MusicPlayer {
     });
 
     this.manager.on('queueEnd', (player) => {
-      const channel = client.channels.cache.get(player.textChannelId);
-      if (channel) {
-        channel.send('Queue has ended.').catch(() => {});
-      }
+      // Clear voice channel status
+      const guild = client.guilds.cache.get(player.guildId);
+      if (guild) {
+        const voice
       player.destroy();
     });
 
