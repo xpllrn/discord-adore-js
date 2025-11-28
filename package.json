@@ -50,6 +50,7 @@
     "file-type": "^16.5.4",
     "form-data": "^4.0.5",
     "glob": "^8.0.3",
+    "googleapis": "^166.0.0",
     "got": "^14.4.2",
     "ioredis": "^5.6.1",
     "jimp": "^0.22.12",
@@ -64,12 +65,12 @@
     "node-location-timezone": "^1.1.0",
     "optiic": "^1.0.1",
     "opusscript": "^0.0.8",
-    "play-dl": "^1.9.7",
     "relevant-urban": "^2.0.0",
     "sharp": "^0.34.4",
     "superagent": "^8.0.0",
     "urban": "^0.3.4",
-    "word-list": "^4.1.0"
+    "word-list": "^4.1.0",
+    "ytdl-core": "^4.11.5"
   },
   "devDependencies": {
     "pm2": "^5.3.0"

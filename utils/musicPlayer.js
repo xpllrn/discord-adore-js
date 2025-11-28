@@ -4,15 +4,21 @@ const {
   createAudioResource, 
   AudioPlayerStatus,
   VoiceConnectionStatus,
-  entersState,
-  StreamType
+  entersState
 } = require('@discordjs/voice');
-const play = require('play-dl');
+const ytdl = require('ytdl-core');
+const { google } = require('googleapis');
 const logger = require('./logger');
+const config = require('../config/setup');
+
+const youtube = google.youtube({
+  version: 'v3',
+  auth: process.env.GOOGLE_IMG // Using the Google API key from .env
+});
 
 class MusicPlayer {
   constructor() {
-    this.queues = new Map(); // guildId -> queue data
+    this.queues = new Map();
   }
 
   getQueue(guildId) {
@@ -43,18 +49,15 @@ class MusicPlayer {
         selfDeaf: true
       });
 
-      // Wait for connection to be ready
       await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
 
       queue.connection = connection;
       queue.voiceChannel = voiceChannel;
       queue.textChannel = textChannel;
 
-      // Create audio player if it doesn't exist
       if (!queue.player) {
         queue.player = createAudioPlayer();
         
-        // Handle player events
         queue.player.on(AudioPlayerStatus.Idle, () => {
           logger.console.log(`Player idle in ${guildId}, playing next...`);
           this.playNext(guildId);
@@ -75,7 +78,6 @@ class MusicPlayer {
         }
       }
 
-      // Handle connection state changes
       connection.on(VoiceConnectionStatus.Disconnected, async () => {
         try {
           await Promise.race([
@@ -96,61 +98,84 @@ class MusicPlayer {
 
   async searchSong(query) {
     try {
-      // Clean URL - remove playlist and extra parameters
-      let cleanQuery = query;
+      // Extract video ID from YouTube URL if provided
       if (query.includes('youtube.com') || query.includes('youtu.be')) {
-        // Extract video ID from various YouTube URL formats
         const videoIdMatch = query.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
         if (videoIdMatch) {
-          cleanQuery = `https://www.youtube.com/watch?v=${videoIdMatch[1]}`;
+          const videoId = videoIdMatch[1];
+          
+          // Get video details from YouTube API
+          const response = await youtube.videos.list({
+            part: 'snippet,contentDetails',
+            id: videoId
+          });
+
+          if (response.data.items && response.data.items.length > 0) {
+            const video = response.data.items[0];
+            return {
+              title: video.snippet.title,
+              url: `https://www.youtube.com/watch?v=${videoId}`,
+              duration: this.parseDuration(video.contentDetails.duration),
+              thumbnail: video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default?.url,
+              author: video.snippet.channelTitle
+            };
+          }
         }
       }
 
-      // Check if it's a YouTube URL
-      if (play.yt_validate(cleanQuery) === 'video') {
-        const info = await play.video_info(cleanQuery);
-        const video = info.video_details;
-        
-        return {
-          title: video.title,
-          url: video.url,
-          duration: this.formatDuration(video.durationInSec),
-          thumbnail: video.thumbnails[0]?.url,
-          author: video.channel.name
-        };
-      }
+      // Search YouTube using API
+      const searchResponse = await youtube.search.list({
+        part: 'snippet',
+        q: query,
+        maxResults: 1,
+        type: 'video',
+        videoCategoryId: '10' // Music category
+      });
 
-      // Search YouTube
-      const searchResults = await play.search(cleanQuery, { limit: 1 });
-      
-      if (!searchResults || searchResults.length === 0) {
+      if (!searchResponse.data.items || searchResponse.data.items.length === 0) {
         return null;
       }
 
-      const video = searchResults[0];
-      
-      return {
-        title: video.title,
-        url: video.url,
-        duration: this.formatDuration(video.durationInSec),
-        thumbnail: video.thumbnails[0]?.url,
-        author: video.channel.name
-      };
+      const video = searchResponse.data.items[0];
+      const videoId = video.id.videoId;
+
+      // Get full video details
+      const videoResponse = await youtube.videos.list({
+        part: 'snippet,contentDetails',
+        id: videoId
+      });
+
+      if (videoResponse.data.items && videoResponse.data.items.length > 0) {
+        const videoDetails = videoResponse.data.items[0];
+        return {
+          title: videoDetails.snippet.title,
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          duration: this.parseDuration(videoDetails.contentDetails.duration),
+          thumbnail: videoDetails.snippet.thumbnails.high?.url || videoDetails.snippet.thumbnails.default?.url,
+          author: videoDetails.snippet.channelTitle
+        };
+      }
+
+      return null;
     } catch (error) {
       logger.console.error('Search error:', error);
       return null;
     }
   }
 
-  formatDuration(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
+  parseDuration(duration) {
+    // Parse ISO 8601 duration format (PT1H2M10S)
+    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return '0:00';
+
+    const hours = parseInt(match[1] || 0);
+    const minutes = parseInt(match[2] || 0);
+    const seconds = parseInt(match[3] || 0);
+
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
   async addSong(guildId, song, requestedBy) {
@@ -159,7 +184,6 @@ class MusicPlayer {
     song.requestedBy = requestedBy;
     queue.songs.push(song);
 
-    // If nothing is playing, start playing
     if (!queue.isPlaying) {
       await this.play(guildId);
     }
@@ -181,13 +205,20 @@ class MusicPlayer {
     queue.isPlaying = true;
 
     try {
-      // Create HIGHEST quality audio stream using play-dl
-      const stream = await play.stream(song.url, {
-        quality: 2 // Highest quality
+      // Create HIGHEST quality audio stream with ytdl-core
+      const stream = ytdl(song.url, {
+        filter: 'audioonly',
+        quality: 'highestaudio',
+        highWaterMark: 1 << 25,
+        dlChunkSize: 0
       });
 
-      const resource = createAudioResource(stream.stream, {
-        inputType: stream.type,
+      stream.on('error', (error) => {
+        logger.console.error(`Stream error for ${song.title}:`, error);
+        this.playNext(guildId);
+      });
+
+      const resource = createAudioResource(stream, {
         inlineVolume: true
       });
 
@@ -199,7 +230,6 @@ class MusicPlayer {
 
       // Send now playing message
       if (queue.textChannel) {
-        const config = require('../config/setup');
         const { EmbedBuilder } = require('discord.js');
         
         const embed = new EmbedBuilder()
@@ -220,24 +250,21 @@ class MusicPlayer {
   playNext(guildId) {
     const queue = this.getQueue(guildId);
     
-    // Remove the current song
     queue.songs.shift();
 
     if (queue.songs.length === 0) {
       queue.isPlaying = false;
       queue.currentSong = null;
       
-      // Optionally leave after finishing queue
       setTimeout(() => {
         if (queue.songs.length === 0 && !queue.isPlaying) {
           this.cleanup(guildId);
         }
-      }, 60000); // Leave after 1 minute of inactivity
+      }, 60000);
       
       return;
     }
 
-    // Play next song
     this.play(guildId);
   }
 
@@ -279,7 +306,7 @@ class MusicPlayer {
 
   setVolume(guildId, volume) {
     const queue = this.getQueue(guildId);
-    queue.volume = Math.max(0, Math.min(2, volume)); // Clamp between 0 and 2
+    queue.volume = Math.max(0, Math.min(2, volume));
     
     if (queue.player && queue.player.state.resource) {
       queue.player.state.resource.volume?.setVolume(queue.volume);
@@ -314,5 +341,4 @@ class MusicPlayer {
   }
 }
 
-// Export singleton instance
 module.exports = new MusicPlayer();
