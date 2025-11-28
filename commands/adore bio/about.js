@@ -112,7 +112,7 @@ const UPDATE_COOLDOWN = 10000;
 module.exports = {
   name: "about",
   aliases: ['profile', 'bio'],
-  description: 'manage your ADORE profile',
+  description: 'manage your adore profile',
   syntax: 'about [subcommand] (parameters)',
   example: 'about create username',
   isGroupCommand: true,
@@ -127,7 +127,7 @@ module.exports = {
       switch (subcommand) {
         case 'create': {
           const subcommandInfo = {
-            description: 'Create your ADORE profile',
+            description: 'Create your adore profile',
             syntax: '{guildprefix}about create [username]',
             aliases: [],
             parameters: ['username (optional)'],
@@ -182,12 +182,12 @@ module.exports = {
           // Clear cooldown on success
           createCooldowns.delete(message.author.id);
 
-          return embeds.success(message, `**Created** your ADORE profile\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
+          return embeds.success(message, `**Created** your adore profile\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
         }
 
         case 'rename': {
           const subcommandInfo = {
-            description: 'Change your ADORE profile display name',
+            description: 'Change your adore profile display name',
             syntax: '{guildprefix}about rename [name]',
             aliases: [],
             parameters: ['name'],
@@ -229,7 +229,7 @@ module.exports = {
 
         case 'bio': {
           const subcommandInfo = {
-            description: 'Set your ADORE profile bio',
+            description: 'Set your adore profile bio',
             syntax: '{guildprefix}about bio [description]',
             aliases: [],
             parameters: ['description'],
@@ -271,7 +271,7 @@ module.exports = {
 
         case 'avatar': {
           const subcommandInfo = {
-            description: 'Set your ADORE profile avatar',
+            description: 'Set your adore profile avatar',
             syntax: '{guildprefix}about avatar (attachment/user)',
             aliases: [],
             parameters: ['attachment or user mention (optional)'],
@@ -327,7 +327,7 @@ module.exports = {
 
         case 'banner': {
           const subcommandInfo = {
-            description: 'Set your ADORE profile banner',
+            description: 'Set your adore profile banner',
             syntax: '{guildprefix}about banner (attachment/user)',
             aliases: [],
             parameters: ['attachment or user mention (optional)'],
@@ -383,7 +383,7 @@ module.exports = {
         case 'music':
         case 'song': {
           const subcommandInfo = {
-            description: 'Set your favorite song on your ADORE profile',
+            description: 'Set your favorite song on your adore profile',
             syntax: '{guildprefix}about music [youtube link or song name]',
             aliases: ['song'],
             parameters: ['youtube link or song name'],
@@ -448,7 +448,7 @@ module.exports = {
         case 'social':
         case 'link': {
           const subcommandInfo = {
-            description: 'Add a social media link to your ADORE profile',
+            description: 'Add a social media link to your adore profile',
             syntax: '{guildprefix}about social [url] (--platform)',
             aliases: ['link'],
             parameters: ['url', 'platform (optional)'],
@@ -504,7 +504,7 @@ module.exports = {
         case 'view':
         case 'show': {
           const subcommandInfo = {
-            description: 'View an ADORE profile',
+            description: 'View an adore profile',
             syntax: '{guildprefix}about view (@user)',
             aliases: ['show'],
             parameters: ['user (optional)'],
@@ -515,7 +515,7 @@ module.exports = {
           const profile = await getProfile(targetUser.id);
 
           if (!profile) {
-            return embeds.deny(message, `<@${targetUser.id}> doesn't have an **ADORE profile** yet`);
+            return embeds.deny(message, `<@${targetUser.id}> doesn't have an **adore profile** yet`);
           }
 
           const embed = new EmbedBuilder()
@@ -557,7 +557,7 @@ module.exports = {
         case 'delete':
         case 'remove': {
           const subcommandInfo = {
-            description: 'Delete your ADORE profile',
+            description: 'Delete your adore profile',
             syntax: '{guildprefix}about delete',
             aliases: ['remove'],
             parameters: [],
