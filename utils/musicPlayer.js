@@ -226,15 +226,24 @@ class MusicPlayer {
         );
       message.channel.send({ embeds: [embed] }).catch(() => {});
     } else {
-      await player.queue.add(res.tracks[0]);
+      // If we have multiple tracks (fallback options), add only the first one
+      // The others will be tried if this one fails
+      const trackToAdd = res.tracks[0];
+      await player.queue.add(trackToAdd);
 
       if (player.queue.tracks.length > 0) {
         const embed = new EmbedBuilder()
           .setColor(0xFFFFFF)
           .setDescription(
-            `${config.emojis.music} ${message.author}: Added [\`${res.tracks[0].info.title}\`](${res.tracks[0].info.uri}) by \`${res.tracks[0].info.author}\` to the queue`
+            `${config.emojis.music} ${message.author}: Added [\`${trackToAdd.info.title}\`](${trackToAdd.info.uri}) by \`${trackToAdd.info.author}\` to the queue`
           );
         message.channel.send({ embeds: [embed] }).catch(() => {});
+      }
+      
+      // Add fallback tracks to queue if available (for error recovery)
+      if (res.tracks.length > 1) {
+        await player.queue.add(res.tracks.slice(1));
+        logger.console.log(`Added ${res.tracks.length - 1} fallback tracks to queue`);
       }
     }
 
