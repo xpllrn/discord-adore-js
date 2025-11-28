@@ -74,6 +74,7 @@
     "superagent": "^8.0.0",
     "urban": "^0.3.4",
     "word-list": "^4.1.0",
+    "youtube-sr": "^4.3.12",
     "ytdl-core": "^4.11.5"
   },
   "devDependencies": {
