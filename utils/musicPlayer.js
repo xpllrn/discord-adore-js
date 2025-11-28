@@ -167,9 +167,22 @@ class MusicPlayer {
         try {
           const scQuery = `scsearch:${track.info.author} ${track.info.title}`;
           const scRes = await player.search({ query: scQuery }, message.author);
-          if (scRes.loadType !== 'error' && scRes.loadType !== 'empty') {
-            res = scRes;
-            logger.console.log('Successfully resolved to SoundCloud');
+          if (scRes.loadType === 'search' && scRes.tracks && scRes.tracks.length > 0) {
+            // Find first non-preview track
+            let fullTrack = scRes.tracks.find(t => 
+              t.info.identifier && 
+              !t.info.identifier.includes('/preview/') &&
+              t.info.duration > 60000 // At least 1 minute
+            );
+            
+            // If no full track found, use first result
+            if (!fullTrack) {
+              fullTrack = scRes.tracks[0];
+              logger.console.warn('Could not find full SoundCloud track, using first result');
+            }
+            
+            res = { ...scRes, tracks: [fullTrack] };
+            logger.console.log(`Successfully resolved to SoundCloud (${fullTrack.info.identifier.includes('/preview/') ? 'preview' : 'full'})`);
           }
         } catch (error) {
           logger.console.error('SoundCloud resolution error:', error);
