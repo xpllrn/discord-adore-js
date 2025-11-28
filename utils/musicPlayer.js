@@ -24,30 +24,17 @@ class MusicPlayer {
       },
       client: {
         id: client.user.id,
-        username: client.user.username
       },
       autoSkip: true,
-      playerOptions: {
-        clientBasedPositionUpdateInterval: 150,
-        defaultSearchPlatform: 'ytsearch',
-        volumeDecrementer: 0.75,
-        onDisconnect: {
-          autoReconnect: true,
-          destroyPlayer: false
-        },
-        onEmptyQueue: {
-          destroyAfterMs: 30_000,
-        },
-        useUnresolvedData: true
-      }
+      emitNewSongsOnly: true,
     });
 
-    this.manager.on('nodeConnect', (node) => {
+    this.manager.nodeManager.on('connect', (node) => {
       logger.console.log(`Lavalink node ${node.id} connected`);
     });
 
-    this.manager.on('nodeError', (node, error) => {
-      logger.console.error(`Lavalink node ${node.id} error:`, error.message);
+    this.manager.nodeManager.on('disconnect', (node, reason) => {
+      logger.console.error(`Lavalink node ${node.id} disconnected:`, reason);
     });
 
     this.manager.on('trackStart', (player, track) => {
@@ -67,37 +54,30 @@ class MusicPlayer {
       if (channel) {
         channel.send('Queue has ended.').catch(() => {});
       }
+      player.destroy();
     });
 
     client.on('raw', (d) => this.manager.sendRawData(d));
+
+    this.manager.init({ id: client.user.id, username: client.user.username });
 
     logger.console.log('Lavalink music player initialized');
   }
 
   async play(message, query) {
-    let player = this.manager.getPlayer(message.guild.id);
-
-    if (!player) {
-      player = this.manager.createPlayer({
-        guildId: message.guild.id,
-        voiceChannelId: message.member.voice.channel.id,
-        textChannelId: message.channel.id,
-        selfDeaf: true,
-        selfMute: false,
-        volume: 100
-      });
-    }
+    const player = this.manager.createPlayer({
+      guildId: message.guild.id,
+      voiceChannelId: message.member.voice.channel.id,
+      textChannelId: message.channel.id,
+      selfDeaf: true,
+      selfMute: false,
+    });
 
     if (!player.connected) await player.connect();
 
     const res = await player.search({ query }, message.author);
 
-    if (res.loadType === 'error') {
-      if (!player.queue.current) player.destroy();
-      throw new Error('Failed to load track');
-    }
-
-    if (res.loadType === 'empty') {
+    if (res.loadType === 'error' || res.loadType === 'empty') {
       if (!player.queue.current) player.destroy();
       return null;
     }
@@ -124,7 +104,7 @@ class MusicPlayer {
       }
     }
 
-    if (!player.playing && !player.paused) await player.play();
+    if (!player.playing) await player.play();
 
     return true;
   }
