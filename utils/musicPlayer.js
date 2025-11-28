@@ -58,11 +58,11 @@ class MusicPlayer {
       logger.console.log(`Track started: ${track.info.title} (${track.info.duration}ms)`);
       logger.console.log(`Track source: ${track.info.sourceName}, identifier: ${track.info.identifier}`);
       
-      // Update voice channel status
+      // Update voice channel status (if supported)
       const guild = client.guilds.cache.get(player.guildId);
       if (guild) {
         const voiceChannel = guild.channels.cache.get(player.voiceChannelId);
-        if (voiceChannel && voiceChannel.isVoiceBased()) {
+        if (voiceChannel && voiceChannel.isVoiceBased() && typeof voiceChannel.setStatus === 'function') {
           voiceChannel.setStatus(`🎵 ${track.info.title}`).catch(() => {});
         }
       }
@@ -83,19 +83,35 @@ class MusicPlayer {
     });
 
     this.manager.on('trackError', (player, track, payload) => {
-      logger.console.error(`Track error: ${track.info.title}, error: ${payload.error}`);
+      logger.console.error(`Track error: ${track.info.title}, error: ${JSON.stringify(payload)}`);
+      const channel = client.channels.cache.get(player.textChannelId);
+      if (channel) {
+        channel.send(`❌ Error playing track: ${track.info.title}`).catch(() => {});
+      }
     });
 
     this.manager.on('trackStuck', (player, track, payload) => {
       logger.console.error(`Track stuck: ${track.info.title}, threshold: ${payload.thresholdMs}ms`);
+      const channel = client.channels.cache.get(player.textChannelId);
+      if (channel) {
+        channel.send(`⚠️ Track stuck: ${track.info.title}`).catch(() => {});
+      }
+    });
+
+    this.manager.on('playerDisconnect', (player) => {
+      logger.console.log(`Player disconnected from guild ${player.guildId}`);
+    });
+
+    this.manager.on('playerMove', (player, oldChannel, newChannel) => {
+      logger.console.log(`Player moved from ${oldChannel} to ${newChannel}`);
     });
 
     this.manager.on('queueEnd', (player) => {
-      // Clear voice channel status
+      // Clear voice channel status (if supported)
       const guild = client.guilds.cache.get(player.guildId);
       if (guild) {
         const voiceChannel = guild.channels.cache.get(player.voiceChannelId);
-        if (voiceChannel && voiceChannel.isVoiceBased()) {
+        if (voiceChannel && voiceChannel.isVoiceBased() && typeof voiceChannel.setStatus === 'function') {
           voiceChannel.setStatus(null).catch(() => {});
         }
       }
