@@ -15,7 +15,10 @@ class MusicPlayer {
           authorization: 'youshallnotpass',
           host: 'localhost',
           port: 2333,
-          id: 'main-node'
+          id: 'main-node',
+          requestOptions: {
+            timeout: 10000
+          }
         }
       ],
       sendToShard: (guildId, payload) => {
@@ -27,6 +30,20 @@ class MusicPlayer {
       },
       autoSkip: true,
       emitNewSongsOnly: true,
+      playerOptions: {
+        clientBasedPositionUpdateInterval: 100,
+        defaultSearchPlatform: "spsearch",
+        volumeDecrementer: 1,
+        requesterTransformer: (requester) => requester,
+        onDisconnect: {
+          autoReconnect: true,
+          destroyPlayer: false
+        },
+        onEmptyQueue: {
+          destroyAfterMs: 30_000,
+        },
+        useUnresolvedData: true
+      }
     });
 
     this.manager.nodeManager.on('connect', (node) => {
