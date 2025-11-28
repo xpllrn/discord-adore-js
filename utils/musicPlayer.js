@@ -7,7 +7,7 @@ const {
   entersState,
   getVoiceConnection
 } = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
+const ytdl = require('@distube/ytdl-core');
 const ytSearch = require('yt-search');
 const logger = require('./logger');
 
@@ -184,12 +184,13 @@ class MusicPlayer {
         filter: 'audioonly',
         quality: 'highestaudio',
         highWaterMark: 1 << 25, // 32MB buffer for ultra-smooth playback
-        dlChunkSize: 0, // Download entire file for maximum quality
-        requestOptions: {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        }
+        dlChunkSize: 0 // Download entire file for maximum quality
+      });
+
+      // Handle stream errors
+      stream.on('error', (error) => {
+        logger.console.error(`Stream error for ${song.title}:`, error);
+        this.playNext(guildId);
       });
 
       const resource = createAudioResource(stream, {
