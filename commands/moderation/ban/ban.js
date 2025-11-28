@@ -10,7 +10,7 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "ban",
   aliases: ['deport'],
-  description: 'ban the mentioned user from the server (works with user IDs for users not in server)',
+  description: 'ban the mentioned user from the server.',
   syntax: 'ban [user] (reason)',
   example: 'ban @vwsn spam',
   permission: 'ban_members',
