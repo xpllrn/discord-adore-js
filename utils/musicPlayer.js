@@ -1,295 +1,140 @@
-const { 
-  joinVoiceChannel, 
-  createAudioPlayer, 
-  createAudioResource, 
-  AudioPlayerStatus,
-  VoiceConnectionStatus,
-  entersState
-} = require('@discordjs/voice');
-const play = require('play-dl');
+const { DisTube } = require('distube');
+const { YtDlpPlugin } = require('@distube/yt-dlp');
 const logger = require('./logger');
 const config = require('../config/setup');
+const { EmbedBuilder } = require('discord.js');
 
 class MusicPlayer {
   constructor() {
-    this.queues = new Map();
+    this.distube = null;
   }
 
-  getQueue(guildId) {
-    if (!this.queues.has(guildId)) {
-      this.queues.set(guildId, {
-        songs: [],
-        currentSong: null,
-        player: null,
-        connection: null,
-        textChannel: null,
-        voiceChannel: null,
-        isPlaying: false,
-        volume: 1.0
-      });
-    }
-    return this.queues.get(guildId);
-  }
+  init(client) {
+    this.distube = new DisTube(client, {
+      emitNewSongOnly: true,
+      leaveOnEmpty: true,
+      leaveOnFinish: false,
+      leaveOnStop: true,
+      savePreviousSongs: true,
+      searchSongs: 1,
+      nsfw: false,
+      emptyCooldown: 60,
+      ytdlOptions: {
+        quality: 'highestaudio',
+        highWaterMark: 1 << 25,
+        dlChunkSize: 0
+      },
+      plugins: [new YtDlpPlugin()]
+    });
 
-  async joinChannel(voiceChannel, textChannel) {
-    const guildId = voiceChannel.guild.id;
-    const queue = this.getQueue(guildId);
+    // Event handlers
+    this.distube.on('playSong', (queue, song) => {
+      const embed = new EmbedBuilder()
+        .setColor(0xFFFFFF)
+        .setDescription(
+          `${config.emojis.music} ${song.user}: Now playing [\`${song.name}\`](${song.url}) by \`${song.uploader.name}\``
+        );
 
-    try {
-      const connection = joinVoiceChannel({
-        channelId: voiceChannel.id,
-        guildId: guildId,
-        adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-        selfDeaf: true
-      });
+      queue.textChannel.send({ embeds: [embed] }).catch(() => {});
+    });
 
-      await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+    this.distube.on('addSong', (queue, song) => {
+      const embed = new EmbedBuilder()
+        .setColor(0xFFFFFF)
+        .setDescription(
+          `${config.emojis.music} ${song.user}: Added [\`${song.name}\`](${song.url}) by \`${song.uploader.name}\` to the queue`
+        );
 
-      queue.connection = connection;
-      queue.voiceChannel = voiceChannel;
-      queue.textChannel = textChannel;
+      queue.textChannel.send({ embeds: [embed] }).catch(() => {});
+    });
 
-      if (!queue.player) {
-        queue.player = createAudioPlayer();
-        
-        queue.player.on(AudioPlayerStatus.Idle, () => {
-          logger.console.log(`Player idle in ${guildId}, playing next...`);
-          this.playNext(guildId);
-        });
-
-        queue.player.on(AudioPlayerStatus.Playing, () => {
-          logger.console.log(`Player started playing in ${guildId}`);
-        });
-
-        queue.player.on('error', error => {
-          logger.console.error(`Music player error in ${guildId}:`, error);
-          this.playNext(guildId);
-        });
-
-        const subscription = connection.subscribe(queue.player);
-        if (!subscription) {
-          logger.console.error(`Failed to subscribe player to connection in ${guildId}`);
-        }
+    this.distube.on('error', (channel, error) => {
+      logger.console.error('DisTube error:', error);
+      if (channel) {
+        channel.send('❌ An error occurred while playing music.').catch(() => {});
       }
+    });
 
-      connection.on(VoiceConnectionStatus.Disconnected, async () => {
-        try {
-          await Promise.race([
-            entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
-            entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
-          ]);
-        } catch (error) {
-          this.cleanup(guildId);
-        }
+    this.distube.on('searchNoResult', (message, query) => {
+      message.channel.send(`❌ No results found for: \`${query}\``).catch(() => {});
+    });
+
+    logger.console.log('DisTube music player initialized');
+  }
+
+  async play(message, query) {
+    try {
+      await this.distube.play(message.member.voice.channel, query, {
+        member: message.member,
+        textChannel: message.channel,
+        message
       });
-
-      return connection;
     } catch (error) {
-      logger.console.error(`Failed to join voice channel:`, error);
+      logger.console.error('Play error:', error);
       throw error;
     }
   }
 
-  async searchSong(query) {
+  stop(message) {
     try {
-      // Check if it's a YouTube URL
-      const isURL = play.yt_validate(query) === 'video';
-      
-      let video;
-      
-      if (isURL) {
-        // Get video info from URL
-        video = await play.video_info(query);
-      } else {
-        // Search YouTube
-        const searchResults = await play.search(query, { limit: 1, source: { youtube: 'video' } });
-        
-        if (!searchResults || searchResults.length === 0) {
-          return null;
-        }
-        
-        video = searchResults[0];
-      }
-
-      if (!video) {
-        return null;
-      }
-
-      return {
-        title: video.title,
-        url: video.url,
-        duration: this.formatDuration(video.durationInSec),
-        thumbnail: video.thumbnails?.[0]?.url || null,
-        author: video.channel?.name || 'Unknown'
-      };
+      this.distube.stop(message);
+      return true;
     } catch (error) {
-      logger.console.error('Search error:', error);
+      return false;
+    }
+  }
+
+  skip(message) {
+    try {
+      this.distube.skip(message);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  pause(message) {
+    try {
+      this.distube.pause(message);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  resume(message) {
+    try {
+      this.distube.resume(message);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  setVolume(message, volume) {
+    try {
+      this.distube.setVolume(message, volume);
+      return volume;
+    } catch (error) {
       return null;
     }
   }
 
-  formatDuration(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  async addSong(guildId, song, requestedBy) {
-    const queue = this.getQueue(guildId);
-    
-    song.requestedBy = requestedBy;
-    queue.songs.push(song);
-
-    if (!queue.isPlaying) {
-      await this.play(guildId);
-    }
-
-    return queue.songs.length;
-  }
-
-  async play(guildId) {
-    const queue = this.getQueue(guildId);
-
-    if (queue.songs.length === 0) {
-      queue.isPlaying = false;
-      queue.currentSong = null;
-      return;
-    }
-
-    const song = queue.songs[0];
-    queue.currentSong = song;
-    queue.isPlaying = true;
-
+  getQueue(message) {
     try {
-      // Create audio stream with play-dl
-      const stream = await play.stream(song.url);
-
-      const resource = createAudioResource(stream.stream, {
-        inputType: stream.type,
-        inlineVolume: true
-      });
-
-      resource.volume.setVolume(queue.volume);
-
-      queue.player.play(resource);
-      
-      logger.console.log(`Started playing: ${song.title} in guild ${guildId}`);
-
-      // Send now playing message
-      if (queue.textChannel) {
-        const { EmbedBuilder } = require('discord.js');
-        
-        const embed = new EmbedBuilder()
-          .setColor(0xFFFFFF)
-          .setDescription(
-            `${config.emojis.music} ${song.requestedBy}: Now playing [\`${song.title}\`](${song.url}) by \`${song.author}\``
-          );
-
-        queue.textChannel.send({ embeds: [embed] }).catch(() => {});
-      }
+      return this.distube.getQueue(message);
     } catch (error) {
-      logger.console.error(`Error playing song in ${guildId}:`, error);
-      queue.textChannel?.send('❌ Error playing this song. Skipping...').catch(() => {});
-      this.playNext(guildId);
+      return null;
     }
-  }
-
-  playNext(guildId) {
-    const queue = this.getQueue(guildId);
-    
-    queue.songs.shift();
-
-    if (queue.songs.length === 0) {
-      queue.isPlaying = false;
-      queue.currentSong = null;
-      
-      setTimeout(() => {
-        if (queue.songs.length === 0 && !queue.isPlaying) {
-          this.cleanup(guildId);
-        }
-      }, 60000);
-      
-      return;
-    }
-
-    this.play(guildId);
-  }
-
-  skip(guildId) {
-    const queue = this.getQueue(guildId);
-    if (queue.player) {
-      queue.player.stop();
-      return true;
-    }
-    return false;
-  }
-
-  stop(guildId) {
-    const queue = this.getQueue(guildId);
-    queue.songs = [];
-    if (queue.player) {
-      queue.player.stop();
-    }
-    this.cleanup(guildId);
-  }
-
-  pause(guildId) {
-    const queue = this.getQueue(guildId);
-    if (queue.player && queue.isPlaying) {
-      queue.player.pause();
-      return true;
-    }
-    return false;
-  }
-
-  resume(guildId) {
-    const queue = this.getQueue(guildId);
-    if (queue.player) {
-      queue.player.unpause();
-      return true;
-    }
-    return false;
-  }
-
-  setVolume(guildId, volume) {
-    const queue = this.getQueue(guildId);
-    queue.volume = Math.max(0, Math.min(2, volume));
-    
-    if (queue.player && queue.player.state.resource) {
-      queue.player.state.resource.volume?.setVolume(queue.volume);
-    }
-    
-    return queue.volume;
-  }
-
-  cleanup(guildId) {
-    const queue = this.getQueue(guildId);
-    
-    if (queue.connection) {
-      queue.connection.destroy();
-    }
-    
-    this.queues.delete(guildId);
-  }
-
-  getCurrentSong(guildId) {
-    const queue = this.getQueue(guildId);
-    return queue.currentSong;
-  }
-
-  getQueueList(guildId) {
-    const queue = this.getQueue(guildId);
-    return queue.songs;
   }
 
   isPlaying(guildId) {
-    const queue = this.getQueue(guildId);
-    return queue.isPlaying;
+    try {
+      const queue = this.distube.getQueue(guildId);
+      return queue ? queue.playing : false;
+    } catch (error) {
+      return false;
+    }
   }
 }
 

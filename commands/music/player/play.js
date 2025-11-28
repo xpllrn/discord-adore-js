@@ -1,8 +1,7 @@
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const musicPlayer = require('../../../utils/musicPlayer');
-const config = require('../../../config/setup');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -38,47 +37,8 @@ module.exports = {
       // Send searching message
       await message.channel.sendTyping();
 
-      // Search for the song
-      const song = await musicPlayer.searchSong(query);
-
-      if (!song) {
-        return embeds.warn(message, 'No results found for your query.');
-      }
-
-      // Join voice channel if not already connected
-      const queue = musicPlayer.getQueue(message.guild.id);
-      if (!queue.connection) {
-        try {
-          await musicPlayer.joinChannel(voiceChannel, message.channel);
-        } catch (error) {
-          logger.console.error('Failed to join voice channel:', error);
-          return embeds.warn(message, 'Failed to join voice channel!');
-        }
-      }
-
-      // Check if already playing before adding
-      const wasPlaying = musicPlayer.isPlaying(message.guild.id);
-      
-      // Add song to queue
-      const position = await musicPlayer.addSong(message.guild.id, song, message.author);
-
-      // Send response based on whether music was already playing
-      if (!wasPlaying) {
-        // Song will start playing immediately - the musicPlayer will send the now playing message
-        return;
-      } else {
-        // Song added to queue
-        const embed = new EmbedBuilder()
-          .setColor(0xFFFFFF)
-          .setDescription(
-            `${config.emojis.music} ${message.author}: Added [\`${song.title}\`](${song.url}) by \`${song.author}\` to the queue`
-          );
-
-        await message.channel.send({ embeds: [embed] });
-      }
-
-      // Monitor voice channel for user leaving
-      monitorVoiceChannel(client, message.guild.id, voiceChannel.id, message.author.id);
+      // Play the song
+      await musicPlayer.play(message, query);
 
     } catch (error) {
       logger.webhook.error(error, 'Play Command', {
@@ -92,35 +52,3 @@ module.exports = {
     }
   }
 };
-
-// Monitor voice channel and leave if requester leaves
-function monitorVoiceChannel(client, guildId, voiceChannelId, userId) {
-  const checkInterval = setInterval(() => {
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) {
-      clearInterval(checkInterval);
-      return;
-    }
-
-    const voiceChannel = guild.channels.cache.get(voiceChannelId);
-    if (!voiceChannel) {
-      clearInterval(checkInterval);
-      musicPlayer.cleanup(guildId);
-      return;
-    }
-
-    // Check if the user who requested is still in the channel
-    const member = voiceChannel.members.get(userId);
-    if (!member) {
-      // User left, stop music and leave
-      musicPlayer.stop(guildId);
-      clearInterval(checkInterval);
-      return;
-    }
-
-    // Check if bot is still playing
-    if (!musicPlayer.isPlaying(guildId) && musicPlayer.getQueueList(guildId).length === 0) {
-      clearInterval(checkInterval);
-    }
-  }, 5000); // Check every 5 seconds
-}
