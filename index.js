@@ -224,5 +224,11 @@ client.once('ready', async () => {
   }
 });
 
+// Initialize Lavalink music player
+const musicPlayer = require('./utils/musicPlayer');
+client.once('ready', () => {
+  musicPlayer.init(client);
+});
+
 // Export client for modules that need it (avoid circular dependencies by using global reference)
 module.exports = client;

@@ -37,26 +37,12 @@ module.exports = {
       // Send searching message
       await message.channel.sendTyping();
 
-      // Search for the song
-      const song = await musicPlayer.searchSong(query);
+      // Play the song
+      const result = await musicPlayer.play(message, query);
 
-      if (!song) {
+      if (result === null) {
         return embeds.warn(message, 'No results found for your query.');
       }
-
-      // Join voice channel if not already connected
-      const queue = musicPlayer.getQueue(message.guild.id);
-      if (!queue.connection) {
-        try {
-          await musicPlayer.joinChannel(voiceChannel, message.channel);
-        } catch (error) {
-          logger.console.error('Failed to join voice channel:', error);
-          return embeds.warn(message, 'Failed to join voice channel!');
-        }
-      }
-
-      // Add song to queue
-      await musicPlayer.addSong(message.guild.id, song, message.author);
 
     } catch (error) {
       logger.webhook.error(error, 'Play Command', {
