@@ -177,7 +177,7 @@ module.exports = {
 
   // Prefix command handler
   async run(client, message, args) {
-    return await this.execute(message, args);
+    return await module.exports.execute(message, args);
   },
 
   // Unified handler for both prefix and slash commands
