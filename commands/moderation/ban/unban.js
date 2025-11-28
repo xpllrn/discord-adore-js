@@ -14,6 +14,7 @@ module.exports = {
   permission: 'ban_members',
   run: async(client, message, args) => {
     const guildService = getService('guild');
+    const antinukeService = getService('antinuke');
 
     // Permission checks first
     if (!hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members')) return;
@@ -59,6 +60,22 @@ module.exports = {
       // Bot-action check
       if (!checkBotAction(message, targetBan.user)) return;
 
+      // Check if user is hardbanned
+      const isHardbanned = await guildService.isHardbanned(message.guild.id, targetBan.user.id);
+
+      if (isHardbanned) {
+        // Check if user is antinuke admin or server owner
+        const isOwner = message.author.id === message.guild.ownerId;
+        const isAntiNukeAdmin = await antinukeService.isAdmin(message.guild.id, message.author.id);
+
+        if (!isOwner && !isAntiNukeAdmin) {
+          return embeds.deny(message, `**${targetBan.user.tag}** is **hardbanned**!\n\nOnly **antinuke admins** and the **server owner** can unban hardbanned users.`);
+        }
+
+        // Remove from hardban list
+        await guildService.removeHardban(message.guild.id, targetBan.user.id);
+      }
+
       // Get reason from arguments
       let reason = args.slice(1).join(" ");
       if (!reason) reason = 'reasons';
@@ -68,21 +85,27 @@ module.exports = {
 
       // Add to moderation history
       try {
+        const action = isHardbanned ? 'unhardban' : 'unban';
         await guildService.addModerationCase(
           message.guild.id,
           targetBan.user.id,
           message.author.id,
-          'unban',
+          action,
           reason
         );
       } catch (historyError) {
         // Don't fail the command if history logging fails
       }
 
-      embeds.success(message, `**${targetBan.user.tag}** has been **unbanned** for ${reason}`);
+      if (isHardbanned) {
+        embeds.success(message, `**${targetBan.user.tag}** has been **unhardbanned** for ${reason}`);
+      } else {
+        embeds.success(message, `**${targetBan.user.tag}** has been **unbanned** for ${reason}`);
+      }
 
       // Log the unban action
-      await logModerationAction('unban', message.author, targetBan.user, reason, message.guild);
+      const action = isHardbanned ? 'unhardban' : 'unban';
+      await logModerationAction(action, message.author, targetBan.user, reason, message.guild);
 
     } catch (error) {
       logger.webhook.error(error, 'Unban Command', {

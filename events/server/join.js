@@ -11,6 +11,13 @@ module.exports = {
       if (!client.cacheReady) {
         return; // Don't process any member events during startup
       }
+
+      // Check for hardban FIRST - before any other processing
+      const isHardbanned = await checkHardban(member);
+      if (isHardbanned) {
+        return; // User was hardbanned and kicked, stop processing
+      }
+
       // Log member join (always log, including bots)
       await logMemberJoin(member);
 
@@ -31,6 +38,48 @@ module.exports = {
     }
   },
 };
+
+async function checkHardban(member) {
+  try {
+    const guildService = getService('guild');
+    
+    // Check if user is hardbanned
+    const isHardbanned = await guildService.isHardbanned(member.guild.id, member.user.id);
+
+    if (isHardbanned) {
+      // Get hardban details
+      const hardbanInfo = await guildService.getHardban(member.guild.id, member.user.id);
+      
+      // Ban the user immediately
+      try {
+        await member.ban({ 
+          reason: `[HARDBAN ENFORCEMENT] ${hardbanInfo?.reason || 'User is hardbanned'} | Original ban by: ${hardbanInfo?.bannedBy || 'Unknown'}` 
+        });
+
+        // Log the enforcement
+        const webhookLogger = require('../../utils/webhookLogger');
+        const embed = webhookLogger.createModeratorLog({
+          action: 'hardban_enforced',
+          executor: member.client.user,
+          target: member.user,
+          reason: `Hardban enforcement - ${hardbanInfo?.reason || 'User is hardbanned'}`,
+          guild: member.guild
+        });
+
+        await webhookLogger.sendLog(member.guild.id, 'moderator', embed);
+      } catch (banError) {
+        // Silent fail if ban fails
+      }
+
+      return true; // User was hardbanned
+    }
+
+    return false; // User is not hardbanned
+  } catch (error) {
+    // Silent fail for hardban check
+    return false;
+  }
+}
 
 async function processWelcomeMessages(member) {
   try {

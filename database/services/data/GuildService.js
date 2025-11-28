@@ -237,7 +237,8 @@ class GuildService extends BaseService {
         logs: []
       },
       Aliases: [],
-      RoleRestore: []
+      RoleRestore: [],
+      Hardbans: []
     };
   }
 
@@ -8420,6 +8421,182 @@ class GuildService extends BaseService {
 
   async getModerationHistoryByModerator(guildId, moderatorId, action = null) {
     return this.getModeratorCases(guildId, moderatorId, action);
+  }
+
+  // ===== HARDBAN SYSTEM =====
+
+  /**
+   * Add a user to the hardban list
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID to hardban
+   * @param {string} bannedBy - ID of user who issued the hardban
+   * @param {string} reason - Reason for hardban
+   * @returns {Promise<boolean>} Success status
+   */
+  async addHardban(guildId, userId, bannedBy, reason) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+
+      if (!guildData.Hardbans) {
+        guildData.Hardbans = [];
+      }
+
+      // Check if user is already hardbanned
+      const existingIndex = guildData.Hardbans.findIndex(hb => hb.userId === userId);
+
+      if (existingIndex !== -1) {
+        // Update existing hardban
+        guildData.Hardbans[existingIndex] = {
+          userId,
+          reason,
+          bannedBy,
+          bannedAt: new Date()
+        };
+      } else {
+        // Add new hardban
+        guildData.Hardbans.push({
+          userId,
+          reason,
+          bannedBy,
+          bannedAt: new Date()
+        });
+      }
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add hardban for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove a user from the hardban list
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID to unhardban
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeHardban(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Hardbans) {
+        return false;
+      }
+
+      const initialLength = guildData.Hardbans.length;
+      guildData.Hardbans = guildData.Hardbans.filter(hb => hb.userId !== userId);
+
+      if (guildData.Hardbans.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error(`Error removing hardban for guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Check if a user is hardbanned
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID to check
+   * @returns {Promise<boolean>} True if hardbanned
+   */
+  async isHardbanned(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Hardbans) {
+        return false;
+      }
+
+      return guildData.Hardbans.some(hb => hb.userId === userId);
+    } catch (error) {
+      console.error(`Error checking hardban for guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get hardban information for a user
+   * @param {string} guildId - Guild ID
+   * @param {string} userId - User ID
+   * @returns {Promise<Object|null>} Hardban info or null
+   */
+  async getHardban(guildId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Hardbans) {
+        return null;
+      }
+
+      return guildData.Hardbans.find(hb => hb.userId === userId) || null;
+    } catch (error) {
+      console.error(`Error getting hardban info for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get all hardbans for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of hardbans
+   */
+  async getAllHardbans(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Hardbans) {
+        return [];
+      }
+
+      return guildData.Hardbans.sort((a, b) => new Date(b.bannedAt) - new Date(a.bannedAt));
+    } catch (error) {
+      console.error(`Error getting all hardbans for guild ${guildId}:`, error.message);
+      return [];
+    }
   }
 
   // ===== MESSAGE STATISTICS =====

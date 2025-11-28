@@ -198,7 +198,7 @@ const guildSchema = new mongoose.Schema({
     action: {
       type: String,
       required: true,
-      enum: ['warn', 'unwarn', 'mute', 'unmute', 'kick', 'ban', 'unban', 'jail', 'unjail', 'role_save', 'imute', 'iunmute', 'rmute', 'runmute']
+      enum: ['warn', 'unwarn', 'mute', 'unmute', 'kick', 'ban', 'unban', 'jail', 'unjail', 'role_save', 'imute', 'iunmute', 'rmute', 'runmute', 'hardban', 'unhardban']
     },
     reason: {
       type: String,
@@ -1347,7 +1347,27 @@ const guildSchema = new mongoose.Schema({
     bypassUsers: [{
       type: String // User IDs who can self-react
     }]
-  }
+  },
+
+  // Hardban system - persistent bans that only antinuke admins/owner can remove
+  Hardbans: [{
+    userId: {
+      type: String,
+      required: true
+    },
+    reason: {
+      type: String,
+      required: true
+    },
+    bannedBy: {
+      type: String,
+      required: true
+    },
+    bannedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });
@@ -1528,6 +1548,9 @@ guildSchema.index({ 'RoleRestore.expiresAt': 1 }); // For cleanup of expired dat
 guildSchema.index({ 'ConfessionSystem.enabled': 1 });
 guildSchema.index({ 'ConfessionSystem.channelId': 1 });
 guildSchema.index({ 'ConfessionSystem.ignoredUsers': 1 });
+
+// Hardban system indexes
+guildSchema.index({ 'Hardbans.userId': 1 });
 
 module.exports = {
   schema: guildSchema,
