@@ -83,10 +83,17 @@ class MusicPlayer {
     });
 
     this.manager.on('trackError', (player, track, payload) => {
-      logger.console.error(`Track error: ${track.info.title}, error: ${JSON.stringify(payload)}`);
-      const channel = client.channels.cache.get(player.textChannelId);
-      if (channel) {
-        channel.send(`❌ Error playing track: ${track.info.title}`).catch(() => {});
+      logger.console.error(`Track error: ${track.info.title}, error: ${payload.exception?.cause || payload.exception?.message}`);
+      
+      // If track failed and there are more tracks in queue, skip to next
+      if (player.queue.tracks.length > 0) {
+        logger.console.log('Skipping to next track due to error');
+        player.skip();
+      } else {
+        const channel = client.channels.cache.get(player.textChannelId);
+        if (channel) {
+          channel.send(`❌ Error playing track: ${track.info.title}`).catch(() => {});
+        }
       }
     });
 
@@ -168,21 +175,22 @@ class MusicPlayer {
           const scQuery = `scsearch:${track.info.author} ${track.info.title}`;
           const scRes = await player.search({ query: scQuery }, message.author);
           if (scRes.loadType === 'search' && scRes.tracks && scRes.tracks.length > 0) {
-            // Find first non-preview track
-            let fullTrack = scRes.tracks.find(t => 
+            // Filter out preview tracks and get top 3 results
+            let fullTracks = scRes.tracks.filter(t => 
               t.info.identifier && 
               !t.info.identifier.includes('/preview/') &&
               t.info.duration > 60000 // At least 1 minute
-            );
+            ).slice(0, 3);
             
-            // If no full track found, use first result
-            if (!fullTrack) {
-              fullTrack = scRes.tracks[0];
-              logger.console.warn('Could not find full SoundCloud track, using first result');
+            // If no full tracks found, use first 3 results
+            if (fullTracks.length === 0) {
+              fullTracks = scRes.tracks.slice(0, 3);
+              logger.console.warn('Could not find full SoundCloud tracks, using first results');
             }
             
-            res = { ...scRes, tracks: [fullTrack] };
-            logger.console.log(`Successfully resolved to SoundCloud (${fullTrack.info.identifier.includes('/preview/') ? 'preview' : 'full'})`);
+            // Use first available track (others as fallback)
+            res = { ...scRes, tracks: fullTracks };
+            logger.console.log(`Successfully resolved to SoundCloud with ${fullTracks.length} options`);
           }
         } catch (error) {
           logger.console.error('SoundCloud resolution error:', error);
