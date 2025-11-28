@@ -75,18 +75,34 @@ class MusicPlayer {
 
     if (!player.connected) await player.connect();
 
-    // If query doesn't have a search prefix or URL, add spsearch: for Spotify
-    if (!query.includes('://') && !query.startsWith('spsearch:') && !query.startsWith('scsearch:')) {
-      query = `spsearch:${query}`;
+    // Determine search prefix
+    let searchQuery = query;
+    let isDirectLink = query.includes('://');
+    
+    if (!isDirectLink && !query.startsWith('spsearch:') && !query.startsWith('scsearch:')) {
+      searchQuery = `spsearch:${query}`;
     }
 
     let res;
     try {
-      res = await player.search({ query }, message.author);
+      res = await player.search({ query: searchQuery }, message.author);
     } catch (error) {
       logger.console.error('Lavalink search error:', error);
       if (!player.queue.current) player.destroy();
       return null;
+    }
+
+    // If Spotify search failed or returned empty, try SoundCloud
+    if ((res.loadType === 'error' || res.loadType === 'empty') && searchQuery.startsWith('spsearch:')) {
+      logger.console.log('Spotify search failed, trying SoundCloud...');
+      try {
+        const scQuery = searchQuery.replace('spsearch:', 'scsearch:');
+        res = await player.search({ query: scQuery }, message.author);
+      } catch (error) {
+        logger.console.error('SoundCloud search error:', error);
+        if (!player.queue.current) player.destroy();
+        return null;
+      }
     }
 
     if (res.loadType === 'error' || res.loadType === 'empty') {
@@ -184,6 +200,52 @@ class MusicPlayer {
   isPlaying(guildId) {
     const player = this.manager.getPlayer(guildId);
     return player ? player.playing : false;
+  }
+
+  setRepeat(guildId, mode) {
+    const player = this.manager.getPlayer(guildId);
+    if (player) {
+      player.setRepeatMode(mode);
+      return true;
+    }
+    return false;
+  }
+
+  shuffle(guildId) {
+    const player = this.manager.getPlayer(guildId);
+    if (player && player.queue.tracks.length > 0) {
+      player.queue.shuffle();
+      return true;
+    }
+    return false;
+  }
+
+  removeTrack(guildId, index) {
+    const player = this.manager.getPlayer(guildId);
+    if (player && player.queue.tracks[index]) {
+      player.queue.remove(index);
+      return true;
+    }
+    return false;
+  }
+
+  clearQueue(guildId) {
+    const player = this.manager.getPlayer(guildId);
+    if (player) {
+      player.queue.clear();
+      return true;
+    }
+    return false;
+  }
+
+  moveTrack(guildId, from, to) {
+    const player = this.manager.getPlayer(guildId);
+    if (player && player.queue.tracks[from] && to >= 0 && to < player.queue.tracks.length) {
+      const track = player.queue.tracks.splice(from, 1)[0];
+      player.queue.tracks.splice(to, 0, track);
+      return true;
+    }
+    return false;
   }
 }
 
