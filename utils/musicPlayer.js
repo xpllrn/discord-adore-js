@@ -94,7 +94,16 @@ class MusicPlayer {
       // Clear voice channel status
       const guild = client.guilds.cache.get(player.guildId);
       if (guild) {
-        const voice
+        const voiceChannel = guild.channels.cache.get(player.voiceChannelId);
+        if (voiceChannel && voiceChannel.isVoiceBased()) {
+          voiceChannel.setStatus(null).catch(() => {});
+        }
+      }
+      
+      const channel = client.channels.cache.get(player.textChannelId);
+      if (channel) {
+        channel.send('Queue has ended.').catch(() => {});
+      }
       player.destroy();
     });
 
