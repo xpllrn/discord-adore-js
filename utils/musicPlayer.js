@@ -57,7 +57,12 @@ class MusicPlayer {
         
         // Handle player events
         queue.player.on(AudioPlayerStatus.Idle, () => {
+          logger.console.log(`Player idle in ${guildId}, playing next...`);
           this.playNext(guildId);
+        });
+
+        queue.player.on(AudioPlayerStatus.Playing, () => {
+          logger.console.log(`Player started playing in ${guildId}`);
         });
 
         queue.player.on('error', error => {
@@ -65,7 +70,10 @@ class MusicPlayer {
           this.playNext(guildId);
         });
 
-        connection.subscribe(queue.player);
+        const subscription = connection.subscribe(queue.player);
+        if (!subscription) {
+          logger.console.error(`Failed to subscribe player to connection in ${guildId}`);
+        }
       }
 
       // Handle connection state changes
@@ -89,20 +97,30 @@ class MusicPlayer {
 
   async searchSong(query) {
     try {
+      // Clean URL - remove playlist and extra parameters
+      let cleanQuery = query;
+      if (query.includes('youtube.com') || query.includes('youtu.be')) {
+        // Extract video ID from various YouTube URL formats
+        const videoIdMatch = query.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+        if (videoIdMatch) {
+          cleanQuery = `https://www.youtube.com/watch?v=${videoIdMatch[1]}`;
+        }
+      }
+
       // Check if it's a YouTube URL
-      if (ytdl.validateURL(query)) {
-        const info = await ytdl.getInfo(query);
+      if (ytdl.validateURL(cleanQuery)) {
+        const info = await ytdl.getInfo(cleanQuery);
         return {
           title: info.videoDetails.title,
           url: info.videoDetails.video_url,
-          duration: parseInt(info.videoDetails.lengthSeconds),
+          duration: this.formatDuration(parseInt(info.videoDetails.lengthSeconds)),
           thumbnail: info.videoDetails.thumbnails[0]?.url,
           author: info.videoDetails.author.name
         };
       }
 
       // Search YouTube
-      const searchResults = await ytSearch(query);
+      const searchResults = await ytSearch(cleanQuery);
       const video = searchResults.videos[0];
 
       if (!video) {
@@ -120,6 +138,17 @@ class MusicPlayer {
       logger.console.error('Search error:', error);
       return null;
     }
+  }
+
+  formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   }
 
   async addSong(guildId, song, requestedBy) {
@@ -156,7 +185,6 @@ class MusicPlayer {
         quality: 'highestaudio',
         highWaterMark: 1 << 25, // 32MB buffer for ultra-smooth playback
         dlChunkSize: 0, // Download entire file for maximum quality
-        format: 'webm', // Prefer WebM Opus format for best quality
         requestOptions: {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -165,13 +193,14 @@ class MusicPlayer {
       });
 
       const resource = createAudioResource(stream, {
-        inlineVolume: true,
-        inputType: 'webm/opus' // Specify Opus codec for best quality
+        inlineVolume: true
       });
 
       resource.volume.setVolume(queue.volume);
 
       queue.player.play(resource);
+      
+      logger.console.log(`Started playing: ${song.title} in guild ${guildId}`);
 
       // Send now playing message
       if (queue.textChannel) {

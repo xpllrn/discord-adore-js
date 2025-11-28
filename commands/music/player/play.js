@@ -56,11 +56,14 @@ module.exports = {
         }
       }
 
+      // Check if already playing before adding
+      const wasPlaying = musicPlayer.isPlaying(message.guild.id);
+      
       // Add song to queue
       const position = await musicPlayer.addSong(message.guild.id, song, message.author);
 
-      // Send response based on queue position
-      if (position === 1 && !musicPlayer.isPlaying(message.guild.id)) {
+      // Send response based on whether music was already playing
+      if (!wasPlaying) {
         // Song will start playing immediately - the musicPlayer will send the now playing message
         return;
       } else {
