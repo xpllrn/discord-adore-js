@@ -75,6 +75,11 @@ class MusicPlayer {
 
     if (!player.connected) await player.connect();
 
+    // If query doesn't have a search prefix or URL, add spsearch: for Spotify
+    if (!query.includes('://') && !query.startsWith('spsearch:') && !query.startsWith('scsearch:')) {
+      query = `spsearch:${query}`;
+    }
+
     let res;
     try {
       res = await player.search({ query }, message.author);
