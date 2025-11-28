@@ -12,8 +12,8 @@ class MusicPlayer {
     this.manager = new LavalinkManager({
       nodes: [
         {
-          authorization: 'https://dsc.gg/ajidevserver',
-          host: 'lava-v3.ajieblogs.eu.org',
+          authorization: 'youshallnotpass',
+          host: 'lava.link',
           port: 80,
           id: 'main-node'
         }
