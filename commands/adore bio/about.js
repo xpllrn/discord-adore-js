@@ -50,35 +50,19 @@ async function updateProfile(data) {
 }
 
 async function searchYouTube(query) {
-  const YOUTUBE_API_KEY = 'YOUR_API_KEY'
-
-  if (!YOUTUBE_API_KEY) {
-    return null;
-  }
-
   try {
-    const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-      params: {
-        part: 'snippet',
-        q: query,
-        type: 'video',
-        videoCategoryId: '10',
-        maxResults: 1,
-        key: YOUTUBE_API_KEY
+    const response = await axios.post(`${API_BASE_URL}/youtube/search`,
+      { query },
+      {
+        headers: {
+          'X-API-Key': BOT_API_KEY,
+          'Content-Type': 'application/json'
+        }
       }
-    });
-
-    if (response.data.items && response.data.items.length > 0) {
-      const video = response.data.items[0];
-      return {
-        videoId: video.id.videoId,
-        title: video.snippet.title,
-        thumbnail: video.snippet.thumbnails.high.url,
-        url: `https://www.youtube.com/watch?v=${video.id.videoId}`
-      };
-    }
-    return null;
+    );
+    return response.data;
   } catch (error) {
+    console.error('YouTube search error:', error);
     return null;
   }
 }
@@ -112,7 +96,7 @@ const UPDATE_COOLDOWN = 10000;
 module.exports = {
   name: "about",
   aliases: ['profile', 'bio'],
-  description: 'manage your adore profile',
+  description: 'manage your ADORE profile',
   syntax: 'about [subcommand] (parameters)',
   example: 'about create username',
   isGroupCommand: true,
@@ -127,7 +111,7 @@ module.exports = {
       switch (subcommand) {
         case 'create': {
           const subcommandInfo = {
-            description: 'Create your adore profile',
+            description: 'Create your ADORE profile',
             syntax: '{guildprefix}about create [username]',
             aliases: [],
             parameters: ['username (optional)'],
@@ -182,12 +166,12 @@ module.exports = {
           // Clear cooldown on success
           createCooldowns.delete(message.author.id);
 
-          return embeds.success(message, `**Created** your adore profile\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
+          return embeds.success(message, `**Created** your ADORE profile\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
         }
 
         case 'rename': {
           const subcommandInfo = {
-            description: 'Change your adore profile display name',
+            description: 'Change your ADORE profile display name',
             syntax: '{guildprefix}about rename [name]',
             aliases: [],
             parameters: ['name'],
@@ -229,7 +213,7 @@ module.exports = {
 
         case 'bio': {
           const subcommandInfo = {
-            description: 'Set your adore profile bio',
+            description: 'Set your ADORE profile bio',
             syntax: '{guildprefix}about bio [description]',
             aliases: [],
             parameters: ['description'],
@@ -271,7 +255,7 @@ module.exports = {
 
         case 'avatar': {
           const subcommandInfo = {
-            description: 'Set your adore profile avatar',
+            description: 'Set your ADORE profile avatar',
             syntax: '{guildprefix}about avatar (attachment/user)',
             aliases: [],
             parameters: ['attachment or user mention (optional)'],
@@ -327,7 +311,7 @@ module.exports = {
 
         case 'banner': {
           const subcommandInfo = {
-            description: 'Set your adore profile banner',
+            description: 'Set your ADORE profile banner',
             syntax: '{guildprefix}about banner (attachment/user)',
             aliases: [],
             parameters: ['attachment or user mention (optional)'],
@@ -383,15 +367,15 @@ module.exports = {
         case 'music':
         case 'song': {
           const subcommandInfo = {
-            description: 'Set your favorite song on your adore profile',
-            syntax: '{guildprefix}about music [youtube link or song name]',
+            description: 'Set your favorite song on your ADORE profile',
+            syntax: '{guildprefix}about music [youtube link or song name] (--time 2:30) (--name Song Name)',
             aliases: ['song'],
-            parameters: ['youtube link or song name'],
-            example: '{guildprefix}about music Bohemian Rhapsody'
+            parameters: ['youtube link or song name', 'time (optional)', 'name (optional)'],
+            example: '{guildprefix}about music https://youtube.com/watch?v=... --time 1:30 --name My Favorite Song'
           };
 
-          const input = args.slice(1).join(' ');
-          if (!input) return runHelpCommand(message, 'about');
+          const fullInput = args.slice(1).join(' ');
+          if (!fullInput) return runHelpCommand(message, 'about');
 
           // Check if user has a profile
           const existingProfile = await getProfile(message.author.id);
@@ -410,6 +394,22 @@ module.exports = {
           // Set cooldown
           updateCooldowns.set(`${message.author.id}-music`, now + UPDATE_COOLDOWN);
 
+          // Parse flags
+          const timeMatch = fullInput.match(/--time\s+(\d+):(\d+)/);
+          const nameMatch = fullInput.match(/--name\s+(.+?)(?:\s+--|$)/);
+
+          let startTime = 0;
+          if (timeMatch) {
+            const minutes = parseInt(timeMatch[1]);
+            const seconds = parseInt(timeMatch[2]);
+            startTime = minutes * 60 + seconds;
+          }
+
+          const customName = nameMatch ? nameMatch[1].trim() : null;
+
+          // Remove flags from input
+          const input = fullInput.replace(/--time\s+\d+:\d+/g, '').replace(/--name\s+.+?(?=\s+--|$)/g, '').trim();
+
           // Check if input is a YouTube link
           const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
           const match = input.match(youtubeRegex);
@@ -418,9 +418,29 @@ module.exports = {
 
           if (match) {
             const videoId = match[1];
+
+            // If no custom name, fetch video title from YouTube
+            let videoTitle = customName;
+            if (!customName) {
+              try {
+                const ytResponse = await axios.post(`${API_BASE_URL}/youtube/info`,
+                  { videoId },
+                  {
+                    headers: {
+                      'X-API-Key': BOT_API_KEY,
+                      'Content-Type': 'application/json'
+                    }
+                  }
+                );
+                videoTitle = ytResponse.data.title;
+              } catch (error) {
+                videoTitle = 'YouTube Video';
+              }
+            }
+
             videoData = {
               videoId: videoId,
-              title: 'YouTube Video',
+              title: videoTitle,
               thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
               url: `https://www.youtube.com/watch?v=${videoId}`
             };
@@ -429,6 +449,10 @@ module.exports = {
 
             if (!videoData) {
               return embeds.deny(message, '**No songs found** with that name on YouTube');
+            }
+
+            if (customName) {
+              videoData.title = customName;
             }
           }
 
@@ -439,16 +463,18 @@ module.exports = {
             songCover: videoData.thumbnail,
             songPreview: null,
             songUrl: videoData.url,
-            youtubeId: videoData.videoId
+            youtubeId: videoData.videoId,
+            songStartTime: startTime
           });
 
-          return embeds.success(message, `**Song updated** successfully\n\n🎵 **${videoData.title}**\n🔗 [Watch on YouTube](${videoData.url})`);
+          const timeInfo = startTime > 0 ? `\n⏱️ Starts at ${Math.floor(startTime / 60)}:${(startTime % 60).toString().padStart(2, '0')}` : '';
+          return embeds.success(message, `**Song updated** successfully\n\n🎵 **${videoData.title}**${timeInfo}\n🔗 [Watch on YouTube](${videoData.url})`);
         }
 
         case 'social':
         case 'link': {
           const subcommandInfo = {
-            description: 'Add a social media link to your adore profile',
+            description: 'Add a social media link to your ADORE profile',
             syntax: '{guildprefix}about social [url] (--platform)',
             aliases: ['link'],
             parameters: ['url', 'platform (optional)'],
@@ -504,7 +530,7 @@ module.exports = {
         case 'view':
         case 'show': {
           const subcommandInfo = {
-            description: 'View an adore profile',
+            description: 'View an ADORE profile',
             syntax: '{guildprefix}about view (@user)',
             aliases: ['show'],
             parameters: ['user (optional)'],
@@ -515,7 +541,7 @@ module.exports = {
           const profile = await getProfile(targetUser.id);
 
           if (!profile) {
-            return embeds.deny(message, `<@${targetUser.id}> doesn't have an **adore profile** yet`);
+            return embeds.deny(message, `<@${targetUser.id}> doesn't have an **ADORE profile** yet`);
           }
 
           const embed = new EmbedBuilder()
@@ -557,7 +583,7 @@ module.exports = {
         case 'delete':
         case 'remove': {
           const subcommandInfo = {
-            description: 'Delete your adore profile',
+            description: 'Delete your ADORE profile',
             syntax: '{guildprefix}about delete',
             aliases: ['remove'],
             parameters: [],
