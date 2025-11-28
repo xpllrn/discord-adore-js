@@ -40,7 +40,7 @@ class MusicPlayer {
           destroyPlayer: false
         },
         onEmptyQueue: {
-          destroyAfterMs: 30_000,
+          destroyAfterMs: undefined, // Don't auto-destroy, let queueEnd handle it
         },
         useUnresolvedData: true
       }
@@ -55,6 +55,7 @@ class MusicPlayer {
     });
 
     this.manager.on('trackStart', (player, track) => {
+      logger.console.log(`Track started: ${track.info.title} (${track.info.duration}ms)`);
       const channel = client.channels.cache.get(player.textChannelId);
       if (channel) {
         const embed = new EmbedBuilder()
@@ -64,6 +65,10 @@ class MusicPlayer {
           );
         channel.send({ embeds: [embed] }).catch(() => {});
       }
+    });
+
+    this.manager.on('trackEnd', (player, track, payload) => {
+      logger.console.log(`Track ended: ${track.info.title}, reason: ${payload.reason}`);
     });
 
     this.manager.on('queueEnd', (player) => {

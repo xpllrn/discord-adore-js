@@ -116,6 +116,11 @@ function checkUserHierarchy(message, targetMember, sendError = true) {
     return true;
   }
 
+  // Users can manage roles for themselves (hierarchy check happens at role level)
+  if (targetMember.id === message.author.id) {
+    return true;
+  }
+
   if (targetMember.roles.highest.position >= message.member.roles.highest.position) {
     if (sendError) {
       embeds.warn(message, `**${targetMember.user.username}** is above your role!`);
