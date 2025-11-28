@@ -17,7 +17,7 @@ class MusicPlayer {
           port: 2333,
           id: 'main-node',
           requestOptions: {
-            timeout: 10000
+            timeout: 30000
           }
         }
       ],
@@ -31,7 +31,7 @@ class MusicPlayer {
       autoSkip: true,
       emitNewSongsOnly: true,
       playerOptions: {
-        clientBasedPositionUpdateInterval: 100,
+        clientBasedPositionUpdateInterval: 150,
         defaultSearchPlatform: "spsearch",
         volumeDecrementer: 1,
         requesterTransformer: (requester) => requester,
@@ -40,9 +40,9 @@ class MusicPlayer {
           destroyPlayer: false
         },
         onEmptyQueue: {
-          destroyAfterMs: undefined, // Don't auto-destroy, let queueEnd handle it
+          destroyAfterMs: undefined,
         },
-        useUnresolvedData: true
+        useUnresolvedData: false
       }
     });
 
@@ -56,6 +56,7 @@ class MusicPlayer {
 
     this.manager.on('trackStart', (player, track) => {
       logger.console.log(`Track started: ${track.info.title} (${track.info.duration}ms)`);
+      logger.console.log(`Track source: ${track.info.sourceName}, identifier: ${track.info.identifier}`);
       const channel = client.channels.cache.get(player.textChannelId);
       if (channel) {
         const embed = new EmbedBuilder()
@@ -68,7 +69,15 @@ class MusicPlayer {
     });
 
     this.manager.on('trackEnd', (player, track, payload) => {
-      logger.console.log(`Track ended: ${track.info.title}, reason: ${payload.reason}`);
+      logger.console.log(`Track ended: ${track.info.title}, reason: ${payload.reason}, position: ${player.position}ms / ${track.info.duration}ms`);
+    });
+
+    this.manager.on('trackError', (player, track, payload) => {
+      logger.console.error(`Track error: ${track.info.title}, error: ${payload.error}`);
+    });
+
+    this.manager.on('trackStuck', (player, track, payload) => {
+      logger.console.error(`Track stuck: ${track.info.title}, threshold: ${payload.thresholdMs}ms`);
     });
 
     this.manager.on('queueEnd', (player) => {
