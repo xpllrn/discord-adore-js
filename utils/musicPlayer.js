@@ -61,8 +61,9 @@ class MusicPlayer {
       
       // Update voice channel status using REST API
       const voiceChannelId = player.voiceChannelId;
+      const statusText = `${config.emojis.music} Playing - ${track.info.title} by ${track.info.author}`;
       client.rest.put(`/channels/${voiceChannelId}/voice-status`, { 
-        body: { status: `🎵 ${track.info.title}` } 
+        body: { status: statusText } 
       }).catch(() => {});
       
       const channel = client.channels.cache.get(player.textChannelId);
