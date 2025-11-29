@@ -69,18 +69,10 @@ async function setupCollector(message, user, channel, rating) {
   });
 
   collector.on('collect', async (interaction) => {
-    if (interaction.user.id !== user.id) {
-      return interaction.reply({
-        content: `${interaction.client.config?.emojis?.error || '❌'} This game is not for you!`,
-        ephemeral: true
-      });
-    }
-
     const newQuestion = await fetchQuestion('wyr', rating);
     if (!newQuestion) {
       return interaction.reply({
-        content: 'Failed to fetch question. Please try again.',
-        ephemeral: true
+        content: 'Failed to fetch question. Please try again.'
       });
     }
 

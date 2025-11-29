@@ -982,84 +982,6 @@ const guildSchema = new mongoose.Schema({
     }
   }],
 
-  // Sprints system (reading sprints)
-  Sprints: [{
-    messageId: {
-      type: String,
-      required: true
-    },
-    channelId: {
-      type: String,
-      required: true
-    },
-    roleId: {
-      type: String,
-      default: null
-    },
-    startTime: {
-      type: Date,
-      required: true
-    },
-    endTime: {
-      type: Date,
-      required: true
-    },
-    participants: [{
-      userId: {
-        type: String,
-        required: true
-      },
-      username: {
-        type: String,
-        required: true
-      },
-      bookName: {
-        type: String,
-        required: true
-      },
-      startTab: {
-        type: Number,
-        required: true
-      },
-      currentTab: {
-        type: Number,
-        required: true
-      },
-      joinedAt: {
-        type: Date,
-        default: Date.now
-      },
-      isPaused: {
-        type: Boolean,
-        default: false
-      },
-      totalPausedTime: {
-        type: Number,
-        default: 0
-      },
-      lastPauseTime: {
-        type: Date,
-        default: null
-      }
-    }],
-    isActive: {
-      type: Boolean,
-      default: true
-    },
-    createdBy: {
-      type: String,
-      required: true
-    },
-    reminderSent: {
-      type: Boolean,
-      default: false
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-
   // Antinuke system
   Antinuke: {
     enabled: {
@@ -1522,14 +1444,6 @@ guildSchema.index({ 'Webhooks.name': 1 });
 guildSchema.index({ 'Webhooks.webhookId': 1 });
 guildSchema.index({ 'Webhooks.createdBy': 1 });
 guildSchema.index({ 'Webhooks.lastUsed': 1 });
-
-// Sprints indexes
-guildSchema.index({ 'Sprints.messageId': 1 });
-guildSchema.index({ 'Sprints.channelId': 1 });
-guildSchema.index({ 'Sprints.isActive': 1 });
-guildSchema.index({ 'Sprints.endTime': 1 }); // For finding sprints that need to end
-guildSchema.index({ 'Sprints.participants.userId': 1 });
-guildSchema.index({ 'Sprints.createdAt': -1 }); // Recent sprints first
 
 // Antinuke indexes
 guildSchema.index({ 'Antinuke.enabled': 1 });

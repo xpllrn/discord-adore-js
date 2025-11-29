@@ -282,26 +282,6 @@ const userSchema = new mongoose.Schema({
     }
   },
 
-  // Sprint/Reading history
-  SprintHistory: [{
-    bookName: {
-      type: String,
-      required: true
-    },
-    tabsRead: {
-      type: Number,
-      required: true
-    },
-    completedAt: {
-      type: Date,
-      required: true
-    },
-    sprintId: {
-      type: String,
-      required: true
-    }
-  }],
-
   // Jail system - stores roles per guild when user is jailed
   JailedRoles: [{
     guildId: {

@@ -103,8 +103,7 @@ async function handleBoostLost(client, message) {
           // Check if user has permission to refresh
           if (!interaction.member.permissions.has('ManageGuild')) {
             return interaction.reply({
-              content: 'You need **Manage Guild** permission to refresh this list.',
-              ephemeral: true
+              content: 'You need **Manage Guild** permission to refresh this list.'
             });
           }
 
@@ -165,8 +164,7 @@ async function handleBoostLost(client, message) {
         logger.webhook.error(error, message);
         try {
           await interaction.reply({
-            content: 'An error occurred while refreshing the list.',
-            ephemeral: true
+            content: 'An error occurred while refreshing the list.'
           });
         } catch (replyError) {
           // Ignore if we can't reply
@@ -253,8 +251,7 @@ async function handleBoostNew(client, message) {
           // Check if user has permission to refresh
           if (!interaction.member.permissions.has('ManageGuild')) {
             return interaction.reply({
-              content: 'You need **Manage Guild** permission to refresh this list.',
-              ephemeral: true
+              content: 'You need **Manage Guild** permission to refresh this list.'
             });
           }
 
@@ -295,8 +292,7 @@ async function handleBoostNew(client, message) {
         logger.webhook.error(error, message);
         try {
           await interaction.reply({
-            content: 'An error occurred while refreshing the list.',
-            ephemeral: true
+            content: 'An error occurred while refreshing the list.'
           });
         } catch (replyError) {
           // Ignore if we can't reply

@@ -433,7 +433,7 @@ async function handleCreateTicket(interaction) {
 
 async function handleTicketClose(interaction) {
   try {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
 
     const channelId = interaction.customId.split('_')[2];
     const guild = interaction.guild;
@@ -966,21 +966,21 @@ async function handleVMRenameModal(interaction) {
     const member = interaction.member;
     if (!member.voice.channel) {
       const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'You need to be in a voice channel to use this command');
-      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+      return await interaction.reply({ embeds: [embed] });
     }
 
     const guildService = getService('guild');
     const tempChannel = await guildService.getTempVoiceChannel(interaction.guild.id, member.voice.channel.id);
     if (!tempChannel || tempChannel.ownerId !== member.id) {
       const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'You can only rename your own voice channel');
-      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+      return await interaction.reply({ embeds: [embed] });
     }
 
     const newName = interaction.fields.getTextInputValue('channel_name');
 
     if (newName.length > 100) {
       const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Channel name must be 100 characters or less');
-      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+      return await interaction.reply({ embeds: [embed] });
     }
 
     try {
@@ -990,16 +990,16 @@ async function handleVMRenameModal(interaction) {
       });
 
       const embed = embeds.createSuccess({ author: { id: interaction.user.id } }, `Voice channel name changed to: **${newName}**`);
-      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+      return await interaction.reply({ embeds: [embed] });
     } catch (error) {
       const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to change channel name. Please check my permissions.');
-      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+      return await interaction.reply({ embeds: [embed] });
     }
 
   } catch (error) {
     console.error('Error handling VM rename modal:', error);
     const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'An error occurred while renaming the channel.');
-    return await interaction.reply({ embeds: [embed], ephemeral: true });
+    return await interaction.reply({ embeds: [embed] });
   }
 }
 
@@ -1065,7 +1065,7 @@ async function handleWelcomeButton(interaction) {
           { author: { id: user.id } },
           'Failed to create webhook. Please check bot permissions.'
         );
-        return await interaction.followUp({ embeds: [embed], ephemeral: true });
+        return await interaction.followUp({ embeds: [embed] });
       }
     }
     // Send welcome message using webhook
@@ -1151,7 +1151,7 @@ async function handleWelcomeButton(interaction) {
             { author: { id: user.id } },
             'Failed to send welcome message. Please check bot permissions.'
           );
-          return await interaction.followUp({ embeds: [embed], ephemeral: true });
+          return await interaction.followUp({ embeds: [embed] });
         }
       } else {
         console.error('Error sending welcome message:', error);
@@ -1159,7 +1159,7 @@ async function handleWelcomeButton(interaction) {
           { author: { id: user.id } },
           'Failed to send welcome message. Please try again.'
         );
-        return await interaction.followUp({ embeds: [embed], ephemeral: true });
+        return await interaction.followUp({ embeds: [embed] });
       }
     }
 
@@ -1180,7 +1180,7 @@ async function handleWelcomeButton(interaction) {
         { author: { id: interaction.user.id } },
         'An error occurred while processing the welcome button. Please try again.'
       );
-      return await interaction.followUp({ embeds: [embed], ephemeral: true });
+      return await interaction.followUp({ embeds: [embed] });
     } catch (replyError) {
       // Silent fail for reply error
     }
@@ -1195,7 +1195,7 @@ async function handleWelcomeButton(interaction) {
  */
 async function handleButtonRole(interaction) {
   try {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
 
     const guildService = getService('guild');
     const buttonRoles = await guildService.getButtonRoles(interaction.guild.id);
@@ -1469,8 +1469,32 @@ async function handleConfessionReply(interaction) {
       return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
+    // Try to extract confession ID from the message embed
+    let confessionIdFromMessage = null;
+    if (interaction.message?.embeds?.[0]) {
+      const embed = interaction.message.embeds[0];
+      
+      // First check footer for "Reply to #X" pattern - this means it's a reply
+      // and we want to reply to the ORIGINAL confession, not the reply itself
+      if (embed.footer?.text) {
+        const footerMatch = embed.footer.text.match(/Reply to #(\d+)/);
+        if (footerMatch) {
+          confessionIdFromMessage = footerMatch[1];
+        }
+      }
+      
+      // If no footer (meaning it's an original confession), extract from title
+      if (!confessionIdFromMessage && embed.title) {
+        const titleMatch = embed.title.match(/#(\d+)\)/);
+        if (titleMatch) {
+          confessionIdFromMessage = titleMatch[1];
+        }
+      }
+    }
+
     // Get the latest confession ID as default
     const latestConfessionId = (config.nextConfessionId - 1).toString();
+    const defaultId = confessionIdFromMessage || latestConfessionId;
 
     // Show modal
     const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
@@ -1481,12 +1505,13 @@ async function handleConfessionReply(interaction) {
 
     const replyToInput = new TextInputBuilder()
       .setCustomId('reply_to_id')
-      .setLabel('Confession ID (leave empty for latest)')
+      .setLabel('Confession ID (leave empty for detected)')
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder(`Leave empty to reply to #${latestConfessionId}`)
+      .setPlaceholder(`Leave empty to reply to #${defaultId}`)
       .setRequired(false)
       .setMinLength(1)
-      .setMaxLength(10);
+      .setMaxLength(10)
+      .setValue(confessionIdFromMessage || '');
 
     const confessionInput = new TextInputBuilder()
       .setCustomId('confession_content')
@@ -1580,26 +1605,55 @@ async function handleConfessionReplyModal(interaction) {
       return await interaction.editReply({ embeds: [embed] });
     }
 
-    // Fetch the confession message
+    // Determine the original confession ID (for thread creation)
+    // If this confession is a reply, we need to find the original confession's thread
+    let originalConfessionId = replyToId;
     let confessionMessage;
-    try {
-      confessionMessage = await confessionChannel.messages.fetch(confession.messageId);
-    } catch (error) {
-      const embed = embeds.createDeny(
-        { author: { id: interaction.user.id } },
-        `Could not find the message for confession #${replyToId}.`
-      );
-      return await interaction.editReply({ embeds: [embed] });
+    let thread;
+
+    if (confession.replyTo) {
+      // This is a reply to another confession, so we need to find the original confession
+      originalConfessionId = confession.replyTo;
+      const originalConfession = await confessionService.getConfessionById(interaction.guild.id, originalConfessionId);
+      
+      if (!originalConfession) {
+        const embed = embeds.createDeny(
+          { author: { id: interaction.user.id } },
+          `Could not find the original confession #${originalConfessionId}.`
+        );
+        return await interaction.editReply({ embeds: [embed] });
+      }
+
+      // Fetch the original confession message to get its thread
+      try {
+        confessionMessage = await confessionChannel.messages.fetch(originalConfession.messageId);
+      } catch (error) {
+        const embed = embeds.createDeny(
+          { author: { id: interaction.user.id } },
+          `Could not find the message for confession #${originalConfessionId}.`
+        );
+        return await interaction.editReply({ embeds: [embed] });
+      }
+    } else {
+      // This is an original confession, fetch it directly
+      try {
+        confessionMessage = await confessionChannel.messages.fetch(confession.messageId);
+      } catch (error) {
+        const embed = embeds.createDeny(
+          { author: { id: interaction.user.id } },
+          `Could not find the message for confession #${replyToId}.`
+        );
+        return await interaction.editReply({ embeds: [embed] });
+      }
     }
 
-    // Create or get existing thread
-    let thread;
+    // Create or get existing thread from the original confession
     if (confessionMessage.hasThread) {
       thread = confessionMessage.thread;
     } else {
       try {
         thread = await confessionMessage.startThread({
-          name: `Confession #${replyToId} Replies`,
+          name: `Confession #${originalConfessionId} Replies`,
           autoArchiveDuration: 1440 // 24 hours
         });
       } catch (error) {
@@ -1619,23 +1673,24 @@ async function handleConfessionReplyModal(interaction) {
     const roleColor = member.displayHexColor !== '#000000' ? member.displayHexColor : colors.embed;
 
     // Send the reply in the thread as an embed with confession ID
+    // Always show the original confession ID in the footer
     const replyEmbed = new EmbedBuilder()
       .setColor(roleColor)
       .setTitle(`Anonymous Reply (#${replyConfessionId})`)
       .setDescription(confessionContent)
-      .setFooter({ text: `Reply to #${replyToId}` });
+      .setFooter({ text: `Reply to #${originalConfessionId}` });
 
     const replyMessage = await thread.send({
       embeds: [replyEmbed]
     });
 
-    // Track this reply as a confession
-    await confessionService.addConfessionReply(interaction.guild.id, replyConfessionId, replyToId, replyMessage.id, interaction.user.id);
+    // Track this reply as a confession (always link to the original confession)
+    await confessionService.addConfessionReply(interaction.guild.id, replyConfessionId, originalConfessionId, replyMessage.id, interaction.user.id);
 
     // Confirm to user
     const embed = embeds.createSuccess(
       { author: { id: interaction.user.id } },
-      `Your **reply** has been submitted to confession #${replyToId}. Reply ID: **${replyConfessionId}**`
+      `Your **reply** has been submitted to confession #${originalConfessionId}. Reply ID: **${replyConfessionId}**`
     );
     return await interaction.editReply({ embeds: [embed] });
 

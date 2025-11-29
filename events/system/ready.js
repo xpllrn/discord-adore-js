@@ -169,13 +169,7 @@ async function initializeDatabaseConnection(client, loader) {
     
     loader.update(5, 'Starting background tasks...');
     
-    // Resume background tasks
-    try {
-      const { resumeActiveSprints } = require('./backgroundTasks');
-      await resumeActiveSprints(client);
-    } catch (error) {
-      // Silent fail
-    }
+    // Background tasks are handled by backgroundTasks.js
     
     // Emit ready events
     client.emit('databaseReady');
