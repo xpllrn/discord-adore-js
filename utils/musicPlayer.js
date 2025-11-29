@@ -105,6 +105,31 @@ class MusicPlayer {
       logger.console.log(`Player moved from ${oldChannel} to ${newChannel}`);
     });
 
+    // Listen for voice state updates to detect when all users leave
+    client.on('voiceStateUpdate', (oldState, newState) => {
+      // Check if someone left a voice channel
+      if (oldState.channelId && !newState.channelId) {
+        const channel = oldState.channel;
+        if (!channel) return;
+
+        // Check if bot is in this channel
+        const botMember = channel.guild.members.cache.get(client.user.id);
+        if (!botMember || botMember.voice.channelId !== channel.id) return;
+
+        // Count non-bot members in the channel
+        const members = channel.members.filter(m => !m.user.bot);
+        
+        // If no users left (only bots), disconnect
+        if (members.size === 0) {
+          const player = this.manager.getPlayer(channel.guild.id);
+          if (player) {
+            logger.console.log(`All users left voice channel, disconnecting player in ${channel.guild.name}`);
+            player.destroy();
+          }
+        }
+      }
+    });
+
     this.manager.on('queueEnd', (player) => {
       // Clear voice channel status using REST API
       const voiceChannelId = player.voiceChannelId;
