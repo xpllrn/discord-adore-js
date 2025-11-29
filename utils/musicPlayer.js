@@ -37,8 +37,8 @@ class MusicPlayer {
         volumeDecrementer: 1,
         requesterTransformer: (requester) => requester,
         onDisconnect: {
-          autoReconnect: true,
-          destroyPlayer: false
+          autoReconnect: false,
+          destroyPlayer: true
         },
         onEmptyQueue: {
           destroyAfterMs: undefined,
