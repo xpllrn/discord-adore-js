@@ -210,7 +210,7 @@ module.exports.data = new SlashCommandBuilder()
   .addUserOption(option =>
     option
       .setName('user')
-      .setDescription('The user to view (leave empty for your own)')
+      .setDescription('The user to view')
       .setRequired(false)
   );
 

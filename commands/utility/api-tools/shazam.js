@@ -76,6 +76,19 @@ module.exports = {
       const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
       logger.info(`[SHAZAM] Processing ${mediaType} file...`);
 
+      // Download the audio file first
+      logger.info(`[SHAZAM] Downloading media file...`);
+      const audioResponse = await fetch(mediaUrl);
+      if (!audioResponse.ok) {
+        logger.error(`[SHAZAM] Failed to download media: ${audioResponse.status}`);
+        await loadingMessage.delete().catch(() => {});
+        return embeds.deny(message, 'Failed to download the media file.');
+      }
+
+      const audioBuffer = await audioResponse.arrayBuffer();
+      const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+      logger.info(`[SHAZAM] Media downloaded, size: ${audioBuffer.byteLength} bytes`);
+
       // Use Shazam's song detection endpoint
       const url = 'https://shazam.p.rapidapi.com/songs/v2/detect';
       
@@ -86,7 +99,7 @@ module.exports = {
           'x-rapidapi-key': process.env.RAPIDAPI_KEY || '31e0f8a28amsh98217b5ca7f4ae5p1e5fa9jsn7279a60000af',
           'x-rapidapi-host': 'shazam.p.rapidapi.com'
         },
-        body: mediaUrl
+        body: audioBase64
       };
 
       logger.info(`[SHAZAM] Sending request to Shazam API...`);
@@ -151,8 +164,7 @@ module.exports = {
     } catch (error) {
       logger.error(`[SHAZAM] Error occurred: ${error.message}`);
       logger.error(`[SHAZAM] Stack trace:`, error.stack);
-      logger.webhook.error(error, message);
-      return embeds.deny(message, 'An error occurred while identifying the music');
+      throw error; // Re-throw to trigger webhook logging
     }
   }
 };

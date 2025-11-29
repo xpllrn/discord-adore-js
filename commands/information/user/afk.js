@@ -63,7 +63,7 @@ module.exports = {
     .addStringOption(option =>
       option
         .setName('reason')
-        .setDescription('Reason for being AFK (leave empty to remove AFK status)')
+        .setDescription('Reason for being AFK')
         .setRequired(false)
     ),
 

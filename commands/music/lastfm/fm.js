@@ -145,7 +145,7 @@ module.exports = {
     .addUserOption(option =>
       option
         .setName('user')
-        .setDescription('The user to check (leave empty for yourself)')
+        .setDescription('The user to check')
         .setRequired(false)
     ),
 
