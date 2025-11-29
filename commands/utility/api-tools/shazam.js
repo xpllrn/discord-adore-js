@@ -86,8 +86,16 @@ module.exports = {
       }
 
       const audioBuffer = await audioResponse.arrayBuffer();
-      const audioBase64 = Buffer.from(audioBuffer).toString('base64');
       logger.console.log(`[SHAZAM] Media downloaded, size: ${audioBuffer.byteLength} bytes`);
+
+      // Limit to first 500KB to avoid 413 error (API has size limits)
+      const maxSize = 500 * 1024; // 500KB
+      const limitedBuffer = audioBuffer.byteLength > maxSize 
+        ? audioBuffer.slice(0, maxSize) 
+        : audioBuffer;
+      
+      const audioBase64 = Buffer.from(limitedBuffer).toString('base64');
+      logger.console.log(`[SHAZAM] Sending ${limitedBuffer.byteLength} bytes (${Math.round(limitedBuffer.byteLength / 1024)}KB) to API`);
 
       // Use Shazam's song detection endpoint
       const url = 'https://shazam.p.rapidapi.com/songs/v2/detect';
