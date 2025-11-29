@@ -575,6 +575,13 @@ class WebhookLogger {
       return `**${key}:** ${oldPerms} → ${newPerms}`;
     }
 
+    // Handle available_tags changes (forum channel tags)
+    if (key === 'available_tags') {
+      const oldTags = this.formatTags(old);
+      const newTags = this.formatTags(newValue);
+      return `**${key}:** ${oldTags} → ${newTags}`;
+    }
+
     // Handle name changes
     if (key === 'name') {
       return `**${key}:** ${old || 'None'} → ${newValue || 'None'}`;
@@ -585,8 +592,33 @@ class WebhookLogger {
       return `**${key}:** ${old || 'None'} → ${newValue || 'None'}`;
     }
 
+    // Handle arrays and objects
+    if (Array.isArray(old) || Array.isArray(newValue)) {
+      const oldStr = Array.isArray(old) ? `[${old.length} items]` : (old || 'None');
+      const newStr = Array.isArray(newValue) ? `[${newValue.length} items]` : (newValue || 'None');
+      return `**${key}:** ${oldStr} → ${newStr}`;
+    }
+
+    if (typeof old === 'object' || typeof newValue === 'object') {
+      const oldStr = old ? JSON.stringify(old) : 'None';
+      const newStr = newValue ? JSON.stringify(newValue) : 'None';
+      return `**${key}:** ${oldStr} → ${newStr}`;
+    }
+
     // Default formatting
     return `**${key}:** ${old || 'None'} → ${newValue || 'None'}`;
+  }
+
+  /**
+   * Format forum tags array to human-readable text
+   * @param {Array} tags - Array of tag objects
+   * @returns {string} - Formatted tags text
+   */
+  formatTags(tags) {
+    if (!tags || !Array.isArray(tags) || tags.length === 0) return 'None';
+    
+    const tagNames = tags.map(tag => tag.name || 'Unnamed').join(', ');
+    return `${tags.length} tag${tags.length !== 1 ? 's' : ''} (${tagNames})`;
   }
 
   /**

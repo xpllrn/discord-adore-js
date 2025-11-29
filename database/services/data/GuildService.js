@@ -228,7 +228,6 @@ class GuildService extends BaseService {
       ReactionRoles: [],
       ButtonRoles: [],
       Webhooks: [],
-      Sprints: [],
       Antinuke: {
         enabled: false,
         whitelist: [],
