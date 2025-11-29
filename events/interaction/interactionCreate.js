@@ -115,7 +115,7 @@ module.exports = {
 
           const errorMessage = {
             content: '❌ There was an error while executing this command!',
-            flags: MessageFlags.Ephemeral
+            
           };
 
           if (interaction.replied || interaction.deferred) {
@@ -139,7 +139,7 @@ module.exports = {
           const commandName = commandParts.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
           return interaction.reply({
             content: `✅ You have used the ${commandName} command.`,
-            ephemeral: true,
+            
           });
         }
 
@@ -232,7 +232,7 @@ module.exports = {
       // Try to respond with an error message using safe response
       await safeInteractionResponse(interaction, {
         content: '❌ An error occurred while processing your interaction. Please try again.',
-        flags: MessageFlags.Ephemeral
+        
       });
     }
   },
@@ -746,13 +746,13 @@ async function handleConfirmDelete(interaction) {
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({
           content: '❌ An error occurred while deleting the ticket. Please try again.',
-          ephemeral: true
+          
         });
       } else {
         // If already replied, use followUp or editReply
         await interaction.followUp({
           content: '❌ An error occurred while deleting the ticket. Please try again.',
-          ephemeral: true
+          
         }).catch(() => { });
       }
     } catch (replyError) {
@@ -825,7 +825,7 @@ async function handleBoosterRoleShare(interaction) {
 
       return await safeInteractionResponse(interaction, {
         embeds: [warnEmbed],
-        flags: MessageFlags.Ephemeral
+        
       });
     }
 
@@ -854,7 +854,7 @@ async function handleBoosterRoleShare(interaction) {
       const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Share request not found. It may have expired or been cancelled.');
       return await safeInteractionResponse(interaction, {
         embeds: [embed],
-        flags: MessageFlags.Ephemeral
+        
       });
     }
 
@@ -869,7 +869,7 @@ async function handleBoosterRoleShare(interaction) {
         const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'You already have access to this booster role.');
         return await safeInteractionResponse(interaction, {
           embeds: [embed],
-          flags: MessageFlags.Ephemeral
+          
         });
       }
 
@@ -878,7 +878,7 @@ async function handleBoosterRoleShare(interaction) {
         const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'This booster role has reached the sharing limit (5 people).');
         return await safeInteractionResponse(interaction, {
           embeds: [embed],
-          flags: MessageFlags.Ephemeral
+          
         });
       }
 
@@ -888,7 +888,7 @@ async function handleBoosterRoleShare(interaction) {
         const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Booster role was deleted.');
         return await safeInteractionResponse(interaction, {
           embeds: [embed],
-          flags: MessageFlags.Ephemeral
+          
         });
       }
 
@@ -926,7 +926,7 @@ async function handleBoosterRoleShare(interaction) {
         const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to add booster role. Please check bot permissions.');
         return await safeInteractionResponse(interaction, {
           embeds: [embed],
-          flags: MessageFlags.Ephemeral
+          
         });
       }
 
@@ -956,7 +956,7 @@ async function handleBoosterRoleShare(interaction) {
     const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'An error occurred while processing the share request.');
     return await safeInteractionResponse(interaction, {
       embeds: [embed],
-      flags: MessageFlags.Ephemeral
+      
     });
   }
 }

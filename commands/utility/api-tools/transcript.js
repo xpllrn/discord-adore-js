@@ -1,10 +1,9 @@
-const { embeds } = require('../../core/embeds');
-const { runHelpCommand } = require('../../utils/commandProcessor');
+const { EmbedBuilder } = require('discord.js');
+const { embeds } = require('../../../core/embeds');
+const { runHelpCommand } = require('../../../utils/commandProcessor');
+const { colors, emojis } = require('../../../config/setup');
+const logger = require('../../../utils/logger');
 const { AssemblyAI } = require('assemblyai');
-
-const client = new AssemblyAI({
-  apiKey: 'YOUR_API_KEY'
-});
 
 module.exports = {
   name: "transcript",
@@ -41,7 +40,9 @@ module.exports = {
         const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
         if (repliedMessage.attachments.size > 0) {
           const attachment = repliedMessage.attachments.first();
-          if (attachment.contentType && attachment.contentType.startsWith('audio/')) {
+          const isAudio = (attachment.contentType && attachment.contentType.startsWith('audio/')) ||
+                          /\.(mp3|wav|ogg|m4a|flac|aac|opus|webm)$/i.test(attachment.name);
+          if (isAudio) {
             audioUrl = attachment.url;
           }
         }
@@ -55,25 +56,48 @@ module.exports = {
     }
 
     try {
-      message.channel.sendTyping();
+      // Show loading message
+      const loadingEmbed = new EmbedBuilder()
+        .setColor('#7985cd')
+        .setDescription(`${emojis.loading} Transcribing audio...`);
+
+      const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
 
       // Transcribe with AssemblyAI
+      const assemblyClient = new AssemblyAI({
+        apiKey: 'YOUR_API_KEY'
+      });
+
       const params = {
         audio: audioUrl,
-        speech_model: 'best',
       };
 
-      const transcript = await client.transcripts.transcribe(params);
+      const transcript = await assemblyClient.transcripts.transcribe(params);
 
       if (!transcript || !transcript.text || transcript.text.trim().length === 0) {
-        return embeds.warn(message, 'No speech detected in the audio file.');
+        await loadingMessage.delete().catch(() => {});
+        return embeds.warn(message, 'No speech detected in the audio file');
       }
 
-      // Reply with the transcribed text
-      return message.reply(transcript.text.length > 2000 ? transcript.text.substring(0, 1997) + '...' : transcript.text);
+      // Create result embed
+      const resultEmbed = new EmbedBuilder()
+        .setColor(colors.embed)
+        .setAuthor({
+          name: message.author.displayName || message.author.username,
+          iconURL: message.author.displayAvatarURL({ dynamic: true })
+        })
+        .setTitle('Audio Transcription')
+        .setDescription(`\`\`\`${transcript.text.length > 1900 ? transcript.text.substring(0, 1897) + '...' : transcript.text}\`\`\``)
+        .setFooter({
+          text: 'AssemblyAI',
+          iconURL: 'https://cdn.discordapp.com/emojis/1385950785975746684.png'
+        });
+
+      return loadingMessage.edit({ embeds: [resultEmbed] });
 
     } catch (error) {
-      throw error;
+      logger.webhook.error(error, message);
+      return embeds.deny(message, 'An error occurred while transcribing the audio');
     }
   }
 };

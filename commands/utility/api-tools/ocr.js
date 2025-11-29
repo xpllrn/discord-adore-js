@@ -1,13 +1,7 @@
-const { embeds } = require('../../core/embeds');
-const { runHelpCommand } = require('../../utils/commandProcessor');
-const logger = require('../../utils/logger');
+const { embeds } = require('../../../core/embeds');
+const { runHelpCommand } = require('../../../utils/commandProcessor');
+const logger = require('../../../utils/logger');
 const Optiic = require('optiic');
-
-const OPTIIC_API_KEY=YOUR_KEY_HERE
-
-const optiic = new Optiic({
-  apiKey: 'YOUR_API_KEY'
-});
 
 module.exports = {
   name: "ocr",
@@ -61,6 +55,9 @@ module.exports = {
       message.channel.sendTyping();
 
       // Process with Optiic
+      const optiic = new Optiic({
+        apiKey: 'YOUR_API_KEY'
+      });
       const result = await optiic.process({ url: imageUrl });
 
       if (!result || !result.text || result.text.trim().length === 0) {
