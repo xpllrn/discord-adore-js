@@ -2,6 +2,7 @@ const { PermissionFlagsBits } = require("discord.js");
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
+const config = require('../../../config/setup');
 
 module.exports = {
   name: "topic",
@@ -48,7 +49,7 @@ module.exports = {
     if (topicText.toLowerCase() === 'clear') {
       try {
         await targetChannel.setTopic(null, `Topic cleared by ${message.author.tag}`);
-        return embeds.success(message, `Cleared topic for **#${targetChannel.name}**`);
+        return message.react(config.emojis.success);
       } catch (error) {
         return embeds.deny(message, "An error occurred while trying to **clear** the channel topic");
       }
@@ -56,16 +57,12 @@ module.exports = {
 
     // Validate topic length (Discord limit is 1024 characters)
     if (topicText.length > 1024) {
-      return embeds.deny(message, `Topic is too long! Maximum **1024 characters** allowed (you provided ${topicText.length})`);
+      return embeds.deny(message, `Topic is too long! Maximum **1024 characters** allowed`);
     }
 
     try {
       await targetChannel.setTopic(topicText, `Topic set by ${message.author.tag}`);
-      
-      // Show success message with topic preview
-      const previewText = topicText.length > 100 ? topicText.substring(0, 100) + '...' : topicText;
-      return embeds.success(message, `Set topic for **#${targetChannel.name}**:\n\`${previewText}\``);
-      
+      return message.react(config.emojis.success);
     } catch (error) {
       return embeds.deny(message, "An error occurred while trying to **set** the channel topic");
     }
