@@ -1080,4 +1080,5 @@ async function handleTikTokSlash(interaction, url) {
     }
 }
 
-module.exports.handleVleedMention = handleVleedMention;
+// Export the Instagram scraper for use in responder.js
+module.exports.scrapeInstagram = (url) => InstagramScraper.saveInsta(url, logger);

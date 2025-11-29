@@ -426,11 +426,12 @@ async function processVleedMention(message) {
     // Check if message starts with "adore" (case insensitive)
     const content = message.content.toLowerCase();
     if (content.startsWith('adore ')) {
-      const { handleVleedMention } = require('../../commands/utility/messages/repost');
+      const { handleVleedMention } = require('../../commands/utility/messages/responder');
       await handleVleedMention(message.client, message);
     }
   } catch (error) {
-    // Silent fail for adore mention processing
+    console.error('Error in processVleedMention:', error);
+    // Continue processing other messages
   }
 }
 
