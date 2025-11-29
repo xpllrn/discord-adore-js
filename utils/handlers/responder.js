@@ -1,9 +1,9 @@
 const { AttachmentBuilder } = require('discord.js');
 const axios = require('axios');
-const logger = require('../../../utils/logger');
+const logger = require('../logger');
 
 // Import the Instagram scraper from repost.js
-const repostModule = require('./repost');
+const repostModule = require('../../commands/utility/messages/repost');
 
 // Get the InstagramScraper class - we'll need to export it from repost.js
 async function handleVleedMention(client, message) {
