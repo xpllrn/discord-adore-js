@@ -79,10 +79,13 @@ module.exports = {
       // Use shazam-api.com recognize endpoint
       const url = 'https://shazam-api.com/api/recognize';
       
+      const apiKey = process.env.SHAZAM_API_KEY || 'jZf6PaezB18J5yyzIb7KlHmf6ATxpzD7ZLKzXoQ8MerXAEMYbA6ToluLo2NtXrSg';
+      
       const options = {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({ url: mediaUrl })
       };

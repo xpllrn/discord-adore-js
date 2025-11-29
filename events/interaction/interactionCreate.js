@@ -114,8 +114,7 @@ module.exports = {
           }
 
           const errorMessage = {
-            content: '❌ There was an error while executing this command!',
-            
+            content: '❌ There was an error while executing this command!'
           };
 
           if (interaction.replied || interaction.deferred) {
@@ -138,8 +137,7 @@ module.exports = {
           const commandParts = interaction.customId.split('_').slice(1);
           const commandName = commandParts.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
           return interaction.reply({
-            content: `✅ You have used the ${commandName} command.`,
-            
+            content: `✅ You have used the ${commandName} command.`
           });
         }
 
@@ -231,8 +229,7 @@ module.exports = {
 
       // Try to respond with an error message using safe response
       await safeInteractionResponse(interaction, {
-        content: '❌ An error occurred while processing your interaction. Please try again.',
-        
+        content: '❌ An error occurred while processing your interaction. Please try again.'
       });
     }
   },
@@ -240,6 +237,7 @@ module.exports = {
 
 async function handleCreateTicket(interaction) {
   try {
+    // Ticket creation uses ephemeral for privacy - only the user sees the confirmation
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const guild = interaction.guild;
@@ -745,14 +743,12 @@ async function handleConfirmDelete(interaction) {
       // Check if interaction has been replied to or deferred
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({
-          content: '❌ An error occurred while deleting the ticket. Please try again.',
-          
+          content: '❌ An error occurred while deleting the ticket. Please try again.'
         });
       } else {
         // If already replied, use followUp or editReply
         await interaction.followUp({
-          content: '❌ An error occurred while deleting the ticket. Please try again.',
-          
+          content: '❌ An error occurred while deleting the ticket. Please try again.'
         }).catch(() => { });
       }
     } catch (replyError) {
@@ -824,8 +820,7 @@ async function handleBoosterRoleShare(interaction) {
         .setDescription(`${config.emojis.warn} <@${interaction.user.id}>: This button is **NOT** for you`);
 
       return await safeInteractionResponse(interaction, {
-        embeds: [warnEmbed],
-        
+        embeds: [warnEmbed]
       });
     }
 
@@ -853,8 +848,7 @@ async function handleBoosterRoleShare(interaction) {
 
       const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Share request not found. It may have expired or been cancelled.');
       return await safeInteractionResponse(interaction, {
-        embeds: [embed],
-        
+        embeds: [embed]
       });
     }
 
@@ -868,8 +862,7 @@ async function handleBoosterRoleShare(interaction) {
       if (boosterRole.sharedWith.find(s => s.userId === interaction.user.id)) {
         const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'You already have access to this booster role.');
         return await safeInteractionResponse(interaction, {
-          embeds: [embed],
-          
+          embeds: [embed]
         });
       }
 
@@ -877,8 +870,7 @@ async function handleBoosterRoleShare(interaction) {
       if (boosterRole.sharedWith.length >= 5) {
         const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'This booster role has reached the sharing limit (5 people).');
         return await safeInteractionResponse(interaction, {
-          embeds: [embed],
-          
+          embeds: [embed]
         });
       }
 
@@ -887,8 +879,7 @@ async function handleBoosterRoleShare(interaction) {
       if (!discordRole) {
         const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Booster role was deleted.');
         return await safeInteractionResponse(interaction, {
-          embeds: [embed],
-          
+          embeds: [embed]
         });
       }
 
@@ -925,8 +916,7 @@ async function handleBoosterRoleShare(interaction) {
         logger.webhook.error(error, interaction.message);
         const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to add booster role. Please check bot permissions.');
         return await safeInteractionResponse(interaction, {
-          embeds: [embed],
-          
+          embeds: [embed]
         });
       }
 
@@ -955,8 +945,7 @@ async function handleBoosterRoleShare(interaction) {
     logger.webhook.error(error, interaction.message);
     const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'An error occurred while processing the share request.');
     return await safeInteractionResponse(interaction, {
-      embeds: [embed],
-      
+      embeds: [embed]
     });
   }
 }
@@ -1266,6 +1255,10 @@ async function handleButtonRole(interaction) {
 
 
 // ===== CONFESSION SYSTEM HANDLERS =====
+// NOTE: Confession system uses ephemeral messages for PRIVACY reasons.
+// When users submit confessions or replies, the confirmation messages are ephemeral
+// so that only the submitter can see them. This protects user anonymity.
+// The actual confessions posted to the channel are NOT ephemeral (public).
 
 /**
  * Handle confession submit button
@@ -1505,9 +1498,9 @@ async function handleConfessionReply(interaction) {
 
     const replyToInput = new TextInputBuilder()
       .setCustomId('reply_to_id')
-      .setLabel('Confession ID (leave empty for detected)')
+      .setLabel('Confession ID')
       .setStyle(TextInputStyle.Short)
-      .setPlaceholder(`Leave empty to reply to #${defaultId}`)
+      .setPlaceholder(`reply to #${defaultId}`)
       .setRequired(false)
       .setMinLength(1)
       .setMaxLength(10)
