@@ -76,41 +76,18 @@ module.exports = {
       const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
       logger.console.log(`[SHAZAM] Processing ${mediaType} file...`);
 
-      // Download the audio file first
-      logger.console.log(`[SHAZAM] Downloading media file...`);
-      const audioResponse = await fetch(mediaUrl);
-      if (!audioResponse.ok) {
-        logger.console.error(`[SHAZAM] Failed to download media: ${audioResponse.status}`);
-        await loadingMessage.delete().catch(() => {});
-        return embeds.deny(message, 'Failed to download the media file.');
-      }
-
-      const audioBuffer = await audioResponse.arrayBuffer();
-      logger.console.log(`[SHAZAM] Media downloaded, size: ${audioBuffer.byteLength} bytes`);
-
-      // Limit to first 500KB to avoid 413 error (API has size limits)
-      const maxSize = 500 * 1024; // 500KB
-      const limitedBuffer = audioBuffer.byteLength > maxSize 
-        ? audioBuffer.slice(0, maxSize) 
-        : audioBuffer;
-      
-      const audioBase64 = Buffer.from(limitedBuffer).toString('base64');
-      logger.console.log(`[SHAZAM] Sending ${limitedBuffer.byteLength} bytes (${Math.round(limitedBuffer.byteLength / 1024)}KB) to API`);
-
-      // Use Shazam's song detection endpoint
-      const url = 'https://shazam.p.rapidapi.com/songs/v2/detect';
+      // Use Shazam's recognize-song endpoint with URL
+      const url = `https://shazam.p.rapidapi.com/songs/recognize-song?url=${encodeURIComponent(mediaUrl)}`;
       
       const options = {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'content-type': 'text/plain',
           'x-rapidapi-key': process.env.RAPIDAPI_KEY || '31e0f8a28amsh98217b5ca7f4ae5p1e5fa9jsn7279a60000af',
           'x-rapidapi-host': 'shazam.p.rapidapi.com'
-        },
-        body: audioBase64
+        }
       };
 
-      logger.console.log(`[SHAZAM] Sending request to Shazam API...`);
+      logger.console.log(`[SHAZAM] Sending request to Shazam API with URL...`);
       const response = await fetch(url, options);
       logger.console.log(`[SHAZAM] Response status: ${response.status}`);
       
