@@ -61,7 +61,7 @@ class MusicPlayer {
       
       // Update voice channel status using REST API
       const voiceChannelId = player.voiceChannelId;
-      const statusText = `${config.emojis.music} Playing - ${track.info.title} by ${track.info.author}`;
+      const statusText = `Playing - ${track.info.title} by ${track.info.author}`;
       client.rest.put(`/channels/${voiceChannelId}/voice-status`, { 
         body: { status: statusText } 
       }).catch(() => {});
@@ -142,7 +142,8 @@ class MusicPlayer {
       if (channel) {
         channel.send('Queue has ended.').catch(() => {});
       }
-      player.destroy();
+      // Don't destroy player - stay in VC
+      // player.destroy();
     });
 
     client.on('raw', (d) => this.manager.sendRawData(d));
