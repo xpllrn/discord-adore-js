@@ -76,21 +76,42 @@ module.exports = {
       const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
       logger.console.log(`[SHAZAM] Processing ${mediaType} file...`);
 
-      // Use shazam-api.com recognize endpoint
-      const url = 'https://shazam-api.com/api/recognize';
+      // Download the file first
+      logger.console.log(`[SHAZAM] Downloading media file...`);
+      const fileResponse = await fetch(mediaUrl);
+      if (!fileResponse.ok) {
+        logger.console.error(`[SHAZAM] Failed to download media: ${fileResponse.status}`);
+        await loadingMessage.delete().catch(() => {});
+        return embeds.deny(message, 'Failed to download the media file.');
+      }
+
+      const fileBuffer = await fileResponse.arrayBuffer();
+      logger.console.log(`[SHAZAM] Media downloaded, size: ${fileBuffer.byteLength} bytes`);
+
+      // Limit to first 500KB to avoid issues
+      const maxSize = 500 * 1024; // 500KB
+      const limitedBuffer = fileBuffer.byteLength > maxSize 
+        ? fileBuffer.slice(0, maxSize) 
+        : fileBuffer;
       
-      const apiKey = process.env.SHAZAM_API_KEY || 'jZf6PaezB18J5yyzIb7KlHmf6ATxpzD7ZLKzXoQ8MerXAEMYbA6ToluLo2NtXrSg';
+      // Convert to base64
+      const audioBase64 = Buffer.from(limitedBuffer).toString('base64');
+      logger.console.log(`[SHAZAM] Converted to base64, size: ${audioBase64.length} characters`);
+
+      // Use RapidAPI Shazam detect endpoint
+      const url = 'https://shazam.p.rapidapi.com/songs/v3/detect?timezone=America%2FChicago&locale=en-US';
       
       const options = {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'x-rapidapi-key': process.env.RAPIDAPI_KEY || '31e0f8a28amsh98217b5ca7f4ae5p1e5fa9jsn7279a60000af',
+          'x-rapidapi-host': 'shazam.p.rapidapi.com',
+          'Content-Type': 'text/plain'
         },
-        body: JSON.stringify({ url: mediaUrl })
+        body: audioBase64
       };
-
-      logger.console.log(`[SHAZAM] Sending request to Shazam API with URL: ${mediaUrl}`);
+      
+      logger.console.log(`[SHAZAM] Sending request to RapidAPI Shazam...`);
       const response = await fetch(url, options);
       logger.console.log(`[SHAZAM] Response status: ${response.status}`);
       
