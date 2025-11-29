@@ -863,7 +863,7 @@ class WebhookLogger {
       .setTimestamp();
 
     const actionText = action === 'add' ? 'was granted' : 'was removed from';
-    const executorText = executor ? `<@${executor.id}>` : '<@undefined>';
+    const executorText = executor ? `<@${executor.id}>` : '**Discord Onboarding**';
     embed.setDescription(`<@${member.user.id}> ${actionText} <@&${role.id}> by ${executorText}`);
 
     embed.setFooter({
