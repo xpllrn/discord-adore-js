@@ -138,10 +138,6 @@ class MusicPlayer {
         body: { status: "" } 
       }).catch(() => {});
       
-      const channel = client.channels.cache.get(player.textChannelId);
-      if (channel) {
-        channel.send('Queue has ended.').catch(() => {});
-      }
       // Don't destroy player - stay in VC
       // player.destroy();
     });
@@ -182,50 +178,7 @@ class MusicPlayer {
       return null;
     }
 
-    // If Spotify link, get metadata then search SoundCloud
-    if (isSpotifyLink && res.loadType === 'track' && res.tracks && res.tracks[0]) {
-      const track = res.tracks[0];
-      if (track.info.sourceName === 'spotify') {
-        logger.console.log(`Resolving Spotify track to SoundCloud: ${track.info.title} by ${track.info.author}`);
-        try {
-          const scQuery = `scsearch:${track.info.author} ${track.info.title}`;
-          const scRes = await player.search({ query: scQuery }, message.author);
-          if (scRes.loadType === 'search' && scRes.tracks && scRes.tracks.length > 0) {
-            // Filter out preview tracks and get top 3 results
-            let fullTracks = scRes.tracks.filter(t => 
-              t.info.identifier && 
-              !t.info.identifier.includes('/preview/') &&
-              t.info.duration > 60000 // At least 1 minute
-            ).slice(0, 3);
-            
-            // If no full tracks found, use first 3 results
-            if (fullTracks.length === 0) {
-              fullTracks = scRes.tracks.slice(0, 3);
-              logger.console.warn('Could not find full SoundCloud tracks, using first results');
-            }
-            
-            // Use first available track (others as fallback)
-            res = { ...scRes, tracks: fullTracks };
-            logger.console.log(`Successfully resolved to SoundCloud with ${fullTracks.length} options`);
-          }
-        } catch (error) {
-          logger.console.error('SoundCloud resolution error:', error);
-        }
-      }
-    }
-
-    // If Spotify search failed or returned empty, try SoundCloud
-    if ((res.loadType === 'error' || res.loadType === 'empty') && searchQuery.startsWith('spsearch:')) {
-      logger.console.log('Spotify search failed, trying SoundCloud...');
-      try {
-        const scQuery = searchQuery.replace('spsearch:', 'scsearch:');
-        res = await player.search({ query: scQuery }, message.author);
-      } catch (error) {
-        logger.console.error('SoundCloud search error:', error);
-        if (!player.queue.current) player.destroy();
-        return null;
-      }
-    }
+    // Lavalink with LavaSrc plugin will automatically resolve Spotify to SoundCloud
 
     if (res.loadType === 'error' || res.loadType === 'empty') {
       if (!player.queue.current) player.destroy();
