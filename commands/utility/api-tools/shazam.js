@@ -88,14 +88,25 @@ module.exports = {
       const fileBuffer = await fileResponse.arrayBuffer();
       logger.console.log(`[SHAZAM] Media downloaded, size: ${fileBuffer.byteLength} bytes`);
 
-      // Limit to first 500KB to avoid issues
-      const maxSize = 500 * 1024; // 500KB
-      const limitedBuffer = fileBuffer.byteLength > maxSize 
-        ? fileBuffer.slice(0, maxSize) 
-        : fileBuffer;
+      // Try middle portion of the file (usually has the chorus/hook)
+      const sampleSize = 300 * 1024; // 300KB sample
+      let sampleBuffer;
+      
+      if (fileBuffer.byteLength > sampleSize * 2) {
+        // Take from middle of the file
+        const startPos = Math.floor((fileBuffer.byteLength - sampleSize) / 2);
+        sampleBuffer = fileBuffer.slice(startPos, startPos + sampleSize);
+        logger.console.log(`[SHAZAM] Using middle sample from position ${startPos}`);
+      } else {
+        // File is small, use first portion
+        sampleBuffer = fileBuffer.byteLength > sampleSize 
+          ? fileBuffer.slice(0, sampleSize)
+          : fileBuffer;
+        logger.console.log(`[SHAZAM] Using first ${sampleBuffer.byteLength} bytes`);
+      }
       
       // Convert to base64
-      const audioBase64 = Buffer.from(limitedBuffer).toString('base64');
+      const audioBase64 = Buffer.from(sampleBuffer).toString('base64');
       logger.console.log(`[SHAZAM] Converted to base64, size: ${audioBase64.length} characters`);
 
       // Use RapidAPI Shazam detect endpoint
@@ -125,14 +136,23 @@ module.exports = {
       const result = await response.json();
       logger.console.log(`[SHAZAM] API response received:`, JSON.stringify(result, null, 2));
 
-      // Check if we got a match
-      if (!result || !result.track) {
-        logger.console.warn(`[SHAZAM] No track found in response`);
-        await loadingMessage.delete().catch(() => {});
-        return embeds.warn(message, 'Could not identify any music in this file.');
+      // Check response structure - v3 API returns different format
+      let track = null;
+      
+      if (result.track) {
+        // Direct track object
+        track = result.track;
+      } else if (result.results && result.results.matches && result.results.matches.length > 0) {
+        // Matches array format
+        track = result.results.matches[0];
       }
 
-      const track = result.track;
+      // Check if we got a match
+      if (!track) {
+        logger.console.warn(`[SHAZAM] No track found in response`);
+        await loadingMessage.delete().catch(() => {});
+        return embeds.warn(message, 'Could not identify any music in this file. Try a clearer audio sample or a different part of the song.');
+      }
       const title = track.title || 'Unknown';
       const artist = track.subtitle || 'Unknown';
       logger.console.log(`[SHAZAM] Track identified: ${title} by ${artist}`);
