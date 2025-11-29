@@ -76,18 +76,18 @@ module.exports = {
       const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
       logger.console.log(`[SHAZAM] Processing ${mediaType} file...`);
 
-      // Use Shazam's recognize-song endpoint with URL
-      const url = `https://shazam.p.rapidapi.com/songs/recognize-song?url=${encodeURIComponent(mediaUrl)}`;
+      // Use shazam-api.com recognize endpoint
+      const url = 'https://shazam-api.com/api/recognize';
       
       const options = {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          'x-rapidapi-key': process.env.RAPIDAPI_KEY || '31e0f8a28amsh98217b5ca7f4ae5p1e5fa9jsn7279a60000af',
-          'x-rapidapi-host': 'shazam.p.rapidapi.com'
-        }
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: mediaUrl })
       };
 
-      logger.console.log(`[SHAZAM] Sending request to Shazam API with URL...`);
+      logger.console.log(`[SHAZAM] Sending request to Shazam API with URL: ${mediaUrl}`);
       const response = await fetch(url, options);
       logger.console.log(`[SHAZAM] Response status: ${response.status}`);
       
@@ -109,7 +109,9 @@ module.exports = {
       }
 
       const track = result.track;
-      logger.console.log(`[SHAZAM] Track identified: ${track.title} by ${track.subtitle}`);
+      const title = track.title || 'Unknown';
+      const artist = track.subtitle || 'Unknown';
+      logger.console.log(`[SHAZAM] Track identified: ${title} by ${artist}`);
 
       // Create result embed
       const resultEmbed = new EmbedBuilder()
@@ -120,8 +122,8 @@ module.exports = {
         })
         .setTitle('🎵 Music Identified')
         .addFields(
-          { name: 'Song', value: track.title || 'Unknown', inline: true },
-          { name: 'Artist', value: track.subtitle || 'Unknown', inline: true }
+          { name: 'Song', value: title, inline: true },
+          { name: 'Artist', value: artist, inline: true }
         )
         .setFooter({
           text: 'Powered by Shazam',
@@ -131,11 +133,15 @@ module.exports = {
       // Add thumbnail if available
       if (track.images && track.images.coverart) {
         resultEmbed.setThumbnail(track.images.coverart);
+      } else if (track.share && track.share.image) {
+        resultEmbed.setThumbnail(track.share.image);
       }
 
       // Add URL if available
       if (track.url) {
         resultEmbed.setURL(track.url);
+      } else if (track.share && track.share.href) {
+        resultEmbed.setURL(track.share.href);
       }
 
       // Add genre if available
