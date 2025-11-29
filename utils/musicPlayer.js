@@ -60,13 +60,10 @@ class MusicPlayer {
       logger.console.log(`Track source: ${track.info.sourceName}, identifier: ${track.info.identifier}`);
       
       // Update voice channel status using REST API
-      const guild = client.guilds.cache.get(player.guildId);
-      if (guild) {
-        const voiceChannelId = player.voiceChannelId;
-        const route = client.rest.Route("PUT", `/channels/${voiceChannelId}/voice-status`);
-        const payload = { status: `🎵 ${track.info.title}` };
-        client.rest.request(route, { body: payload }).catch(() => {});
-      }
+      const voiceChannelId = player.voiceChannelId;
+      client.rest.put(`/channels/${voiceChannelId}/voice-status`, { 
+        body: { status: `🎵 ${track.info.title}` } 
+      }).catch(() => {});
       
       const channel = client.channels.cache.get(player.textChannelId);
       if (channel) {
@@ -110,13 +107,10 @@ class MusicPlayer {
 
     this.manager.on('queueEnd', (player) => {
       // Clear voice channel status using REST API
-      const guild = client.guilds.cache.get(player.guildId);
-      if (guild) {
-        const voiceChannelId = player.voiceChannelId;
-        const route = client.rest.Route("PUT", `/channels/${voiceChannelId}/voice-status`);
-        const payload = { status: "" };
-        client.rest.request(route, { body: payload }).catch(() => {});
-      }
+      const voiceChannelId = player.voiceChannelId;
+      client.rest.put(`/channels/${voiceChannelId}/voice-status`, { 
+        body: { status: "" } 
+      }).catch(() => {});
       
       const channel = client.channels.cache.get(player.textChannelId);
       if (channel) {
