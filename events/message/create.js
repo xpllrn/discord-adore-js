@@ -426,7 +426,7 @@ async function processVleedMention(message) {
     // Check if message starts with "adore" (case insensitive)
     const content = message.content.toLowerCase();
     if (content.startsWith('adore ')) {
-      const { handleVleedMention } = require('../../commands/utility/messages/responder');
+      const { handleVleedMention } = require('../../commands/utility/messages/repost');
       await handleVleedMention(message.client, message);
     }
   } catch (error) {

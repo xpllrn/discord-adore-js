@@ -529,22 +529,37 @@ class InstagramScraper {
 
                     if (!success || !html) {
                         try {
-                            const response = await axios.get(url, {
-                                headers: {
-                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
-                                },
-                                timeout: 15000
-                            });
+                            // Try alternative API endpoints
+                            const alternatives = [
+                                'https://v3.saveig.app/api/ajaxSearch',
+                                'https://downloadgram.org/api.php'
+                            ];
 
-                            const instagramHtml = response.data;
-
-                            const jsonMatch = instagramHtml.match(/<script type="application\/json"[^>]*>(.*?)<\/script>/);
-                            if (jsonMatch && jsonMatch[1]) {
+                            for (const apiUrl of alternatives) {
                                 try {
-                                    const jsonData = JSON.parse(jsonMatch[1]);
-                                    // Could implement direct extraction here in the future
-                                } catch (jsonError) {
-                                    // Silent fail
+                                    const altResponse = await axios.post(apiUrl,
+                                        new URLSearchParams({ 
+                                            q: url,
+                                            t: 'media',
+                                            lang: 'en'
+                                        }),
+                                        {
+                                            headers: {
+                                                'content-type': 'application/x-www-form-urlencoded',
+                                                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                                            },
+                                            timeout: 15000
+                                        }
+                                    );
+
+                                    if (altResponse.data) {
+                                        html = altResponse.data;
+                                        success = true;
+                                        break;
+                                    }
+                                } catch (altError) {
+                                    // Try next alternative
+                                    continue;
                                 }
                             }
                         } catch (directError) {
@@ -553,7 +568,7 @@ class InstagramScraper {
                     }
 
                     if (!html) {
-                        return resolve({ status: false, msg: 'Failed to fetch Instagram content' });
+                        return resolve({ status: false, msg: 'Failed to fetch Instagram content from all sources' });
                     }
 
                     const decode = decryptSnapSave(html);
@@ -678,6 +693,7 @@ class InstagramScraper {
                             postUrl: url
                         });
                     } else {
+                        logger.webhook.error(new Error('Instagram: No downloadable content found in scraped HTML'), { url });
                         return resolve({ status: false, msg: 'No downloadable content found', url: url });
                     }
 
@@ -845,7 +861,7 @@ async function handleInstagramSlash(interaction, url) {
 
         if (!result.status) {
             logger.webhook.error(new Error(`Instagram download failed: ${result.msg}`), interaction);
-            return interaction.editReply({ content: 'Failed to download Instagram content' });
+            throw new Error(`Instagram download failed: ${result.msg}`);
         }
 
         const { data } = result;

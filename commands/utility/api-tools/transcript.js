@@ -56,12 +56,8 @@ module.exports = {
     }
 
     try {
-      // Show loading message
-      const loadingEmbed = new EmbedBuilder()
-        .setColor('#7985cd')
-        .setDescription(`${emojis.loading} Transcribing audio...`);
-
-      const loadingMessage = await message.channel.send({ embeds: [loadingEmbed] });
+      // Show typing indicator
+      message.channel.sendTyping();
 
       // Transcribe with AssemblyAI
       const assemblyClient = new AssemblyAI({
@@ -75,25 +71,11 @@ module.exports = {
       const transcript = await assemblyClient.transcripts.transcribe(params);
 
       if (!transcript || !transcript.text || transcript.text.trim().length === 0) {
-        await loadingMessage.delete().catch(() => {});
         return embeds.warn(message, 'No speech detected in the audio file');
       }
 
-      // Create result embed
-      const resultEmbed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setAuthor({
-          name: message.author.displayName || message.author.username,
-          iconURL: message.author.displayAvatarURL({ dynamic: true })
-        })
-        .setTitle('Audio Transcription')
-        .setDescription(`\`\`\`${transcript.text.length > 1900 ? transcript.text.substring(0, 1897) + '...' : transcript.text}\`\`\``)
-        .setFooter({
-          text: 'AssemblyAI',
-          iconURL: 'https://cdn.discordapp.com/emojis/1385950785975746684.png'
-        });
-
-      return loadingMessage.edit({ embeds: [resultEmbed] });
+      // Reply with just the text
+      return message.reply(transcript.text.length > 2000 ? transcript.text.substring(0, 1997) + '...' : transcript.text);
 
     } catch (error) {
       logger.webhook.error(error, message);
