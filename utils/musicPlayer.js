@@ -32,6 +32,7 @@ class MusicPlayer {
       emitNewSongsOnly: true,
       playerOptions: {
         clientBasedPositionUpdateInterval: 150,
+        gapBetweenTracks: 3000,
         defaultSearchPlatform: "spsearch",
         volumeDecrementer: 1,
         requesterTransformer: (requester) => requester,
@@ -58,13 +59,13 @@ class MusicPlayer {
       logger.console.log(`Track started: ${track.info.title} (${track.info.duration}ms)`);
       logger.console.log(`Track source: ${track.info.sourceName}, identifier: ${track.info.identifier}`);
       
-      // Update voice channel status (if supported)
+      // Update voice channel status using REST API
       const guild = client.guilds.cache.get(player.guildId);
       if (guild) {
-        const voiceChannel = guild.channels.cache.get(player.voiceChannelId);
-        if (voiceChannel && voiceChannel.isVoiceBased() && typeof voiceChannel.setStatus === 'function') {
-          voiceChannel.setStatus(`🎵 ${track.info.title}`).catch(() => {});
-        }
+        const voiceChannelId = player.voiceChannelId;
+        const route = client.rest.Route("PUT", `/channels/${voiceChannelId}/voice-status`);
+        const payload = { status: `🎵 ${track.info.title}` };
+        client.rest.request(route, { body: payload }).catch(() => {});
       }
       
       const channel = client.channels.cache.get(player.textChannelId);
@@ -85,15 +86,9 @@ class MusicPlayer {
     this.manager.on('trackError', (player, track, payload) => {
       logger.console.error(`Track error: ${track.info.title}, error: ${payload.exception?.cause || payload.exception?.message}`);
       
-      // If track failed and there are more tracks in queue, skip to next
-      if (player.queue.tracks.length > 0) {
-        logger.console.log('Skipping to next track due to error');
-        player.skip();
-      } else {
-        const channel = client.channels.cache.get(player.textChannelId);
-        if (channel) {
-          channel.send(`❌ Error playing track: ${track.info.title}`).catch(() => {});
-        }
+      const channel = client.channels.cache.get(player.textChannelId);
+      if (channel) {
+        channel.send(`❌ Could not play: **${track.info.title}** - Track unavailable`).catch(() => {});
       }
     });
 
@@ -114,13 +109,13 @@ class MusicPlayer {
     });
 
     this.manager.on('queueEnd', (player) => {
-      // Clear voice channel status (if supported)
+      // Clear voice channel status using REST API
       const guild = client.guilds.cache.get(player.guildId);
       if (guild) {
-        const voiceChannel = guild.channels.cache.get(player.voiceChannelId);
-        if (voiceChannel && voiceChannel.isVoiceBased() && typeof voiceChannel.setStatus === 'function') {
-          voiceChannel.setStatus(null).catch(() => {});
-        }
+        const voiceChannelId = player.voiceChannelId;
+        const route = client.rest.Route("PUT", `/channels/${voiceChannelId}/voice-status`);
+        const payload = { status: "" };
+        client.rest.request(route, { body: payload }).catch(() => {});
       }
       
       const channel = client.channels.cache.get(player.textChannelId);
@@ -240,11 +235,7 @@ class MusicPlayer {
         message.channel.send({ embeds: [embed] }).catch(() => {});
       }
       
-      // Add fallback tracks to queue if available (for error recovery)
-      if (res.tracks.length > 1) {
-        await player.queue.add(res.tracks.slice(1));
-        logger.console.log(`Added ${res.tracks.length - 1} fallback tracks to queue`);
-      }
+
     }
 
     if (!player.playing) await player.play();
