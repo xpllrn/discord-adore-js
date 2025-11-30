@@ -178,7 +178,14 @@ class MusicPlayer {
       return null;
     }
 
-    // Lavalink with LavaSrc plugin will automatically resolve Spotify to SoundCloud
+    // Filter out tracks shorter than 60 seconds (previews)
+    if (res.loadType === 'search' && res.tracks && res.tracks.length > 0) {
+      const filteredTracks = res.tracks.filter(t => t.info.duration >= 60000);
+      if (filteredTracks.length > 0) {
+        res.tracks = filteredTracks;
+        logger.console.log(`Filtered to ${filteredTracks.length} tracks (60s+ only)`);
+      }
+    }
 
     if (res.loadType === 'error' || res.loadType === 'empty') {
       if (!player.queue.current) player.destroy();
@@ -186,18 +193,25 @@ class MusicPlayer {
     }
 
     if (res.loadType === 'playlist') {
-      await player.queue.add(res.tracks);
+      // Filter playlist tracks too
+      const filteredPlaylist = res.tracks.filter(t => t.info.duration >= 60000);
+      await player.queue.add(filteredPlaylist);
       
       const embed = new EmbedBuilder()
         .setColor(0xFFFFFF)
         .setDescription(
-          `${config.emojis.music} ${message.author}: Added playlist \`${res.playlist.name}\` with ${res.tracks.length} tracks`
+          `${config.emojis.music} ${message.author}: Added playlist \`${res.playlist.name}\` with ${filteredPlaylist.length} tracks`
         );
       message.channel.send({ embeds: [embed] }).catch(() => {});
     } else {
-      // If we have multiple tracks (fallback options), add only the first one
-      // The others will be tried if this one fails
+      // Filter single track
       const trackToAdd = res.tracks[0];
+      if (trackToAdd.info.duration < 60000) {
+        message.channel.send('❌ Track too short (preview only), try searching differently').catch(() => {});
+        if (!player.queue.current) player.destroy();
+        return null;
+      }
+      
       await player.queue.add(trackToAdd);
 
       if (player.queue.tracks.length > 0) {
