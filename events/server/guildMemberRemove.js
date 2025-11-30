@@ -127,14 +127,24 @@ async function handleAntinukeCheck(member, executor) {
 
 async function logMemberLeaveOrKick(member, executor, wasKicked) {
   try {
-    const embed = webhookLogger.createServerEventLog({
-      action: wasKicked ? 'memberKick' : 'memberLeave',
-      executor: executor,
-      target: member.user,
-      guild: member.guild
-    });
-
-    await webhookLogger.sendLog(member.guild.id, 'events', embed);
+    if (wasKicked) {
+      // For kicks, use the server event log
+      const embed = webhookLogger.createServerEventLog({
+        action: 'memberKick',
+        executor: executor,
+        target: member.user,
+        guild: member.guild
+      });
+      await webhookLogger.sendLog(member.guild.id, 'events', embed);
+    } else {
+      // For leaves, use the member log (same as join)
+      const embed = webhookLogger.createMemberLog({
+        action: 'memberLeave',
+        member: member,
+        guild: member.guild
+      });
+      await webhookLogger.sendLog(member.guild.id, 'members', embed);
+    }
   } catch (error) {
     // Silent fail for logging
   }

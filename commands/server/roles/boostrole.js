@@ -948,9 +948,16 @@ async function handleShare(client, message, args) {
 
         // Disable buttons on timeout
         const disabledButtons = createButtons(true);
-        await shareMessage.edit({
-          components: [disabledButtons]
-        });
+        try {
+          await shareMessage.edit({
+            components: [disabledButtons]
+          });
+        } catch (editError) {
+          // Ignore "Unknown Message" errors - message was likely deleted
+          if (editError.code !== 10008) {
+            logger.webhook.error(editError, message);
+          }
+        }
       } catch (error) {
         // Message might have been deleted or already handled
         logger.webhook.error(error, message);

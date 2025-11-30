@@ -131,7 +131,7 @@ module.exports = {
       // 2. Add author
       if (messageEmbed.author) {
         let authorParts = [];
-        if (messageEmbed.author.name) authorParts.push(`name: ${messageEmbed.author.name}`);
+        if (messageEmbed.author.name) authorParts.push(messageEmbed.author.name);
         if (messageEmbed.author.iconURL) authorParts.push(`icon: ${messageEmbed.author.iconURL}`);
         if (messageEmbed.author.url) authorParts.push(`url: ${messageEmbed.author.url}`);
         if (authorParts.length > 0) {

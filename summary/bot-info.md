@@ -947,35 +947,72 @@ Deleting roles destroys server structure and can't be easily undone.
 
 #### Module: Permission Protection
 
-**`,antinuke permissions <on|off> [--do strip|kick|ban]`**
+**`,antinuke permissions [permission] [--do strip|kick|ban]`**
 
-**What it protects:** Dangerous permission grants
+**What it protects:** Dangerous permission grants to roles
 
-**Monitored permissions:**
-1. **Administrator** - Full server control
-2. **Ban Members** - Can ban anyone
-3. **Kick Members** - Can kick anyone
-4. **Moderate Members** - Can timeout anyone
-5. **Mention Everyone** - Can ping @everyone
-6. **Manage Guild** - Can change server settings
-7. **Manage Channels** - Can delete channels
-8. **Manage Roles** - Can modify permissions
-9. **Manage Webhooks** - Can create webhooks
+**How to use:**
+
+**Add/Remove a watched permission:**
+```
+,antinuke permissions <permission> --do <punishment>
+```
+
+**View currently watched permissions:**
+```
+,antinuke permissions
+```
+
+**Examples:**
+```
+,antinuke permissions administrator --do kick
+,antinuke permissions ban --do strip
+,antinuke permissions manageroles --do ban
+```
+
+**Valid Permissions You Can Watch:**
+
+You can watch these dangerous permissions (aliases in parentheses):
+- `Administrator` (admin)
+- `BanMembers` (ban)
+- `KickMembers` (kick)
+- `ModerateMembers` (timeout)
+- `MentionEveryone` (mention)
+- `ManageGuild` (manageserver)
+- `ManageChannels` (channels)
+- `ManageRoles` (roles)
+- `ViewAuditLog` (auditlog)
+- `ManageWebhooks` (webhooks)
+- `ManageGuildExpressions` (emojis, expressions)
+- `ManageNicknames` (nicknames)
+
+**Punishment Types:**
+- `strip` - Remove dangerous permissions from the user
+- `kick` - Kick the user from the server
+- `ban` - Ban the user from the server
 
 **How it works:**
 - Monitors role permission changes
-- Detects when dangerous permissions added
+- Detects when watched dangerous permissions are added to roles
 - NO THRESHOLD (any grant triggers it)
 - Reverts permission change
-- Punishes moderator
+- Punishes moderator who made the change
+- Toggles on/off - run command once to add, run again to remove
 
 **Configuration examples:**
 ```
-,antinuke permissions on --do strip
+,antinuke permissions administrator --do strip
 ```
-- Any dangerous permission grant triggers
+- Watches for Administrator permission grants
+- Any Administrator grant triggers
 - Permission change reverted
 - Moderator loses all roles
+
+```
+,antinuke permissions
+```
+- Shows all currently watched permissions
+- Shows current punishment setting
 
 **Why no threshold:** Even ONE Administrator grant to wrong person can destroy server.
 
@@ -988,9 +1025,38 @@ Deleting roles destroys server structure and can't be easily undone.
 6. Moderator stripped of roles
 7. Alt account doesn't get dangerous permissions
 
+**Real-world use cases:**
+
+**Scenario 1: Watch Administrator Only**
+```
+,antinuke permissions administrator --do ban
+```
+- Only watches for Administrator permission
+- Most dangerous permission
+- Instant ban if granted
+
+**Scenario 2: Watch Multiple Permissions**
+```
+,antinuke permissions administrator --do ban
+,antinuke permissions manageroles --do kick
+,antinuke permissions managechannels --do kick
+```
+- Watches Administrator, ManageRoles, and ManageChannels
+- Different punishments for different severity
+- Comprehensive protection
+
+**Scenario 3: Remove a Watched Permission**
+```
+,antinuke permissions administrator
+```
+- Run the same command again (without --do)
+- Removes Administrator from watch list
+- Stops monitoring that permission
+
 **Recommended settings:**
-- All servers: `--do strip`
-- High-security servers: `--do ban`
+- All servers: Watch `Administrator` with `--do ban`
+- High-security servers: Watch `Administrator`, `ManageRoles`, `ManageChannels`, `BanMembers` with `--do strip` or `--do ban`
+- Moderate security: Watch `Administrator` and `ManageRoles` with `--do kick`
 
 ---
 
