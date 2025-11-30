@@ -178,12 +178,15 @@ class MusicPlayer {
       return null;
     }
 
-    // Filter out tracks shorter than 60 seconds (previews)
+    // Filter out tracks shorter than 60 seconds and preview URLs
     if (res.loadType === 'search' && res.tracks && res.tracks.length > 0) {
-      const filteredTracks = res.tracks.filter(t => t.info.duration >= 60000);
+      const filteredTracks = res.tracks.filter(t => 
+        t.info.duration >= 60000 && 
+        !t.info.identifier.includes('/preview/')
+      );
       if (filteredTracks.length > 0) {
         res.tracks = filteredTracks;
-        logger.console.log(`Filtered to ${filteredTracks.length} tracks (60s+ only)`);
+        logger.console.log(`Filtered to ${filteredTracks.length} tracks (60s+, no previews)`);
       }
     }
 
@@ -194,7 +197,10 @@ class MusicPlayer {
 
     if (res.loadType === 'playlist') {
       // Filter playlist tracks too
-      const filteredPlaylist = res.tracks.filter(t => t.info.duration >= 60000);
+      const filteredPlaylist = res.tracks.filter(t => 
+        t.info.duration >= 60000 && 
+        !t.info.identifier.includes('/preview/')
+      );
       await player.queue.add(filteredPlaylist);
       
       const embed = new EmbedBuilder()
@@ -206,8 +212,8 @@ class MusicPlayer {
     } else {
       // Filter single track
       const trackToAdd = res.tracks[0];
-      if (trackToAdd.info.duration < 60000) {
-        message.channel.send('❌ Track too short (preview only), try searching differently').catch(() => {});
+      if (trackToAdd.info.duration < 60000 || trackToAdd.info.identifier.includes('/preview/')) {
+        message.channel.send('❌ Track is preview only, try searching differently').catch(() => {});
         if (!player.queue.current) player.destroy();
         return null;
       }
