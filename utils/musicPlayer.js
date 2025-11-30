@@ -160,13 +160,13 @@ class MusicPlayer {
 
     if (!player.connected) await player.connect();
 
-    // Determine search prefix
+    // Determine search prefix - use SoundCloud for reliability
     let searchQuery = query;
     let isDirectLink = query.includes('://');
     let isSpotifyLink = query.includes('spotify.com');
     
     if (!isDirectLink && !query.startsWith('spsearch:') && !query.startsWith('scsearch:')) {
-      searchQuery = `spsearch:${query}`;
+      searchQuery = `scsearch:${query}`;
     }
 
     let res;
