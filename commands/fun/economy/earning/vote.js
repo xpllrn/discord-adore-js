@@ -70,12 +70,15 @@ module.exports = {
         let apiCheckFailed = false;
 
         try {
-          const apiUrl = `https://top.gg/api/bots/${BOT_ID}/check?userId=${userId}`;
+          const apiUrl = `https://top.gg/api/bots/${BOT_ID}/check`;
           logger.console.log(`🔍 Checking vote status for user ${userId}...`);
 
           const response = await axios.get(apiUrl, {
             headers: {
               'Authorization': TOPGG_API_TOKEN
+            },
+            params: {
+              userId: userId
             },
             timeout: 10000 // 10 second timeout
           });

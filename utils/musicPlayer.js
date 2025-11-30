@@ -12,13 +12,11 @@ class MusicPlayer {
     this.manager = new LavalinkManager({
       nodes: [
         {
-          authorization: 'youshallnotpass',
-          host: 'localhost',
-          port: 2333,
+          authorization: process.env.LAVALINK_PASSWORD || 'youshallnotpass',
+          host: process.env.LAVALINK_HOST || 'localhost',
+          port: parseInt(process.env.LAVALINK_PORT) || 2333,
           id: 'main-node',
-          requestOptions: {
-            timeout: 30000
-          }
+          secure: process.env.LAVALINK_SECURE === 'true'
         }
       ],
       sendToShard: (guildId, payload) => {
@@ -29,21 +27,16 @@ class MusicPlayer {
         id: client.user.id,
       },
       autoSkip: true,
-      emitNewSongsOnly: true,
       playerOptions: {
-        clientBasedPositionUpdateInterval: 150,
-        gapBetweenTracks: 3000,
-        defaultSearchPlatform: "spsearch",
+        defaultSearchPlatform: "ytsearch",
         volumeDecrementer: 1,
-        requesterTransformer: (requester) => requester,
         onDisconnect: {
-          autoReconnect: false,
-          destroyPlayer: true
+          autoReconnect: true,
+          destroyPlayer: false
         },
         onEmptyQueue: {
-          destroyAfterMs: undefined,
-        },
-        useUnresolvedData: false
+          destroyAfterMs: 300000, // 5 minutes
+        }
       }
     });
 
@@ -56,15 +49,7 @@ class MusicPlayer {
     });
 
     this.manager.on('trackStart', (player, track) => {
-      logger.console.log(`Track started: ${track.info.title} (${track.info.duration}ms)`);
-      logger.console.log(`Track source: ${track.info.sourceName}, identifier: ${track.info.identifier}`);
-      
-      // Update voice channel status using REST API
-      const voiceChannelId = player.voiceChannelId;
-      const statusText = `Playing - ${track.info.title} by ${track.info.author}`;
-      client.rest.put(`/channels/${voiceChannelId}/voice-status`, { 
-        body: { status: statusText } 
-      }).catch(() => {});
+      logger.console.log(`Now playing: ${track.info.title}`);
       
       const channel = client.channels.cache.get(player.textChannelId);
       if (channel) {
@@ -78,15 +63,15 @@ class MusicPlayer {
     });
 
     this.manager.on('trackEnd', (player, track, payload) => {
-      logger.console.log(`Track ended: ${track.info.title}, reason: ${payload.reason}, position: ${player.position}ms / ${track.info.duration}ms`);
+      logger.console.log(`Track ended: ${track.info.title}`);
     });
 
     this.manager.on('trackError', (player, track, payload) => {
-      logger.console.error(`Track error: ${track.info.title}, error: ${payload.exception?.cause || payload.exception?.message}`);
+      logger.console.error(`Track error: ${track.info.title}`);
       
       const channel = client.channels.cache.get(player.textChannelId);
       if (channel) {
-        channel.send(`❌ Could not play: **${track.info.title}** - Track unavailable`).catch(() => {});
+        channel.send(`❌ Error playing: **${track.info.title}**`).catch(() => {});
       }
     });
 
@@ -132,14 +117,11 @@ class MusicPlayer {
     });
 
     this.manager.on('queueEnd', (player) => {
-      // Clear voice channel status using REST API
-      const voiceChannelId = player.voiceChannelId;
-      client.rest.put(`/channels/${voiceChannelId}/voice-status`, { 
-        body: { status: "" } 
-      }).catch(() => {});
-      
-      // Don't destroy player - stay in VC
-      // player.destroy();
+      logger.console.log(`Queue ended in guild ${player.guildId}`);
+      const channel = client.channels.cache.get(player.textChannelId);
+      if (channel) {
+        channel.send('✅ Queue finished!').catch(() => {});
+      }
     });
 
     client.on('raw', (d) => this.manager.sendRawData(d));
@@ -160,12 +142,9 @@ class MusicPlayer {
 
     if (!player.connected) await player.connect();
 
-    // Determine search prefix - use YouTube with Google account
+    // Simple search - let Lavalink handle it
     let searchQuery = query;
-    let isDirectLink = query.includes('://');
-    let isSpotifyLink = query.includes('spotify.com');
-    
-    if (!isDirectLink && !query.startsWith('spsearch:') && !query.startsWith('scsearch:') && !query.startsWith('ytsearch:')) {
+    if (!query.includes('://')) {
       searchQuery = `ytsearch:${query}`;
     }
 
@@ -173,21 +152,9 @@ class MusicPlayer {
     try {
       res = await player.search({ query: searchQuery }, message.author);
     } catch (error) {
-      logger.console.error('Lavalink search error:', error);
+      logger.console.error('Search error:', error);
       if (!player.queue.current) player.destroy();
       return null;
-    }
-
-    // Filter out tracks shorter than 60 seconds and preview URLs
-    if (res.loadType === 'search' && res.tracks && res.tracks.length > 0) {
-      const filteredTracks = res.tracks.filter(t => 
-        t.info.duration >= 60000 && 
-        !t.info.identifier.includes('/preview/')
-      );
-      if (filteredTracks.length > 0) {
-        res.tracks = filteredTracks;
-        logger.console.log(`Filtered to ${filteredTracks.length} tracks (60s+, no previews)`);
-      }
     }
 
     if (res.loadType === 'error' || res.loadType === 'empty') {
@@ -196,40 +163,26 @@ class MusicPlayer {
     }
 
     if (res.loadType === 'playlist') {
-      // Filter playlist tracks too
-      const filteredPlaylist = res.tracks.filter(t => 
-        t.info.duration >= 60000 && 
-        !t.info.identifier.includes('/preview/')
-      );
-      await player.queue.add(filteredPlaylist);
+      await player.queue.add(res.tracks);
       
       const embed = new EmbedBuilder()
         .setColor(0xFFFFFF)
         .setDescription(
-          `${config.emojis.music} ${message.author}: Added playlist \`${res.playlist.name}\` with ${filteredPlaylist.length} tracks`
+          `${config.emojis.music} Added playlist \`${res.playlist.name}\` with ${res.tracks.length} tracks`
         );
       message.channel.send({ embeds: [embed] }).catch(() => {});
     } else {
-      // Filter single track
-      const trackToAdd = res.tracks[0];
-      if (trackToAdd.info.duration < 60000 || trackToAdd.info.identifier.includes('/preview/')) {
-        message.channel.send('❌ Track is preview only, try searching differently').catch(() => {});
-        if (!player.queue.current) player.destroy();
-        return null;
-      }
-      
-      await player.queue.add(trackToAdd);
+      const track = res.tracks[0];
+      await player.queue.add(track);
 
       if (player.queue.tracks.length > 0) {
         const embed = new EmbedBuilder()
           .setColor(0xFFFFFF)
           .setDescription(
-            `${config.emojis.music} ${message.author}: Added [\`${trackToAdd.info.title}\`](${trackToAdd.info.uri}) by \`${trackToAdd.info.author}\` to the queue`
+            `${config.emojis.music} Added [\`${track.info.title}\`](${track.info.uri}) to the queue`
           );
         message.channel.send({ embeds: [embed] }).catch(() => {});
       }
-      
-
     }
 
     if (!player.playing) await player.play();

@@ -17,7 +17,7 @@ module.exports = {
     }
 
     const queue = musicPlayer.getQueue(message.guild.id);
-    if (!queue.connection) {
+    if (!queue || !queue.current) {
       return embeds.warn(message, 'Nothing is currently **playing**!');
     }
 
