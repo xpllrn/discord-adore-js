@@ -160,13 +160,13 @@ class MusicPlayer {
 
     if (!player.connected) await player.connect();
 
-    // Determine search prefix - use SoundCloud for reliability
+    // Determine search prefix - use YouTube with Google account
     let searchQuery = query;
     let isDirectLink = query.includes('://');
     let isSpotifyLink = query.includes('spotify.com');
     
-    if (!isDirectLink && !query.startsWith('spsearch:') && !query.startsWith('scsearch:')) {
-      searchQuery = `scsearch:${query}`;
+    if (!isDirectLink && !query.startsWith('spsearch:') && !query.startsWith('scsearch:') && !query.startsWith('ytsearch:')) {
+      searchQuery = `ytsearch:${query}`;
     }
 
     let res;
