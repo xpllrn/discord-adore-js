@@ -12,11 +12,11 @@ class MusicPlayer {
     this.manager = new LavalinkManager({
       nodes: [
         {
-          authorization: process.env.LAVALINK_PASSWORD || 'youshallnotpass',
-          host: process.env.LAVALINK_HOST || 'localhost',
-          port: parseInt(process.env.LAVALINK_PORT) || 2333,
+          authorization: 'youshallnotpass',
+          host: 'localhost',
+          port: 2333,
           id: 'main-node',
-          secure: process.env.LAVALINK_SECURE === 'true'
+          secure: false
         }
       ],
       sendToShard: (guildId, payload) => {
