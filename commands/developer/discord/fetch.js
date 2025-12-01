@@ -51,6 +51,19 @@ module.exports = {
         break;
       }
 
+      case 'mutuals':
+      case 'mutual': {
+        const subcommandInfo = {
+          description: 'Get invite links for all mutual servers with a user',
+          syntax: '{guildprefix}fetch mutuals [user id]',
+          aliases: ['mutual'],
+          parameters: ['user id'],
+          example: '{guildprefix}fetch mutuals 1234567890123456789'
+        };
+        await handleMutuals(client, message, args);
+        break;
+      }
+
       default: {
         return runHelpCommand(message, 'fetch');
       }
@@ -219,5 +232,156 @@ async function handleConfession(client, message, args) {
       args: `${guildId} ${confessionId}`
     });
     return embeds.deny(message, 'An error occurred while revealing the confession.');
+  }
+}
+
+async function handleMutuals(client, message, args) {
+  if (!args[1]) {
+    return embeds.warn(message, 'Please provide a **user ID**!');
+  }
+
+  const userId = args[1];
+
+  // Validate user ID format
+  if (!/^\d{17,19}$/.test(userId)) {
+    return embeds.warn(message, 'Please provide a **valid user ID**!');
+  }
+
+  try {
+    // Fetch the user
+    let targetUser;
+    try {
+      targetUser = await client.users.fetch(userId);
+    } catch (error) {
+      return embeds.deny(message, `Could not fetch user with ID: \`${userId}\``);
+    }
+
+    // Find all mutual servers
+    const mutualGuilds = client.guilds.cache.filter(guild => 
+      guild.members.cache.has(userId)
+    );
+
+    if (mutualGuilds.size === 0) {
+      return embeds.deny(message, `No mutual servers found with **${targetUser.username}**`);
+    }
+
+    // Create invites for each mutual server
+    const inviteResults = [];
+    
+    for (const [guildId, guild] of mutualGuilds) {
+      try {
+        const botMember = guild.members.cache.get(client.user.id);
+        
+        // Check if bot has permission to create invites
+        if (!botMember.permissions.has('CreateInstantInvite')) {
+          inviteResults.push({
+            guild: guild,
+            invite: null,
+            error: 'Missing Create Instant Invite permission'
+          });
+          continue;
+        }
+
+        // Try to fetch existing invites first
+        let existingInvite = null;
+        try {
+          const invites = await guild.invites.fetch();
+          existingInvite = invites.find(invite => 
+            !invite.temporary && 
+            (invite.maxAge === 0 || invite.expiresTimestamp > Date.now()) &&
+            invite.maxUses === 0
+          );
+        } catch (error) {
+          // If we can't fetch invites, we'll create a new one
+        }
+
+        if (existingInvite) {
+          inviteResults.push({
+            guild: guild,
+            invite: existingInvite.url,
+            error: null
+          });
+          continue;
+        }
+
+        // Find any text channel where bot can create invites
+        const targetChannel = guild.channels.cache.find(channel => 
+          channel.type === 0 && // Text channel
+          channel.permissionsFor(botMember).has('CreateInstantInvite')
+        );
+
+        if (!targetChannel) {
+          inviteResults.push({
+            guild: guild,
+            invite: null,
+            error: 'No suitable channel found'
+          });
+          continue;
+        }
+
+        // Create the invite
+        const newInvite = await targetChannel.createInvite({
+          maxAge: 0, // Never expires
+          maxUses: 0, // Unlimited uses
+          unique: true,
+          reason: `Fetch mutuals created by ${message.author.username}`
+        });
+
+        inviteResults.push({
+          guild: guild,
+          invite: newInvite.url,
+          error: null
+        });
+
+      } catch (error) {
+        inviteResults.push({
+          guild: guild,
+          invite: null,
+          error: 'Failed to create invite'
+        });
+      }
+    }
+
+    // Build the response embed
+    const mutualsEmbed = new EmbedBuilder()
+      .setColor(config.colors.info)
+      .setTitle(`Mutual Servers with ${targetUser.username}`)
+      .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
+      .setDescription(`Found **${mutualGuilds.size}** mutual server${mutualGuilds.size !== 1 ? 's' : ''}`)
+      .setFooter({ text: `Requested by ${message.author.username}` });
+
+    // Add fields for each server
+    const successfulInvites = inviteResults.filter(r => r.invite);
+    const failedInvites = inviteResults.filter(r => !r.invite);
+
+    if (successfulInvites.length > 0) {
+      const inviteList = successfulInvites
+        .map(r => `• [${r.guild.name}](${r.invite}) (\`${r.guild.id}\`)`)
+        .join('\n');
+      
+      mutualsEmbed.addFields({
+        name: `✅ Invites (${successfulInvites.length})`,
+        value: inviteList.length > 1024 ? inviteList.substring(0, 1021) + '...' : inviteList,
+        inline: false
+      });
+    }
+
+    if (failedInvites.length > 0) {
+      const failedList = failedInvites
+        .map(r => `• **${r.guild.name}** - ${r.error}`)
+        .join('\n');
+      
+      mutualsEmbed.addFields({
+        name: `❌ Failed (${failedInvites.length})`,
+        value: failedList.length > 1024 ? failedList.substring(0, 1021) + '...' : failedList,
+        inline: false
+      });
+    }
+
+    return message.channel.send({ embeds: [mutualsEmbed] });
+
+  } catch (error) {
+    logger.webhook.error(error, message);
+    return embeds.deny(message, `An error occurred while fetching mutual servers for user \`${userId}\``);
   }
 }
