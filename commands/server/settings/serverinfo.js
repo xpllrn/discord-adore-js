@@ -32,10 +32,20 @@ module.exports = {
       const boostLevel = guild.premiumTier;
       const boostCount = guild.premiumSubscriptionCount || 0;
       const boosterCount = guild.members.cache.filter(m => m.premiumSince).size;
+
+      // Verification level mapping
+      const verificationLevels = {
+        0: 'None',
+        1: 'Low',
+        2: 'Medium',
+        3: 'High',
+        4: 'Very High'
+      };
+      const verificationLevel = verificationLevels[guild.verificationLevel] || 'Unknown';
       
       // Build container with display components
       const container = new ContainerBuilder()
-        .setAccentColor(colors.info);
+        .setAccentColor(parseInt(colors.info.replace('#', ''), 16));
 
       // Title and description section
       if (guild.iconURL({ size: 1024 })) {
@@ -79,42 +89,26 @@ module.exports = {
         text.setContent(`*Server ID: ${guild.id} • Owner ID: ${owner.id} • Verification: ${verificationLevel}*`)
       );
 
-      // Build buttons for server assets
-      const buttons = [];
-
-      if (guild.icon) {
-        buttons.push(
+      // Build buttons for server assets (always show all 3, disable if not available)
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
           new ButtonBuilder()
             .setStyle(ButtonStyle.Link)
             .setLabel('Icon')
-            .setURL(guild.iconURL({ size: 1024 }))
-        );
-      }
-
-      if (guild.splash) {
-        buttons.push(
+            .setURL(guild.iconURL({ size: 1024 }) || 'https://discord.com')
+            .setDisabled(!guild.icon),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Link)
             .setLabel('Splash')
-            .setURL(guild.splashURL({ size: 1024 }))
-        );
-      }
-
-      if (guild.banner) {
-        buttons.push(
+            .setURL(guild.splashURL({ size: 1024 }) || 'https://discord.com')
+            .setDisabled(!guild.splash),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Link)
             .setLabel('Banner')
-            .setURL(guild.bannerURL({ size: 1024 }))
-        );
-      }
-
-      // Add buttons to container if any exist
-      if (buttons.length > 0) {
-        container.addActionRowComponents((actionRow) =>
-          actionRow.setComponents(...buttons)
-        );
-      }
+            .setURL(guild.bannerURL({ size: 1024 }) || 'https://discord.com')
+            .setDisabled(!guild.banner)
+        )
+      );
 
       // Send with Components V2 flag
       return message.channel.send({
