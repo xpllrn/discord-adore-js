@@ -60,14 +60,13 @@ module.exports = {
                 .setURL(guild.iconURL({ size: 1024 }))
                 .setDescription(`${guild.name} icon`)
             )
-        );
+        );  
       } else {
         container.addTextDisplayComponents(
           (text) => text.setContent(`# ${guild.name}`),
-          (text) => text.setContent(guild.description || '*No description set*')
+          (text) => text.setContent(`-# ${guild.description || '*No description set*'}`)
         );
-      }
-
+      } 
       // Created date with owner
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
@@ -78,15 +77,15 @@ module.exports = {
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`-# Total: ${totalMembers} • Humans: ${humans} • Bots: ${bots}`),
-        (text) => text.setContent(`-# Roles: ${roleCount} • Channels: ${channelCount} • Emojis: ${emojiCount}`),
-        (text) => text.setContent(`-# ${boostCount} boosts from ${boosterCount} boosters • Level ${boostLevel}`)
+        (text) => text.setContent(`Total: ${totalMembers} • Humans: ${humans} • Bots: ${bots}`),
+        (text) => text.setContent(`Roles: ${roleCount} • Channels: ${channelCount} • Emojis: ${emojiCount}`),
+        (text) => text.setContent(`${boostCount} boosts from ${boosterCount} boosters • Level ${boostLevel}`)
       );
 
       // Footer
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`*Server ID: ${guild.id} • Owner ID: ${owner.id} • Verification: ${verificationLevel}*`)
+        text.setContent(`Owner ID: ${owner.id}`)
       );
 
       // Build buttons for server assets (always show all 3, disable if not available)
