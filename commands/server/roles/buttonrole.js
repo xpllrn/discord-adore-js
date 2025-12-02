@@ -193,6 +193,11 @@ module.exports = {
           // Get the existing container data
           const existingContainer = components[containerIndex];
           
+          // Debug: Log the container structure
+          console.log('Container structure:', JSON.stringify(existingContainer, null, 2));
+          console.log('Container type:', existingContainer.type);
+          console.log('Container components:', existingContainer.components?.length);
+          
           // Create a new container and copy all existing components
           const newContainer = new ContainerBuilder();
           
@@ -203,6 +208,7 @@ module.exports = {
           
           // Copy all existing components from the container
           if (existingContainer.components && Array.isArray(existingContainer.components)) {
+            console.log('Copying', existingContainer.components.length, 'components');
             for (const comp of existingContainer.components) {
               // Reconstruct each component based on its type
               if (comp.type === 1) {
@@ -224,22 +230,29 @@ module.exports = {
               } else {
                 // For other component types, use .from() to copy them
                 // This includes text displays, sections, separators, etc.
+                console.log('Copying component type:', comp.type);
                 try {
                   if (comp.type === 14) { // Separator
                     const separator = SeparatorBuilder.from(comp);
                     newContainer.addSeparatorComponents(() => separator);
+                    console.log('Added separator');
                   } else if (comp.type === 15) { // Text display
                     const textDisplay = TextDisplayBuilder.from(comp);
                     newContainer.addTextDisplayComponents(() => textDisplay);
+                    console.log('Added text display');
                   } else if (comp.type === 11) { // Section
                     const section = SectionBuilder.from(comp);
                     newContainer.addSectionComponents(() => section);
+                    console.log('Added section');
                   } else if (comp.type === 16) { // Media gallery
                     const gallery = MediaGalleryBuilder.from(comp);
                     newContainer.addMediaGalleryComponents(() => gallery);
+                    console.log('Added gallery');
+                  } else {
+                    console.log('Unknown component type:', comp.type);
                   }
                 } catch (err) {
-                  console.error('Error copying component:', err);
+                  console.error('Error copying component type', comp.type, ':', err);
                 }
               }
             }
