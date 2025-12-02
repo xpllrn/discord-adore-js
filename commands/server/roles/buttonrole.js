@@ -511,8 +511,153 @@ module.exports = {
         message,
         'Are you sure you want to **remove all button roles**?',
         async (interaction, sentMessage) => {
+          // Group button roles by message
+          const messageGroups = {};
+          for (const br of buttonRoles) {
+            if (!messageGroups[br.messageId]) {
+              messageGroups[br.messageId] = {
+                channelId: br.channelId,
+                buttonIds: []
+              };
+            }
+            messageGroups[br.messageId].buttonIds.push(br.buttonId);
+          }
+
+          // Remove buttons from each message
+          let removedCount = 0;
+          for (const [messageId, data] of Object.entries(messageGroups)) {
+            try {
+              const channel = message.guild.channels.cache.get(data.channelId);
+              if (channel) {
+                const targetMessage = await channel.messages.fetch(messageId).catch(() => null);
+                if (targetMessage) {
+                  const isV2Message = targetMessage.flags?.has('IsComponentsV2');
+                  
+                  if (isV2Message) {
+                    // V2 message - rebuild container without button action rows
+                    const { 
+                      ContainerBuilder, 
+                      TextDisplayBuilder,
+                      SectionBuilder,
+                      SeparatorBuilder,
+                      MediaGalleryBuilder,
+                      MessageFlags 
+                    } = require('discord.js');
+                    
+                    let components = [...targetMessage.components];
+                    let containerIndex = -1;
+                    for (let i = components.length - 1; i >= 0; i--) {
+                      if (components[i].components && Array.isArray(components[i].components)) {
+                        containerIndex = i;
+                        break;
+                      }
+                    }
+                    
+                    if (containerIndex !== -1) {
+                      const existingContainer = components[containerIndex];
+                      const newContainer = new ContainerBuilder();
+                      
+                      // Copy accent color
+                      if (existingContainer.data?.accent_color) {
+                        newContainer.setAccentColor(existingContainer.data.accent_color);
+                      }
+                      
+                      // Copy all non-button components
+                      if (existingContainer.components && Array.isArray(existingContainer.components)) {
+                        for (const comp of existingContainer.components) {
+                          // Skip action rows (buttons)
+                          if (comp.type === 1) {
+                            // Check if this action row contains buttonrole buttons
+                            const hasButtonRole = comp.components?.some(btn => 
+                              data.buttonIds.includes(btn.custom_id)
+                            );
+                            if (hasButtonRole) {
+                              continue; // Skip this action row
+                            }
+                          }
+                          
+                          // Copy other components
+                          try {
+                            if (comp.type === 14) { // Separator
+                              newContainer.addSeparatorComponents((separator) => {
+                                if (comp.divider !== undefined) separator.setDivider(comp.divider);
+                                if (comp.spacing !== undefined) separator.setSpacing(comp.spacing);
+                                return separator;
+                              });
+                            } else if (comp.type === 10) { // Text display
+                              const content = comp.content || '';
+                              newContainer.addTextDisplayComponents((text) => text.setContent(content));
+                            } else if (comp.type === 11) { // Section
+                              newContainer.addSectionComponents((section) => {
+                                if (comp.components && Array.isArray(comp.components)) {
+                                  const textDisplays = comp.components
+                                    .filter(c => c.type === 10)
+                                    .map(c => (text) => text.setContent(c.content || ''));
+                                  if (textDisplays.length > 0) {
+                                    section.addTextDisplayComponents(...textDisplays);
+                                  }
+                                }
+                                if (comp.accessory && comp.accessory.type === 13) {
+                                  section.setThumbnailAccessory((thumbnail) => {
+                                    if (comp.accessory.url) thumbnail.setURL(comp.accessory.url);
+                                    if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                                    if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                                    return thumbnail;
+                                  });
+                                }
+                                return section;
+                              });
+                            } else if (comp.type === 12) { // Media gallery
+                              newContainer.addMediaGalleryComponents((gallery) => {
+                                if (comp.items && Array.isArray(comp.items)) {
+                                  const items = comp.items.map(item => (mediaItem) => {
+                                    if (item.url) mediaItem.setURL(item.url);
+                                    if (item.description) mediaItem.setDescription(item.description);
+                                    if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
+                                    return mediaItem;
+                                  });
+                                  gallery.addItems(...items);
+                                }
+                                return gallery;
+                              });
+                            }
+                          } catch (err) {
+                            console.error('Error copying component:', err);
+                          }
+                        }
+                      }
+                      
+                      components[containerIndex] = newContainer;
+                      await targetMessage.edit({ 
+                        components: components,
+                        flags: MessageFlags.IsComponentsV2
+                      });
+                      removedCount++;
+                    }
+                  } else {
+                    // Regular message - remove button action rows
+                    let components = targetMessage.components || [];
+                    components = components.map(row => {
+                      const newComponents = row.components.filter(component => 
+                        !data.buttonIds.includes(component.customId)
+                      );
+                      return ActionRowBuilder.from(row).setComponents(newComponents);
+                    }).filter(row => row.components.length > 0);
+
+                    await targetMessage.edit({ components: components });
+                    removedCount++;
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error removing buttons from message:', messageId, error);
+            }
+          }
+
+          // Clear from database
           await guildService.clearAllButtonRoles(message.guild.id);
-          const successEmbed = embeds.createSuccess(message, 'Removed all button roles');
+          
+          const successEmbed = embeds.createSuccess(message, `Removed all button roles from ${removedCount} message(s)`);
           await sentMessage.edit({ embeds: [successEmbed], components: [] });
         }
       );
