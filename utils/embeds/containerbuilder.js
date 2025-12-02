@@ -75,40 +75,36 @@ class CustomContainerBuilder {
                 Container.setAccentColor(colorValue);
             } else if (paramName === 'section') {
                 // Section with text and optional thumbnail
-                // Format: text1&&thumbnail_url OR text1&&text2&&thumbnail_url
+                // Format: text1&&text2&&...&&thumbnail_url (up to 3 text displays)
+                // If last part is a URL, it's treated as thumbnail
                 const parts = paramValue.split('&&').map(p => p.trim());
                 
-                let text1, text2, thumbnailUrl;
+                let textParts = [];
+                let thumbnailUrl = null;
                 
-                if (parts.length === 2) {
-                    // Format: text&&thumbnail
-                    text1 = parts[0];
-                    thumbnailUrl = parts[1];
-                } else if (parts.length >= 3) {
-                    // Format: text1&&text2&&thumbnail
-                    text1 = parts[0];
-                    text2 = parts[1];
-                    thumbnailUrl = parts[2];
+                // Check if last part is a URL (thumbnail)
+                const lastPart = parts[parts.length - 1];
+                if (lastPart && (lastPart.startsWith('http://') || lastPart.startsWith('https://'))) {
+                    thumbnailUrl = lastPart;
+                    textParts = parts.slice(0, -1); // All parts except last
+                } else {
+                    textParts = parts; // All parts are text
                 }
 
-                if (text1) {
+                if (textParts.length > 0) {
                     Container.addSectionComponents((section) => {
                         const sectionBuilder = section;
                         
-                        // Add text displays
-                        if (text2 && text2.length > 0) {
+                        // Add up to 3 text displays
+                        const textsToAdd = textParts.slice(0, 3).filter(t => t.length > 0);
+                        if (textsToAdd.length > 0) {
                             sectionBuilder.addTextDisplayComponents(
-                                (text) => text.setContent(text1),
-                                (text) => text.setContent(text2)
-                            );
-                        } else {
-                            sectionBuilder.addTextDisplayComponents(
-                                (text) => text.setContent(text1)
+                                ...textsToAdd.map(t => (text) => text.setContent(t))
                             );
                         }
 
                         // Add thumbnail if provided
-                        if (thumbnailUrl && (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://'))) {
+                        if (thumbnailUrl) {
                             sectionBuilder.setThumbnailAccessory((thumbnail) =>
                                 thumbnail.setURL(thumbnailUrl).setDescription('Image')
                             );
