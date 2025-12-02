@@ -1,5 +1,7 @@
-const { ContainerBuilder, SectionBuilder, MessageFlags } = require('discord.js');
+const { ContainerBuilder, MessageFlags } = require('discord.js');
 const { colors } = require('../../../config/setup');
+const { findRole } = require('../../../handlers/finder');
+const { embeds } = require('../../../core/embeds');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -12,22 +14,17 @@ module.exports = {
     try {
       // Get role from mention, ID, or name
       if (!args[0]) {
-        return message.reply('Please provide a role mention, ID, or name.');
+        return embeds.warn(message, 'Please provide a role mention, ID, or name.');
       }
 
-      let role;
-      const roleId = args[0].replace(/[<>@&]/g, '');
-      role = message.guild.roles.cache.get(roleId);
+      const roleInput = args.join(' ');
+      const roleResult = findRole(message.guild, roleInput);
 
-      if (!role) {
-        // Try to find by name
-        const roleName = args.join(' ');
-        role = message.guild.roles.cache.find(r => r.name.toLowerCase() === roleName.toLowerCase());
+      if (!roleResult.found) {
+        return embeds.warn(message, roleResult.error);
       }
 
-      if (!role) {
-        return message.reply('Role not found.');
-      }
+      const role = roleResult.role;
 
       // Calculate created timestamp
       const createdTimestamp = Math.floor(role.createdTimestamp / 1000);
@@ -37,14 +34,6 @@ module.exports = {
 
       // Role color
       const roleColor = role.hexColor;
-
-      // Role position
-      const position = role.position;
-
-      // Permissions
-      const isAdmin = role.permissions.has('Administrator');
-      const isMentionable = role.mentionable;
-      const isHoisted = role.hoist;
 
       // Build container with display components
       const container = new ContainerBuilder()

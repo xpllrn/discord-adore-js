@@ -1,5 +1,7 @@
-const { ContainerBuilder, SectionBuilder, MessageFlags } = require('discord.js');
+const { ContainerBuilder, MessageFlags } = require('discord.js');
 const { colors } = require('../../../config/setup');
+const { findChannel } = require('../../../handlers/finder');
+const { embeds } = require('../../../core/embeds');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -13,11 +15,11 @@ module.exports = {
       // Get channel from mention, ID, or current channel
       let channel;
       if (args[0]) {
-        const channelId = args[0].replace(/[<>#]/g, '');
-        channel = message.guild.channels.cache.get(channelId);
-        if (!channel) {
-          return message.reply('Channel not found.');
+        const channelResult = findChannel(message.guild, args[0]);
+        if (!channelResult.found) {
+          return embeds.warn(message, channelResult.error);
         }
+        channel = channelResult.channel;
       } else {
         channel = message.channel;
       }
