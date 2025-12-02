@@ -31,15 +31,12 @@ module.exports = {
 
       // Calculate created timestamp
       const createdTimestamp = Math.floor(role.createdTimestamp / 1000);
-      const createdDate = new Date(role.createdTimestamp);
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      const formattedDate = `${createdDate.getDate()} ${monthNames[createdDate.getMonth()]} ${createdDate.getFullYear()}`;
 
       // Role members count
       const memberCount = role.members.size;
 
       // Role color
-      const roleColor = role.hexColor === '#000000' ? 'Default' : role.hexColor;
+      const roleColor = role.hexColor;
 
       // Role position
       const position = role.position;
@@ -62,20 +59,20 @@ module.exports = {
       // Created date
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`Created: ${formattedDate} (<t:${createdTimestamp}:R>)`)
+        text.setContent(`Created: <t:${createdTimestamp}:D> (<t:${createdTimestamp}:R>)`)
       );
 
       // Information section
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`> **ID**: \`${role.id}\` • **Color**: \`${roleColor}\`\n> **Members**: ${memberCount} • **Position**: ${position}\n> **Mentionable**: ${isMentionable ? 'Yes' : 'No'} • **Hoisted**: ${isHoisted ? 'Yes' : 'No'} • **Admin**: ${isAdmin ? 'Yes' : 'No'}`)
+        (text) => text.setContent(`> **ID**: \`${role.id}\` • **Color**: \`${roleColor}\`\n> **Members**: ${memberCount} • **Position**: ${position}\n> **Mentionable**: ${isMentionable ? 'Yes' : 'No'} • **Hoisted**: ${isHoisted ? 'Yes' : 'No'}`)
       );
 
       // Footer
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`-# Role ID: ${role.id} • Guild ID: ${message.guild.id}`)
+        text.setContent(`-# Guild ID: ${message.guild.id}`)
       );
 
       // Send with Components V2 flag

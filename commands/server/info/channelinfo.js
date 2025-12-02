@@ -24,9 +24,6 @@ module.exports = {
 
       // Calculate created timestamp
       const createdTimestamp = Math.floor(channel.createdTimestamp / 1000);
-      const createdDate = new Date(channel.createdTimestamp);
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      const formattedDate = `${createdDate.getDate()} ${monthNames[createdDate.getMonth()]} ${createdDate.getFullYear()}`;
 
       // Channel type mapping
       const channelTypes = {
@@ -53,20 +50,20 @@ module.exports = {
       // Created date
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`Created: ${formattedDate} (<t:${createdTimestamp}:R>)`)
+        text.setContent(`Created: <t:${createdTimestamp}:D> (<t:${createdTimestamp}:R>)`)
       );
 
       // Information section
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`> **ID**: \`${channel.id}\` • **Type**: \`${channelType}\`\n> **Category**: ${channel.parent ? `<#${channel.parentId}> \`${channel.parentId}\`` : 'None'} • **Guild**: ${message.guild.name} \`${message.guild.id}\``)
+        (text) => text.setContent(`> **ID**: \`${channel.id}\` • **Type**: \`${channelType}\`\n> **Category**: ${channel.parent ? `<#${channel.parentId}> \`${channel.parentId}\`` : 'None'}`)
       );
 
       // Footer
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`-# Channel ID: ${channel.id}`)
+        text.setContent(`-# Guild ID: ${message.guild.id}`)
       );
 
       // Send with Components V2 flag
