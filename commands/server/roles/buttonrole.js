@@ -438,7 +438,7 @@ module.exports = {
       const buttonRoles = await guildService.getButtonRoles(message.guild.id) || [];
 
       if (buttonRoles.length === 0) {
-        return embeds.warn(message, 'No button roles found!');
+        return embeds.warn(message, 'No **button roles** were found!');
       }
 
       // Clean up invalid roles and group by message
