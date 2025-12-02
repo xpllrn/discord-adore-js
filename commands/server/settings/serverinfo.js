@@ -48,7 +48,7 @@ module.exports = {
         );  
       } else {
         container.addTextDisplayComponents(
-          (text) => text.setContent(`-# ${guild.description || '*No description set*'}`)
+          (text) => text.setContent(`-# ${guild.description || 'No description set'}`)
         );
       } 
       // Created date with owner
