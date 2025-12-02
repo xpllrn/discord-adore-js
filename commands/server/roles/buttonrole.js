@@ -210,17 +210,21 @@ module.exports = {
               // Reconstruct each component based on its type
               if (comp.type === 1) {
                 // Action row with buttons - collect them
-                const existingButtons = comp.components.map(btnData => {
-                  const btn = new V2ButtonBuilder();
-                  if (btnData.custom_id) btn.setCustomId(btnData.custom_id);
-                  if (btnData.label) btn.setLabel(btnData.label);
-                  if (btnData.style) btn.setStyle(btnData.style);
-                  if (btnData.emoji) btn.setEmoji(btnData.emoji);
-                  if (btnData.url) btn.setURL(btnData.url);
-                  if (btnData.disabled) btn.setDisabled(btnData.disabled);
-                  return btn;
-                });
-                allExistingButtons.push(...existingButtons);
+                if (comp.components && Array.isArray(comp.components)) {
+                  const existingButtons = comp.components
+                    .filter(btnData => btnData && (btnData.custom_id || btnData.url)) // Only valid buttons
+                    .map(btnData => {
+                      const btn = new V2ButtonBuilder();
+                      if (btnData.custom_id) btn.setCustomId(btnData.custom_id);
+                      if (btnData.label) btn.setLabel(btnData.label);
+                      if (btnData.style) btn.setStyle(btnData.style);
+                      if (btnData.emoji) btn.setEmoji(btnData.emoji);
+                      if (btnData.url) btn.setURL(btnData.url);
+                      if (btnData.disabled) btn.setDisabled(btnData.disabled);
+                      return btn;
+                    });
+                  allExistingButtons.push(...existingButtons);
+                }
               } else {
                 // For other component types, manually reconstruct them
                 // Component types based on actual Discord API:
@@ -240,9 +244,39 @@ module.exports = {
                     const content = comp.content || '';
                     newContainer.addTextDisplayComponents((text) => text.setContent(content));
                   } else if (comp.type === 11) { // Section
-                    // Use SectionBuilder.from() to properly copy the section with all its accessories
-                    const copiedSection = SectionBuilder.from(comp);
-                    newContainer.addSectionComponents(() => copiedSection);
+                    newContainer.addSectionComponents((section) => {
+                      // Copy section text displays
+                      if (comp.components && Array.isArray(comp.components)) {
+                        const textDisplays = comp.components
+                          .filter(c => c.type === 10)
+                          .map(c => (text) => text.setContent(c.content || ''));
+                        if (textDisplays.length > 0) {
+                          section.addTextDisplayComponents(...textDisplays);
+                        }
+                      }
+                      // Copy accessory (thumbnail or button)
+                      if (comp.accessory) {
+                        if (comp.accessory.type === 13) { // Thumbnail
+                          section.setThumbnailAccessory((thumbnail) => {
+                            if (comp.accessory.url) thumbnail.setURL(comp.accessory.url);
+                            if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                            if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                            return thumbnail;
+                          });
+                        } else if (comp.accessory.type === 2) { // Button accessory
+                          section.setButtonAccessory((btn) => {
+                            if (comp.accessory.custom_id) btn.setCustomId(comp.accessory.custom_id);
+                            if (comp.accessory.label) btn.setLabel(comp.accessory.label);
+                            if (comp.accessory.style) btn.setStyle(comp.accessory.style);
+                            if (comp.accessory.emoji) btn.setEmoji(comp.accessory.emoji);
+                            if (comp.accessory.url) btn.setURL(comp.accessory.url);
+                            if (comp.accessory.disabled) btn.setDisabled(comp.accessory.disabled);
+                            return btn;
+                          });
+                        }
+                      }
+                      return section;
+                    });
                   } else if (comp.type === 12) { // Media gallery
                     newContainer.addMediaGalleryComponents((gallery) => {
                       if (comp.items && Array.isArray(comp.items)) {
