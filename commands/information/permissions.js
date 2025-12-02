@@ -2,7 +2,7 @@ const { ContainerBuilder, PermissionFlagsBits, MessageFlags } = require('discord
 const { embeds } = require('../../core/embeds');
 const { colors, emojis } = require('../../config/setup');
 const { getService } = require('@services');
-const { findMember } = require('../../handlers/finder');
+const { findUser } = require('../../handlers/finder');
 const logger = require('../../utils/logger');
 
 module.exports = {
@@ -19,11 +19,17 @@ module.exports = {
       let targetMember = message.member;
       
       if (args[0]) {
-        const memberResult = findMember(message.guild, args[0]);
-        if (!memberResult.found) {
-          return embeds.warn(message, memberResult.error);
+        const userResult = await findUser(message.guild, args[0], client);
+        if (!userResult.found) {
+          return embeds.warn(message, userResult.error);
         }
-        targetMember = memberResult.member;
+        
+        // If it's a global user (not in guild), show error
+        if (userResult.isGlobal) {
+          return embeds.warn(message, 'That user is not in this server');
+        }
+        
+        targetMember = userResult.user;
       }
 
       // Get Discord permissions
