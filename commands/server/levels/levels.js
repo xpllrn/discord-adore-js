@@ -80,13 +80,13 @@ module.exports = {
           };
           return await handleRoles(client, message, args);
         }
-        case 'stackroles': {
+        case 'stack': {
           const subcommandInfo = {
             description: 'Toggle role stacking',
-            syntax: '{guildprefix}levels stackroles [on/off]',
+            syntax: '{guildprefix}levels stack [on/off]',
             aliases: [],
             parameters: ['on/off'],
-            example: '{guildprefix}levels stackroles on'
+            example: '{guildprefix}levels stack on'
           };
           return await handleStackRoles(client, message, args);
         }

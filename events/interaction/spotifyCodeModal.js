@@ -108,55 +108,38 @@ module.exports = {
         // Delete auth session
         await spotifyService.deleteAuthSession(userId);
 
-        // Dismiss the ephemeral modal reply
-        await interaction.deleteReply().catch(() => {});
+        // Prepare success message
+        let successMessage;
+        if (profileName !== 'your Spotify account') {
+          successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!\n\n` +
+            `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
+        } else {
+          successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
+            `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
+        }
 
-        // Find and edit the original authorization message
+        const successEmbed = new EmbedBuilder()
+          .setColor(config.colors.success)
+          .setDescription(successMessage);
+
+        // Update the ephemeral modal reply with success message
+        await interaction.editReply({ embeds: [successEmbed] }).catch(() => {});
+
+        // Try to find and edit the original authorization message
         try {
-          // Get the message that contains the authorization buttons
           const messages = await interaction.channel.messages.fetch({ limit: 20 });
           const authMessage = messages.find(msg => 
             msg.author.id === interaction.client.user.id &&
             msg.embeds.length > 0 &&
-            msg.embeds[0].author?.name === 'Connect your Spotify account'
+            msg.embeds[0].author?.name === 'Connect your Spotify account' &&
+            msg.interaction?.user?.id === userId
           );
-
-          let successMessage;
-          
-          // Show connection success with approval requirement
-          if (profileName !== 'your Spotify account') {
-            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!\n\n` +
-              `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
-          } else {
-            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
-          }
-
-          const successEmbed = new EmbedBuilder()
-            .setColor(config.colors.success)
-            .setDescription(successMessage);
 
           if (authMessage) {
             await authMessage.edit({ embeds: [successEmbed], components: [] });
-          } else {
-            await interaction.channel.send({ embeds: [successEmbed] });
           }
         } catch (err) {
-          // Couldn't edit original message, send to channel as fallback
-          let successMessage;
-          if (profileName !== 'your Spotify account') {
-            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to **${profileName}**!\n\n` +
-              `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
-          } else {
-            successMessage = `${config.emojis.success} <@${userId}>: Your **Discord account** has been connected to your **Spotify account**!\n\n` +
-              `-# First time **adore** users have to **create a ticket** in the [\`support server\`](https://discord.gg/qsJMaTURqf) to get approved for **Spotify commands**.`;
-          }
-
-          const successEmbed = new EmbedBuilder()
-            .setColor(config.colors.success)
-            .setDescription(successMessage);
-
-          await interaction.channel.send({ embeds: [successEmbed] }).catch(() => {});
+          // Couldn't edit original message, that's okay - ephemeral reply already shows success
         }
 
       } catch (error) {
@@ -179,8 +162,6 @@ module.exports = {
         // Delete auth session on error
         await spotifyService.deleteAuthSession(userId).catch(() => {});
 
-        await interaction.deleteReply().catch(() => {});
-
         const errorEmbed = new EmbedBuilder()
           .setColor(config.colors.error)
           .setDescription(
@@ -190,7 +171,7 @@ module.exports = {
               : `❌ ${errorMessage}`
           );
 
-        await interaction.channel.send({ embeds: [errorEmbed] });
+        await interaction.editReply({ embeds: [errorEmbed] }).catch(() => {});
       }
     }
   }

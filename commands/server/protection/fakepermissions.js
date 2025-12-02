@@ -30,11 +30,12 @@ module.exports = {
     const subcommand = args[0].toLowerCase();
 
     switch (subcommand) {
-      case 'add': {
+      case 'add':
+      case 'grant': {
         const subcommandInfo = {
           description: 'Add fake permissions to a role',
           syntax: '{guildprefix}fakepermissions add [role] [permissions]',
-          aliases: [],
+          aliases: ['grant'],
           example: '{guildprefix}fakepermissions add @Moderator ban_members'
         };
         return handleAdd(message, args, guildService);

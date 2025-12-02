@@ -300,7 +300,8 @@ async function handleUnlinkSlash(interaction, spotifyService) {
           .setColor(config.colors.success)
           .setDescription(`${config.emojis.success} ${interaction.user}: Your **Spotify** account has been **unlinked**!`);
 
-        await confirmInteraction.update({ embeds: [successEmbed], components: [] });
+        // Use editReply on the original interaction instead of update on button interaction
+        await interaction.editReply({ embeds: [successEmbed], components: [] });
       }
     );
 
