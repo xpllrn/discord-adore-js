@@ -160,19 +160,22 @@ async function handleAdd(client, message, args) {
     return embeds.warn(message, 'Sticker name must be between 2 and 30 characters');
   }
 
-  try {
-    // Check if server is at max stickers
-    if (message.guild.stickers.cache.size >= 60) {
-      return embeds.warn(message, 'Server is at **max slots** for stickers (60/60)');
-    }
+  // Check if server is at max stickers
+  if (message.guild.stickers.cache.size >= 60) {
+    return embeds.warn(message, 'Server is at **max slots** for stickers (60/60)');
+  }
 
-    const statusMessage = await embeds.loading(message, `Please wait, I'm processing and adding sticker **\`${stickerName}\`** to the server`);
+  let statusMessage;
+  let processedImagePath;
+
+  try {
+    statusMessage = await embeds.loading(message, `Please wait, I'm processing and adding sticker **\`${stickerName}\`** to the server`);
 
     const cleanName = removeInviteLinks(stickerName);
     const description = 'Sticker added using adore bot';
 
     // Download and process the image
-    const processedImagePath = await downloadAndProcessImage(stickerUrl, message.guild.id);
+    processedImagePath = await downloadAndProcessImage(stickerUrl, message.guild.id);
     
     const createdSticker = await message.guild.stickers.create({
       file: processedImagePath,
@@ -182,14 +185,27 @@ async function handleAdd(client, message, args) {
     });
 
     // Clean up temp file
-    fs.unlinkSync(processedImagePath);
+    if (processedImagePath && fs.existsSync(processedImagePath)) {
+      fs.unlinkSync(processedImagePath);
+    }
 
     await statusMessage.edit({
       embeds: [embeds.createSuccess(message, `Added sticker **\`${createdSticker.name}\`** to the server`)]
     });
 
   } catch (error) {
-    await statusMessage.delete().catch(() => {});
+    // Clean up temp file on error
+    if (processedImagePath && fs.existsSync(processedImagePath)) {
+      fs.unlinkSync(processedImagePath);
+    }
+
+    if (statusMessage) {
+      await statusMessage.delete().catch(() => {});
+    }
+    
+    // Log to console first
+    logger.console.error(`Sticker Add Error: ${error.message}`);
+    logger.console.error(error.stack);
     
     if (error.code === 50013) {
       return embeds.deny(message, 'I don\'t have permission to manage stickers in this server');

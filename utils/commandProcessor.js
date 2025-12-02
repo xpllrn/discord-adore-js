@@ -145,17 +145,16 @@ async function processCommand(message, isEdit = false) {
       return await handlePermissionError(message, 'There was an error executing that command due to missing permissions.');
     }
 
-    // Log error to Discord webhook if error logger is available
-    if (client.errorLogger) {
-      const cmdName = command?.name || commandName || 'Unknown';
-      client.errorLogger.log(error, `Command Execution: ${cmdName}`, {
-        command: cmdName,
-        args: args.join(' ') || '',
-        user: message.author,
-        guild: message.guild,
-        channel: message.channel
-      });
-    }
+    // Log error to console and webhook
+    const logger = require('./logger');
+    const cmdName = command?.name || commandName || 'Unknown';
+    
+    // Log to console first
+    logger.console.error(`Command Error [${cmdName}]:`, error.message);
+    logger.console.error(error.stack);
+    
+    // Log to webhook
+    await logger.webhook.error(error, message);
 
     // Try to send error message with fallback chain
     try {
