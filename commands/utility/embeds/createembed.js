@@ -11,7 +11,7 @@ module.exports = {
   description: "Create your own embed or container. Use `{embed}` for old embeds or `{container}`/`{v2}` for Components V2",
   syntax: 'createembed (code)',
   example: 'createembed {title: Hello} OR createembed {v2}$v{text: # Hello}',
-  permission: "Manage Messages",
+  permission: "manage_messages",
   run: async (client, message, args) => {
 
     await ensureGuildData(message.guild.id);

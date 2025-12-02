@@ -14,7 +14,7 @@ module.exports = {
   description: `Set up automatic role assign on member join`,
   syntax: 'autorole [subcommand] (parameters)',
   example: 'autorole add @Member',
-  permission: 'manage guild & manage roles',
+  permission: 'manage_guild_&_manage_roles',
   isGroupCommand: true,
   run: async (client, message, args) => {
     const guildService = getService('guild');

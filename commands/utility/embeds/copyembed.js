@@ -11,7 +11,7 @@ module.exports = {
   description: 'copy an embed custom syntax code',
   syntax: 'copyembed (message)',
   example: 'copyembed 12345678...',
-  permission: "Manage Messages",
+  permission: "manage_messages",
   run: async(client, message, args) => {
 
     await ensureGuildData(message.guild.id);

@@ -49,15 +49,10 @@ module.exports = {
   description: 'Customize the bot\'s server profile (avatar, banner, bio)',
   syntax: 'customize [subcommand] (value)',
   example: 'customize avatar https://example.com/image.png',
-  permission: "Server Owner",
+  permission: "server_owner",
   isGroupCommand: true,
 
   run: async (client, message, args) => {
-
-    // Check if user is server owner
-    if (message.guild.ownerId !== message.author.id) {
-      return embeds.deny(message, 'Only the **server owner** can use this command');
-    }
 
     // Check if bot has permission to edit its own profile
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ChangeNickname)) {

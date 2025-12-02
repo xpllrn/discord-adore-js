@@ -14,7 +14,7 @@ module.exports = {
   description: `force a nickname on a user that will be automatically restored if they try to change it`,
   syntax: 'forcenick [user] (nickname)',
   example: 'forcenick @user NewNickname',
-  permission: 'manage guild & manage nicknames',
+  permission: 'manage_guild_&_manage_nicknames',
   isGroupCommand: true,
   run: async (client, message, args) => {
 

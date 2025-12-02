@@ -175,47 +175,70 @@ async function processCommand(message, isEdit = false) {
  * @returns {Promise<boolean>} Whether user has permission
  */
 async function checkCommandPermission(message, permission) {
-  // Map permission strings to permission checks
+  // Map permission strings to permission checks (underscore format only)
   switch (permission.toLowerCase()) {
     case 'administrator':
       return hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator');
 
-    case 'manage messages':
+    case 'manage_messages':
       return hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages');
 
-    case 'manage guild':
+    case 'manage_guild':
       return hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild');
 
-    case 'manage expressions':
+    case 'manage_expressions':
       return hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions');
 
-    case 'moderate members':
+    case 'moderate_members':
       return hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members');
 
-    case 'manage guild & manage roles':
+    case 'manage_guild_&_manage_roles':
       return hasMultipleDiscordPermissions(message,
         [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles],
         ['Manage Guild', 'Manage Roles']);
 
-    case 'manage guild & manage nicknames':
+    case 'manage_guild_&_manage_nicknames':
       return hasMultipleDiscordPermissions(message,
         [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageNicknames],
         ['Manage Guild', 'Manage Nicknames']);
 
-    case 'manage roles':
+    case 'manage_roles':
       return hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles');
 
-    case 'manage channels':
+    case 'manage_channels':
       return hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels');
 
-    case 'manage nicknames':
+    case 'manage_nicknames':
       return hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames');
 
-    case 'ban members':
+    case 'ban_members':
       return hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members');
 
-    case 'kick members':
+    case 'kick_members':
       return hasDiscordPermission(message, PermissionFlagsBits.KickMembers, 'Kick Members');
+
+    case 'attach_files':
+      return hasDiscordPermission(message, PermissionFlagsBits.AttachFiles, 'Attach Files');
+
+    case 'antinuke_admin':
+      // Check if user is antinuke admin or server owner
+      const { getService } = require('@services');
+      const antinukeService = getService('antinuke');
+      const isOwner = message.author.id === message.guild.ownerId;
+      const isAntiNukeAdmin = await antinukeService.isAdmin(message.guild.id, message.author.id);
+      
+      if (!isOwner && !isAntiNukeAdmin) {
+        embeds.deny(message, 'You need to be an **antinuke admin** or **server owner** to use this command');
+        return false;
+      }
+      return true;
+
+    case 'server_owner':
+      if (message.guild.ownerId !== message.author.id) {
+        embeds.deny(message, 'Only the **server owner** can use this command');
+        return false;
+      }
+      return true;
 
     case 'premium':
       return await checkPermissionLevel(message, 'premium');
