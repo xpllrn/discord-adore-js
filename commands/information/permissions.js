@@ -36,13 +36,28 @@ module.exports = {
       const memberPermissions = targetMember.permissions;
       const allPermissions = getAllPermissions();
       
-      const hasPermissions = [];
+      const permissionsByCategory = {
+        moderator: [],
+        management: [],
+        general: [],
+        voice: []
+      };
 
-      for (const [permName, permBit] of Object.entries(allPermissions)) {
-        if (memberPermissions.has(permBit)) {
-          hasPermissions.push(permName);
+      for (const [category, perms] of Object.entries(allPermissions)) {
+        for (const [permName, permBit] of Object.entries(perms)) {
+          if (memberPermissions.has(permBit)) {
+            permissionsByCategory[category].push(permName);
+          }
         }
       }
+
+      // Flatten for total count
+      const hasPermissions = [
+        ...permissionsByCategory.moderator,
+        ...permissionsByCategory.management,
+        ...permissionsByCategory.general,
+        ...permissionsByCategory.voice
+      ];
 
       // Get fake permissions
       const guildData = await guildService.ensureGuildData(message.guild.id);
@@ -99,11 +114,50 @@ module.exports = {
           (text) => text.setContent('> `Administrator` (All Permissions)')
         );
       } else if (hasPermissions.length > 0) {
-        const permList = hasPermissions.map(p => `\`${p}\``).join(', ');
-        container.addTextDisplayComponents(
-          (text) => text.setContent('**Discord Permissions**'),
-          (text) => text.setContent(`> ${permList}`)
-        );
+        // Moderator permissions
+        if (permissionsByCategory.moderator.length > 0) {
+          const modPerms = permissionsByCategory.moderator.map(p => `\`${p}\``).join(', ');
+          container.addTextDisplayComponents(
+            (text) => text.setContent('**Moderator Permissions**'),
+            (text) => text.setContent(`> ${modPerms}`)
+          );
+        }
+
+        // Management permissions
+        if (permissionsByCategory.management.length > 0) {
+          if (permissionsByCategory.moderator.length > 0) {
+            container.addSeparatorComponents((separator) => separator);
+          }
+          const mgmtPerms = permissionsByCategory.management.map(p => `\`${p}\``).join(', ');
+          container.addTextDisplayComponents(
+            (text) => text.setContent('**Management Permissions**'),
+            (text) => text.setContent(`> ${mgmtPerms}`)
+          );
+        }
+
+        // General permissions
+        if (permissionsByCategory.general.length > 0) {
+          if (permissionsByCategory.moderator.length > 0 || permissionsByCategory.management.length > 0) {
+            container.addSeparatorComponents((separator) => separator);
+          }
+          const genPerms = permissionsByCategory.general.map(p => `\`${p}\``).join(', ');
+          container.addTextDisplayComponents(
+            (text) => text.setContent('**General Permissions**'),
+            (text) => text.setContent(`> ${genPerms}`)
+          );
+        }
+
+        // Voice permissions
+        if (permissionsByCategory.voice.length > 0) {
+          if (permissionsByCategory.moderator.length > 0 || permissionsByCategory.management.length > 0 || permissionsByCategory.general.length > 0) {
+            container.addSeparatorComponents((separator) => separator);
+          }
+          const voicePerms = permissionsByCategory.voice.map(p => `\`${p}\``).join(', ');
+          container.addTextDisplayComponents(
+            (text) => text.setContent('**Voice Permissions**'),
+            (text) => text.setContent(`> ${voicePerms}`)
+          );
+        }
       } else {
         container.addTextDisplayComponents(
           (text) => text.setContent('**Discord Permissions**'),
@@ -135,54 +189,65 @@ module.exports = {
   }
 };
 
-// Get all Discord permissions
+// Get all Discord permissions grouped by category
 function getAllPermissions() {
   const permissions = {
-    'Administrator': PermissionFlagsBits.Administrator,
-    'Manage Server': PermissionFlagsBits.ManageGuild,
-    'Manage Roles': PermissionFlagsBits.ManageRoles,
-    'Manage Channels': PermissionFlagsBits.ManageChannels,
-    'Kick Members': PermissionFlagsBits.KickMembers,
-    'Ban Members': PermissionFlagsBits.BanMembers,
-    'Timeout Members': PermissionFlagsBits.ModerateMembers,
-    'Manage Nicknames': PermissionFlagsBits.ManageNicknames,
-    'Manage Expressions': PermissionFlagsBits.ManageGuildExpressions,
-    'Manage Webhooks': PermissionFlagsBits.ManageWebhooks,
-    'Manage Events': PermissionFlagsBits.ManageEvents,
-    'View Audit Log': PermissionFlagsBits.ViewAuditLog,
-    'Create Invite': PermissionFlagsBits.CreateInstantInvite,
-    'Change Nickname': PermissionFlagsBits.ChangeNickname,
-    'View Channels': PermissionFlagsBits.ViewChannel,
-    'Send Messages': PermissionFlagsBits.SendMessages,
-    'Send Messages in Threads': PermissionFlagsBits.SendMessagesInThreads,
-    'Create Public Threads': PermissionFlagsBits.CreatePublicThreads,
-    'Create Private Threads': PermissionFlagsBits.CreatePrivateThreads,
-    'Embed Links': PermissionFlagsBits.EmbedLinks,
-    'Attach Files': PermissionFlagsBits.AttachFiles,
-    'Add Reactions': PermissionFlagsBits.AddReactions,
-    'Use External Emojis': PermissionFlagsBits.UseExternalEmojis,
-    'Use External Stickers': PermissionFlagsBits.UseExternalStickers,
-    'Mention Everyone': PermissionFlagsBits.MentionEveryone,
-    'Manage Messages': PermissionFlagsBits.ManageMessages,
-    'Manage Threads': PermissionFlagsBits.ManageThreads,
-    'Read Message History': PermissionFlagsBits.ReadMessageHistory,
-    'Send TTS Messages': PermissionFlagsBits.SendTTSMessages,
-    'Use Application Commands': PermissionFlagsBits.UseApplicationCommands,
-    'Connect': PermissionFlagsBits.Connect,
-    'Speak': PermissionFlagsBits.Speak,
-    'Video': PermissionFlagsBits.Stream,
-    'Use Voice Activity': PermissionFlagsBits.UseVAD,
-    'Priority Speaker': PermissionFlagsBits.PrioritySpeaker,
-    'Mute Members': PermissionFlagsBits.MuteMembers,
-    'Deafen Members': PermissionFlagsBits.DeafenMembers,
-    'Move Members': PermissionFlagsBits.MoveMembers
+    moderator: {
+      'Kick Members': PermissionFlagsBits.KickMembers,
+      'Ban Members': PermissionFlagsBits.BanMembers,
+      'Timeout Members': PermissionFlagsBits.ModerateMembers,
+      'Manage Messages': PermissionFlagsBits.ManageMessages,
+      'Manage Threads': PermissionFlagsBits.ManageThreads,
+      'Mute Members': PermissionFlagsBits.MuteMembers,
+      'Deafen Members': PermissionFlagsBits.DeafenMembers,
+      'Move Members': PermissionFlagsBits.MoveMembers,
+      'View Audit Log': PermissionFlagsBits.ViewAuditLog
+    },
+    management: {
+      'Administrator': PermissionFlagsBits.Administrator,
+      'Manage Server': PermissionFlagsBits.ManageGuild,
+      'Manage Roles': PermissionFlagsBits.ManageRoles,
+      'Manage Channels': PermissionFlagsBits.ManageChannels,
+      'Manage Nicknames': PermissionFlagsBits.ManageNicknames,
+      'Manage Expressions': PermissionFlagsBits.ManageGuildExpressions,
+      'Manage Webhooks': PermissionFlagsBits.ManageWebhooks,
+      'Manage Events': PermissionFlagsBits.ManageEvents
+    },
+    general: {
+      'View Channels': PermissionFlagsBits.ViewChannel,
+      'Send Messages': PermissionFlagsBits.SendMessages,
+      'Send Messages in Threads': PermissionFlagsBits.SendMessagesInThreads,
+      'Create Public Threads': PermissionFlagsBits.CreatePublicThreads,
+      'Create Private Threads': PermissionFlagsBits.CreatePrivateThreads,
+      'Embed Links': PermissionFlagsBits.EmbedLinks,
+      'Attach Files': PermissionFlagsBits.AttachFiles,
+      'Add Reactions': PermissionFlagsBits.AddReactions,
+      'Use External Emojis': PermissionFlagsBits.UseExternalEmojis,
+      'Use External Stickers': PermissionFlagsBits.UseExternalStickers,
+      'Mention Everyone': PermissionFlagsBits.MentionEveryone,
+      'Read Message History': PermissionFlagsBits.ReadMessageHistory,
+      'Send TTS Messages': PermissionFlagsBits.SendTTSMessages,
+      'Use Application Commands': PermissionFlagsBits.UseApplicationCommands,
+      'Create Invite': PermissionFlagsBits.CreateInstantInvite,
+      'Change Nickname': PermissionFlagsBits.ChangeNickname
+    },
+    voice: {
+      'Connect': PermissionFlagsBits.Connect,
+      'Speak': PermissionFlagsBits.Speak,
+      'Video': PermissionFlagsBits.Stream,
+      'Use Voice Activity': PermissionFlagsBits.UseVAD,
+      'Priority Speaker': PermissionFlagsBits.PrioritySpeaker
+    }
   };
 
   // Filter out undefined permissions (in case of older Discord.js versions)
-  const validPermissions = {};
-  for (const [name, bit] of Object.entries(permissions)) {
-    if (bit !== undefined) {
-      validPermissions[name] = bit;
+  const validPermissions = { moderator: {}, management: {}, general: {}, voice: {} };
+  
+  for (const [category, perms] of Object.entries(permissions)) {
+    for (const [name, bit] of Object.entries(perms)) {
+      if (bit !== undefined) {
+        validPermissions[category][name] = bit;
+      }
     }
   }
   

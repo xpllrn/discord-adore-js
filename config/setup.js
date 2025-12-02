@@ -89,11 +89,22 @@ module.exports = {
     loading: '<a:loading:1439560863618175057>',
 
     lastfm: '<:lastfm:1439540983971840112>',
+    spotify: '<:spotify:1443252410414796884>',
+    google: '<:google:1439546269847650345>',
+    music: '<:music:1443893612239912991>',
     join: '<:linked:1431572346216513639>',
     leave: '<:aired:1431572306777604187>',
     cross: '<:deny:1430425037004869682>',
     circle: '<:staff:1430425098657202258>',
     ticket: '🎫',
+
+    // Level Progress Bar Emojis
+    blueLeftRounded: '<:blue_left_rounded:1439546259366215680>',
+    blue: '<:blue:1439546263669440562>',
+    blueRightRounded: '<:blue_right_rounded:1439546261517766747>',
+    whiteLeftRounded: '<:white_left_rounded:1439546284414603274>',
+    white: '<:white:1439546288562634944>',
+    whiteRightRounded: '<:white_right_rounded:1439546286180405289>',
 
     // Voice Manager Emojis
     vmLock: '<:lock:1445338182127452311>',
@@ -142,19 +153,6 @@ module.exports = {
 
   // Continue with other emojis
   otherEmojis: {
-
-    // Level Progress Bar Emojis
-    blueLeftRounded: '<:blue_left_rounded:1439546259366215680>',
-    blue: '<:blue:1439546263669440562>',
-    blueRightRounded: '<:blue_right_rounded:1439546261517766747>',
-    whiteLeftRounded: '<:white_left_rounded:1439546284414603274>',
-    white: '<:white:1439546288562634944>',
-    whiteRightRounded: '<:white_right_rounded:1439546286180405289>',
-
-    // Custom Emojis
-    google: '<:google:1439546269847650345>',
-    spotify: '<:spotify:1443252410414796884>',
-    music: '<:music:1443893612239912991>',
 
     // Roblox Badge Emojis
     online: '<a:online:1441833868045979670>',
