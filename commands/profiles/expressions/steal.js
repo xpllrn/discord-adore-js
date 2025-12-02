@@ -191,6 +191,9 @@ module.exports = {
         
         try {
           if (item.type === 'sticker') {
+            // Fetch fresh sticker data to ensure accurate count
+            await message.guild.stickers.fetch().catch(() => {});
+            
             // Check if sticker slots are full
             if (message.guild.stickers.cache.size >= 60) {
               stickerSlotsFull = true;
@@ -307,12 +310,20 @@ module.exports = {
               name: item.name,
               reason: 'Server is at **max slots** for stickers'
             });
-          } else {
-            // Other errors
+          } else if (error.message && error.message.includes('Maximum number of guild stickers reached')) {
+            // Alternative check for max stickers (sometimes error code isn't set)
+            stickerSlotsFull = true;
             failedItems.push({
               type: item.type,
               name: item.name,
-              reason: error.message
+              reason: 'Server is at **max slots** for stickers'
+            });
+          } else {
+            // Other errors - log for debugging
+            failedItems.push({
+              type: item.type,
+              name: item.name,
+              reason: error.message || 'Unknown error'
             });
           }
         }
