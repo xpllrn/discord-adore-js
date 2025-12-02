@@ -91,28 +91,49 @@ async function downloadAndProcessImage(url, guildId) {
     // Download the image
     await downloadFile(url, tempInputPath);
 
-    // Process with sharp: resize to 320x320 and convert to PNG
-    await sharp(tempInputPath, { animated: true })
+    // Process with sharp: resize to 320x320 and convert to PNG with compression
+    // Note: animated: false because Discord stickers need static PNG (not APNG for now)
+    await sharp(tempInputPath, { animated: false })
       .resize(320, 320, {
         fit: 'contain',
         background: { r: 0, g: 0, b: 0, alpha: 0 }
       })
-      .png()
+      .png({
+        compressionLevel: 9,
+        quality: 90,
+        effort: 10
+      })
       .toFile(tempOutputPath);
 
     // Clean up input file
     fs.unlinkSync(tempInputPath);
 
     // Check file size (must be under 512KB)
-    const stats = fs.statSync(tempOutputPath);
-    if (stats.size > 512 * 1024) {
-      // Try to compress more
+    let stats = fs.statSync(tempOutputPath);
+    let quality = 90;
+    
+    // Progressively reduce quality until file is under 512KB
+    while (stats.size > 500 * 1024 && quality > 10) {
+      quality -= 10;
+      
+      const compressedPath = tempOutputPath + '.compressed';
       await sharp(tempOutputPath)
-        .png({ quality: 80, compressionLevel: 9 })
-        .toFile(tempOutputPath + '.compressed');
+        .png({
+          compressionLevel: 9,
+          quality: quality,
+          effort: 10
+        })
+        .toFile(compressedPath);
       
       fs.unlinkSync(tempOutputPath);
-      fs.renameSync(tempOutputPath + '.compressed', tempOutputPath);
+      fs.renameSync(compressedPath, tempOutputPath);
+      
+      stats = fs.statSync(tempOutputPath);
+    }
+
+    // Final check - if still too large, throw error
+    if (stats.size > 512 * 1024) {
+      throw new Error('Unable to compress image to under 512KB while maintaining quality');
     }
 
     return tempOutputPath;
@@ -217,12 +238,12 @@ async function handleAdd(client, message, args) {
       return embeds.warn(message, 'The sticker file is too large. Maximum size is 512KB');
     } else if (error.message.includes('Sticker file must be a png')) {
       return embeds.warn(message, 'Sticker file must be PNG format. Discord only accepts PNG/APNG stickers.');
+    } else if (error.message.includes('Unable to compress image')) {
+      return embeds.warn(message, 'The image is too complex to compress to under 512KB. Try using a simpler image or a smaller file.');
+    } else if (error.code === 50045 || error.message.includes('Asset exceeds maximum size')) {
+      return embeds.warn(message, 'The processed image is still too large. Discord stickers must be under 512KB.');
     } else {
-      logger.webhook.error(error, 'Sticker Add Command', {
-        command: 'sticker add',
-        args: `Name: ${stickerName}, URL: ${stickerUrl}`,
-        error: error.message
-      });
+      logger.webhook.error(error, message);
       return embeds.deny(message, `Failed to add sticker: ${error.message}`);
     }
   }
