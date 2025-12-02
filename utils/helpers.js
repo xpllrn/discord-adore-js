@@ -320,7 +320,14 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
       if (args[0]) {
         const userResult = await findUser(message.guild, args[0], client);
         if (!userResult.found || !userResult.user) {
-          return embeds.deny(message, userResult.error);
+          const container = new ContainerBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(`❌ <@${message.author.id}>: User not found!`)
+            );
+          return message.channel.send({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2
+          });
         }
         targetUser = userResult.user;
       } else {
@@ -354,25 +361,43 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
         description = `<@${message.author.id}> ${actionPastTense} <@${targetUserId}> for the ${getOrdinal(count)} time!`;
       }
 
-      let footerText = '';
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(description)
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+        )
+        .addMediaGalleryComponents(
+          new MediaGalleryBuilder()
+            .addItems(
+              new MediaGalleryItemBuilder().setURL(gifUrl)
+            )
+        );
+
       if (reverseCount > 0 && targetUserId !== message.author.id) {
-        footerText = `${targetUsername} ${actionPastTense} ${message.author.username} ${reverseCount} times before`;
+        container.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`-# ${targetUsername} ${actionPastTense} ${message.author.username} ${reverseCount} times before`)
+        );
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setDescription(description)
-        .setImage(gifUrl);
-
-      if (footerText) {
-        embed.setFooter({ text: footerText });
-      }
-
-      return message.channel.send({ embeds: [embed] });
+      return message.channel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       console.log(`${action} command failed:`, error.message);
-      return embeds.warn(message, `Failed to ${action}! Please try again.`);
+
+      const errorContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`❌ <@${message.author.id}>: Failed to ${action}! Please try again.`)
+        );
+
+      return message.channel.send({
+        components: [errorContainer],
+        flags: MessageFlags.IsComponentsV2
+      });
     }
   };
 }

@@ -226,13 +226,17 @@ module.exports = {
                 // This includes text displays, sections, separators, etc.
                 try {
                   if (comp.type === 14) { // Separator
-                    newContainer.addSeparatorComponents((sep) => SeparatorBuilder.from(comp));
+                    const separator = SeparatorBuilder.from(comp);
+                    newContainer.addSeparatorComponents(() => separator);
                   } else if (comp.type === 15) { // Text display
-                    newContainer.addTextDisplayComponents((text) => TextDisplayBuilder.from(comp));
+                    const textDisplay = TextDisplayBuilder.from(comp);
+                    newContainer.addTextDisplayComponents(() => textDisplay);
                   } else if (comp.type === 11) { // Section
-                    newContainer.addSectionComponents((section) => SectionBuilder.from(comp));
+                    const section = SectionBuilder.from(comp);
+                    newContainer.addSectionComponents(() => section);
                   } else if (comp.type === 16) { // Media gallery
-                    newContainer.addMediaGalleryComponents((gallery) => MediaGalleryBuilder.from(comp));
+                    const gallery = MediaGalleryBuilder.from(comp);
+                    newContainer.addMediaGalleryComponents(() => gallery);
                   }
                 } catch (err) {
                   console.error('Error copying component:', err);
