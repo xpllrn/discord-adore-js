@@ -66,7 +66,7 @@ module.exports = {
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`> **ID**: \`${role.id}\` • **Color**: \`${roleColor}\`\n> **Members**: ${memberCount} • **Position**: ${position}\n> **Mentionable**: ${isMentionable ? 'Yes' : 'No'} • **Hoisted**: ${isHoisted ? 'Yes' : 'No'}`)
+(text) => text.setContent(`> **Role ID**: \`${role.id}\`\n> **Members**: ${memberCount} • **Color**: \`${roleColor}\``)
       );
 
       // Footer

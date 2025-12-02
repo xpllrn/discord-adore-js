@@ -35,7 +35,7 @@ module.exports = {
         15: 'Forum',
         16: 'Media'
       };
-      const channelType = channelTypes[channel.type] || 'Unknown';
+      const channelType = channelTypes[channel.type] || 'not sure';
 
       // Build container with display components
       const container = new ContainerBuilder()
@@ -44,7 +44,7 @@ module.exports = {
       // Title and topic section
       container.addTextDisplayComponents(
         (text) => text.setContent(`# ${channel.name}`),
-        (text) => text.setContent(`-# ${channel.topic || 'No topic set'}`)
+        (text) => text.setContent(`-# ${channel.topic || 'No topic'}`)
       );
 
       // Created date
@@ -57,7 +57,7 @@ module.exports = {
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`> **ID**: \`${channel.id}\` • **Type**: \`${channelType}\`\n> **Category**: ${channel.parent ? `<#${channel.parentId}> \`${channel.parentId}\`` : 'None'}`)
+        (text) => text.setContent(`> **Channel ID**: \`${channel.id}\`\n> **Category**: ${channel.parent ? `<#${channel.parentId}> \`${channel.parentId}\`` : 'None'} • **Type**: \`${channelType}\``)
       );
 
       // Footer
