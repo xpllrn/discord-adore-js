@@ -92,7 +92,15 @@ async function downloadAndProcessImage(url, guildId) {
     await downloadFile(url, tempInputPath);
 
     // Check if input is animated (GIF)
-    const metadata = await sharp(tempInputPath).metadata();
+    let metadata;
+    try {
+      metadata = await sharp(tempInputPath).metadata();
+    } catch (metadataError) {
+      // Clean up and throw a user-friendly error
+      if (fs.existsSync(tempInputPath)) fs.unlinkSync(tempInputPath);
+      throw new Error('Unsupported image format. Please use PNG, JPG, JPEG, GIF, or WEBP images.');
+    }
+    
     const isAnimated = metadata.pages && metadata.pages > 1;
 
     let finalPath = tempOutputPath;
@@ -278,6 +286,10 @@ async function handleAdd(client, message, args) {
       return embeds.warn(message, 'The image is too complex to compress to under 512KB. Try using a simpler image or a smaller file.');
     } else if (error.code === 50045 || error.message.includes('Asset exceeds maximum size')) {
       return embeds.warn(message, 'The processed image is still too large. Discord stickers must be under 512KB.');
+    } else if (error.message.includes('Unsupported image format')) {
+      return embeds.warn(message, error.message);
+    } else if (error.message.includes('Input file contains unsupported image format')) {
+      return embeds.warn(message, 'Unsupported image format. Please use PNG, JPG, JPEG, GIF, or WEBP images.');
     } else {
       logger.webhook.error(error, message);
       return embeds.deny(message, `Failed to add sticker: ${error.message}`);

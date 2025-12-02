@@ -108,7 +108,39 @@ module.exports = {
     vmClaim: '<:claim:1445338178184679504>',
     vmTransfer: '<:transfer:1445338196027113545>',
     vmRename: '<:rename:1445338193711857767>',
-    vmInfo: '<:info:1439540965655445606>',
+    vmInfo: '<:info:1439540965655445606>'
+  },
+
+  // Voice Manager Button Labels
+  vmLabels: {
+    lock: 'Lock',
+    unlock: 'Unlock',
+    hide: 'Hide',
+    unhide: 'Unhide',
+    kick: 'Kick',
+    claim: 'Claim',
+    transfer: 'Transfer',
+    increase: 'Increase',
+    decrease: 'Decrease',
+    rename: 'Name'
+  },
+
+  // Voice Manager Button Descriptions
+  vmDescriptions: {
+    lock: '**`Lock`** the voice channel',
+    unlock: '**`Unlock`** the voice channel',
+    hide: '**`Hide`** the voice channel',
+    unhide: '**`Unhide`** the voice channel',
+    kick: '**`Kick`** a user from channel',
+    claim: '**`Claim`** an abandoned channel',
+    transfer: '**`Transfer`** ownership',
+    increase: '**`Increase`** the user limit',
+    decrease: '**`Decrease`** the user limit',
+    rename: '**`Rename`** the voice channel'
+  },
+
+  // Continue with other emojis
+  otherEmojis: {
 
     // Level Progress Bar Emojis
     blueLeftRounded: '<:blue_left_rounded:1439546259366215680>',
