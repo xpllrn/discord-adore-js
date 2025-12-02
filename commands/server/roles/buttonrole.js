@@ -525,17 +525,27 @@ module.exports = {
 
           // Remove buttons from each message
           let removedCount = 0;
+          let processedCount = 0;
           for (const [messageId, data] of Object.entries(messageGroups)) {
+            processedCount++;
             try {
               const channel = message.guild.channels.cache.get(data.channelId);
-              if (channel) {
-                const targetMessage = await channel.messages.fetch(messageId).catch(() => null);
-                if (targetMessage) {
-                  const isV2Message = targetMessage.flags?.has('IsComponentsV2');
-                  
-                  if (isV2Message) {
-                    // V2 message - rebuild container without button action rows
-                    const { 
+              if (!channel) {
+                console.log(`Channel ${data.channelId} not found for message ${messageId}`);
+                continue;
+              }
+              
+              const targetMessage = await channel.messages.fetch(messageId).catch(() => null);
+              if (!targetMessage) {
+                console.log(`Message ${messageId} not found in channel ${data.channelId}`);
+                continue;
+              }
+              
+              const isV2Message = targetMessage.flags?.has('IsComponentsV2');
+              
+              if (isV2Message) {
+                // V2 message - rebuild container without button action rows
+                const { 
                       ContainerBuilder, 
                       TextDisplayBuilder,
                       SectionBuilder,
@@ -632,6 +642,7 @@ module.exports = {
                         components: components,
                         flags: MessageFlags.IsComponentsV2
                       });
+                      console.log(`Removed buttons from v2 message ${messageId}`);
                       removedCount++;
                     }
                   } else {
@@ -645,14 +656,15 @@ module.exports = {
                     }).filter(row => row.components.length > 0);
 
                     await targetMessage.edit({ components: components });
+                    console.log(`Removed buttons from regular message ${messageId}`);
                     removedCount++;
                   }
-                }
-              }
             } catch (error) {
               console.error('Error removing buttons from message:', messageId, error);
             }
           }
+          
+          console.log(`Processed ${processedCount} messages, successfully removed buttons from ${removedCount}`);
 
           // Clear from database
           await guildService.clearAllButtonRoles(message.guild.id);
