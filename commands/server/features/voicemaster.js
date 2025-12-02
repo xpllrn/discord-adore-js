@@ -477,7 +477,7 @@ async function handleLockCommand(message, tempChannel) {
   const { getService } = require('@services');
   const guildService = getService('guild');
   if (tempChannel.settings.locked) {
-    return embeds.warn(message, 'Your voice channel is already locked');
+    return embeds.warn(message, 'Your voice channel is already **locked**');
   }
 
   try {
@@ -489,7 +489,7 @@ async function handleLockCommand(message, tempChannel) {
       locked: true
     });
 
-    return embeds.success(message, 'Locked your voice channel');
+    return embeds.success(message, 'Your voice channel is **locked** now');
   } catch (error) {
     return embeds.deny(message, 'Failed to lock the voice channel. Please check my permissions.');
   }
@@ -499,7 +499,7 @@ async function handleUnlockCommand(message, tempChannel) {
   const { getService } = require('@services');
   const guildService = getService('guild');
   if (!tempChannel.settings.locked) {
-    return embeds.warn(message, 'Your voice channel is not locked');
+    return embeds.warn(message, 'Your voice channel is not **locked**');
   }
 
   try {
@@ -511,7 +511,7 @@ async function handleUnlockCommand(message, tempChannel) {
       locked: false
     });
 
-    return embeds.success(message, 'Unlocked your voice channel');
+    return embeds.success(message, 'Your voice channel is **unlocked** now');
   } catch (error) {
     return embeds.deny(message, 'Failed to unlock the voice channel. Please check my permissions.');
   }
@@ -521,7 +521,7 @@ async function handleHideCommand(message, tempChannel) {
   const { getService } = require('@services');
   const guildService = getService('guild');
   if (tempChannel.settings.hidden) {
-    return embeds.warn(message, 'Your voice channel is already hidden');
+    return embeds.warn(message, 'Your voice channel is already **hidden**');
   }
 
   try {
@@ -533,7 +533,7 @@ async function handleHideCommand(message, tempChannel) {
       hidden: true
     });
 
-    return embeds.success(message, 'Hidden your voice channel');
+    return embeds.success(message, 'Your voice channel is **hidden** now');
   } catch (error) {
     return embeds.deny(message, 'Failed to hide the voice channel. Please check my permissions.');
   }
@@ -543,7 +543,7 @@ async function handleUnhideCommand(message, tempChannel) {
   const { getService } = require('@services');
   const guildService = getService('guild');
   if (!tempChannel.settings.hidden) {
-    return embeds.warn(message, 'Your voice channel is not hidden');
+    return embeds.warn(message, 'Your voice channel is not **hidden**');
   }
 
   try {
@@ -555,7 +555,7 @@ async function handleUnhideCommand(message, tempChannel) {
       hidden: false
     });
 
-    return embeds.success(message, 'Unhidden your voice channel');
+    return embeds.success(message, 'Your voice channel is **visible** now');
   } catch (error) {
     return embeds.deny(message, 'Failed to unhide the voice channel. Please check my permissions.');
   }
@@ -616,7 +616,7 @@ async function handleLimitCommand(message, args, tempChannel) {
       userLimit: limit
     });
 
-    const limitText = limit === 0 ? 'Removed user limit' : `Set user limit to **${limit}**`;
+    const limitText = limit === 0 ? 'User limit **removed**' : `User limit set to **${limit}**`;
     return embeds.success(message, limitText);
   } catch (error) {
     return embeds.deny(message, 'Failed to set user limit. Please check my permissions.');
@@ -642,7 +642,7 @@ async function handleNameCommand(message, args, tempChannel) {
       customName: newName
     });
 
-    return embeds.success(message, `Voice channel name changed to: **${newName}**`);
+    return embeds.success(message, `Voice channel **renamed** to: **${newName}**`);
   } catch (error) {
     return embeds.deny(message, 'Failed to change channel name. Please check my permissions.');
   }
@@ -669,7 +669,7 @@ async function handleDisconnectCommand(message, args, tempChannel) {
 
   try {
     await targetMember.voice.disconnect('Kicked by channel owner');
-    return embeds.success(message, `Kicked **${targetUser.username}** from your voice channel`);
+    return embeds.success(message, `**${targetUser.username}** has been **kicked** from your voice channel`);
   } catch (error) {
     return embeds.deny(message, 'Failed to kick the user. Please check my permissions.');
   }
@@ -696,7 +696,7 @@ async function handleInviteCommand(message, args, tempChannel) {
       ViewChannel: true
     });
 
-    return embeds.success(message, `Granted **${targetUser.username}** access to your voice channel`);
+    return embeds.success(message, `**${targetUser.username}** has been **granted** access to your voice channel`);
   } catch (error) {
     return embeds.deny(message, `Failed to invite ${targetUser.username}. Please check my permissions.`);
   }
@@ -729,7 +729,7 @@ async function handleRejectCommand(message, args, tempChannel) {
       ViewChannel: false
     });
 
-    return embeds.success(message, `Rejected **${targetUser.username}** from your voice channel`);
+    return embeds.success(message, `**${targetUser.username}** has been **rejected** from your voice channel`);
   } catch (error) {
     return embeds.deny(message, 'Failed to reject the user. Please check my permissions.');
   }
@@ -752,7 +752,7 @@ async function handlePermitCommand(message, args, tempChannel) {
       ViewChannel: true
     });
 
-    return embeds.success(message, `Permitted **${targetUser.username}** to access your voice channel`);
+    return embeds.success(message, `**${targetUser.username}** has been **permitted** to access your voice channel`);
   } catch (error) {
     return embeds.deny(message, 'Failed to permit the user. Please check my permissions.');
   }
@@ -765,14 +765,19 @@ async function handleStatusCommand(message, args, tempChannel) {
     return embeds.warn(message, 'Please provide a status: `,vm status Playing games!`');
   }
 
-  if (newStatus.length > 1024) {
-    return embeds.warn(message, 'Channel status must be 1024 characters or less');
+  if (newStatus.length > 500) {
+    return embeds.warn(message, 'Channel status must be 500 characters or less');
   }
 
   try {
-    await message.member.voice.channel.setTopic(newStatus);
-    return embeds.success(message, `Voice channel status changed to: **${newStatus}**`);
+    // Use Discord API directly for voice status
+    await message.client.rest.put(
+      `/channels/${message.member.voice.channel.id}/voice-status`,
+      { body: { status: newStatus } }
+    );
+    return embeds.success(message, `Voice channel **status** set to: **${newStatus}**`);
   } catch (error) {
+    logger.webhook.error(error, message);
     return embeds.deny(message, 'Failed to change channel status. Please check my permissions.');
   }
 }
@@ -799,12 +804,12 @@ async function handleTransferCommand(message, args, tempChannel) {
   }
 
   if (!targetMember.voice.channel || targetMember.voice.channel.id !== tempChannel.channelId) {
-    return embeds.warn(message, 'User must be in your voice channel to transfer ownership');
+    return embeds.warn(message, 'User must be **in your voice channel** to transfer ownership');
   }
 
   try {
     await guildService.transferVoiceChannelOwnership(message.guild.id, tempChannel.channelId, targetUser.id);
-    return embeds.success(message, `Voice channel ownership transferred to ${targetUser.username}`);
+    return embeds.success(message, `Voice channel **ownership** transferred to **${targetUser.username}**`);
   } catch (error) {
     return embeds.deny(message, 'Failed to transfer ownership');
   }
@@ -816,12 +821,12 @@ async function handleClaimCommand(message, tempChannel) {
   // Check if current owner is still in the channel
   const currentOwner = message.guild.members.cache.get(tempChannel.ownerId);
   if (currentOwner && currentOwner.voice.channel && currentOwner.voice.channel.id === tempChannel.channelId) {
-    return embeds.warn(message, 'Cannot claim this channel while the owner is still present');
+    return embeds.warn(message, 'Cannot **claim** this channel while the owner is **still present**');
   }
 
   try {
     await guildService.transferVoiceChannelOwnership(message.guild.id, tempChannel.channelId, message.author.id);
-    return embeds.success(message, 'You have claimed ownership of this voice channel');
+    return embeds.success(message, 'You have **claimed ownership** of this voice channel');
   } catch (error) {
     return embeds.deny(message, 'Failed to claim ownership');
   }
