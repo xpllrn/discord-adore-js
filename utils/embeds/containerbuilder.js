@@ -300,15 +300,36 @@ class CustomContainerBuilder {
             }
         }
 
+        // In Components V2, content must be added as a text display component
+        // instead of using the content field in messageOptions
+        let FinalContainer = Container;
+        
+        if (Content.length > 0 && Content !== 'nil') {
+            // Create a new container with content at the beginning
+            FinalContainer = new ContainerBuilder();
+            
+            // Add content as first text display
+            FinalContainer.addTextDisplayComponents(
+                (text) => text.setContent(Content)
+            );
+            
+            // Copy all existing components from the original container
+            const originalComponents = Container.data.components || [];
+            originalComponents.forEach(component => {
+                // Directly push the component data to maintain structure
+                FinalContainer.data.components.push(component);
+            });
+            
+            // Copy accent color if set
+            if (Container.data.accent_color !== undefined) {
+                FinalContainer.setAccentColor(Container.data.accent_color);
+            }
+        }
+
         const messageOptions = {
-            components: [Container],
+            components: [FinalContainer],
             flags: MessageFlags.IsComponentsV2
         };
-
-        // Only add content if it's not empty and not 'nil'
-        if (Content.length > 0 && Content !== 'nil') {
-            messageOptions.content = Content;
-        }
 
         // Add files if any exist
         if (Files.length > 0) {
