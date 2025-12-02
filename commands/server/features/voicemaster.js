@@ -347,9 +347,6 @@ async function handleResetCommand(message) {
   }
 
   try {
-    // Send confirmation message before deleting channels
-    const confirmMsg = await message.channel.send('Resetting voicemaster...');
-
     // Delete all existing temporary channels first
     for (const tempChannel of voiceManager.tempChannels || []) {
       try {
@@ -378,18 +375,8 @@ async function handleResetCommand(message) {
     // Clear database configuration
     await guildService.disableVoiceManager(message.guild.id);
 
-    // Try to edit the confirmation message, or send to a different channel if this one was deleted
-    try {
-      await confirmMsg.edit('**Voicemaster interface** has been **reset**.');
-    } catch (editError) {
-      // If we can't edit (channel was deleted), try to find a system channel or first text channel
-      const targetChannel = message.guild.systemChannel || 
-                           message.guild.channels.cache.find(ch => ch.isTextBased() && ch.permissionsFor(message.guild.members.me).has('SendMessages'));
-      
-      if (targetChannel) {
-        return embeds.success({ ...message, channel: targetChannel }, '**Voicemaster interface** has been **reset**.');
-      }
-    }
+    // Send success message
+    return embeds.success(message, '**Voicemaster interface** has been **reset**.');
 
   } catch (error) {
     logger.webhook.error(error, message);
@@ -418,7 +405,7 @@ async function createVoiceManagerPanel(client, channel) {
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
     )
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`**Use these buttons to control**\n\n${emojis.vmLock} **\`Lock\`** the voice channel\n${emojis.vmUnlock} **\`Unlock\`** the voice channel\n${emojis.vmHide} **\`Hide\`** the voice channel\n${emojis.vmUnhide} **\`Unhide\`** the voice channel\n${emojis.vmKick} **\`Kick\`** a user from channel\n\n${emojis.vmClaim} **\`Claim\`** an abandoned channel\n${emojis.vmTransfer} **\`Transfer\`** ownership\n${emojis.vmIncrease} **\`Increase\`** the user limit\n${emojis.vmDecrease} **\`Decrease\`** the user limit\n${emojis.vmRename} **\`Rename\`** the voice channel`)
+      new TextDisplayBuilder().setContent(`\n${emojis.vmLock}— [\`Lock\`](https://adore.rest/) the voice channel\n${emojis.vmUnlock}— [\`Unlock\`](https://adore.rest/) the voice channel\n${emojis.vmHide}— [\`Hide\`](https://adore.rest/) the voice channel\n${emojis.vmUnhide}— [\`Unhide\`](https://adore.rest/) the voice channel\n${emojis.vmKick}— [\`Kick\`](https://adore.rest/) a user from channel\n\n${emojis.vmClaim}— [\`Claim\`](https://adore.rest/) an abandoned channel\n${emojis.vmTransfer}— [\`Transfer\`](https://adore.rest/) ownership\n${emojis.vmIncrease}— [\`Increase\`](https://adore.rest/) the user limit\n${emojis.vmDecrease}— [\`Decrease\`](https://adore.rest/) the user limit\n${emojis.vmRename}— [\`Rename\`](https://adore.rest/) the voice channel`)
     )
     .addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
@@ -429,27 +416,22 @@ async function createVoiceManagerPanel(client, channel) {
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmLock)
-            .setLabel("Lock")
             .setCustomId("6800f9e6e8394c5cfd7b8c7f684b6cd2"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmUnlock)
-            .setLabel("Unlock")
             .setCustomId("bc719b5197e94fb68e1db816f8fb00e6"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmHide)
-            .setLabel("Hide")
             .setCustomId("8a7385beb791449f9a7893ed5536e7e3"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmUnhide)
-            .setLabel("Unhide")
             .setCustomId("4da0c243b63143d4a574d30c806e962b"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmKick)
-            .setLabel("Kick")
             .setCustomId("0c34acff106f453d84e4ba7122f868a5")
         )
     )
@@ -459,27 +441,22 @@ async function createVoiceManagerPanel(client, channel) {
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmClaim)
-            .setLabel("Claim")
             .setCustomId("2c8e65c78329459ee077b3c0e853e4a2"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmTransfer)
-            .setLabel("Transfer")
             .setCustomId("f33fa78ce7964964cd5c155b5a15ebb7"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmIncrease)
-            .setLabel("Increase")
             .setCustomId("d0f359515fe244b0ad8824fb3c066d4b"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmDecrease)
-            .setLabel("Decrease")
             .setCustomId("7f5598b8836e442ccd33a88afc00865c"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(emojis.vmRename)
-            .setLabel("Name")
             .setCustomId("48e538acf6e741aadc391f9d36977473")
         )
     );
