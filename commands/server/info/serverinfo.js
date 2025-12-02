@@ -38,7 +38,7 @@ module.exports = {
           section
             .addTextDisplayComponents(
               (text) => text.setContent(`# ${guild.name}`),
-              (text) => text.setContent(`-# ${guild.description || 'No description set'}`)
+              (text) => text.setContent(`-# ${guild.description || 'No description'}`)
             )
             .setThumbnailAccessory((thumbnail) =>
               thumbnail
@@ -49,7 +49,7 @@ module.exports = {
       } else {
         container.addTextDisplayComponents(
           (text) => text.setContent(`# ${guild.name}`),
-          (text) => text.setContent(`-# ${guild.description || 'No description set'}`)
+          (text) => text.setContent(`-# ${guild.description || 'No description'}`)
         );
       } 
       // Created date with owner
@@ -100,9 +100,8 @@ module.exports = {
       });
 
     } catch (error) {
-      console.error('[SERVERINFO ERROR]', error);
       logger.webhook.error(error, message);
-      throw error; // Re-throw so commandProcessor can log it
+      throw error;
     }
   }
 }
