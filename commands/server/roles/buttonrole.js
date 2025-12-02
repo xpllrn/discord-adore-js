@@ -193,11 +193,6 @@ module.exports = {
           // Get the existing container data
           const existingContainer = components[containerIndex];
           
-          // Debug: Log the container structure
-          console.log('Container structure:', JSON.stringify(existingContainer, null, 2));
-          console.log('Container type:', existingContainer.type);
-          console.log('Container components:', existingContainer.components?.length);
-          
           // Create a new container and copy all existing components
           const newContainer = new ContainerBuilder();
           
@@ -208,7 +203,6 @@ module.exports = {
           
           // Copy all existing components from the container
           if (existingContainer.components && Array.isArray(existingContainer.components)) {
-            console.log('Copying', existingContainer.components.length, 'components');
             for (const comp of existingContainer.components) {
               // Reconstruct each component based on its type
               if (comp.type === 1) {
@@ -235,7 +229,6 @@ module.exports = {
                 // Type 11 = Section
                 // Type 12 = MediaGallery
                 // Type 14 = Separator
-                console.log('Copying component type:', comp.type);
                 try {
                   if (comp.type === 14) { // Separator
                     newContainer.addSeparatorComponents((separator) => {
@@ -243,11 +236,9 @@ module.exports = {
                       if (comp.spacing !== undefined) separator.setSpacing(comp.spacing);
                       return separator;
                     });
-                    console.log('Added separator');
                   } else if (comp.type === 10) { // Text display
                     const content = comp.content || '';
                     newContainer.addTextDisplayComponents((text) => text.setContent(content));
-                    console.log('Added text display:', content);
                   } else if (comp.type === 11) { // Section
                     newContainer.addSectionComponents((section) => {
                       // Copy section components (text displays)
@@ -270,7 +261,6 @@ module.exports = {
                       }
                       return section;
                     });
-                    console.log('Added section');
                   } else if (comp.type === 12) { // Media gallery
                     newContainer.addMediaGalleryComponents((gallery) => {
                       if (comp.items && Array.isArray(comp.items)) {
@@ -284,16 +274,16 @@ module.exports = {
                       }
                       return gallery;
                     });
-                    console.log('Added gallery');
-                  } else {
-                    console.log('Unknown component type:', comp.type);
                   }
                 } catch (err) {
-                  console.error('Error copying component type', comp.type, ':', err);
+                  console.error('Error copying component:', err);
                 }
               }
             }
           }
+
+          // Add a separator before the button
+          newContainer.addSeparatorComponents((separator) => separator);
 
           // Add the new button as a new action row
           newContainer.addActionRowComponents((actionRow) =>

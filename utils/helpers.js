@@ -150,7 +150,8 @@ function createRoleplayCommand(action, actionPastTense) {
 
       return message.channel.send({
         components: [container],
-        flags: MessageFlags.IsComponentsV2
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: ['users'] }
       });
 
     } catch (error) {
