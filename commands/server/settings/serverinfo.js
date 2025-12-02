@@ -61,8 +61,7 @@ module.exports = {
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`> **Total**: ${totalMembers} • **Humans**: ${humans} • **Bots**: ${bots}`),
-        (text) => text.setContent(`> **Roles**: ${roleCount} • **Channels**: ${channelCount} • **Emojis**: ${emojiCount}`),
+        (text) => text.setContent(`> **Total**: ${totalMembers} • **Humans**: ${humans} • **Bots**: ${bots}\n> **Roles**: ${roleCount} • **Channels**: ${channelCount} • **Emojis**: ${emojiCount}`),
       );
 
       // Build buttons for server assets (always show all 3, disable if not available)
