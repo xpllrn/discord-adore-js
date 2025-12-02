@@ -28,7 +28,8 @@ async function createUserInfoContainer(client, user, member) {
   container.addSectionComponents((section) =>
     section
       .addTextDisplayComponents(
-        (text) => text.setContent(`# ${displayName}`)
+        (text) => text.setContent(`# ${displayName}`),
+        (text) => text.setContent(`-# @${user.username}`)
       )
       .setThumbnailAccessory((thumbnail) =>
         thumbnail
