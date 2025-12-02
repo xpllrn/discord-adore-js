@@ -294,11 +294,30 @@ async function handleMassJoin(message, args, guildService) {
 
 async function handleWhitelist(message, args, guildService) {
   // Handle add/remove whitelist
-  const target = message.mentions.users.first();
+  let target = message.mentions.users.first();
+  let userId = null;
   
-  if (!target) {
-    return embeds.warn(message, 'Please mention a user to whitelist: `,antiraid whitelist @user`');
+  // If no mention, check if a user ID was provided
+  if (!target && args[1]) {
+    userId = args[1].replace(/[<@!>]/g, ''); // Remove mention formatting if present
+    
+    // Validate it's a valid snowflake ID (18-19 digits)
+    if (/^\d{17,19}$/.test(userId)) {
+      try {
+        // Try to fetch the user from Discord API
+        target = await message.client.users.fetch(userId).catch(() => null);
+      } catch (error) {
+        // If fetch fails, we'll still allow whitelisting by ID
+      }
+    }
   }
+  
+  if (!target && !userId) {
+    return embeds.warn(message, 'Please mention a user or provide their ID: `,antiraid whitelist @user` or `,antiraid whitelist 123456789`');
+  }
+
+  const finalId = target ? target.id : userId;
+  const displayName = target ? target.tag : `User ID: ${userId}`;
 
   const guildData = await guildService.ensureGuildData(message.guild.id);
   
@@ -316,18 +335,18 @@ async function handleWhitelist(message, args, guildService) {
     guildData.Antiraid.whitelist = [];
   }
 
-  const isWhitelisted = guildData.Antiraid.whitelist.includes(target.id);
+  const isWhitelisted = guildData.Antiraid.whitelist.includes(finalId);
 
   if (isWhitelisted) {
     // Remove from whitelist
-    guildData.Antiraid.whitelist = guildData.Antiraid.whitelist.filter(id => id !== target.id);
+    guildData.Antiraid.whitelist = guildData.Antiraid.whitelist.filter(id => id !== finalId);
     await guildService.set(message.guild.id, guildData);
-    return embeds.success(message, `Removed **${target.tag}** from the antiraid whitelist`);
+    return embeds.success(message, `Removed **${displayName}** from the antiraid whitelist`);
   } else {
     // Add to whitelist
-    guildData.Antiraid.whitelist.push(target.id);
+    guildData.Antiraid.whitelist.push(finalId);
     await guildService.set(message.guild.id, guildData);
-    return embeds.success(message, `Added **${target.tag}** to the antiraid whitelist`);
+    return embeds.success(message, `Added **${displayName}** to the antiraid whitelist`);
   }
 }
 

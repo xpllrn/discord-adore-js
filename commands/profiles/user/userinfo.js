@@ -22,80 +22,8 @@ async function createUserInfoContainer(client, user, member) {
     joinPosition = Array.from(sortedMembers.keys()).indexOf(member.id) + 1;
   }
 
-  // Fetch full user for flags
+  // Fetch full user for banner check
   const fullUser = await client.users.fetch(user.id, { force: true });
-  
-  // Get user badges
-  function getUserBadges(user, member) {
-    const badges = [];
-    const flags = user.flags?.toArray() || [];
-    
-    // Server owner badge
-    if (member && member.guild.ownerId === user.id) {
-      badges.push(config.emojis.crown);
-    }
-    
-    // Discord Staff
-    if (flags.includes('Staff')) badges.push(config.emojis.staff);
-    
-    // Partner
-    if (flags.includes('Partner')) badges.push(config.emojis.partner);
-    
-    // Verified Developer (Early Verified Bot Developer)
-    if (flags.includes('VerifiedDeveloper')) badges.push(config.emojis.verifiedDeveloper);
-    
-    // Active Developer
-    if (flags.includes('ActiveDeveloper')) badges.push(config.emojis.activeDeveloper);
-    
-    // Early Supporter
-    if (flags.includes('PremiumEarlySupporter')) badges.push(config.emojis.earlySupporter);
-    
-    // Bug Hunter Level 1
-    if (flags.includes('BugHunterLevel1')) badges.push(config.emojis.bughunterLevel1);
-    
-    // Bug Hunter Level 2
-    if (flags.includes('BugHunterLevel2')) badges.push(config.emojis.bughunterLevel2);
-    
-    // HypeSquad Events
-    if (flags.includes('Hypesquad')) badges.push(config.emojis.hypesquadEvents);
-    
-    // HypeSquad Bravery
-    if (flags.includes('HypeSquadOnlineHouse1')) badges.push(config.emojis.hypesquadBravery);
-    
-    // HypeSquad Brilliance
-    if (flags.includes('HypeSquadOnlineHouse2')) badges.push(config.emojis.hypesquadBrilliance);
-    
-    // HypeSquad Balance
-    if (flags.includes('HypeSquadOnlineHouse3')) badges.push(config.emojis.hypesquadBalance);
-    
-    // Quest completion badge
-    if (flags.includes('CompletedQuest') || flags.includes('QuestCompleted')) badges.push(config.emojis.quest);
-    
-    // Check for Nitro subscription (avatar decoration or banner indicates Nitro)
-    if (user.banner || user.avatarDecoration || user.accentColor) {
-      // Check premium type if available
-      // Note: Discord.js doesn't expose premium_type directly, but we can infer from features
-      badges.push(config.emojis.goldNitro); // Default to gold nitro
-    }
-    
-    // Server boosting badges (if member exists)
-    if (member && member.premiumSince) {
-      const boostMonths = Math.floor((Date.now() - member.premiumSince.getTime()) / (1000 * 60 * 60 * 24 * 30));
-      if (boostMonths >= 24) badges.push(config.emojis.boostLevel9);
-      else if (boostMonths >= 18) badges.push(config.emojis.boostLevel8);
-      else if (boostMonths >= 15) badges.push(config.emojis.boostLevel7);
-      else if (boostMonths >= 12) badges.push(config.emojis.boostLevel6);
-      else if (boostMonths >= 9) badges.push(config.emojis.boostLevel5);
-      else if (boostMonths >= 6) badges.push(config.emojis.boostLevel4);
-      else if (boostMonths >= 3) badges.push(config.emojis.boostLevel3);
-      else if (boostMonths >= 2) badges.push(config.emojis.boostLevel2);
-      else badges.push(config.emojis.boostLevel1);
-    }
-    
-    return badges.join(' ');
-  }
-
-  const badges = getUserBadges(fullUser, member);
 
   // Build container with display components
   const container = new ContainerBuilder()
@@ -108,8 +36,7 @@ async function createUserInfoContainer(client, user, member) {
   container.addSectionComponents((section) =>
     section
       .addTextDisplayComponents(
-        (text) => text.setContent(`# ${displayName}`),
-        (text) => text.setContent(`-# ${badges || 'No badges'}`)
+        (text) => text.setContent(`# ${displayName}`)
       )
       .setThumbnailAccessory((thumbnail) =>
         thumbnail
