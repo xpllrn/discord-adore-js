@@ -9,7 +9,8 @@ const {
     MessageFlags,
     SeparatorSpacingSize,
     AttachmentBuilder,
-    FileBuilder
+    FileBuilder,
+    TextDisplayBuilder
 } = require('discord.js');
 const { colors } = require('../../config/setup');
 const { embeds } = require('../../core/embeds');
@@ -300,34 +301,20 @@ class CustomContainerBuilder {
             }
         }
 
-        // In Components V2, content must be added as a text display component
-        // instead of using the content field in messageOptions
-        let FinalContainer = Container;
+        // In Components V2, content must be added as a separate TextDisplayBuilder
+        // OUTSIDE the container, not inside it
+        const components = [];
         
         if (Content.length > 0 && Content !== 'nil') {
-            // Create a new container with content at the beginning
-            FinalContainer = new ContainerBuilder();
-            
-            // Add content as first text display
-            FinalContainer.addTextDisplayComponents(
-                (text) => text.setContent(Content)
-            );
-            
-            // Copy all existing components from the original container
-            const originalComponents = Container.data.components || [];
-            originalComponents.forEach(component => {
-                // Directly push the component data to maintain structure
-                FinalContainer.data.components.push(component);
-            });
-            
-            // Copy accent color if set
-            if (Container.data.accent_color !== undefined) {
-                FinalContainer.setAccentColor(Container.data.accent_color);
-            }
+            // Add content as a separate text display component before the container
+            components.push(new TextDisplayBuilder().setContent(Content));
         }
+        
+        // Add the container
+        components.push(Container);
 
         const messageOptions = {
-            components: [FinalContainer],
+            components: components,
             flags: MessageFlags.IsComponentsV2
         };
 
@@ -337,18 +324,15 @@ class CustomContainerBuilder {
         }
 
         channel.send(messageOptions).catch((error) => {
-            const fakeMessage = message || {
-                author: variables.user || { id: 'unknown' },
-                channel: {
-                    send: async (options) => {
-                        return await channel.send(options);
-                    }
-                }
-            };
-
-            return embeds.deny(fakeMessage, `There's something wrong with your embed code, please check again.`).catch(() => {
-                return channel.send('Invalid container code, try again');
-            });
+            console.error('Container send error:', error);
+            
+            // Don't send error messages to system, send to the actual user
+            if (message && message.reply) {
+                return message.reply({
+                    content: `Failed to send container: ${error.message || 'Invalid container code'}`,
+                    allowedMentions: { repliedUser: false }
+                }).catch(() => {});
+            }
         });
     }
 }
