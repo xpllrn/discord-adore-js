@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
 const logger = require('../../../utils/logger');
+const sharp = require('sharp');
 
 // Helper function to remove invite links from text
 function removeInviteLinks(text) {
@@ -71,6 +72,58 @@ module.exports = {
 };
 
 
+/**
+ * Download and process image to meet Discord sticker requirements
+ * @param {string} url - Image URL
+ * @param {string} guildId - Guild ID for temp file naming
+ * @returns {Promise<string>} - Path to processed image
+ */
+async function downloadAndProcessImage(url, guildId) {
+  const tempDir = path.join(__dirname, '../../../temp');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  const tempInputPath = path.join(tempDir, `sticker_input_${guildId}_${Date.now()}`);
+  const tempOutputPath = path.join(tempDir, `sticker_output_${guildId}_${Date.now()}.png`);
+
+  try {
+    // Download the image
+    await downloadFile(url, tempInputPath);
+
+    // Process with sharp: resize to 320x320 and convert to PNG
+    await sharp(tempInputPath, { animated: true })
+      .resize(320, 320, {
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      })
+      .png()
+      .toFile(tempOutputPath);
+
+    // Clean up input file
+    fs.unlinkSync(tempInputPath);
+
+    // Check file size (must be under 512KB)
+    const stats = fs.statSync(tempOutputPath);
+    if (stats.size > 512 * 1024) {
+      // Try to compress more
+      await sharp(tempOutputPath)
+        .png({ quality: 80, compressionLevel: 9 })
+        .toFile(tempOutputPath + '.compressed');
+      
+      fs.unlinkSync(tempOutputPath);
+      fs.renameSync(tempOutputPath + '.compressed', tempOutputPath);
+    }
+
+    return tempOutputPath;
+  } catch (error) {
+    // Clean up on error
+    if (fs.existsSync(tempInputPath)) fs.unlinkSync(tempInputPath);
+    if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
+    throw error;
+  }
+}
+
 // Handle sticker add subcommand
 async function handleAdd(client, message, args) {
   let stickerUrl;
@@ -100,11 +153,6 @@ async function handleAdd(client, message, args) {
     if (!stickerUrl.match(/^https?:\/\/.+/i)) {
       return embeds.warn(message, 'Please provide a valid image URL');
     }
-    
-    // Check if URL contains gif extension and warn user
-    if (stickerUrl.match(/\.gif(\?|$)/i)) {
-      return embeds.warn(message, 'GIF files cannot be used as stickers directly.\n\nDiscord stickers require PNG or APNG format. For animated stickers, you need to convert your GIF to APNG format first.');
-    }
   }
 
   // Validate name length (2-30 characters)
@@ -118,17 +166,23 @@ async function handleAdd(client, message, args) {
       return embeds.warn(message, 'Server is at **max slots** for stickers (60/60)');
     }
 
-    const statusMessage = await embeds.loading(message, `Please wait, I'm adding sticker **\`${stickerName}\`** to the server`);
+    const statusMessage = await embeds.loading(message, `Please wait, I'm processing and adding sticker **\`${stickerName}\`** to the server`);
 
     const cleanName = removeInviteLinks(stickerName);
     const description = 'Sticker added using adore bot';
 
+    // Download and process the image
+    const processedImagePath = await downloadAndProcessImage(stickerUrl, message.guild.id);
+    
     const createdSticker = await message.guild.stickers.create({
-      file: stickerUrl,
+      file: processedImagePath,
       name: cleanName,
       description: description,
       tags: 'custom'
     });
+
+    // Clean up temp file
+    fs.unlinkSync(processedImagePath);
 
     await statusMessage.edit({
       embeds: [embeds.createSuccess(message, `Added sticker **\`${createdSticker.name}\`** to the server`)]
