@@ -33,7 +33,7 @@ class CustomEmbedBuilder {
         return false;
     }
 
-    constructor(channel, string) {
+    constructor(channel, string, variables = {}, message = null) {
         const Embed = new EmbedBuilder(); let Content = ''; const Buttons = [];
 
         // Parse parameters by finding complete blocks between { and }$v or end
@@ -337,8 +337,8 @@ class CustomEmbedBuilder {
             }
 
             // Create fake message object for embeds.deny
-            const fakeMessage = {
-                author: { id: 'system' },
+            const fakeMessage = message || {
+                author: variables.user || { id: 'unknown' },
                 channel: {
                     send: async (options) => {
                         return await channel.send(options);
@@ -346,7 +346,7 @@ class CustomEmbedBuilder {
                 }
             };
 
-            return embeds.deny(fakeMessage, `Failed to send embed: ${error.message || 'Invalid embed code'}`).catch(() => {
+            return embeds.deny(fakeMessage, `There's something wrong with your embed code, please check again.`).catch(() => {
                 return channel.send('Invalid embed code, try again')
             })
         })
@@ -357,24 +357,24 @@ class CustomEmbedBuilder {
 
 // Unified embed/text processor with variable replacement
 class EmbedVariableProcessor {
-    static process(channel, input, variables = {}) {
+    static process(channel, input, variables = {}, message = null) {
         // Check if input starts with {v2} or {container} - Components V2 mode
         if (input.trim().startsWith('{v2}') || input.trim().startsWith('{container}')) {
             // Components V2 mode - remove prefix and process as container
             const containerContent = input.replace(/^\s*{v2}\s*\$v\s*/, '').replace(/^\s*{container}\s*\$v\s*/, '');
             const { CustomContainerBuilder } = require('./containerbuilder');
-            return new CustomContainerBuilder(channel, containerContent, variables);
+            return new CustomContainerBuilder(channel, containerContent, variables, message);
         } else if (input.trim().startsWith('{embed}')) {
             // Embed mode - remove {embed} prefix and process as embed
             const embedContent = input.replace(/^\s*{embed}\s*\$v\s*/, '');
-            return this.processAsEmbed(channel, embedContent, variables);
+            return this.processAsEmbed(channel, embedContent, variables, message);
         } else {
             // Text mode - process variables and send as regular message
             return this.processAsText(channel, input, variables);
         }
     }
 
-    static processAsEmbed(channel, embedContent, variables = {}) {
+    static processAsEmbed(channel, embedContent, variables = {}, message = null) {
         // Apply variable replacements
         let processedContent = this.replaceVariables(embedContent, variables);
 
@@ -388,8 +388,8 @@ class EmbedVariableProcessor {
                 processedContent = correctionResult.content;
             } else {
                 // Show error if auto-correction failed
-                const fakeMessage = {
-                    author: { id: 'system' },
+                const fakeMessage = message || {
+                    author: variables.user || { id: 'unknown' },
                     channel: {
                         send: async (options) => {
                             return await channel.send(options);
@@ -405,7 +405,7 @@ class EmbedVariableProcessor {
         processedContent = this.cleanNilValues(processedContent);
 
         // Create embed using CustomEmbedBuilder
-        return new CustomEmbedBuilder(channel, processedContent);
+        return new CustomEmbedBuilder(channel, processedContent, variables, message);
     }
 
     static processAsText(channel, textContent, variables = {}) {

@@ -398,11 +398,11 @@ async function processSwearTracking(message) {
 
     if (foundSwears.length > 0) {
       const { getService } = require('@services');
-      const guildService = getService('guild');
+      const userService = getService('user');
 
       // Add each detected swear to the database using service layer
       for (const swear of foundSwears) {
-        await guildService.addSwear(message.guild.id, message.author.id, swear);
+        await userService.addSwear(message.author.id, swear);
       }
     }
 

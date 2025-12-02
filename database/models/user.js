@@ -335,7 +335,33 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+
+  // Global swear tracking system
+  SwearTracker: {
+    swears: [{
+      word: {
+        type: String,
+        required: true
+      },
+      count: {
+        type: Number,
+        default: 0
+      }
+    }],
+    totalSwears: {
+      type: Number,
+      default: 0
+    },
+    todaySwears: {
+      type: Number,
+      default: 0
+    },
+    lastSwearDate: {
+      type: Date,
+      default: Date.now
+    }
+  }
 
 }, {
   timestamps: true
@@ -384,6 +410,10 @@ userSchema.index({ 'Marriage.marriedAt': -1 }); // Recent marriages
 
 // Inventory system indexes
 userSchema.index({ 'Inventory.id': 1 }); // Item lookups
+
+// Swear tracker indexes
+userSchema.index({ 'SwearTracker.totalSwears': -1 }); // Leaderboard by total swears
+userSchema.index({ 'SwearTracker.lastSwearDate': 1 }); // Date-based queries
 
 module.exports = {
   schema: userSchema,

@@ -1,13 +1,51 @@
-const { ContainerBuilder, SectionBuilder, MediaGalleryBuilder, SeparatorBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, MessageFlags } = require('discord.js');
+const { 
+    ContainerBuilder, 
+    SectionBuilder, 
+    MediaGalleryBuilder, 
+    SeparatorBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    ActionRowBuilder, 
+    MessageFlags,
+    SeparatorSpacingSize,
+    AttachmentBuilder,
+    FileBuilder
+} = require('discord.js');
 const { colors } = require('../../config/setup');
 const { embeds } = require('../../core/embeds');
 const { EmbedVariableProcessor } = require('./embedbuilder');
 
 class CustomContainerBuilder {
-    constructor(channel, string, variables = {}) {
+    // Helper method to validate emoji
+    isValidEmoji(emoji) {
+        if (!emoji || typeof emoji !== 'string') return false;
+
+        // Check for custom Discord emoji format <:name:id> or <a:name:id>
+        if (emoji.match(/^<a?:\w+:\d+>$/)) {
+            return true;
+        }
+
+        // Check for Unicode emoji
+        if (emoji.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u)) {
+            return true;
+        }
+
+        if (emoji.match(/[\u{1F900}-\u{1F9FF}]|[\u{1FA70}-\u{1FAFF}]/u)) {
+            return true;
+        }
+
+        if (emoji.length === 1 || (emoji.length === 2 && emoji.charCodeAt(0) > 127)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    constructor(channel, string, variables = {}, message = null) {
         const Container = new ContainerBuilder();
         let Content = '';
         const Buttons = [];
+        const Files = [];
 
         // Apply variable replacements first
         const processedString = EmbedVariableProcessor.replaceVariables(string, variables);
@@ -53,9 +91,18 @@ class CustomContainerBuilder {
         for (const param of parameters) {
             const colonIndex = param.indexOf(':');
             
-            // Handle separator (no colon)
+            // Handle separator (no colon) or with options
             if (param.trim().toLowerCase() === 'separator') {
                 Container.addSeparatorComponents((separator) => separator);
+                continue;
+            }
+
+            // Handle timestamp (no colon)
+            if (param.trim().toLowerCase() === 'timestamp') {
+                const timestamp = Math.floor(Date.now() / 1000);
+                Container.addTextDisplayComponents(
+                    (text) => text.setContent(`-# <t:${timestamp}:R>`)
+                );
                 continue;
             }
 
@@ -73,6 +120,49 @@ class CustomContainerBuilder {
                 // Accent color
                 const colorValue = paramValue.startsWith('#') ? parseInt(paramValue.replace('#', ''), 16) : parseInt(paramValue, 16);
                 Container.setAccentColor(colorValue);
+            } else if (paramName === 'thumbnail') {
+                // Standalone thumbnail in a section
+                if (paramValue && (paramValue.startsWith('http://') || paramValue.startsWith('https://'))) {
+                    Container.addSectionComponents((section) =>
+                        section.setThumbnailAccessory((thumbnail) =>
+                            thumbnail.setURL(paramValue).setDescription('Thumbnail')
+                        )
+                    );
+                }
+            } else if (paramName === 'image') {
+                // Image as media gallery with single item
+                if (paramValue && (paramValue.startsWith('http://') || paramValue.startsWith('https://'))) {
+                    Container.addMediaGalleryComponents((gallery) =>
+                        gallery.addItems((item) => item.setURL(paramValue).setDescription('Image'))
+                    );
+                }
+            } else if (paramName === 'author') {
+                // Author as section with text and optional thumbnail
+                // Format: name&&icon_url OR just name
+                const parts = paramValue.split('&&').map(p => p.trim());
+                const authorName = parts[0];
+                const authorIcon = parts[1];
+
+                if (authorName) {
+                    if (authorIcon && (authorIcon.startsWith('http://') || authorIcon.startsWith('https://'))) {
+                        Container.addSectionComponents((section) =>
+                            section
+                                .addTextDisplayComponents((text) => text.setContent(`**${authorName}**`))
+                                .setThumbnailAccessory((thumbnail) =>
+                                    thumbnail.setURL(authorIcon).setDescription('Author icon')
+                                )
+                        );
+                    } else {
+                        Container.addTextDisplayComponents(
+                            (text) => text.setContent(`**${authorName}**`)
+                        );
+                    }
+                }
+            } else if (paramName === 'separator.line') {
+                // Separator with divider line
+                Container.addSeparatorComponents((separator) => 
+                    separator.setDivider(true).setSpacing(SeparatorSpacingSize.Large)
+                );
             } else if (paramName === 'section') {
                 // Section with text and optional thumbnail
                 // Format: text1&&text2&&...&&thumbnail_url (up to 3 text displays)
@@ -135,10 +225,12 @@ class CustomContainerBuilder {
                 Content = paramValue;
             } else if (paramName === 'button') {
                 // Button component
-                // Format: url&&label OR style&&label
-                const parts = paramValue.split('&&');
-                const styleOrUrl = parts[0]?.trim();
-                const label = parts[1]?.trim();
+                // Format: style&&label&&emoji&&disabled OR url&&label&&emoji
+                const parts = paramValue.split('&&').map(p => p.trim());
+                const styleOrUrl = parts[0];
+                const label = parts[1];
+                const emoji = parts[2];
+                const disabled = parts[3]?.toLowerCase() === 'disabled' || parts[3]?.toLowerCase() === 'disable';
 
                 if (styleOrUrl && label) {
                     const button = new ButtonBuilder();
@@ -148,6 +240,11 @@ class CustomContainerBuilder {
                         button.setStyle(ButtonStyle.Link)
                             .setURL(styleOrUrl)
                             .setLabel(label);
+                        
+                        // Add emoji if provided and valid
+                        if (emoji && this.isValidEmoji(emoji)) {
+                            button.setEmoji(emoji);
+                        }
                     } else {
                         // Style button
                         let style = ButtonStyle.Secondary;
@@ -156,6 +253,11 @@ class CustomContainerBuilder {
                             case 'primary':
                             case 'blurple':
                                 style = ButtonStyle.Primary;
+                                break;
+                            case 'secondary':
+                            case 'grey':
+                            case 'gray':
+                                style = ButtonStyle.Secondary;
                                 break;
                             case 'success':
                             case 'green':
@@ -170,6 +272,16 @@ class CustomContainerBuilder {
                         button.setStyle(style)
                             .setLabel(label)
                             .setCustomId(`custom_button_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+                        // Add emoji if provided and valid
+                        if (emoji && emoji !== 'disabled' && emoji !== 'disable' && this.isValidEmoji(emoji)) {
+                            button.setEmoji(emoji);
+                        }
+
+                        // Set disabled state
+                        if (disabled || emoji === 'disabled' || emoji === 'disable') {
+                            button.setDisabled(true);
+                        }
                     }
 
                     Buttons.push(button);
@@ -190,13 +302,22 @@ class CustomContainerBuilder {
 
         const messageOptions = {
             components: [Container],
-            flags: MessageFlags.IsComponentsV2,
-            content: Content.length > 0 && Content !== 'nil' ? Content : null
+            flags: MessageFlags.IsComponentsV2
         };
 
+        // Only add content if it's not empty and not 'nil'
+        if (Content.length > 0 && Content !== 'nil') {
+            messageOptions.content = Content;
+        }
+
+        // Add files if any exist
+        if (Files.length > 0) {
+            messageOptions.files = Files;
+        }
+
         channel.send(messageOptions).catch((error) => {
-            const fakeMessage = {
-                author: { id: 'system' },
+            const fakeMessage = message || {
+                author: variables.user || { id: 'unknown' },
                 channel: {
                     send: async (options) => {
                         return await channel.send(options);
@@ -204,7 +325,7 @@ class CustomContainerBuilder {
                 }
             };
 
-            return embeds.deny(fakeMessage, `Failed to send container: ${error.message || 'Invalid container code'}`).catch(() => {
+            return embeds.deny(fakeMessage, `There's something wrong with your embed code, please check again.`).catch(() => {
                 return channel.send('Invalid container code, try again');
             });
         });

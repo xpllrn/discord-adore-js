@@ -3240,3 +3240,50 @@ This documentation now covers:
 **Remember:** adore is always lowercase, never "adore", "adore", or "adore"!
 
 
+
+
+---
+
+## 🆕 Components V2 (Display Components)
+
+**Components V2** is Discord's modern alternative to embeds with better layouts and integrated buttons.
+
+### Quick Start
+
+**Old way:**
+```
+{embed}$v{title: Hello}$v{description: World}
+```
+
+**New way:**
+```
+{v2}$v{text: # Hello}$v{text: World}
+```
+
+### Key Features
+- ✅ Modern, flexible layouts
+- ✅ Better mobile experience
+- ✅ Integrated buttons
+- ✅ Full markdown support
+- ✅ Media galleries
+- ✅ All variables work
+
+### Basic Parameters
+- `{text: content}` - Display text (supports markdown)
+- `{color: #hex}` - Accent color
+- `{section: text1&&text2&&image}` - Section with thumbnail
+- `{image: url}` - Large image
+- `{thumbnail: url}` - Small image
+- `{gallery: url1&&url2}` - Multiple images
+- `{button: style&&label&&emoji}` - Interactive button
+- `{separator}` - Spacing
+- `{footer: text}` - Footer text
+- `{timestamp}` - Current time
+
+### Example
+```
+{v2}$v{color: #0099ff}$v{text: # Welcome {user}!}$v{text: Thanks for joining {guild.name}}$v{separator}$v{text: **Members:** {guild.count}}$v{button: primary&&Get Started&&🚀}
+```
+
+**📖 For complete documentation, see:** `components-v2-guide.md`
+

@@ -34,7 +34,7 @@ module.exports = {
         // Components V2 mode
         let containerInput = input.replace(/^\s*{container}\s*\$v\s*/, '').replace(/^\s*{v2}\s*\$v\s*/, '');
 
-        return new CustomContainerBuilder(message.channel, containerInput, variables);
+        return new CustomContainerBuilder(message.channel, containerInput, variables, message);
       } else {
         // Old embed mode
         let embedInput = input;
@@ -42,7 +42,7 @@ module.exports = {
           embedInput = `{embed}$v${input}`;
         }
 
-        return MessageProcessor.process(message.channel, embedInput, variables);
+        return MessageProcessor.process(message.channel, embedInput, variables, message);
       }
 
     } catch (error) {

@@ -2530,6 +2530,216 @@ class UserService extends BaseService {
       throw new DatabaseWriteError(`Failed to remove jailed roles for user ${userId}`, error);
     }
   }
+
+  /**
+   * Add a swear word to user's global tracking
+   * @param {string} userId - User ID
+   * @param {string} swear - Swear word
+   * @returns {Promise<boolean>} Success status
+   */
+  async addSwear(userId, swear) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!swear) {
+      throw new ValidationError('Swear is required', 'swear', swear);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const swearTracker = userData.SwearTracker || {
+        swears: [],
+        totalSwears: 0,
+        todaySwears: 0,
+        lastSwearDate: new Date()
+      };
+
+      const word = swear.toLowerCase();
+      const now = new Date();
+
+      // Find existing swear word in user's swears array
+      let swearEntry = swearTracker.swears.find(s => s.word === word);
+
+      if (swearEntry) {
+        // Increment existing swear count
+        swearEntry.count++;
+      } else {
+        // Add new swear word
+        swearTracker.swears.push({
+          word,
+          count: 1
+        });
+      }
+
+      // Update totals
+      swearTracker.totalSwears++;
+
+      // Check if it's today and update todaySwears
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lastSwearDate = new Date(swearTracker.lastSwearDate);
+      lastSwearDate.setHours(0, 0, 0, 0);
+
+      if (lastSwearDate.getTime() === today.getTime()) {
+        // Same day, increment today's count
+        swearTracker.todaySwears++;
+      } else {
+        // New day, reset today's count
+        swearTracker.todaySwears = 1;
+      }
+
+      swearTracker.lastSwearDate = now;
+      userData.SwearTracker = swearTracker;
+
+      await this.set(userId, userData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add swear for user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Get user swear data with aggregated counts
+   * @param {string} userId - User ID
+   * @returns {Promise<Object>} User swear data with aggregated counts
+   */
+  async getUserSwearData(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const userData = await this.ensureUserData(userId);
+      const swearTracker = userData.SwearTracker || {};
+
+      if (!swearTracker.swears || swearTracker.swears.length === 0) {
+        return {
+          userId,
+          swears: [],
+          todaySwears: 0,
+          totalSwears: 0
+        };
+      }
+
+      // Check if todaySwears needs to be reset (if lastSwearDate is not today)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lastSwearDate = new Date(swearTracker.lastSwearDate);
+      lastSwearDate.setHours(0, 0, 0, 0);
+
+      const todaySwears = lastSwearDate.getTime() === today.getTime()
+        ? (swearTracker.todaySwears || 0)
+        : 0;
+
+      return {
+        userId,
+        swears: swearTracker.swears.map(s => ({
+          word: s.word,
+          count: s.count
+        })),
+        todaySwears,
+        totalSwears: swearTracker.totalSwears || 0
+      };
+    } catch (error) {
+      console.error(`Error getting user swear data for user ${userId}:`, error.message);
+      return {
+        userId,
+        swears: [],
+        todaySwears: 0,
+        totalSwears: 0
+      };
+    }
+  }
+
+  /**
+   * Get global swear leaderboard
+   * @param {number} limit - Number of users to return (default: 100)
+   * @returns {Promise<Array>} Array of user swear data sorted by total
+   */
+  async getSwearLeaderboard(limit = 100) {
+    try {
+      const User = this.model;
+      
+      // Find users with swear data, sorted by total swears
+      const users = await User.find({
+        'SwearTracker.totalSwears': { $gt: 0 }
+      })
+      .select('UserID SwearTracker')
+      .sort({ 'SwearTracker.totalSwears': -1 })
+      .limit(limit)
+      .lean();
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Map to leaderboard format
+      const leaderboard = users.map(user => {
+        const swearTracker = user.SwearTracker || {};
+        
+        // Check if todaySwears needs to be reset
+        const lastSwearDate = new Date(swearTracker.lastSwearDate);
+        lastSwearDate.setHours(0, 0, 0, 0);
+        const todaySwears = lastSwearDate.getTime() === today.getTime()
+          ? (swearTracker.todaySwears || 0)
+          : 0;
+
+        return {
+          userId: user.UserID,
+          calculatedTotal: swearTracker.totalSwears || 0,
+          todaySwears,
+          swears: (swearTracker.swears || []).map(s => ({
+            word: s.word,
+            count: s.count
+          }))
+        };
+      });
+
+      return leaderboard;
+    } catch (error) {
+      console.error('Error getting global swear leaderboard:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get user's position in global swear leaderboard
+   * @param {string} userId - User ID
+   * @returns {Promise<number|null>} User's position or null
+   */
+  async getUserSwearPosition(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const User = this.model;
+      
+      // Get user's total swears
+      const userData = await User.findOne({ UserID: userId })
+        .select('SwearTracker.totalSwears')
+        .lean();
+
+      if (!userData || !userData.SwearTracker || userData.SwearTracker.totalSwears === 0) {
+        return null;
+      }
+
+      const userTotal = userData.SwearTracker.totalSwears;
+
+      // Count how many users have more swears
+      const higherCount = await User.countDocuments({
+        'SwearTracker.totalSwears': { $gt: userTotal }
+      });
+
+      return higherCount + 1;
+    } catch (error) {
+      console.error(`Error getting user swear position for user ${userId}:`, error.message);
+      return null;
+    }
+  }
 }
 
 module.exports = UserService;

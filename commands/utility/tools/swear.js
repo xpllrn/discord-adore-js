@@ -1,12 +1,9 @@
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
-const { hasDiscordPermission } = require('../../../utils/permissions');
 const { findUser } = require('../../../handlers/finder');
-const { ensureGuildData } = require('../../../database');
-const { createPagination, createConfirmation } = require('../../../core/buttons');
+const { createPagination } = require('../../../core/buttons');
 const { getService } = require('@services');
 const config = require('../../../config/setup');
-const logger = require('../../../utils/logger');
 
 const SWEAR_WORDS = [
   // General profanity
@@ -55,11 +52,10 @@ function detectSwears(text) {
 module.exports = {
   name: "swear",
   aliases: ['swears'],
-  description: `track swear usage in the server`,
+  description: `track swear usage globally across all servers`,
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const guildService = getService('guild');
-    await ensureGuildData(message.guild.id);
+    const userService = getService('user');
 
     if (args[0] === 'list') {
       const subcommandInfo = {
@@ -85,11 +81,11 @@ module.exports = {
       }
 
       try {
-        const userData = await guildService.getUserSwearData(message.guild.id, targetUser.id);
+        const userData = await userService.getUserSwearData(targetUser.id);
 
         if (!userData || userData.swears.length === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
-          return embeds.warn(message, `**${username}** has no recorded swears in this server`);
+          return embeds.warn(message, `**${username}** has no recorded swears`);
         }
 
         const usedSwears = userData.swears.filter(swear => swear.count > 0);
@@ -97,7 +93,7 @@ module.exports = {
 
         if (sortedSwears.length === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
-          return embeds.warn(message, `**${username}** has no recorded swears in this server`);
+          return embeds.warn(message, `**${username}** has no recorded swears`);
         }
 
         const calculatedTotal = usedSwears.reduce((total, swear) => total + swear.count, 0);
@@ -128,7 +124,7 @@ module.exports = {
 
     } else if (args[0] === 'leaderboard' || args[0] === 'lb') {
       const subcommandInfo = {
-        description: 'Show the server swear leaderboard',
+        description: 'Show the global swear leaderboard',
         syntax: '{guildprefix}swear leaderboard',
         aliases: ['lb'],
         parameters: [],
@@ -136,13 +132,13 @@ module.exports = {
       };
 
       try {
-        const leaderboard = await guildService.getSwearLeaderboard(message.guild.id);
+        const leaderboard = await userService.getSwearLeaderboard(100);
 
         if (leaderboard.length === 0) {
-          return embeds.warn(message, 'No swear data found for this server');
+          return embeds.warn(message, 'No swear data found');
         }
 
-        const userPosition = await guildService.getUserSwearPosition(message.guild.id, message.author.id);
+        const userPosition = await userService.getUserSwearPosition(message.author.id);
 
         // Pre-fetch all usernames to avoid async issues in pagination
         const leaderboardWithUsernames = await Promise.all(
@@ -205,46 +201,12 @@ module.exports = {
 
           return new EmbedBuilder()
             .setColor(config.colors.embed)
-            .setTitle('Swear Leaderboard')
+            .setTitle('Global Swear Leaderboard')
             .setDescription(leaderboardList)
             .setFooter({ text: footerText });
         };
 
-        await createPagination(message, leaderboardWithUsernames, formatPage, 10, 'Swear Leaderboard');
-      } catch (error) {
-        throw error;
-      }
-
-    } else if (args[0] === 'reset') {
-      const subcommandInfo = {
-        description: 'Reset all swear data for the server',
-        syntax: '{guildprefix}swear reset',
-        aliases: [],
-        parameters: [],
-        example: '{guildprefix}swear reset'
-      };
-
-      if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
-
-      try {
-        const swearData = await guildService.getSwearTracker(message.guild.id);
-
-        if (swearData.length === 0) {
-          return embeds.warn(message, 'No swear data to reset');
-        }
-
-        await createConfirmation(
-          message,
-          'Are you sure you want to **reset all swear data** for this server?',
-          async (interaction) => {
-
-            await guildService.clearAllSwearData(message.guild.id);
-
-            const successEmbed = embeds.createSuccess(message, 'Reset all swear data for this server');
-
-            await interaction.editReply({ embeds: [successEmbed], components: [] });
-          }
-        );
+        await createPagination(message, leaderboardWithUsernames, formatPage, 10, 'Global Swear Leaderboard');
       } catch (error) {
         throw error;
       }
@@ -270,18 +232,18 @@ module.exports = {
       const userId = targetUser.id;
 
       try {
-        const userData = await guildService.getUserSwearData(message.guild.id, userId);
+        const userData = await userService.getUserSwearData(userId);
 
         if (!userData || !userData.swears || userData.swears.length === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
-          return embeds.info(message, `**${username}** has no recorded swears in this server`);
+          return embeds.info(message, `**${username}** has no recorded swears`);
         }
 
         const calculatedTotal = userData.swears.reduce((total, swear) => total + swear.count, 0);
 
         if (calculatedTotal === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
-          return embeds.info(message, `**${username}** has no recorded swears in this server`);
+          return embeds.info(message, `**${username}** has no recorded swears`);
         }
 
         const username = targetMember ? targetMember.displayName : targetUser.username;
@@ -293,17 +255,17 @@ module.exports = {
     } else {
 
       try {
-        const userData = await guildService.getUserSwearData(message.guild.id, message.author.id);
+        const userData = await userService.getUserSwearData(message.author.id);
 
         if (!userData || !userData.swears || userData.swears.length === 0) {
-          return embeds.info(message, 'You have no recorded swears in this server');
+          return embeds.info(message, 'You have no recorded swears');
         }
 
         // Calculate actual total from individual word counts
         const calculatedTotal = userData.swears.reduce((total, swear) => total + swear.count, 0);
 
         if (calculatedTotal === 0) {
-          return embeds.info(message, 'You have no recorded swears in this server');
+          return embeds.info(message, 'You have no recorded swears');
         }
 
         return embeds.info(message, `You have sweared **${calculatedTotal}** times`);
