@@ -228,7 +228,7 @@ module.exports = {
                   actionRow.setComponents(...existingButtons)
                 );
               } else {
-                // For other component types, use .from() to copy them
+                // For other component types, manually reconstruct them
                 // Component types based on actual Discord API:
                 // Type 1 = ActionRow
                 // Type 10 = TextDisplay
@@ -238,20 +238,52 @@ module.exports = {
                 console.log('Copying component type:', comp.type);
                 try {
                   if (comp.type === 14) { // Separator
-                    const separator = SeparatorBuilder.from(comp);
-                    newContainer.addSeparatorComponents(() => separator);
+                    newContainer.addSeparatorComponents((separator) => {
+                      if (comp.divider !== undefined) separator.setDivider(comp.divider);
+                      if (comp.spacing !== undefined) separator.setSpacing(comp.spacing);
+                      return separator;
+                    });
                     console.log('Added separator');
                   } else if (comp.type === 10) { // Text display
-                    const textDisplay = TextDisplayBuilder.from(comp);
-                    newContainer.addTextDisplayComponents(() => textDisplay);
-                    console.log('Added text display');
+                    const content = comp.content || '';
+                    newContainer.addTextDisplayComponents((text) => text.setContent(content));
+                    console.log('Added text display:', content);
                   } else if (comp.type === 11) { // Section
-                    const section = SectionBuilder.from(comp);
-                    newContainer.addSectionComponents(() => section);
+                    newContainer.addSectionComponents((section) => {
+                      // Copy section components (text displays)
+                      if (comp.components && Array.isArray(comp.components)) {
+                        const textDisplays = comp.components
+                          .filter(c => c.type === 10)
+                          .map(c => (text) => text.setContent(c.content || ''));
+                        if (textDisplays.length > 0) {
+                          section.addTextDisplayComponents(...textDisplays);
+                        }
+                      }
+                      // Copy thumbnail accessory if exists
+                      if (comp.accessory && comp.accessory.type === 13) {
+                        section.setThumbnailAccessory((thumbnail) => {
+                          if (comp.accessory.url) thumbnail.setURL(comp.accessory.url);
+                          if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                          if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                          return thumbnail;
+                        });
+                      }
+                      return section;
+                    });
                     console.log('Added section');
                   } else if (comp.type === 12) { // Media gallery
-                    const gallery = MediaGalleryBuilder.from(comp);
-                    newContainer.addMediaGalleryComponents(() => gallery);
+                    newContainer.addMediaGalleryComponents((gallery) => {
+                      if (comp.items && Array.isArray(comp.items)) {
+                        const items = comp.items.map(item => (mediaItem) => {
+                          if (item.url) mediaItem.setURL(item.url);
+                          if (item.description) mediaItem.setDescription(item.description);
+                          if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
+                          return mediaItem;
+                        });
+                        gallery.addItems(...items);
+                      }
+                      return gallery;
+                    });
                     console.log('Added gallery');
                   } else {
                     console.log('Unknown component type:', comp.type);
