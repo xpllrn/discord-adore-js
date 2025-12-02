@@ -28,11 +28,6 @@ module.exports = {
       const channelCount = guild.channels.cache.size;
       const emojiCount = guild.emojis.cache.size;
 
-      // Boost information
-      const boostLevel = guild.premiumTier;
-      const boostCount = guild.premiumSubscriptionCount || 0;
-      const boosterCount = guild.members.cache.filter(m => m.premiumSince).size;
-
       // Verification level mapping
       const verificationLevels = {
         0: 'None',
@@ -63,7 +58,6 @@ module.exports = {
         );  
       } else {
         container.addTextDisplayComponents(
-          (text) => text.setContent(`# ${guild.name}`),
           (text) => text.setContent(`-# ${guild.description || '*No description set*'}`)
         );
       } 
@@ -79,16 +73,10 @@ module.exports = {
         (text) => text.setContent(`**Information**`),
         (text) => text.setContent(`Total: ${totalMembers} • Humans: ${humans} • Bots: ${bots}`),
         (text) => text.setContent(`Roles: ${roleCount} • Channels: ${channelCount} • Emojis: ${emojiCount}`),
-        (text) => text.setContent(`${boostCount} boosts from ${boosterCount} boosters • Level ${boostLevel}`)
-      );
-
-      // Footer
-      container.addSeparatorComponents((separator) => separator);
-      container.addTextDisplayComponents((text) =>
-        text.setContent(`Owner ID: ${owner.id}`)
       );
 
       // Build buttons for server assets (always show all 3, disable if not available)
+      container.addSeparatorComponents((separator) => separator);
       container.addActionRowComponents((actionRow) =>
         actionRow.setComponents(
           new ButtonBuilder()
@@ -107,6 +95,12 @@ module.exports = {
             .setURL(guild.bannerURL({ size: 1024 }) || 'https://discord.com')
             .setDisabled(!guild.banner)
         )
+      );
+
+      // Footer
+      container.addSeparatorComponents((separator) => separator);
+      container.addTextDisplayComponents((text) =>
+        text.setContent(`-# **Server ID**: ${guild.id}`)
       );
 
       // Send with Components V2 flag
