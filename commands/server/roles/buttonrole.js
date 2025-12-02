@@ -163,7 +163,16 @@ module.exports = {
       try {
         if (isV2Message) {
           // V2 message - need to add button to container's action rows
-          const { ContainerBuilder, MessageFlags } = require('discord.js');
+          const { 
+            ContainerBuilder, 
+            TextDisplayBuilder,
+            SectionBuilder,
+            SeparatorBuilder,
+            MediaGalleryBuilder,
+            ActionRowBuilder: V2ActionRowBuilder,
+            ButtonBuilder: V2ButtonBuilder,
+            MessageFlags 
+          } = require('discord.js');
           
           let components = [...targetMessage.components];
           
@@ -181,11 +190,58 @@ module.exports = {
             return embeds.deny(message, 'Could not find container in v2 message! Make sure this is a v2 message with a container.');
           }
 
-          // Rebuild the container from the existing one
+          // Get the existing container data
           const existingContainer = components[containerIndex];
-          const newContainer = ContainerBuilder.from(existingContainer);
+          
+          // Create a new container and copy all existing components
+          const newContainer = new ContainerBuilder();
+          
+          // Copy accent color if it exists
+          if (existingContainer.data?.accent_color) {
+            newContainer.setAccentColor(existingContainer.data.accent_color);
+          }
+          
+          // Copy all existing components from the container
+          if (existingContainer.components && Array.isArray(existingContainer.components)) {
+            for (const comp of existingContainer.components) {
+              // Reconstruct each component based on its type
+              if (comp.type === 1) {
+                // Action row with buttons - copy existing buttons
+                const existingButtons = comp.components.map(btnData => {
+                  const btn = new V2ButtonBuilder();
+                  if (btnData.custom_id) btn.setCustomId(btnData.custom_id);
+                  if (btnData.label) btn.setLabel(btnData.label);
+                  if (btnData.style) btn.setStyle(btnData.style);
+                  if (btnData.emoji) btn.setEmoji(btnData.emoji);
+                  if (btnData.url) btn.setURL(btnData.url);
+                  if (btnData.disabled) btn.setDisabled(btnData.disabled);
+                  return btn;
+                });
+                
+                newContainer.addActionRowComponents((actionRow) =>
+                  actionRow.setComponents(...existingButtons)
+                );
+              } else {
+                // For other component types, use .from() to copy them
+                // This includes text displays, sections, separators, etc.
+                try {
+                  if (comp.type === 14) { // Separator
+                    newContainer.addSeparatorComponents((sep) => SeparatorBuilder.from(comp));
+                  } else if (comp.type === 15) { // Text display
+                    newContainer.addTextDisplayComponents((text) => TextDisplayBuilder.from(comp));
+                  } else if (comp.type === 11) { // Section
+                    newContainer.addSectionComponents((section) => SectionBuilder.from(comp));
+                  } else if (comp.type === 16) { // Media gallery
+                    newContainer.addMediaGalleryComponents((gallery) => MediaGalleryBuilder.from(comp));
+                  }
+                } catch (err) {
+                  console.error('Error copying component:', err);
+                }
+              }
+            }
+          }
 
-          // Add the button as a new action row
+          // Add the new button as a new action row
           newContainer.addActionRowComponents((actionRow) =>
             actionRow.setComponents(button)
           );
