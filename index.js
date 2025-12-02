@@ -37,7 +37,7 @@ const client = new Client({
     GatewayIntentBits.DirectMessageTyping,
     GatewayIntentBits.MessageContent
   ],
-  allowedMentions: { parse: [] },
+  allowedMentions: { parse: ['users'], repliedUser: false },
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
   ws: {
     properties: {
