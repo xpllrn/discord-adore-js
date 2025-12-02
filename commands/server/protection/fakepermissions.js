@@ -1,7 +1,8 @@
-const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { getService } = require('@services');
+const { findRole } = require('../../../handlers/finder');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -53,22 +54,12 @@ module.exports = {
 
       case 'list': {
         const subcommandInfo = {
-          description: 'View fake permissions for a role',
+          description: 'View fake permissions for a role or all roles',
           syntax: '{guildprefix}fakepermissions list [role]',
           aliases: [],
           example: '{guildprefix}fakepermissions list @Moderator'
         };
         return handleList(message, args, guildService);
-      }
-
-      case 'view': {
-        const subcommandInfo = {
-          description: 'View all fake permissions configured in the server',
-          syntax: '{guildprefix}fakepermissions view',
-          aliases: [],
-          example: '{guildprefix}fakepermissions view'
-        };
-        return handleViewAll(message, guildService);
       }
 
       case 'reset': {
@@ -100,14 +91,11 @@ async function handleAdd(message, args, guildService) {
     return embeds.warn(message, 'Please specify a role: `,fakepermissions add @Moderator ban_members`');
   }
 
-  const mentionedRole = message.mentions.roles.first();
-  const role = (mentionedRole && mentionedRole.guild.id === message.guild.id) ? mentionedRole :
-                message.guild.roles.cache.get(roleArg) ||
-                message.guild.roles.cache.find(r => r.name.toLowerCase() === roleArg.toLowerCase());
-
-  if (!role) {
-    return embeds.warn(message, 'Role not found. Please mention a role or provide a valid role ID/name.');
+  const roleResult = findRole(message.guild, roleArg);
+  if (!roleResult.found) {
+    return embeds.warn(message, roleResult.error);
   }
+  const role = roleResult.role;
 
   // Get permissions from remaining args
   const permissionArgs = args.slice(2);
@@ -227,13 +215,9 @@ async function handleAdd(message, args, guildService) {
 
   await guildService.set(message.guild.id, guildData);
 
-  let responseMsg = `Added fake permissions to **${role.name}**:\n${newPerms.map(p => `\`${p}\``).join(', ')}`;
-  
-  if (alreadyAdded.length > 0) {
-    responseMsg += `\n\n> Already added: ${alreadyAdded.map(p => `\`${p}\``).join(', ')}`;
-  }
-
-  responseMsg += '\n\n-# Members with this role can now use bot commands for these permissions, but cannot use native Discord features.';
+  const permissionWord = newPerms.length === 1 ? 'permission' : 'permissions';
+  const permsList = newPerms.map(p => `\`${p}\``).join(', ');
+  const responseMsg = `Granted fake **${permissionWord}** ${permsList} for ${role}`;
 
   return embeds.success(message, responseMsg);
 }
@@ -245,14 +229,11 @@ async function handleRemove(message, args, guildService) {
     return embeds.warn(message, 'Please specify a role: `,fakepermissions remove @Moderator ban_members`');
   }
 
-  const mentionedRole = message.mentions.roles.first();
-  const role = (mentionedRole && mentionedRole.guild.id === message.guild.id) ? mentionedRole :
-                message.guild.roles.cache.get(roleArg) ||
-                message.guild.roles.cache.find(r => r.name.toLowerCase() === roleArg.toLowerCase());
-
-  if (!role) {
-    return embeds.warn(message, 'Role not found. Please mention a role or provide a valid role ID/name.');
+  const roleResult = findRole(message.guild, roleArg);
+  if (!roleResult.found) {
+    return embeds.warn(message, roleResult.error);
   }
+  const role = roleResult.role;
 
   // Get permissions from remaining args
   const permissionArgs = args.slice(2);
@@ -342,23 +323,57 @@ async function handleRemove(message, args, guildService) {
 }
 
 async function handleList(message, args, guildService) {
-  // Get role from mention or ID
+  const guildData = await guildService.ensureGuildData(message.guild.id);
+  
+  // If no role specified, show all
   const roleArg = args[1];
   if (!roleArg) {
-    return embeds.warn(message, 'Please specify a role: `,fakepermissions list @Moderator`');
+    if (!guildData.FakePermissions || Object.keys(guildData.FakePermissions).length === 0) {
+      return embeds.warn(message, 'No fake permissions are configured in this server');
+    }
+
+    const fakePermissions = guildData.FakePermissions;
+    const roleEntries = Object.values(fakePermissions).filter(r => r.permissions && r.permissions.length > 0);
+
+    if (roleEntries.length === 0) {
+      return embeds.warn(message, 'No fake permissions are configured in this server');
+    }
+
+    const embed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setAuthor({
+        name: 'Fake Permissions',
+        iconURL: message.author.displayAvatarURL({ dynamic: true })
+      })
+      .setFooter({
+        text: `Page 1/1 (${roleEntries.length} ${roleEntries.length === 1 ? 'entry' : 'entries'})`
+      });
+
+    // Add fields for each role
+    for (const roleData of roleEntries) {
+      const role = message.guild.roles.cache.get(roleData.roleId);
+      const permissions = roleData.permissions || [];
+      const permsList = permissions.map(p => `\`${p}\``).join(', ');
+      const roleDisplay = role ? `${role}` : `**${roleData.roleName}** (Deleted)`;
+      
+      embed.addFields({
+        name: `${roleEntries.indexOf(roleData) + 1}`,
+        value: `${roleDisplay} - ${permsList}`,
+        inline: false
+      });
+    }
+
+    return message.channel.send({ embeds: [embed] });
   }
 
-  const mentionedRole = message.mentions.roles.first();
-  const role = (mentionedRole && mentionedRole.guild.id === message.guild.id) ? mentionedRole :
-                message.guild.roles.cache.get(roleArg) ||
-                message.guild.roles.cache.find(r => r.name.toLowerCase() === roleArg.toLowerCase());
-
-  if (!role) {
-    return embeds.warn(message, 'Role not found. Please mention a role or provide a valid role ID/name.');
+  // Show specific role
+  const roleResult = findRole(message.guild, roleArg);
+  if (!roleResult.found) {
+    return embeds.warn(message, roleResult.error);
   }
+  const role = roleResult.role;
 
   // Get fake permissions
-  const guildData = await guildService.ensureGuildData(message.guild.id);
   if (!guildData.FakePermissions || !guildData.FakePermissions[role.id]) {
     return embeds.warn(message, `**${role.name}** has no fake permissions configured`);
   }
@@ -370,78 +385,22 @@ async function handleList(message, args, guildService) {
     return embeds.warn(message, `**${role.name}** has no fake permissions configured`);
   }
 
+  const permsList = permissions.map(p => `\`${p}\``).join(', ');
+
   const embed = new EmbedBuilder()
     .setColor(colors.embed)
     .setAuthor({
-      name: `${message.guild.name} Fake Permissions`,
-      iconURL: message.guild.iconURL({ dynamic: true })
+      name: `Fake Permissions for ${role.name}`,
+      iconURL: message.author.displayAvatarURL({ dynamic: true })
     })
-    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-    .setDescription(
-      `**Role:** ${role}\n` +
-      `**Permissions:** ${permissions.length}\n\n` +
-      `-# Members with this role can use bot commands for these permissions, but cannot use native Discord features.`
-    )
     .addFields({
-      name: '**Fake Permissions**',
-      value: permissions.map(p => `\`${p}\``).join(', '),
+      name: '1',
+      value: `${role} - ${permsList}`,
       inline: false
     })
     .setFooter({
-      text: `Requested by ${message.author.tag}`,
-      iconURL: message.author.displayAvatarURL({ dynamic: true })
-    })
-    .setTimestamp();
-
-  return message.channel.send({ embeds: [embed] });
-}
-
-async function handleViewAll(message, guildService) {
-  const guildData = await guildService.ensureGuildData(message.guild.id);
-  
-  if (!guildData.FakePermissions || Object.keys(guildData.FakePermissions).length === 0) {
-    return embeds.warn(message, 'No fake permissions are configured in this server');
-  }
-
-  const fakePermissions = guildData.FakePermissions;
-  const roleEntries = Object.values(fakePermissions);
-
-  if (roleEntries.length === 0) {
-    return embeds.warn(message, 'No fake permissions are configured in this server');
-  }
-
-  const embed = new EmbedBuilder()
-    .setColor(colors.embed)
-    .setAuthor({
-      name: `${message.guild.name} Fake Permissions`,
-      iconURL: message.guild.iconURL({ dynamic: true })
-    })
-    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-    .setDescription(
-      `**Total Roles:** ${roleEntries.length}\n\n` +
-      `-# Fake permissions allow roles to use bot commands without native Discord permissions.`
-    )
-    .setFooter({
-      text: `Requested by ${message.author.tag}`,
-      iconURL: message.author.displayAvatarURL({ dynamic: true })
-    })
-    .setTimestamp();
-
-  // Add fields for each role
-  for (const roleData of roleEntries) {
-    const role = message.guild.roles.cache.get(roleData.roleId);
-    const roleName = role ? role.name : roleData.roleName || 'Unknown Role';
-    const roleDisplay = role ? `${role}` : `**${roleName}** (Deleted)`;
-    const permissions = roleData.permissions || [];
-
-    if (permissions.length > 0) {
-      embed.addFields({
-        name: roleDisplay,
-        value: permissions.map(p => `\`${p}\``).join(', '),
-        inline: false
-      });
-    }
-  }
+      text: `Page 1/1 (1 entry)`
+    });
 
   return message.channel.send({ embeds: [embed] });
 }

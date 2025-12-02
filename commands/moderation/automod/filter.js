@@ -42,6 +42,17 @@ module.exports = {
           };
           return await handleInvitesCategory(message, subcommand, args.slice(2));
         }
+        case 'links':
+        case 'link': {
+          const subcommandInfo = {
+            description: 'Manage link filtering',
+            syntax: '{guildprefix}filter links [on/off]',
+            aliases: [],
+            parameters: ['on/off'],
+            example: '{guildprefix}filter links on'
+          };
+          return await handleLinksCategory(message, subcommand, args.slice(2));
+        }
         case 'add': {
           const subcommandInfo = {
             description: 'Add a word to the filter',
@@ -115,6 +126,23 @@ async function handleInvitesCategory(message, subcommand, args) {
       return await handleInvitesToggle(message, false);
     case 'exempt':
       return await handleInvitesExempt(message, args);
+    default:
+      return runHelpCommand(message, 'filter');
+  }
+}
+
+async function handleLinksCategory(message, subcommand, args) {
+  if (!subcommand) {
+    return runHelpCommand(message, 'filter');
+  }
+
+  switch (subcommand) {
+    case 'on':
+      return await handleLinksToggle(message, true);
+    case 'off':
+      return await handleLinksToggle(message, false);
+    case 'exempt':
+      return await handleLinksExempt(message, args);
     default:
       return runHelpCommand(message, 'filter');
   }
@@ -567,6 +595,178 @@ async function handleInvitesToggle(message, enable) {
   }
 }
 
+async function handleLinksToggle(message, enable) {
+  const rule = await getLinksAutoModRule(message.guild);
+
+  if (enable) {
+    if (rule) {
+      return embeds.warn(message, '**Links filter** is already **enabled**');
+    }
+
+    // Create links filter rule
+    const result = await createLinksAutoModRule(message.guild);
+    if (result.success) {
+      return embeds.success(message, '**Links filter** has been **enabled**');
+    } else {
+      return embeds.deny(message, result.message);
+    }
+  } else {
+    if (!rule) {
+      return embeds.warn(message, '**Links filter** is already **disabled**');
+    }
+
+    try {
+      await rule.delete('Links filter disabled by user');
+      return embeds.success(message, '**Links filter** has been **disabled**');
+    } catch (error) {
+      return embeds.deny(message, 'Failed to disable **links filter**');
+    }
+  }
+}
+
+async function handleLinksExempt(message, args) {
+  if (!args[0]) {
+    return runHelpCommand(message, 'filter');
+  }
+
+  if (args[0] === 'list') {
+    return await handleLinksExemptList(message);
+  }
+
+  // Handle exempt toggle
+  return await handleLinksToggleExempt(message, args);
+}
+
+async function handleLinksExemptList(message) {
+  const rule = await getLinksAutoModRule(message.guild);
+
+  if (!rule) {
+    return embeds.warn(message, 'No **links filter** found');
+  }
+
+  const exemptRoles = rule.exemptRoles || [];
+  const exemptUsers = rule.exemptUsers || [];
+  const exemptChannels = rule.exemptChannels || [];
+
+  if (exemptRoles.length === 0 && exemptUsers.length === 0 && exemptChannels.length === 0) {
+    return embeds.warn(message, 'No exempted roles, users, or channels found for **links filter**');
+  }
+
+  let description = '';
+  let totalCount = 0;
+
+  if (exemptRoles.length > 0) {
+    description += '**Roles:**\n';
+    const roleList = exemptRoles.map((roleId, index) => {
+      const role = message.guild.roles.cache.get(roleId);
+      const roleNumber = (index + 1).toString().padStart(2, '0');
+      return role ? `\`${roleNumber}\` **${role.name}**` : `\`${roleNumber}\` \`Deleted Role\``;
+    }).join('\n');
+    description += roleList;
+    totalCount += exemptRoles.length;
+  }
+
+  if (exemptUsers.length > 0) {
+    if (description) description += '\n\n';
+    description += '**Users:**\n';
+    const userList = exemptUsers.map((userId, index) => {
+      const member = message.guild.members.cache.get(userId);
+      const userNumber = (index + 1).toString().padStart(2, '0');
+      return member ? `\`${userNumber}\` **${member.displayName}**` : `\`${userNumber}\` \`Unknown User\``;
+    }).join('\n');
+    description += userList;
+    totalCount += exemptUsers.length;
+  }
+
+  if (exemptChannels.length > 0) {
+    if (description) description += '\n\n';
+    description += '**Channels:**\n';
+    const channelList = exemptChannels.map((channelId, index) => {
+      const channel = message.guild.channels.cache.get(channelId);
+      const channelNumber = (index + 1).toString().padStart(2, '0');
+      return channel ? `\`${channelNumber}\` **${channel.name}**` : `\`${channelNumber}\` \`Deleted Channel\``;
+    }).join('\n');
+    description += channelList;
+    totalCount += exemptChannels.length;
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(colors.embed)
+    .setTitle('Links Filter - Exempted List')
+    .setDescription(description)
+    .setFooter({ text: `${totalCount} total exempted entr${totalCount === 1 ? 'y' : 'ies'}` });
+
+  return message.channel.send({ embeds: [embed] });
+}
+
+async function handleLinksToggleExempt(message, args) {
+  if (!args[0]) {
+    return embeds.warn(message, 'Please provide a role, user, or channel to toggle exempt for');
+  }
+
+  const input = args.join(' ');
+  const target = await findRoleUserOrChannel(message, input);
+
+  if (!target.found) {
+    return embeds.warn(message, target.error);
+  }
+
+  const rule = await getLinksAutoModRule(message.guild);
+  if (!rule) {
+    return embeds.warn(message, 'No **links filter** found. Enable **links filtering** first.');
+  }
+
+  const currentExemptRoles = Array.isArray(rule.exemptRoles) ? rule.exemptRoles : (rule.exemptRoles?.map(r => r) || []);
+  const currentExemptUsers = Array.isArray(rule.exemptUsers) ? rule.exemptUsers : (rule.exemptUsers?.map(u => u) || []);
+  const currentExemptChannels = Array.isArray(rule.exemptChannels) ? rule.exemptChannels : (rule.exemptChannels?.map(c => c) || []);
+
+  let newExemptRoles = currentExemptRoles;
+  let newExemptUsers = currentExemptUsers;
+  let newExemptChannels = currentExemptChannels;
+  let action;
+
+  if (target.type === 'role') {
+    const isCurrentlyExempt = currentExemptRoles.includes(target.id);
+    if (isCurrentlyExempt) {
+      newExemptRoles = currentExemptRoles.filter(roleId => roleId !== target.id);
+      action = 'removed from';
+    } else {
+      newExemptRoles = [...currentExemptRoles, target.id];
+      action = 'added to';
+    }
+  } else if (target.type === 'user') {
+    const isCurrentlyExempt = currentExemptUsers.includes(target.id);
+    if (isCurrentlyExempt) {
+      newExemptUsers = currentExemptUsers.filter(userId => userId !== target.id);
+      action = 'removed from';
+    } else {
+      newExemptUsers = [...currentExemptUsers, target.id];
+      action = 'added to';
+    }
+  } else if (target.type === 'channel') {
+    const isCurrentlyExempt = currentExemptChannels.includes(target.id);
+    if (isCurrentlyExempt) {
+      newExemptChannels = currentExemptChannels.filter(channelId => channelId !== target.id);
+      action = 'removed from';
+    } else {
+      newExemptChannels = [...currentExemptChannels, target.id];
+      action = 'added to';
+    }
+  }
+
+  try {
+    await rule.edit({
+      exemptRoles: newExemptRoles,
+      exemptUsers: newExemptUsers,
+      exemptChannels: newExemptChannels
+    });
+
+    return embeds.success(message, `**${target.name}** has been ${action} the **links filter** exempt list`);
+  } catch (error) {
+    return embeds.deny(message, 'Failed to update **links filter** rule');
+  }
+}
+
 // Helper function to find either a role, user, or channel
 async function findRoleUserOrChannel(message, input) {
   // Check for channel mention first
@@ -673,6 +873,16 @@ async function getInviteAutoModRule(guild) {
   }
 }
 
+// Helper function to get existing links AutoMod rule
+async function getLinksAutoModRule(guild) {
+  try {
+    const rules = await guild.autoModerationRules.fetch();
+    return rules.find(rule => rule.name === 'adore Links') || null;
+  } catch (error) {
+    return null;
+  }
+}
+
 // Helper function to get or create AutoMod rule
 async function getOrCreateAutoModRule(guild) {
   try {
@@ -763,6 +973,54 @@ async function createInviteAutoModRule(guild) {
       success: false,
       error: 'UNKNOWN_ERROR',
       message: 'Failed to create invite filter rule. Please try again later.'
+    };
+  }
+}
+
+// Helper function to create links AutoMod rule
+async function createLinksAutoModRule(guild) {
+  try {
+    const ruleData = {
+      name: 'adore Links',
+      eventType: 1, // MESSAGE_SEND
+      triggerType: AutoModerationRuleTriggerType.Keyword,
+      triggerMetadata: {
+        regexPatterns: ['(?:https?://?)?(\\S*@)?[\\\\a-z0-9_\\-\\.\\%]*[a-z0-9_\\-%]+(\\.|\%2e)[a-z(\%[a-z0-9])]{2,}']
+      },
+      actions: [
+        {
+          type: AutoModerationActionType.BlockMessage,
+          metadata: {
+            customMessage: 'The message is blocked by adore automod'
+          }
+        }
+      ],
+      enabled: true,
+      exemptRoles: [],
+      exemptUsers: [],
+      exemptChannels: []
+    };
+
+    await guild.autoModerationRules.create(ruleData);
+    return { success: true };
+  } catch (error) {
+    logger.webhook.error(error);
+
+    // Check for specific AutoMod rule limit error
+    if (error.code === 50035 && error.rawError?.errors?._errors?.some(e =>
+      e.code === 'AUTO_MODERATION_MAX_RULES_OF_TYPE_EXCEEDED'
+    )) {
+      return {
+        success: false,
+        error: 'RULE_LIMIT_EXCEEDED',
+        message: 'Cannot create links filter - Discord\'s AutoMod rule limit (6 rules) has been reached. Please delete some existing AutoMod rules first.'
+      };
+    }
+
+    return {
+      success: false,
+      error: 'UNKNOWN_ERROR',
+      message: 'Failed to create links filter rule. Please try again later.'
     };
   }
 }
