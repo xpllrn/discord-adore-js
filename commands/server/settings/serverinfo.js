@@ -1,4 +1,5 @@
 const { ContainerBuilder, SectionBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const { colors } = require('../../../config/setup');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -22,28 +23,19 @@ module.exports = {
       const humans = guild.members.cache.filter(m => !m.user.bot).size;
       const bots = guild.members.cache.filter(m => m.user.bot).size;
 
-      // Role and emoji counts
+      // Role, channel, and emoji counts
       const roleCount = guild.roles.cache.size;
+      const channelCount = guild.channels.cache.size;
       const emojiCount = guild.emojis.cache.size;
 
       // Boost information
       const boostLevel = guild.premiumTier;
       const boostCount = guild.premiumSubscriptionCount || 0;
       const boosterCount = guild.members.cache.filter(m => m.premiumSince).size;
-
-      // Verification level mapping
-      const verificationLevels = {
-        0: 'None',
-        1: 'Low',
-        2: 'Medium',
-        3: 'High',
-        4: 'Very High'
-      };
-      const verificationLevel = verificationLevels[guild.verificationLevel] || 'Unknown';
-
+      
       // Build container with display components
       const container = new ContainerBuilder()
-        .setAccentColor(0x0099ff);
+        .setAccentColor(colors.info);
 
       // Title and description section
       if (guild.iconURL({ size: 1024 })) {
@@ -66,43 +58,25 @@ module.exports = {
         );
       }
 
-      // Created date
+      // Created date with owner
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`**Created:** <t:${createdTimestamp}:R>`)
+        text.setContent(`Created <t:${createdTimestamp}:R> by ${owner.user.username}`)
       );
 
-      // Members section
+      // Information section
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
-        (text) => text.setContent(`**Members**`),
-        (text) => text.setContent(`Total: **${totalMembers}** • Humans: **${humans}** • Bots: **${bots}**`)
-      );
-
-      // Counts section
-      container.addSeparatorComponents((separator) => separator);
-      container.addTextDisplayComponents(
-        (text) => text.setContent(`**Server Stats**`),
-        (text) => text.setContent(`Roles: **${roleCount}** • Emojis: **${emojiCount}**`)
-      );
-
-      // Boosts section
-      container.addSeparatorComponents((separator) => separator);
-      container.addTextDisplayComponents(
-        (text) => text.setContent(`**Boosts**`),
-        (text) => text.setContent(`Level ${boostLevel} • ${boostCount} boosts from ${boosterCount} boosters`)
-      );
-
-      // Verification section
-      container.addSeparatorComponents((separator) => separator);
-      container.addTextDisplayComponents((text) =>
-        text.setContent(`**Verification Level:** ${verificationLevel}`)
+        (text) => text.setContent(`**Information**`),
+        (text) => text.setContent(`-# Total: ${totalMembers} • Humans: ${humans} • Bots: ${bots}`),
+        (text) => text.setContent(`-# Roles: ${roleCount} • Channels: ${channelCount} • Emojis: ${emojiCount}`),
+        (text) => text.setContent(`-# ${boostCount} boosts from ${boosterCount} boosters • Level ${boostLevel}`)
       );
 
       // Footer
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`*Server ID: ${guild.id} • Owner ID: ${owner.id}*`)
+        text.setContent(`*Server ID: ${guild.id} • Owner ID: ${owner.id} • Verification: ${verificationLevel}*`)
       );
 
       // Build buttons for server assets
