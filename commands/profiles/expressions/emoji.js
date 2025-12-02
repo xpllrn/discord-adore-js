@@ -34,7 +34,7 @@ function removeInviteLinks(text) {
 
 module.exports = {
   name: "emoji",
-  aliases: ['emote'],
+  aliases: ['emote', 'emojizip'],
   description: "Manage server emojis",
   syntax: 'emoji [subcommand]',
   example: 'emoji steal (reply to message)',
@@ -60,6 +60,7 @@ module.exports = {
       case 'list':
         return await handleList(client, message, args.slice(1));
       case 'archive':
+      case 'zip':
         return await handleArchive(client, message, args.slice(1));
       default:
         return runHelpCommand(message, 'emoji');

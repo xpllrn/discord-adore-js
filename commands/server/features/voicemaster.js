@@ -418,7 +418,7 @@ async function createVoiceManagerPanel(client, channel) {
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
     )
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("**Use these buttons to control**\n\nLock — Lock the voice channel\nUnlock — Unlock the voice channel\nHide — Ghost the voice channel\nUnhide — Reveal the voice channel\nKick — Kick a user from channel\n\nClaim — Claim an abandoned channel\nTransfer — Transfer ownership\nIncrease — Increase the user limit\nDecrease — Decrease the user limit\nName — Rename the voice channel")
+      new TextDisplayBuilder().setContent(`**Use these buttons to control**\n\n${emojis.vmLock} — Lock the voice channel\n${emojis.vmUnlock} — Unlock the voice channel\n${emojis.vmHide} — Ghost the voice channel\n${emojis.vmUnhide} — Reveal the voice channel\n${emojis.vmKick} — Kick a user from channel\n\n${emojis.vmClaim} — Claim an abandoned channel\n${emojis.vmTransfer} — Transfer ownership\n${emojis.vmIncrease} — Increase the user limit\n${emojis.vmDecrease} — Decrease the user limit\n${emojis.vmRename} — Rename the voice channel`)
     )
     .addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
@@ -428,23 +428,23 @@ async function createVoiceManagerPanel(client, channel) {
         .addComponents(
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("lock")
+            .setEmoji(emojis.vmLock)
             .setCustomId("6800f9e6e8394c5cfd7b8c7f684b6cd2"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("unlock")
+            .setEmoji(emojis.vmUnlock)
             .setCustomId("bc719b5197e94fb68e1db816f8fb00e6"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("hide")
+            .setEmoji(emojis.vmHide)
             .setCustomId("8a7385beb791449f9a7893ed5536e7e3"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("unhide")
+            .setEmoji(emojis.vmUnhide)
             .setCustomId("4da0c243b63143d4a574d30c806e962b"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("kick")
+            .setEmoji(emojis.vmKick)
             .setCustomId("0c34acff106f453d84e4ba7122f868a5")
         )
     )
@@ -453,23 +453,23 @@ async function createVoiceManagerPanel(client, channel) {
         .addComponents(
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("claim")
+            .setEmoji(emojis.vmClaim)
             .setCustomId("2c8e65c78329459ee077b3c0e853e4a2"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("transfer")
+            .setEmoji(emojis.vmTransfer)
             .setCustomId("f33fa78ce7964964cd5c155b5a15ebb7"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("increase")
+            .setEmoji(emojis.vmIncrease)
             .setCustomId("d0f359515fe244b0ad8824fb3c066d4b"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("decrease")
+            .setEmoji(emojis.vmDecrease)
             .setCustomId("7f5598b8836e442ccd33a88afc00865c"),
           new ButtonBuilder()
             .setStyle(ButtonStyle.Secondary)
-            .setLabel("name")
+            .setEmoji(emojis.vmRename)
             .setCustomId("48e538acf6e741aadc391f9d36977473")
         )
     );

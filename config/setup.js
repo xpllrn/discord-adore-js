@@ -98,14 +98,17 @@ module.exports = {
     ticket: '🎫',
 
     // Voice Manager Emojis
-    vmLock: '<:lock:1439540969480519721>',
-    vmUnlock: '<:unlock:1439541004901548112>',
-    vmHide: '<:ghost:1439540961184321536>',
-    vmUnhide: '<:unghost:1439541002066202704>',
-    vmIncrease: '<:increase:1439540962954055791>',
-    vmDecrease: '<:decrease:1439540954607652924>',
+    vmLock: '<:lock:1445338182127452311>',
+    vmUnlock: '<:unlock:1445338201211404348>',
+    vmHide: '<:hide:1445338180134899733>',
+    vmUnhide: '<:unhide:1445338198917255350>',
+    vmIncrease: '<:plus:1445338191329497120>',
+    vmDecrease: '<:minus:1445338187269537904>',
+    vmKick: '<:kick:1445338184752959561>',
+    vmClaim: '<:claim:1445338178184679504>',
+    vmTransfer: '<:transfer:1445338196027113545>',
+    vmRename: '<:rename:1445338193711857767>',
     vmInfo: '<:info:1439540965655445606>',
-    vmRename: '<:disconnect:1439540958831050812>',
 
     // Level Progress Bar Emojis
     blueLeftRounded: '<:blue_left_rounded:1439546259366215680>',
