@@ -339,7 +339,7 @@ async function showHelpShared(context, client, commandQuery) {
         });
 
         // Create a function to build pages with buttons and footer
-        const buildPage = (pageIndex, currentPage, totalPages) => {
+        const buildPage = (pageIndex, currentPage, totalPages, disabled = false) => {
           const container = pages[pageIndex];
           // Clone the container to avoid modifying the original
           const newContainer = new (require('discord.js').ContainerBuilder)()
@@ -351,7 +351,7 @@ async function showHelpShared(context, client, commandQuery) {
           });
           
           // Add pagination buttons
-          addPaginationButtons(newContainer, currentPage, totalPages, false);
+          addPaginationButtons(newContainer, currentPage, totalPages, disabled);
           // Add footer
           addFooter(newContainer, currentPage, totalPages, subcommands.length, command.name);
           return newContainer;

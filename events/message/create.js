@@ -227,9 +227,10 @@ async function processAutoresponder(message) {
           // Send response
           let responseMessage;
 
-          // Check if response contains embed syntax
-          if (autoresponder.response.trim().startsWith('{embed}')) {
-            // Use EmbedVariableProcessor for embed responses
+          // Check if response contains embed or v2 container syntax
+          const trimmedResponse = autoresponder.response.trim();
+          if (trimmedResponse.startsWith('{embed}') || trimmedResponse.startsWith('{v2}') || trimmedResponse.startsWith('{container}')) {
+            // Use EmbedVariableProcessor for embed/container responses
             const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
 
             const variables = {
@@ -238,8 +239,8 @@ async function processAutoresponder(message) {
               channel: message.channel
             };
 
-            // Process the embed and send it
-            responseMessage = await EmbedVariableProcessor.process(message.channel, autoresponder.response, variables);
+            // Process the embed/container and send it
+            responseMessage = await EmbedVariableProcessor.process(message.channel, autoresponder.response, variables, message);
           } else {
             // Regular text response
             if (autoresponder.reply) {

@@ -6,7 +6,7 @@ const { colors, emojis } = require('../config/setup');
  * Creates pagination buttons for lists
  * @param {Object} message - Discord message OR Interaction object
  * @param {Array} items - Array of items to paginate
- * @param {Function} formatPage - Function to format each page (receives items, currentPage, totalPages)
+ * @param {Function} formatPage - Function to format each page (receives items, currentPage, totalPages, disabled)
  * @param {Number} itemsPerPage - Number of items per page (default: 10)
  * @param {String} title - Title for the embed
  * @param {Number} flags - Optional MessageFlags (e.g., MessageFlags.IsComponentsV2)
@@ -25,12 +25,12 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
     let currentPage = 1;
 
     // Create initial embed
-    const createEmbed = (page) => {
+    const createEmbed = (page, disabled = false) => {
         const startIndex = (page - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const pageItems = items.slice(startIndex, endIndex);
 
-        return formatPage(pageItems, page, totalPages);
+        return formatPage(pageItems, page, totalPages, disabled);
     };
 
     // Create buttons
@@ -265,10 +265,25 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
 
     collector.on('end', async () => {
         try {
-            // Just disable the buttons, don't remove the content
-            // For containers with internal buttons, we can't easily disable them
-            // So we'll just leave the message as-is
-            // This is acceptable since the collector has ended and buttons won't work anyway
+            // Disable the buttons when collector ends
+            const finalContent = createEmbed(currentPage, true); // Pass disabled=true
+            const isFinalContainer = finalContent.constructor.name === 'ContainerBuilder';
+            
+            const updatePayload = {};
+            if (isFinalContainer) {
+                // For containers, the disabled buttons are already inside
+                updatePayload.components = [finalContent];
+            } else {
+                // For embeds, disable the external buttons
+                const disabledButtons = createButtons(currentPage, true);
+                updatePayload.embeds = [finalContent];
+                updatePayload.components = [disabledButtons];
+            }
+            if (flags) {
+                updatePayload.flags = flags;
+            }
+
+            await sentMessage.edit(updatePayload);
         } catch (error) {
             // Message might have been deleted
         }
