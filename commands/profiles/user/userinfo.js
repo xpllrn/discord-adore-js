@@ -40,11 +40,11 @@ async function createUserInfoContainer(client, user, member) {
   // Created and Joined timestamps
   container.addSeparatorComponents((separator) => separator);
   
-  let timestampText = `> **Created**: <t:${createdTimestamp}:D> (<t:${createdTimestamp}:R>)`;
+  let timestampText = `**Created**: <t:${createdTimestamp}:D> (<t:${createdTimestamp}:R>)`;
   
   if (member && member.joinedTimestamp) {
     const joinedTimestamp = Math.floor(member.joinedTimestamp / 1000);
-    timestampText += `\n> **Joined**: <t:${joinedTimestamp}:D> (<t:${joinedTimestamp}:R>)`;
+    timestampText += `\n**Joined**: <t:${joinedTimestamp}:D> (<t:${joinedTimestamp}:R>)`;
   }
   
   container.addTextDisplayComponents(

@@ -358,8 +358,13 @@ class CustomEmbedBuilder {
 // Unified embed/text processor with variable replacement
 class EmbedVariableProcessor {
     static process(channel, input, variables = {}) {
-        // Check if input starts with {embed} - this determines embed mode
-        if (input.trim().startsWith('{embed}')) {
+        // Check if input starts with {v2} or {container} - Components V2 mode
+        if (input.trim().startsWith('{v2}') || input.trim().startsWith('{container}')) {
+            // Components V2 mode - remove prefix and process as container
+            const containerContent = input.replace(/^\s*{v2}\s*\$v\s*/, '').replace(/^\s*{container}\s*\$v\s*/, '');
+            const { CustomContainerBuilder } = require('./containerbuilder');
+            return new CustomContainerBuilder(channel, containerContent, variables);
+        } else if (input.trim().startsWith('{embed}')) {
             // Embed mode - remove {embed} prefix and process as embed
             const embedContent = input.replace(/^\s*{embed}\s*\$v\s*/, '');
             return this.processAsEmbed(channel, embedContent, variables);
