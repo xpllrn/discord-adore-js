@@ -55,14 +55,14 @@ module.exports = {
       // Created date with owner
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`Created <t:${createdTimestamp}:R> by ${owner.user.username}`)
+        text.setContent(`Created <t:${createdTimestamp}:R> by @**${owner.user.username}**`)
       );
 
       // Information section
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`> **Total**: ${totalMembers} • **Humans**: ${humans} • **Bots**: ${bots}\n> **Roles**: ${roleCount} • **Channels**: ${channelCount} • **Emojis**: ${emojiCount}`),
+        (text) => text.setContent(`We have a total of ${totalMembers} members with ${bots} apps\n ${roleCount} roles with ${channelCount} channels and ${emojiCount} emotes`),
       );
 
       // Build buttons for server assets (always show all 3, disable if not available)
