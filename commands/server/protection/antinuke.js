@@ -170,16 +170,35 @@ module.exports = {
 };
 
 async function handleWhitelist(message, args, antinukeService) {
-  const target = message.mentions.users.first() || message.mentions.members.first()?.user;
+  let target = message.mentions.users.first() || message.mentions.members.first()?.user;
+  let userId = null;
   
-  if (!target) {
-    return embeds.warn(message, 'Please mention a user or bot to whitelist: `,antinuke whitelist @user`');
+  // If no mention, check if a user ID was provided
+  if (!target && args[1]) {
+    userId = args[1].replace(/[<@!>]/g, ''); // Remove mention formatting if present
+    
+    // Validate it's a valid snowflake ID (18-19 digits)
+    if (/^\d{17,19}$/.test(userId)) {
+      try {
+        // Try to fetch the user from Discord API
+        target = await message.client.users.fetch(userId).catch(() => null);
+      } catch (error) {
+        // If fetch fails, we'll still allow whitelisting by ID
+      }
+    }
+  }
+  
+  if (!target && !userId) {
+    return embeds.warn(message, 'Please mention a user or bot, or provide their ID: `,antinuke whitelist @user` or `,antinuke whitelist 123456789`');
   }
 
-  const type = target.bot ? 'bot' : 'user';
+  const finalId = target ? target.id : userId;
+  const type = target?.bot ? 'bot' : 'user'; // Default to 'user' if we can't determine
+  const displayName = target ? target.tag : `User ID: ${userId}`;
+  
   const success = await antinukeService.addToWhitelist(
     message.guild.id,
-    target.id,
+    finalId,
     type,
     message.author.id
   );
@@ -189,11 +208,11 @@ async function handleWhitelist(message, args, antinukeService) {
       message.guild.id,
       'whitelist_add',
       message.author.id,
-      `Added ${target.tag} to whitelist`
+      `Added ${displayName} to whitelist`
     );
-    return embeds.success(message, `Added **${target.tag}** to the antinuke whitelist`);
+    return embeds.success(message, `Added **${displayName}** to the antinuke whitelist`);
   } else {
-    return embeds.warn(message, `**${target.tag}** is already whitelisted`);
+    return embeds.warn(message, `**${displayName}** is already whitelisted`);
   }
 }
 

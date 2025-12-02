@@ -59,7 +59,7 @@ module.exports = {
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`> **Channel ID**: \`${channel.id}\`\n> **Category**: ${channel.parent ? `\`${channel.parentId}\`` : 'None'} • **Type**: \`${channelType}\``)
+        (text) => text.setContent(`> **Channel ID**: \`${channel.id}\`\n> **Category**: ${channel.parent ? `\`${channel.parentId}\`` : '`None`'} • **Type**: \`${channelType}\``)
       );
 
       // Footer

@@ -476,17 +476,23 @@ module.exports = {
             if (matchedSubcommand) {
               // Show ONLY this subcommand's info (no pagination, no buttons)
               const singleSubcommandEmbed = createSubcommandPage(command, matchedSubcommand, 1, 1);
-              // Remove the footer with page numbers since it's a single page
-              singleSubcommandEmbed.setFooter({ text: `Module: ${command.name}` });
               return message.channel.send({ components: [singleSubcommandEmbed], flags: MessageFlags.IsComponentsV2 });
             } else {
-              // Subcommand not found - show error
-              return embeds.warn(message, `Command \`${commandName} ${requestedSubcommand}\` does not exist`, false);
+              // Subcommand not found - show error instead of falling through
+              return embeds.warn(message, `Subcommand \`${commandName} ${requestedSubcommand}\` does not exist`, false);
             }
+          } else {
+            // Command file not found - show error
+            return embeds.warn(message, `Subcommand \`${commandName} ${requestedSubcommand}\` does not exist`, false);
           }
         } catch (e) {
-          // Fall through to normal help if subcommand parsing fails
+          // Error parsing subcommands - show error instead of falling through
+          console.error('[HELP] Error parsing subcommands:', e);
+          return embeds.warn(message, `Subcommand \`${commandName} ${requestedSubcommand}\` does not exist`, false);
         }
+      } else if (command) {
+        // Command exists but has no subcommands - show error
+        return embeds.warn(message, `Command \`${commandName}\` does not have subcommands`, false);
       }
     }
 
