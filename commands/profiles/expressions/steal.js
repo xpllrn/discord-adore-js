@@ -204,6 +204,17 @@ module.exports = {
 
             // Clean the sticker name and create description
             const cleanName = removeInviteLinks(item.name);
+            
+            // Validate cleaned name length
+            if (cleanName.length < 2 || cleanName.length > 30) {
+              failedItems.push({
+                type: 'sticker',
+                name: item.name,
+                reason: 'Invalid name length after cleaning'
+              });
+              continue;
+            }
+            
             const description = 'Sticker added using adore bot';
 
             // Steal sticker

@@ -118,8 +118,9 @@ module.exports = {
       });
 
     } catch (error) {
+      console.error('[SERVERINFO ERROR]', error);
       logger.webhook.error(error, message);
-      return embeds.deny(message, 'Failed to fetch server information');
+      throw error; // Re-throw so commandProcessor can log it
     }
   }
 }
