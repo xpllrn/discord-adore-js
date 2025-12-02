@@ -91,8 +91,44 @@ async function downloadAndProcessImage(url, guildId) {
     // Download the image
     await downloadFile(url, tempInputPath);
 
-    // Process with sharp: resize to 320x320 and convert to PNG with compression
-    // Note: animated: false because Discord stickers need static PNG (not APNG for now)
+    // Check if input is animated (GIF)
+    const metadata = await sharp(tempInputPath).metadata();
+    const isAnimated = metadata.pages && metadata.pages > 1;
+
+    let finalPath = tempOutputPath;
+
+    if (isAnimated) {
+      // Try animated APNG first
+      try {
+        await sharp(tempInputPath, { animated: true, limitInputPixels: false })
+          .resize(320, 320, {
+            fit: 'contain',
+            background: { r: 0, g: 0, b: 0, alpha: 0 }
+          })
+          .png({
+            compressionLevel: 9,
+            quality: 80,
+            effort: 10
+          })
+          .toFile(tempOutputPath);
+
+        let stats = fs.statSync(tempOutputPath);
+
+        // If animated version is under 512KB, use it
+        if (stats.size <= 500 * 1024) {
+          fs.unlinkSync(tempInputPath);
+          return tempOutputPath;
+        }
+
+        // Animated is too large, fall back to static
+        fs.unlinkSync(tempOutputPath);
+      } catch (animError) {
+        // Animated processing failed, fall back to static
+        logger.console.warn('Animated processing failed, using static image:', animError.message);
+      }
+    }
+
+    // Process as static image (first frame only)
     await sharp(tempInputPath, { animated: false })
       .resize(320, 320, {
         fit: 'contain',
