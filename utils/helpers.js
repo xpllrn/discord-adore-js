@@ -74,59 +74,40 @@ async function fetchWaifuGif(action) {
 }
 
 /**
- * Create a unified roleplay command function for both prefix and slash commands
+ * Create a roleplay command function for prefix commands
  * @param {string} action - The action name (hug, kiss, pat, etc.)
  * @param {string} actionPastTense - The past tense of the action
  * @returns {Function} The command function
  */
 function createRoleplayCommand(action, actionPastTense) {
-  return async (clientOrInteraction, message, args) => {
-    // Detect if this is a slash command (interaction) or prefix command
-    const isSlashCommand = !message;
-    const interaction = isSlashCommand ? clientOrInteraction : null;
-    const client = isSlashCommand ? null : clientOrInteraction;
-
+  return async (client, message, args) => {
     try {
-      let targetUser, author;
+      const author = message.author;
+      let targetUser;
 
-      if (isSlashCommand) {
-        // Slash command handling
-        targetUser = interaction.options.getUser('user') || interaction.user;
-        author = interaction.user;
-
-        if (targetUser.id === interaction.client.user.id) {
-          return interaction.reply({ content: 'Leave me alone!', ephemeral: true });
+      if (args[0]) {
+        const userResult = await findUser(message.guild, args[0], client);
+        if (!userResult.found || !userResult.user) {
+          const container = new ContainerBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(`❌ <@${author.id}>: User not found!`)
+            );
+          return message.channel.send({
+            components: [container],
+            flags: MessageFlags.IsComponentsV2
+          });
         }
-
-        await interaction.deferReply();
+        targetUser = userResult.user;
       } else {
-        // Prefix command handling
-        author = message.author;
+        targetUser = author;
+      }
 
-        if (args[0]) {
-          const userResult = await findUser(message.guild, args[0], client);
-          if (!userResult.found || !userResult.user) {
-            const container = new ContainerBuilder()
-              .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`❌ <@${author.id}>: User not found!`)
-              );
-            return message.channel.send({
-              components: [container],
-              flags: MessageFlags.IsComponentsV2
-            });
-          }
-          targetUser = userResult.user;
-        } else {
-          targetUser = author;
-        }
+      const targetId = targetUser.id || (targetUser.user && targetUser.user.id);
+      const actualUser = targetUser.user || targetUser;
+      targetUser = actualUser;
 
-        const targetId = targetUser.id || (targetUser.user && targetUser.user.id);
-        const actualUser = targetUser.user || targetUser;
-        targetUser = actualUser;
-
-        if (targetUser.id === message.guild.members.me.id) {
-          return message.channel.send('Leave me alone!');
-        }
+      if (targetUser.id === message.guild.members.me.id) {
+        return message.channel.send('Leave me alone!');
       }
 
       const gifUrl = await fetchWaifuGif(action);
@@ -167,35 +148,23 @@ function createRoleplayCommand(action, actionPastTense) {
         );
       }
 
-      const payload = {
+      return message.channel.send({
         components: [container],
         flags: MessageFlags.IsComponentsV2
-      };
-
-      if (isSlashCommand) {
-        return interaction.editReply(payload);
-      } else {
-        return message.channel.send(payload);
-      }
+      });
 
     } catch (error) {
       console.log(`${action} command failed:`, error.message);
 
       const errorContainer = new ContainerBuilder()
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(`❌ <@${isSlashCommand ? interaction.user.id : message.author.id}>: Failed to ${action}! Please try again.`)
+          new TextDisplayBuilder().setContent(`❌ <@${message.author.id}>: Failed to ${action}! Please try again.`)
         );
 
-      const errorPayload = {
+      return message.channel.send({
         components: [errorContainer],
         flags: MessageFlags.IsComponentsV2
-      };
-
-      if (isSlashCommand) {
-        return interaction.editReply(errorPayload);
-      } else {
-        return message.channel.send(errorPayload);
-      }
+      });
     }
   };
 }
@@ -218,14 +187,80 @@ function getRoleplaySlashData(name, description) {
 }
 
 /**
- * Execute a roleplay slash command (wrapper for unified function)
+ * Execute a roleplay slash command
  * @param {string} action - The action name
  * @param {string} actionPastTense - The past tense of the action
  * @returns {Function} The execute function
  */
 function executeRoleplaySlash(action, actionPastTense) {
-  const unifiedFunction = createRoleplayCommand(action, actionPastTense);
-  return (interaction) => unifiedFunction(interaction);
+  return async (interaction) => {
+    try {
+      const targetUser = interaction.options.getUser('user') || interaction.user;
+      const author = interaction.user;
+
+      if (targetUser.id === interaction.client.user.id) {
+        return interaction.reply({ content: 'Leave me alone!', ephemeral: true });
+      }
+
+      await interaction.deferReply();
+
+      const gifUrl = await fetchWaifuGif(action);
+      const userService = getService('user');
+
+      const count = await userService.trackRoleplayInteraction(
+        author.id,
+        targetUser.id,
+        action
+      );
+
+      const reverseCount = await userService.getRoleplayCount(targetUser.id, author.id, action);
+
+      let description;
+      if (targetUser.id === author.id) {
+        description = `<@${author.id}> ${actionPastTense} themselves`;
+      } else {
+        description = `<@${author.id}> ${actionPastTense} <@${targetUser.id}> for the ${getOrdinal(count)} time!`;
+      }
+
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(description)
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+        )
+        .addMediaGalleryComponents(
+          new MediaGalleryBuilder()
+            .addItems(
+              new MediaGalleryItemBuilder().setURL(gifUrl)
+            )
+        );
+
+      if (reverseCount > 0 && targetUser.id !== author.id) {
+        container.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`-# ${targetUser.username} ${actionPastTense} ${author.username} ${reverseCount} times before`)
+        );
+      }
+
+      return interaction.editReply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
+
+    } catch (error) {
+      console.log(`${action} slash command failed:`, error.message);
+      
+      const errorContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`❌ <@${interaction.user.id}>: Failed to ${action}! Please try again.`)
+        );
+
+      return interaction.editReply({
+        components: [errorContainer],
+        flags: MessageFlags.IsComponentsV2
+      });
+    }
+  };
 }
 
 // ===== NSFW ROLEPLAY HELPERS =====
