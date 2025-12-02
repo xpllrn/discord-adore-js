@@ -196,33 +196,40 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                 collector.stop();
 
             } else if (interaction.customId === 'pagination_move') {
-                const infoEmbed = new EmbedBuilder()
-                    .setColor(colors.info)
-                    .setDescription(`<@${interaction.user.id}>: Choose a page between **1** - **${totalPages}**`);
+                const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder: ModalActionRowBuilder } = require('discord.js');
+                
+                // Create modal for page input
+                const modal = new ModalBuilder()
+                    .setCustomId('pagination_modal')
+                    .setTitle('Jump to Page');
 
-                await interaction.reply({
-                    embeds: [infoEmbed],
-                    flags: MessageFlags.Ephemeral
-                });
+                const pageInput = new TextInputBuilder()
+                    .setCustomId('page_number')
+                    .setLabel(`Enter page number (1-${totalPages})`)
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true)
+                    .setMinLength(1)
+                    .setMaxLength(String(totalPages).length);
 
-                // Create message collector for page number
-                const messageCollector = message.channel.createMessageCollector({
-                    filter: (msg) => msg.author.id === user.id,
-                    time: 10000, // 10 seconds
-                    max: 1
-                });
+                const actionRow = new ModalActionRowBuilder().addComponents(pageInput);
+                modal.addComponents(actionRow);
 
-                messageCollector.on('collect', async (msg) => {
-                    const pageNumber = parseInt(msg.content);
+                await interaction.showModal(modal);
 
-                    // Delete the user's message first
-                    try {
-                        await msg.delete();
-                    } catch (error) {
-                        // Ignore
-                    }
+                // Wait for modal submission
+                try {
+                    const modalSubmit = await interaction.awaitModalSubmit({
+                        filter: (i) => i.customId === 'pagination_modal' && i.user.id === user.id,
+                        time: 60000 // 60 seconds
+                    });
+
+                    const pageNumber = parseInt(modalSubmit.fields.getTextInputValue('page_number'));
 
                     if (isNaN(pageNumber) || pageNumber < 1 || pageNumber > totalPages) {
+                        await modalSubmit.reply({
+                            content: `Invalid page number. Please enter a number between 1 and ${totalPages}.`,
+                            flags: MessageFlags.Ephemeral
+                        });
                         return;
                     }
 
@@ -242,16 +249,10 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                         updatePayload.flags = flags;
                     }
 
-                    await sentMessage.edit(updatePayload);
-                });
-
-                messageCollector.on('end', async () => {
-                    try {
-                        await interaction.deleteReply();
-                    } catch (error) {
-                        // Ignore
-                    }
-                });
+                    await modalSubmit.update(updatePayload);
+                } catch (error) {
+                    // Modal timed out or was cancelled
+                }
             }
 
             // Reset collector timer

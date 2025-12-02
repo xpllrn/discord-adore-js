@@ -338,18 +338,30 @@ async function showHelpShared(context, client, commandQuery) {
           pages.push(createSubcommandPage(command, subcommand, pageNumber, totalPages));
         });
 
+        // Create a function to build pages with buttons and footer
+        const buildPage = (pageIndex, currentPage, totalPages) => {
+          const container = pages[pageIndex];
+          // Clone the container to avoid modifying the original
+          const newContainer = new (require('discord.js').ContainerBuilder)()
+            .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
+          
+          // Copy all components from original container
+          container.components.forEach(comp => {
+            newContainer.components.push(comp);
+          });
+          
+          // Add pagination buttons
+          addPaginationButtons(newContainer, currentPage, totalPages, false);
+          // Add footer
+          addFooter(newContainer, currentPage, totalPages, subcommands.length, command.name);
+          return newContainer;
+        };
+
         // Display paginated help with buttons inside containers
         return createPagination(
           isInteraction ? context : message,
           pages,
-          (pageItems, currentPage, totalPages) => {
-            const container = pageItems[0];
-            // Add pagination buttons
-            addPaginationButtons(container, currentPage, totalPages, false);
-            // Add footer
-            addFooter(container, currentPage, totalPages, subcommands.length, command.name);
-            return container;
-          },
+          (pageItems, currentPage, totalPages) => buildPage(currentPage - 1, currentPage, totalPages),
           1, // 1 item per page (each item is already a full container)
           command.name,
           MessageFlags.IsComponentsV2 // Pass V2 flag for containers
