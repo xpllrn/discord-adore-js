@@ -5,26 +5,44 @@ const { colors, emojis } = config;
 module.exports = {
   name: 'guildDelete',
   async execute(guild, client) {
+    // Skip guild events during bot startup (cache loading)
+    if (!client.cacheReady) {
+      return;
+    }
+
     logGuildLeave(guild, client);
   },
 };
 
 async function logGuildLeave(guild, client) {
   try {
+    if (!config.logging.guildWebhookUrl) {
+      console.log(`[GUILD LEAVE] ${guild?.name || 'Unknown'} (${guild?.id || 'Unknown'}) - Guild webhook logging disabled`);
+      return;
+    }
+
+    // Check if guild is available (not partial/unavailable)
+    if (!guild.available || !guild.name) {
+      console.log(`[GUILD LEAVE] Guild unavailable or partial - ID: ${guild?.id || 'Unknown'}`);
+      return;
+    }
+
     const webhook = new WebhookClient({ url: config.logging.guildWebhookUrl });
     
     // Get owner info
     let ownerInfo = 'Unknown';
     try {
-      const owner = await client.users.fetch(guild.ownerId);
-      ownerInfo = `${owner.username} (\`${owner.id}\`)`;
+      if (guild.ownerId) {
+        const owner = await client.users.fetch(guild.ownerId);
+        ownerInfo = `${owner.username} (\`${owner.id}\`)`;
+      }
     } catch (error) {
-      ownerInfo = `Unknown (\`${guild.ownerId}\`)`;
+      ownerInfo = `Unknown (\`${guild.ownerId || 'Unknown'}\`)`;
     }
 
     // Calculate member counts
     const totalMembers = guild.memberCount || 0;
-    const botCount = guild.members.cache.filter(member => member.user.bot).size || 0;
+    const botCount = guild.members?.cache?.filter(member => member.user.bot).size || 0;
     const humanCount = totalMembers - botCount;
 
     // Get boost info
@@ -32,7 +50,7 @@ async function logGuildLeave(guild, client) {
     const boostLevel = guild.premiumTier || 0;
     
     // Get channel count
-    const channelCount = guild.channels.cache.size || 0;
+    const channelCount = guild.channels?.cache?.size || 0;
 
     const embed = new EmbedBuilder()
       .setColor(colors.error)
@@ -57,6 +75,6 @@ async function logGuildLeave(guild, client) {
 
     await webhook.send({ embeds: [embed] });
   } catch (error) {
-    // Silent fail
+    console.error('[GUILD LEAVE ERROR]', error.message);
   }
 }

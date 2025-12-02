@@ -6,6 +6,10 @@ const { colors, emojis } = config;
 module.exports = {
   name: 'guildCreate',
   async execute(guild, client) {
+    // Skip guild events during bot startup (cache loading)
+    if (!client.cacheReady) {
+      return;
+    }
     
     // Check if server is blacklisted
     const isBlacklisted = await checkServerBlacklist(guild.id);
