@@ -38,7 +38,7 @@ module.exports = {
           section
             .addTextDisplayComponents(
               (text) => text.setContent(`# ${guild.name}`),
-              (text) => text.setContent(`-# ${guild.description || '*No description set*'}`)
+              (text) => text.setContent(`-# ${guild.description || 'No description set'}`)
             )
             .setThumbnailAccessory((thumbnail) =>
               thumbnail
@@ -48,6 +48,7 @@ module.exports = {
         );  
       } else {
         container.addTextDisplayComponents(
+          (text) => text.setContent(`# ${guild.name}`),
           (text) => text.setContent(`-# ${guild.description || 'No description set'}`)
         );
       } 
