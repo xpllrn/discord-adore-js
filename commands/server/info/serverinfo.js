@@ -6,11 +6,27 @@ module.exports = {
   name: 'serverinfo',
   aliases: ['si', 'guildinfo', 'server'],
   description: 'Display detailed information about the server',
-  syntax: 'serverinfo',
-  example: 'serverinfo',
-  run: async (client, message) => {
+  syntax: 'serverinfo [guild id]',
+  example: 'serverinfo 1234567890123456789',
+  run: async (client, message, args) => {
     try {
-      const guild = message.guild;
+      // Check if a guild ID was provided
+      let guild;
+      if (args[0]) {
+        const guildId = args[0];
+        guild = client.guilds.cache.get(guildId);
+        
+        if (!guild) {
+          return message.channel.send({
+            content: `❌ I'm not in a server with ID \`${guildId}\` or it doesn't exist.`
+          });
+        }
+      } else {
+        guild = message.guild;
+      }
+      
+      // Debug: Log the guild ID to verify it's correct
+      console.log(`[ServerInfo] Showing info for guild: ${guild.id} (${guild.name})`);
 
       // Fetch guild owner
       const owner = await guild.fetchOwner();
