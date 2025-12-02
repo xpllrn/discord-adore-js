@@ -22,15 +22,90 @@ async function createUserInfoContainer(client, user, member) {
     joinPosition = Array.from(sortedMembers.keys()).indexOf(member.id) + 1;
   }
 
+  // Fetch full user for flags
+  const fullUser = await client.users.fetch(user.id, { force: true });
+  
+  // Get user badges
+  function getUserBadges(user, member) {
+    const badges = [];
+    const flags = user.flags?.toArray() || [];
+    
+    // Server owner badge
+    if (member && member.guild.ownerId === user.id) {
+      badges.push(config.emojis.crown);
+    }
+    
+    // Discord Staff
+    if (flags.includes('Staff')) badges.push(config.emojis.staff);
+    
+    // Partner
+    if (flags.includes('Partner')) badges.push(config.emojis.partner);
+    
+    // Verified Developer
+    if (flags.includes('VerifiedDeveloper')) badges.push(config.emojis.verifiedDeveloper);
+    
+    // Active Developer
+    if (flags.includes('ActiveDeveloper')) badges.push(config.emojis.activeDeveloper);
+    
+    // Early Supporter
+    if (flags.includes('PremiumEarlySupporter')) badges.push(config.emojis.earlySupporter);
+    
+    // Bug Hunter Level 1
+    if (flags.includes('BugHunterLevel1')) badges.push(config.emojis.bughunterLevel1);
+    
+    // Bug Hunter Level 2
+    if (flags.includes('BugHunterLevel2')) badges.push(config.emojis.bughunterLevel2);
+    
+    // HypeSquad Events
+    if (flags.includes('Hypesquad')) badges.push(config.emojis.hypesquadEvents);
+    
+    // HypeSquad Bravery
+    if (flags.includes('HypeSquadOnlineHouse1')) badges.push(config.emojis.hypesquadBravery);
+    
+    // HypeSquad Brilliance
+    if (flags.includes('HypeSquadOnlineHouse2')) badges.push(config.emojis.hypesquadBrilliance);
+    
+    // HypeSquad Balance
+    if (flags.includes('HypeSquadOnlineHouse3')) badges.push(config.emojis.hypesquadBalance);
+    
+    // Server boosting badges (if member exists)
+    if (member && member.premiumSince) {
+      const boostMonths = Math.floor((Date.now() - member.premiumSince.getTime()) / (1000 * 60 * 60 * 24 * 30));
+      if (boostMonths >= 24) badges.push(config.emojis.boostLevel9);
+      else if (boostMonths >= 18) badges.push(config.emojis.boostLevel8);
+      else if (boostMonths >= 15) badges.push(config.emojis.boostLevel7);
+      else if (boostMonths >= 12) badges.push(config.emojis.boostLevel6);
+      else if (boostMonths >= 9) badges.push(config.emojis.boostLevel5);
+      else if (boostMonths >= 6) badges.push(config.emojis.boostLevel4);
+      else if (boostMonths >= 3) badges.push(config.emojis.boostLevel3);
+      else if (boostMonths >= 2) badges.push(config.emojis.boostLevel2);
+      else badges.push(config.emojis.boostLevel1);
+    }
+    
+    return badges.join(' ');
+  }
+
+  const badges = getUserBadges(fullUser, member);
+
   // Build container with display components
   const container = new ContainerBuilder()
     .setAccentColor(parseInt(config.colors.info.replace('#', ''), 16));
 
-  // Title with display name
+  // Title with display name and profile picture
   const displayName = member?.displayName || user.displayName || user.username;
-  container.addTextDisplayComponents(
-    (text) => text.setContent(`# ${displayName}`),
-    (text) => text.setContent(`-# @${user.username}`)
+  
+  // Add section with thumbnail (profile picture)
+  container.addSectionComponents((section) =>
+    section
+      .addTextDisplayComponents(
+        (text) => text.setContent(`# ${displayName}`),
+        (text) => text.setContent(`-# ${badges || 'No badges'}`)
+      )
+      .setThumbnailAccessory((thumbnail) =>
+        thumbnail
+          .setURL(user.displayAvatarURL({ size: 512, extension: 'png' }))
+          .setDescription(`${user.username}'s avatar`)
+      )
   );
 
   // Created and Joined timestamps
@@ -68,29 +143,23 @@ async function createUserInfoContainer(client, user, member) {
     }
   }
 
-  // Buttons for avatar and banner
+  // Buttons for avatar and banner (always show both, disable banner if not available)
   container.addSeparatorComponents((separator) => separator);
   
-  const buttons = [
-    new ButtonBuilder()
-      .setStyle(ButtonStyle.Link)
-      .setLabel('Avatar')
-      .setURL(user.displayAvatarURL({ size: 4096, extension: 'png' }))
-  ];
-
-  // Check if user has a banner
-  const fullUser = await client.users.fetch(user.id, { force: true });
-  if (fullUser.bannerURL()) {
-    buttons.push(
+  const hasBanner = fullUser.bannerURL() !== null;
+  
+  container.addActionRowComponents((actionRow) =>
+    actionRow.setComponents(
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel('Avatar')
+        .setURL(user.displayAvatarURL({ size: 4096, extension: 'png' })),
       new ButtonBuilder()
         .setStyle(ButtonStyle.Link)
         .setLabel('Banner')
-        .setURL(fullUser.bannerURL({ size: 4096, extension: 'png' }))
-    );
-  }
-
-  container.addActionRowComponents((actionRow) =>
-    actionRow.setComponents(...buttons)
+        .setURL(hasBanner ? fullUser.bannerURL({ size: 4096, extension: 'png' }) : 'https://discord.com')
+        .setDisabled(!hasBanner)
+    )
   );
 
   // Footer with join position and mutual servers

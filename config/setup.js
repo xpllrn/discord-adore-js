@@ -138,7 +138,47 @@ module.exports = {
     wordtea: '<:wordtea:1442011593771716698>',
     gold: '<:Gold:1442013191331643444>',
     silver: '<:silver:1442013193537847478>',
-    bronze: '<:bronze:1442013188580315158>'
+    bronze: '<:bronze:1442013188580315158>',
+
+    // Discord Badge Emojis
+    staff: '<:discordstaff:1445269112174411837>',
+    partner: '<:discordmod:1445269107355291738>',
+    hypesquadEvents: '<:discordearlysupporter:1445269102443630744>',
+    bughunterLevel1: '<:discordbughunter1:1445269096894828575>',
+    bughunterLevel2: '<:discordbughunter2:1445269099083989092>',
+    hypesquadBravery: '<:hypesquadbravery:1445269114276024381>',
+    hypesquadBrilliance: '<:hypesquadbrilliance:1445269117278883910>',
+    hypesquadBalance: '<:hypesquadbalance:1445270099199131658>',
+    earlySupporter: '<:discordearlysupporter:1445269102443630744>',
+    activeDeveloper: '<:activedeveloper:1445269070462193684>',
+    verifiedBot: '<:premiumbot:1445268222403149975>',
+    verifiedDeveloper: '<:discordbotdev:1445269094688620646>',
+    nitro: '<:discordnitro:1445269109477478430>',
+    boostLevel1: '<:discordboost1:1445269074530537594>',
+    boostLevel2: '<:discordboost2:1445269076493730004>',
+    boostLevel3: '<:discordboost3:1445269078905192621>',
+    boostLevel4: '<:discordboost4:1445269081191219210>',
+    boostLevel5: '<:discordboost5:1445269083363872849>',
+    boostLevel6: '<:discordboost6:1445269085784117361>',
+    boostLevel7: '<:discordboost7:1445269088116019270>',
+    boostLevel8: '<:discordboost8:1445269090242662452>',
+    boostLevel9: '<:discordboost9:1445269092360650824>',
+    automod: '<:automod:1445269072588574851>',
+    quest: '<:quest:1445268224911609997>',
+    username: '<:username:1445268231282491554>',
+    lootbox: '<:discordlootbox:1445269105031778435>',
+    
+    // Nitro Tier Badges
+    bronzeNitro: '<:bronzenitro:1445268539564101795>',
+    diamondNitro: '<:diamondnitro:1445268210399182898>',
+    emeraldNitro: '<:emeraldnitro:1445268212269977701>',
+    rubyNitro: '<:rubynitro:1445268227071672421>',
+    platinumNitro: '<:platinumnitro:1445268220264190033>',
+    opalNitro: '<:opalnitro:1445268217978163344>',
+    goldNitro: '<:goldnitro:1445268214656532570>',
+    
+    // Server Badges
+    crown: '<:Crown:1445270747668021278>'
 
   },
 
