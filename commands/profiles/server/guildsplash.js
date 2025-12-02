@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
+const { ContainerBuilder, MediaGalleryBuilder, ButtonBuilder, ButtonStyle, MessageFlags, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findGuild } = require('../../../handlers/finder');
@@ -26,25 +26,53 @@ module.exports = {
         targetGuild = guildResult.guild;
       }
 
-      const splashURL = targetGuild.splashURL({
-        dynamic: true,
-        size: 4096
-      });
+      const splashURL = targetGuild.splashURL({ size: 4096, extension: 'png' });
 
       if (!splashURL) {
         return embeds.warn(message, `**${targetGuild.name}** doesn't have a splash screen set`);
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${targetGuild.name}'s Splash Screen`)
-        .setImage(splashURL)
-        .setFooter({
-          text: `Requested by ${message.author.username}`,
-          iconURL: message.author.displayAvatarURL({ dynamic: true })
-        });
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      return message.channel.send({ embeds: [embed] });
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${targetGuild.name}'s Splash**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(splashURL)
+            .setDescription(`${targetGuild.name}'s splash screen`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(targetGuild.splashURL({ size: 4096, extension: 'webp' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(targetGuild.splashURL({ size: 4096, extension: 'png' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(targetGuild.splashURL({ size: 4096, extension: 'jpg' }))
+        )
+      );
+
+      return message.channel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       throw error;
@@ -68,25 +96,53 @@ module.exports = {
 
       const targetGuild = interaction.guild;
 
-      const splashURL = targetGuild.splashURL({
-        dynamic: true,
-        size: 4096
-      });
+      const splashURL = targetGuild.splashURL({ size: 4096, extension: 'png' });
 
       if (!splashURL) {
         return embeds.warn(interaction, `**${targetGuild.name}** doesn't have a splash screen set`);
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${targetGuild.name}'s Splash Screen`)
-        .setImage(splashURL)
-        .setFooter({
-          text: `Requested by ${interaction.user.username}`,
-          iconURL: interaction.user.displayAvatarURL({ dynamic: true })
-        });
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      return interaction.reply({ embeds: [embed] });
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${targetGuild.name}'s Splash**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(splashURL)
+            .setDescription(`${targetGuild.name}'s splash screen`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(targetGuild.splashURL({ size: 4096, extension: 'webp' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(targetGuild.splashURL({ size: 4096, extension: 'png' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(targetGuild.splashURL({ size: 4096, extension: 'jpg' }))
+        )
+      );
+
+      return interaction.reply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       logger.webhook.error(error, interaction);

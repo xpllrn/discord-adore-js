@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
+const { ContainerBuilder, ButtonBuilder, ButtonStyle, MessageFlags, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const fetch = require('node-fetch');
 const { embeds } = require('../../../core/embeds');
 const config = require('../../../config/setup');
@@ -6,69 +6,114 @@ const { getService } = require('@services');
 const { findUser } = require('../../../handlers/finder');
 const logger = require('../../../utils/logger');
 
-async function createUserInfoEmbed(client, user, member) {
-  // Create account creation timestamp (Discord timestamp format)
+async function createUserInfoContainer(client, user, member) {
+  // Create account creation timestamp
   const createdTimestamp = Math.floor(user.createdTimestamp / 1000);
-  const createdTime = `<t:${createdTimestamp}:F> (<t:${createdTimestamp}:R>)`;
-
-  // Build embed description
-  let description = `> **Created**: ${createdTime}`;
-
-  // Add join date if user is in the guild
-  if (member && member.joinedTimestamp) {
-    const joinedTimestamp = Math.floor(member.joinedTimestamp / 1000);
-    const joinedTime = `<t:${joinedTimestamp}:F> (<t:${joinedTimestamp}:R>)`;
-    description += `\n> **Joined**: ${joinedTime}`;
-  }
-
-  // Add booster date if user is boosting
-  if (member && member.premiumSince) {
-    const boosterTimestamp = Math.floor(member.premiumSince.getTime() / 1000);
-    const boosterTime = `<t:${boosterTimestamp}:F> (<t:${boosterTimestamp}:R>)`;
-    description += `\n> **Booster**: ${boosterTime}`;
-  }
 
   // Calculate mutual servers
   const mutualServers = client.guilds.cache.filter(guild => guild.members.cache.has(user.id));
   const mutualCount = mutualServers.size;
 
-  // Create embed
-  const embed = new EmbedBuilder()
-    .setColor(config.colors.info)
-    .setAuthor({
-      name: `${user.username} (${user.id})`,
-    })
-    .setThumbnail(user.displayAvatarURL({ size: 512, dynamic: true }))
-    .setDescription(description)
-    .setFooter({
-      text: `${mutualCount} mutual server${mutualCount === 1 ? '' : 's'}`,
-      iconURL: client.user.displayAvatarURL({ dynamic: true })
-    });
+  // Calculate join position if member exists
+  let joinPosition = null;
+  if (member && member.guild) {
+    const members = await member.guild.members.fetch();
+    const sortedMembers = members.sort((a, b) => a.joinedTimestamp - b.joinedTimestamp);
+    joinPosition = Array.from(sortedMembers.keys()).indexOf(member.id) + 1;
+  }
 
-  // Add roles field if user is in guild
+  // Build container with display components
+  const container = new ContainerBuilder()
+    .setAccentColor(parseInt(config.colors.info.replace('#', ''), 16));
+
+  // Title with display name
+  const displayName = member?.displayName || user.displayName || user.username;
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`# ${displayName}`),
+    (text) => text.setContent(`-# @${user.username}`)
+  );
+
+  // Created and Joined timestamps
+  container.addSeparatorComponents((separator) => separator);
+  
+  let timestampText = `> **Created**: <t:${createdTimestamp}:D> (<t:${createdTimestamp}:R>)`;
+  
+  if (member && member.joinedTimestamp) {
+    const joinedTimestamp = Math.floor(member.joinedTimestamp / 1000);
+    timestampText += `\n> **Joined**: <t:${joinedTimestamp}:D> (<t:${joinedTimestamp}:R>)`;
+  }
+  
+  container.addTextDisplayComponents(
+    (text) => text.setContent(timestampText)
+  );
+
+  // Roles section if user is in guild
   if (member && member.roles) {
-    let roles = member.roles.cache
+    const roles = member.roles.cache
       .filter(role => role.name !== '@everyone')
-      .map(role => role.toString())
-      .slice(0, 10); // Limit to 10 roles
+      .sort((a, b) => b.position - a.position)
+      .map(role => role.toString());
 
     if (roles.length > 0) {
-      if (member.roles.cache.size > 11) { // 10 + @everyone
-        roles.push(`... and ${member.roles.cache.size - 11} more`);
-      }
-
-      embed.addFields({
-        name: `**Roles (${member.roles.cache.size - 1})**`,
-        value: roles.join(' '),
-        inline: false
-      });
+      container.addSeparatorComponents((separator) => separator);
+      
+      const roleCount = roles.length;
+      const displayRoles = roles.slice(0, 20).join(' ');
+      const moreRoles = roleCount > 20 ? `... and ${roleCount - 20} more` : '';
+      
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**Roles (${roleCount})**`),
+        (text) => text.setContent(`> ${displayRoles}${moreRoles ? '\n> ' + moreRoles : ''}`)
+      );
     }
   }
 
-  return embed;
+  // Buttons for avatar and banner
+  container.addSeparatorComponents((separator) => separator);
+  
+  const buttons = [
+    new ButtonBuilder()
+      .setStyle(ButtonStyle.Link)
+      .setLabel('Avatar')
+      .setURL(user.displayAvatarURL({ size: 4096, extension: 'png' }))
+  ];
+
+  // Check if user has a banner
+  const fullUser = await client.users.fetch(user.id, { force: true });
+  if (fullUser.bannerURL()) {
+    buttons.push(
+      new ButtonBuilder()
+        .setStyle(ButtonStyle.Link)
+        .setLabel('Banner')
+        .setURL(fullUser.bannerURL({ size: 4096, extension: 'png' }))
+    );
+  }
+
+  container.addActionRowComponents((actionRow) =>
+    actionRow.setComponents(...buttons)
+  );
+
+  // Footer with join position and mutual servers
+  container.addSeparatorComponents((separator) => separator);
+  
+  let footerText = '';
+  if (joinPosition) {
+    footerText = `-# Join position: ${joinPosition}`;
+  }
+  if (mutualCount > 0) {
+    footerText += footerText ? ` • ${mutualCount} mutual server${mutualCount === 1 ? '' : 's'}` : `-# ${mutualCount} mutual server${mutualCount === 1 ? '' : 's'}`;
+  }
+  
+  if (footerText) {
+    container.addTextDisplayComponents(
+      (text) => text.setContent(footerText)
+    );
+  }
+
+  return container;
 }
 
-async function checkLastFmNowPlaying(user, embed, sentMessage) {
+async function checkLastFmNowPlaying(client, user, member, sentMessage) {
   try {
     const userService = getService('user');
     const fmuser = await userService.getLastFMUsername(user.id);
@@ -106,13 +151,21 @@ async function checkLastFmNowPlaying(user, embed, sentMessage) {
     const trackUrl = `https://www.last.fm/music/${encodeURIComponent(artistName)}/_/${encodeURIComponent(trackName)}`;
     const lastfmStatus = `${lastfmEmoji} Listening to **[${trackName}](${trackUrl})** by **${artistName}**`;
 
-    const currentDescription = embed.data.description;
-    const newDescription = `${lastfmStatus}\n\n${currentDescription}`;
-
-    embed.setDescription(newDescription);
+    // Recreate container with Last.fm status
+    const container = await createUserInfoContainer(client, user, member);
+    
+    // Insert Last.fm status at the beginning
+    const displayName = member?.displayName || user.displayName || user.username;
+    container.components[0] = new ContainerBuilder()
+      .addTextDisplayComponents(
+        (text) => text.setContent(`# ${displayName}`),
+        (text) => text.setContent(`-# @${user.username}`),
+        (text) => text.setContent(lastfmStatus)
+      ).components[0];
 
     await sentMessage.edit({
-      embeds: [embed]
+      components: [container],
+      flags: MessageFlags.IsComponentsV2
     });
 
   } catch (error) {
@@ -156,13 +209,14 @@ module.exports = {
         member = targetUser;
       }
 
-      const embed = await createUserInfoEmbed(client, user, member);
+      const container = await createUserInfoContainer(client, user, member);
 
       const sentMessage = await message.channel.send({
-        embeds: [embed]
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
       });
 
-      checkLastFmNowPlaying(user, embed, sentMessage);
+      checkLastFmNowPlaying(client, user, member, sentMessage);
     } catch (error) {
       throw error;
     }
@@ -196,14 +250,15 @@ module.exports = {
         member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
       }
 
-      const embed = await createUserInfoEmbed(interaction.client, targetUser, member);
+      const container = await createUserInfoContainer(interaction.client, targetUser, member);
 
       const sentMessage = await interaction.reply({
-        embeds: [embed],
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
         fetchReply: true
       });
 
-      checkLastFmNowPlaying(targetUser, embed, sentMessage);
+      checkLastFmNowPlaying(interaction.client, targetUser, member, sentMessage);
     } catch (error) {
       logger.webhook.error(error, interaction);
       return embeds.deny(interaction, 'An error occurred while fetching user information');

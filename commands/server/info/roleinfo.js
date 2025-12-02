@@ -8,23 +8,26 @@ module.exports = {
   name: 'roleinfo',
   aliases: ['ri', 'role'],
   description: 'Display detailed information about a role',
-  syntax: 'roleinfo <role>',
+  syntax: 'roleinfo [role]',
   example: 'roleinfo @Members',
   run: async (client, message, args) => {
     try {
-      // Get role from mention, ID, or name
+      // Get role from mention, ID, name, or default to @everyone
+      let role;
+      
       if (!args[0]) {
-        return embeds.warn(message, 'Please provide a role mention, ID, or name.');
+        // Default to @everyone role
+        role = message.guild.roles.everyone;
+      } else {
+        const roleInput = args.join(' ');
+        const roleResult = findRole(message.guild, roleInput);
+
+        if (!roleResult.found) {
+          return embeds.warn(message, roleResult.error);
+        }
+
+        role = roleResult.role;
       }
-
-      const roleInput = args.join(' ');
-      const roleResult = findRole(message.guild, roleInput);
-
-      if (!roleResult.found) {
-        return embeds.warn(message, roleResult.error);
-      }
-
-      const role = roleResult.role;
 
       // Calculate created timestamp
       const createdTimestamp = Math.floor(role.createdTimestamp / 1000);

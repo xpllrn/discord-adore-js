@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
+const { ContainerBuilder, MediaGalleryBuilder, ButtonBuilder, ButtonStyle, MessageFlags, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findGuild } = require('../../../handlers/finder');
@@ -26,25 +26,53 @@ module.exports = {
         targetGuild = guildResult.guild;
       }
 
-      const bannerURL = targetGuild.bannerURL({
-        dynamic: true,
-        size: 4096
-      });
+      const bannerURL = targetGuild.bannerURL({ size: 4096, extension: 'png' });
 
       if (!bannerURL) {
         return embeds.warn(message, `**${targetGuild.name}** doesn't have a banner set`);
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${targetGuild.name}'s Banner`)
-        .setImage(bannerURL)
-        .setFooter({
-          text: `Requested by ${message.author.username}`,
-          iconURL: message.author.displayAvatarURL({ dynamic: true })
-        });
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      return message.channel.send({ embeds: [embed] });
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${targetGuild.name}'s Banner**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(bannerURL)
+            .setDescription(`${targetGuild.name}'s banner`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(targetGuild.bannerURL({ size: 4096, extension: 'webp' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(targetGuild.bannerURL({ size: 4096, extension: 'png' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(targetGuild.bannerURL({ size: 4096, extension: 'jpg' }))
+        )
+      );
+
+      return message.channel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       throw error;
@@ -68,25 +96,53 @@ module.exports = {
 
       const targetGuild = interaction.guild;
 
-      const bannerURL = targetGuild.bannerURL({
-        dynamic: true,
-        size: 4096
-      });
+      const bannerURL = targetGuild.bannerURL({ size: 4096, extension: 'png' });
 
       if (!bannerURL) {
         return embeds.warn(interaction, `**${targetGuild.name}** doesn't have a banner set`);
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${targetGuild.name}'s Banner`)
-        .setImage(bannerURL)
-        .setFooter({
-          text: `Requested by ${interaction.user.username}`,
-          iconURL: interaction.user.displayAvatarURL({ dynamic: true })
-        });
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      return interaction.reply({ embeds: [embed] });
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${targetGuild.name}'s Banner**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(bannerURL)
+            .setDescription(`${targetGuild.name}'s banner`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(targetGuild.bannerURL({ size: 4096, extension: 'webp' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(targetGuild.bannerURL({ size: 4096, extension: 'png' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(targetGuild.bannerURL({ size: 4096, extension: 'jpg' }))
+        )
+      );
+
+      return interaction.reply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       logger.webhook.error(error, interaction);

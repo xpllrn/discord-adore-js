@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
+const { ContainerBuilder, MediaGalleryBuilder, ButtonBuilder, ButtonStyle, MessageFlags, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
@@ -27,22 +27,47 @@ module.exports = {
         targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
       }
 
-      // Get the user's global avatar
-      const avatarURL = targetUser.displayAvatarURL({ 
-        dynamic: true, 
-        size: 4096 
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
+
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${targetUser.username}'s Avatar**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(targetUser.displayAvatarURL({ size: 4096, extension: 'png' }))
+            .setDescription(`${targetUser.username}'s avatar`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(targetUser.displayAvatarURL({ size: 4096, extension: 'webp' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(targetUser.displayAvatarURL({ size: 4096, extension: 'png' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(targetUser.displayAvatarURL({ size: 4096, extension: 'jpg' }))
+        )
+      );
+
+      return message.channel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
       });
-
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${targetUser.displayName || targetUser.username || 'User'}'s Avatar`)
-        .setImage(avatarURL)
-        .setFooter({
-          text: `Requested by ${message.author.username}`,
-          iconURL: message.author.displayAvatarURL({ dynamic: true })
-        });
-
-      return message.channel.send({ embeds: [embed] });
 
     } catch (error) {
       throw error;
@@ -71,21 +96,47 @@ module.exports = {
     try {
       const targetUser = interaction.options.getUser('user') || interaction.user;
 
-      const avatarURL = targetUser.displayAvatarURL({ 
-        dynamic: true, 
-        size: 4096 
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
+
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${targetUser.username}'s Avatar**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(targetUser.displayAvatarURL({ size: 4096, extension: 'png' }))
+            .setDescription(`${targetUser.username}'s avatar`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(targetUser.displayAvatarURL({ size: 4096, extension: 'webp' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(targetUser.displayAvatarURL({ size: 4096, extension: 'png' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(targetUser.displayAvatarURL({ size: 4096, extension: 'jpg' }))
+        )
+      );
+
+      return interaction.reply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
       });
-
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${targetUser.displayName || targetUser.username || 'User'}'s Avatar`)
-        .setImage(avatarURL)
-        .setFooter({
-          text: `Requested by ${interaction.user.username}`,
-          iconURL: interaction.user.displayAvatarURL({ dynamic: true })
-        });
-
-      return interaction.reply({ embeds: [embed] });
 
     } catch (error) {
       logger.webhook.error(error, interaction);

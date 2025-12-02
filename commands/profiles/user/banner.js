@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
+const { ContainerBuilder, MediaGalleryBuilder, ButtonBuilder, ButtonStyle, MessageFlags, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
@@ -30,25 +30,53 @@ module.exports = {
       // Fetch the full user object to get banner info
       const fullUser = await client.users.fetch(targetUser.id, { force: true });
       
-      const bannerURL = fullUser.bannerURL({ 
-        dynamic: true, 
-        size: 4096 
-      });
+      const bannerURL = fullUser.bannerURL({ size: 4096, extension: 'png' });
 
       if (!bannerURL) {
         return embeds.warn(message, `**${fullUser.username}** doesn't have a banner set`);
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${fullUser.username}'s Banner`)
-        .setImage(bannerURL)
-        .setFooter({ 
-          text: `Requested by ${message.author.username}`, 
-          iconURL: message.author.displayAvatarURL({ dynamic: true }) 
-        });
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      return message.channel.send({ embeds: [embed] });
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${fullUser.username}'s Banner**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(bannerURL)
+            .setDescription(`${fullUser.username}'s banner`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(fullUser.bannerURL({ size: 4096, extension: 'webp' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(fullUser.bannerURL({ size: 4096, extension: 'png' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(fullUser.bannerURL({ size: 4096, extension: 'jpg' }))
+        )
+      );
+
+      return message.channel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       throw error;
@@ -79,25 +107,53 @@ module.exports = {
 
       const fullUser = await interaction.client.users.fetch(targetUser.id, { force: true });
       
-      const bannerURL = fullUser.bannerURL({ 
-        dynamic: true, 
-        size: 4096 
-      });
+      const bannerURL = fullUser.bannerURL({ size: 4096, extension: 'png' });
 
       if (!bannerURL) {
         return embeds.warn(interaction, `**${fullUser.username}** doesn't have a banner set`);
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${fullUser.username}'s Banner`)
-        .setImage(bannerURL)
-        .setFooter({ 
-          text: `Requested by ${interaction.user.username}`, 
-          iconURL: interaction.user.displayAvatarURL({ dynamic: true }) 
-        });
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      return interaction.reply({ embeds: [embed] });
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${fullUser.username}'s Banner**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(bannerURL)
+            .setDescription(`${fullUser.username}'s banner`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(fullUser.bannerURL({ size: 4096, extension: 'webp' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(fullUser.bannerURL({ size: 4096, extension: 'png' })),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(fullUser.bannerURL({ size: 4096, extension: 'jpg' }))
+        )
+      );
+
+      return interaction.reply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       logger.webhook.error(error, interaction);

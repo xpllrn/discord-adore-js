@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
+const { ContainerBuilder, MediaGalleryBuilder, ButtonBuilder, ButtonStyle, MessageFlags, SlashCommandBuilder, ApplicationIntegrationType, InteractionContextType } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { colors } = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
@@ -32,45 +32,62 @@ module.exports = {
       }
 
       // Get the member's server banner
-      const bannerURL = targetMember.bannerURL({ 
-        dynamic: true, 
-        size: 4096 
-      });
+      let bannerURL = targetMember.bannerURL({ size: 4096, extension: 'png' });
+      let bannerType = 'Server Banner';
 
       if (!bannerURL) {
         // If no server banner, try to get global banner
         const fullUser = await client.users.fetch(targetMember.user.id, { force: true });
-        const globalBannerURL = fullUser.bannerURL({ 
-          dynamic: true, 
-          size: 4096 
-        });
+        bannerURL = fullUser.bannerURL({ size: 4096, extension: 'png' });
 
-        if (!globalBannerURL) {
+        if (!bannerURL) {
           return embeds.warn(message, `**${targetMember.user.username}** doesn't have a banner set`);
         }
 
-        const embed = new EmbedBuilder()
-          .setColor(colors.embed)
-          .setTitle(`${targetMember.user.username}'s Global Banner (No Server Banner Set)`)
-          .setImage(globalBannerURL)
-          .setFooter({ 
-            text: `Requested by ${message.author.username}`, 
-            iconURL: message.author.displayAvatarURL({ dynamic: true }) 
-          });
-
-        return message.channel.send({ embeds: [embed] });
+        bannerType = 'Global Banner (No Server Banner Set)';
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${targetMember.user.username}'s Server Banner`)
-        .setImage(bannerURL)
-        .setFooter({ 
-          text: `Requested by ${message.author.username}`, 
-          iconURL: message.author.displayAvatarURL({ dynamic: true }) 
-        });
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      return message.channel.send({ embeds: [embed] });
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${targetMember.user.username}'s ${bannerType}**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(bannerURL)
+            .setDescription(`${targetMember.user.username}'s banner`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(bannerURL.replace('.png', '.webp')),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(bannerURL),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(bannerURL.replace('.png', '.jpg'))
+        )
+      );
+
+      return message.channel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       throw error;
@@ -101,44 +118,61 @@ module.exports = {
         return embeds.warn(interaction, 'User is not in this server');
       }
 
-      const bannerURL = targetMember.bannerURL({ 
-        dynamic: true, 
-        size: 4096 
-      });
+      let bannerURL = targetMember.bannerURL({ size: 4096, extension: 'png' });
+      let bannerType = 'Server Banner';
 
       if (!bannerURL) {
         const fullUser = await interaction.client.users.fetch(targetMember.user.id, { force: true });
-        const globalBannerURL = fullUser.bannerURL({ 
-          dynamic: true, 
-          size: 4096 
-        });
+        bannerURL = fullUser.bannerURL({ size: 4096, extension: 'png' });
 
-        if (!globalBannerURL) {
+        if (!bannerURL) {
           return embeds.warn(interaction, `**${targetMember.user.username}** doesn't have a banner set`);
         }
 
-        const embed = new EmbedBuilder()
-          .setColor(colors.embed)
-          .setTitle(`${targetMember.user.username}'s Global Banner (No Server Banner Set)`)
-          .setImage(globalBannerURL)
-          .setFooter({ 
-            text: `Requested by ${interaction.user.username}`, 
-            iconURL: interaction.user.displayAvatarURL({ dynamic: true }) 
-          });
-
-        return interaction.reply({ embeds: [embed] });
+        bannerType = 'Global Banner (No Server Banner Set)';
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setTitle(`${targetMember.user.username}'s Server Banner`)
-        .setImage(bannerURL)
-        .setFooter({ 
-          text: `Requested by ${interaction.user.username}`, 
-          iconURL: interaction.user.displayAvatarURL({ dynamic: true }) 
-        });
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      return interaction.reply({ embeds: [embed] });
+      // Title
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**${targetMember.user.username}'s ${bannerType}**`)
+      );
+
+      // Image
+      container.addMediaGalleryComponents((gallery) =>
+        gallery.addItems(
+          (item) => item
+            .setURL(bannerURL)
+            .setDescription(`${targetMember.user.username}'s banner`)
+        )
+      );
+
+      // Separator and buttons
+      container.addSeparatorComponents((separator) => separator);
+      container.addActionRowComponents((actionRow) =>
+        actionRow.setComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('WEBP')
+            .setURL(bannerURL.replace('.png', '.webp')),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('PNG')
+            .setURL(bannerURL),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('JPG')
+            .setURL(bannerURL.replace('.png', '.jpg'))
+        )
+      );
+
+      return interaction.reply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       logger.webhook.error(error, interaction);
