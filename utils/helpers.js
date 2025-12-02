@@ -4,7 +4,17 @@
  */
 
 const fetch = require('node-fetch');
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { 
+  EmbedBuilder, 
+  SlashCommandBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  MessageFlags
+} = require('discord.js');
 const { colors } = require('../config/setup');
 const { embeds } = require('../core/embeds');
 const { getService } = require('@services');
@@ -195,21 +205,30 @@ function executeRoleplaySlash(action, actionPastTense) {
         description = `<@${author.id}> ${actionPastTense} <@${targetUser.id}> for the ${getOrdinal(count)} time!`;
       }
 
-      let footerText = '';
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(description)
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+        )
+        .addMediaGalleryComponents(
+          new MediaGalleryBuilder()
+            .addItems(
+              new MediaGalleryItemBuilder().setURL(gifUrl)
+            )
+        );
+
       if (reverseCount > 0 && targetUser.id !== author.id) {
-        footerText = `${targetUser.username} ${actionPastTense} ${author.username} ${reverseCount} times before`;
+        container.addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(`-# ${targetUser.username} ${actionPastTense} ${author.username} ${reverseCount} times before`)
+        );
       }
 
-      const embed = new EmbedBuilder()
-        .setColor(colors.embed)
-        .setDescription(description)
-        .setImage(gifUrl);
-
-      if (footerText) {
-        embed.setFooter({ text: footerText });
-      }
-
-      return interaction.editReply({ embeds: [embed] });
+      return interaction.editReply({ 
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
 
     } catch (error) {
       console.log(`${action} slash command failed:`, error.message);
