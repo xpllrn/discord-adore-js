@@ -265,6 +265,25 @@ async function showHelpShared(context, client, commandQuery) {
 
   const command = client.commands.get(commandQuery) || client.commands.get(client.aliases.get(commandQuery))
 
+  // Check if command is a developer command and user is not the dev
+  if (command && (command.permission === 'developer' || command.permission === 'dev')) {
+    const userId = isInteraction ? context.user.id : message.author.id;
+    const setupConfig = require('../../config/setup');
+    
+    // Only show dev commands to the actual dev (DEV_ID)
+    if (userId !== setupConfig.bot.ownerId) {
+      // Pretend the command doesn't exist for non-devs
+      if (isInteraction) {
+        if (context.deferred || context.replied) {
+          return context.editReply({ content: `Command \`${commandQuery}\` does not exist` });
+        }
+        return context.reply({ content: `Command \`${commandQuery}\` does not exist`, ephemeral: false });
+      } else {
+        return embeds.warn(message, `Command \`${commandQuery}\` does not exist`, false);
+      }
+    }
+  }
+
   if (command) {
     // Check if this is a group command with subcommands
     if (hasSubcommands(command)) {
@@ -393,6 +412,14 @@ module.exports = {
     if (args.length >= 2) {
       const commandName = args[0];
       const command = client.commands.get(commandName) || client.commands.get(client.aliases.get(commandName));
+
+      // Check if command is a developer command and user is not the dev
+      if (command && (command.permission === 'developer' || command.permission === 'dev')) {
+        const setupConfig = require('../../config/setup');
+        if (message.author.id !== setupConfig.bot.ownerId) {
+          return embeds.warn(message, `Command \`${commandName}\` does not exist`, false);
+        }
+      }
 
       if (command && hasSubcommands(command)) {
         try {

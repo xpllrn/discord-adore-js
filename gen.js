@@ -139,6 +139,11 @@ categoryFolders.forEach(category => {
       
       const commandName = command.name || path.basename(filePath, '.js');
       
+      // Skip developer commands (hide from public command list)
+      if (command.permission === 'developer' || command.permission === 'dev') {
+        return;
+      }
+      
       // Extract command info
       const commandInfo = {
         name: commandName,

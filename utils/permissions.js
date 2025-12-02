@@ -12,8 +12,7 @@ const PERMISSION_LEVELS = {
     message: permsConfig.premium.customMessage || 'You need to buy **premium/boost** adore app server for this feature!'
   },
   dev: {
-    roleId: config.permissions.devRoleId,
-    userId: config.bot.ownerId, // Use DEV_ID instead of DEV_USER_ID
+    userId: config.bot.ownerId, // Only DEV_ID can use developer commands
     name: 'Developer',
     message: permsConfig.dev.customMessage || 'This command is restricted to **developers** only!'
   }

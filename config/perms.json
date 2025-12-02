@@ -8,10 +8,9 @@
   },
   "dev": {
     "name": "Developer",
-    "description": "Bot developer or dev role in dev server",
+    "description": "Bot developer only (DEV_ID)",
     "userId": "FROM_ENV",
-    "roleId": "FROM_ENV",
-    "checkFunction": "isDevUserOrRole",
+    "checkFunction": "isDevUser",
     "customMessage": "This command is restricted to **developers** only!"
   }
 }

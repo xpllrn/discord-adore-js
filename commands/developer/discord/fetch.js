@@ -3,6 +3,7 @@ const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { hasPermissionLevel } = require('../../../utils/permissions');
 const { getService } = require('@services');
+const { findGuild, findUser } = require('../../../handlers/finder');
 const config = require('../../../config/setup');
 const logger = require('../../../utils/logger');
 
@@ -76,19 +77,12 @@ async function handleInvite(client, message, args) {
     return embeds.warn(message, 'Please provide a **server ID**!');
   }
 
-  const serverId = args[1];
-
-  // Validate server ID format
-  if (!/^\d{17,19}$/.test(serverId)) {
-    return embeds.warn(message, 'Please provide a **valid server ID**!');
-  }
-
   try {
-    // Get the guild
-    const guild = client.guilds.cache.get(serverId);
+    // Find the guild using finder utility
+    const { found, guild, error } = await findGuild(client, args[1]);
     
-    if (!guild) {
-      return embeds.deny(message, `Bot is not in server with ID: \`${serverId}\``);
+    if (!found) {
+      return embeds.deny(message, error);
     }
 
     // Check if bot has permission to create invites
@@ -137,7 +131,7 @@ async function handleInvite(client, message, args) {
 
   } catch (error) {
     logger.webhook.error(error, message);
-    return embeds.deny(message, `An error occurred while processing the invite for server \`${serverId}\``);
+    return embeds.deny(message, `An error occurred while processing the invite`);
   }
 }
 
@@ -147,41 +141,37 @@ async function handleConfession(client, message, args) {
     return embeds.warn(message, 'Syntax: `,fetch confession [server id] [confession id]`');
   }
 
-  const guildId = args[1];
   const confessionId = parseInt(args[2]);
 
   if (isNaN(confessionId) || confessionId < 1) {
     return embeds.deny(message, 'Invalid confession ID provided.');
   }
 
-  // Validate guild ID
-  if (!/^\d{17,19}$/.test(guildId)) {
-    return embeds.deny(message, 'Invalid server ID provided.');
-  }
-
   try {
-    // Check if bot is in the guild
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) {
-      return embeds.deny(message, 'Bot is not in that server or server does not exist.');
+    // Find the guild using finder utility
+    const { found, guild, error } = await findGuild(client, args[1]);
+    
+    if (!found) {
+      return embeds.deny(message, error);
     }
 
     const confessionService = getService('confession');
     
     // Get the confession
-    const confession = await confessionService.getConfessionById(guildId, confessionId);
+    const confession = await confessionService.getConfessionById(guild.id, confessionId);
     
     if (!confession) {
       return embeds.deny(message, `Confession #${confessionId} not found in server **${guild.name}**.`);
     }
 
-    // Fetch the user
-    let user;
-    try {
-      user = await client.users.fetch(confession.userId);
-    } catch (error) {
+    // Fetch the user using finder utility
+    const userResult = await findUser(guild, confession.userId, client);
+    
+    if (!userResult.found) {
       return embeds.deny(message, `Could not fetch user with ID: \`${confession.userId}\``);
     }
+    
+    const user = userResult.isGlobal ? userResult.user : userResult.user.user;
 
     // Create reveal embed
     const revealEmbed = new EmbedBuilder()
@@ -229,7 +219,7 @@ async function handleConfession(client, message, args) {
       guild: message.guild,
       channel: message.channel,
       command: 'fetch confession',
-      args: `${guildId} ${confessionId}`
+      args: `${args[1]} ${confessionId}`
     });
     return embeds.deny(message, 'An error occurred while revealing the confession.');
   }
@@ -240,21 +230,16 @@ async function handleMutuals(client, message, args) {
     return embeds.warn(message, 'Please provide a **user ID**!');
   }
 
-  const userId = args[1];
-
-  // Validate user ID format
-  if (!/^\d{17,19}$/.test(userId)) {
-    return embeds.warn(message, 'Please provide a **valid user ID**!');
-  }
-
   try {
-    // Fetch the user
-    let targetUser;
-    try {
-      targetUser = await client.users.fetch(userId);
-    } catch (error) {
-      return embeds.deny(message, `Could not fetch user with ID: \`${userId}\``);
+    // Fetch the user using finder utility (use message.guild as context)
+    const userResult = await findUser(message.guild, args[1], client);
+    
+    if (!userResult.found) {
+      return embeds.deny(message, userResult.error);
     }
+    
+    const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
+    const userId = targetUser.id;
 
     // Find all mutual servers
     const mutualGuilds = client.guilds.cache.filter(guild => 
@@ -360,7 +345,7 @@ async function handleMutuals(client, message, args) {
         .join('\n');
       
       mutualsEmbed.addFields({
-        name: `✅ Invites (${successfulInvites.length})`,
+        name: `Invites (${successfulInvites.length})`,
         value: inviteList.length > 1024 ? inviteList.substring(0, 1021) + '...' : inviteList,
         inline: false
       });
@@ -372,7 +357,7 @@ async function handleMutuals(client, message, args) {
         .join('\n');
       
       mutualsEmbed.addFields({
-        name: `❌ Failed (${failedInvites.length})`,
+        name: `Failed (${failedInvites.length})`,
         value: failedList.length > 1024 ? failedList.substring(0, 1021) + '...' : failedList,
         inline: false
       });
@@ -382,6 +367,6 @@ async function handleMutuals(client, message, args) {
 
   } catch (error) {
     logger.webhook.error(error, message);
-    return embeds.deny(message, `An error occurred while fetching mutual servers for user \`${userId}\``);
+    return embeds.deny(message, `An error occurred while fetching mutual servers`);
   }
 }
