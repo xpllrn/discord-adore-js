@@ -95,12 +95,19 @@ module.exports = {
           )
       );
 
+      // Calculate total permissions count
+      const totalPermissions = 
+        Object.keys(allPermissions.moderator).length +
+        Object.keys(allPermissions.management).length +
+        Object.keys(allPermissions.general).length +
+        Object.keys(allPermissions.voice).length;
+
       // Stats section
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(
           `**Roles:** ${targetMember.roles.cache.size - 1}\n` +
-          `**Discord Permissions:** ${hasPermissions.length}/${Object.keys(allPermissions).length}\n` +
+          `**Discord Permissions:** ${hasPermissions.length}/${totalPermissions}\n` +
           `**Fake Permissions:** ${uniqueFakePerms.length}`
         )
       );
@@ -111,7 +118,7 @@ module.exports = {
       if (memberPermissions.has(PermissionFlagsBits.Administrator)) {
         container.addTextDisplayComponents(
           (text) => text.setContent('**Discord Permissions**'),
-          (text) => text.setContent('> `Administrator` (All Permissions)')
+          (text) => text.setContent('`Administrator` (All Permissions)')
         );
       } else if (hasPermissions.length > 0) {
         // Moderator permissions
@@ -119,7 +126,7 @@ module.exports = {
           const modPerms = permissionsByCategory.moderator.map(p => `\`${p}\``).join(', ');
           container.addTextDisplayComponents(
             (text) => text.setContent('**Moderator Permissions**'),
-            (text) => text.setContent(`> ${modPerms}`)
+            (text) => text.setContent(modPerms)
           );
         }
 
@@ -131,7 +138,7 @@ module.exports = {
           const mgmtPerms = permissionsByCategory.management.map(p => `\`${p}\``).join(', ');
           container.addTextDisplayComponents(
             (text) => text.setContent('**Management Permissions**'),
-            (text) => text.setContent(`> ${mgmtPerms}`)
+            (text) => text.setContent(mgmtPerms)
           );
         }
 
@@ -143,7 +150,7 @@ module.exports = {
           const genPerms = permissionsByCategory.general.map(p => `\`${p}\``).join(', ');
           container.addTextDisplayComponents(
             (text) => text.setContent('**General Permissions**'),
-            (text) => text.setContent(`> ${genPerms}`)
+            (text) => text.setContent(genPerms)
           );
         }
 
@@ -155,13 +162,13 @@ module.exports = {
           const voicePerms = permissionsByCategory.voice.map(p => `\`${p}\``).join(', ');
           container.addTextDisplayComponents(
             (text) => text.setContent('**Voice Permissions**'),
-            (text) => text.setContent(`> ${voicePerms}`)
+            (text) => text.setContent(voicePerms)
           );
         }
       } else {
         container.addTextDisplayComponents(
           (text) => text.setContent('**Discord Permissions**'),
-          (text) => text.setContent('> `None`')
+          (text) => text.setContent('`None`')
         );
       }
 
@@ -171,7 +178,7 @@ module.exports = {
         const fakePermList = uniqueFakePerms.map(p => `\`${p}\``).join(', ');
         container.addTextDisplayComponents(
           (text) => text.setContent('**Fake Permissions**'),
-          (text) => text.setContent(`> ${fakePermList}`),
+          (text) => text.setContent(fakePermList),
           (text) => text.setContent('-# Fake permissions allow using bot commands without native Discord permissions.')
         );
       }
