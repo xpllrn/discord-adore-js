@@ -265,10 +265,10 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
 
     collector.on('end', async () => {
         try {
-            const disabledButtons = createButtons(currentPage, true);
-            await sentMessage.edit({
-                components: [disabledButtons]
-            });
+            // Just disable the buttons, don't remove the content
+            // For containers with internal buttons, we can't easily disable them
+            // So we'll just leave the message as-is
+            // This is acceptable since the collector has ended and buttons won't work anyway
         } catch (error) {
             // Message might have been deleted
         }
