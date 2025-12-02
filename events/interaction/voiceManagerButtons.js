@@ -78,17 +78,37 @@ module.exports = {
   name: 'voiceManagerButtons',
   
   async handleVMButton(interaction) {
-    // This function handles all button interactions with the customId prefix 'vm_'.
+    // This function handles all button interactions with the customId prefix 'vm_' or the new hash IDs.
     try {
-      if (!interaction.customId.startsWith('vm_')) return false;
+      // Map new button IDs to actions
+      const buttonIdMap = {
+        '6800f9e6e8394c5cfd7b8c7f684b6cd2': 'lock',
+        'bc719b5197e94fb68e1db816f8fb00e6': 'unlock',
+        '8a7385beb791449f9a7893ed5536e7e3': 'hide',
+        '4da0c243b63143d4a574d30c806e962b': 'unhide',
+        '0c34acff106f453d84e4ba7122f868a5': 'kick',
+        '2c8e65c78329459ee077b3c0e853e4a2': 'claim',
+        'f33fa78ce7964964cd5c155b5a15ebb7': 'transfer',
+        'd0f359515fe244b0ad8824fb3c066d4b': 'increase',
+        '7f5598b8836e442ccd33a88afc00865c': 'decrease',
+        '48e538acf6e741aadc391f9d36977473': 'rename'
+      };
+
+      // Check if it's a new button ID or old vm_ prefix
+      let action;
+      if (buttonIdMap[interaction.customId]) {
+        action = buttonIdMap[interaction.customId];
+      } else if (interaction.customId.startsWith('vm_')) {
+        action = interaction.customId.replace('vm_', '');
+      } else {
+        return false;
+      }
 
       // Check if interaction is still valid
       if (interaction.replied || interaction.deferred) {
         console.warn('Voice manager interaction already handled:', interaction.customId);
         return false;
       }
-
-      const action = interaction.customId.replace('vm_', '');
 
       // Handle rename separately since it needs to show a modal immediately
       if (action === 'rename') {
@@ -115,8 +135,8 @@ module.exports = {
         return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       }
 
-      // Check ownership for most commands (except claim and info)
-      if (!['claim', 'info'].includes(action) && tempChannel.ownerId !== member.id) {
+      // Check ownership for most commands (except claim)
+      if (!['claim'].includes(action) && tempChannel.ownerId !== member.id) {
         const embed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Only the channel owner can use this command');
         return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       }
@@ -134,6 +154,14 @@ module.exports = {
           return await handleIncrease(interaction, tempChannel);
         case 'decrease':
           return await handleDecrease(interaction, tempChannel);
+        case 'kick':
+          return await handleKick(interaction, tempChannel);
+        case 'claim':
+          return await handleClaim(interaction, tempChannel);
+        case 'transfer':
+          return await handleTransfer(interaction, tempChannel);
+        case 'rename':
+          return await this.handleRenameButton(interaction);
         case 'info':
           return await handleInfo(interaction, tempChannel);
         default:
@@ -380,20 +408,20 @@ async function handleDecrease(interaction, tempChannel) {
   }
 }
 
-async function handleDisconnect(interaction, tempChannel) {
+async function handleKick(interaction, tempChannel) {
   const channel = interaction.member.voice.channel;
   const members = channel.members.filter(m => m.id !== interaction.user.id && !m.user.bot);
 
   if (members.size === 0) {
-    const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'There are no members to disconnect from your voice channel');
+    const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'There are no members to kick from your voice channel');
     return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   }
 
-  // Create a list of members to disconnect
+  // Create a list of members to kick
   const memberList = members.map((m, i) => `${i + 1}. ${m.displayName}`).join('\n');
   const embed = new EmbedBuilder()
     .setColor(colors.info)
-    .setDescription(`${emojis.warn} <@${interaction.user.id}>: Reply with the number of the member you want to disconnect:\n\n${memberList}\n\nType \`cancel\` to cancel.`)
+    .setDescription(`${emojis.warn} <@${interaction.user.id}>: Reply with the number of the member you want to kick:\n\n${memberList}\n\nType \`cancel\` to cancel.`)
     .setFooter({ text: 'You have 30 seconds to respond' });
 
   await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
@@ -407,7 +435,7 @@ async function handleDisconnect(interaction, tempChannel) {
       await msg.delete().catch(() => {});
 
       if (msg.content.toLowerCase() === 'cancel') {
-        const cancelEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Disconnect cancelled');
+        const cancelEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Kick cancelled');
         return await interaction.editReply({ embeds: [cancelEmbed] });
       }
 
@@ -418,19 +446,76 @@ async function handleDisconnect(interaction, tempChannel) {
       }
 
       const targetMember = Array.from(members.values())[index];
-      await targetMember.voice.disconnect('Disconnected by channel owner');
+      await targetMember.voice.disconnect('Kicked by channel owner');
 
-      const successEmbed = embeds.createSuccess({ author: { id: interaction.user.id } }, `Disconnected **${targetMember.displayName}** from your voice channel`);
+      const successEmbed = embeds.createSuccess({ author: { id: interaction.user.id } }, `Kicked **${targetMember.displayName}** from your voice channel`);
       await interaction.editReply({ embeds: [successEmbed] });
     } catch (error) {
-      const errorEmbed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to disconnect the member');
+      const errorEmbed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to kick the member');
       await interaction.editReply({ embeds: [errorEmbed] });
     }
   });
 
   collector.on('end', async (collected) => {
     if (collected.size === 0) {
-      const timeoutEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Disconnect timed out');
+      const timeoutEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Kick timed out');
+      await interaction.editReply({ embeds: [timeoutEmbed] }).catch(() => {});
+    }
+  });
+}
+
+async function handleTransfer(interaction, tempChannel) {
+  const guildService = getService('guild');
+  const channel = interaction.member.voice.channel;
+  const members = channel.members.filter(m => m.id !== interaction.user.id && !m.user.bot);
+
+  if (members.size === 0) {
+    const embed = embeds.createWarn({ author: { id: interaction.user.id } }, 'There are no members to transfer ownership to');
+    return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+  }
+
+  // Create a list of members to transfer to
+  const memberList = members.map((m, i) => `${i + 1}. ${m.displayName}`).join('\n');
+  const embed = new EmbedBuilder()
+    .setColor(colors.info)
+    .setDescription(`${emojis.warn} <@${interaction.user.id}>: Reply with the number of the member you want to transfer ownership to:\n\n${memberList}\n\nType \`cancel\` to cancel.`)
+    .setFooter({ text: 'You have 30 seconds to respond' });
+
+  await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+
+  // Create message collector
+  const filter = m => m.author.id === interaction.user.id && m.channel.id === interaction.channel.id;
+  const collector = interaction.channel.createMessageCollector({ filter, time: 30000, max: 1 });
+
+  collector.on('collect', async (msg) => {
+    try {
+      await msg.delete().catch(() => {});
+
+      if (msg.content.toLowerCase() === 'cancel') {
+        const cancelEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Transfer cancelled');
+        return await interaction.editReply({ embeds: [cancelEmbed] });
+      }
+
+      const index = parseInt(msg.content) - 1;
+      if (isNaN(index) || index < 0 || index >= members.size) {
+        const errorEmbed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Invalid number. Please try again.');
+        return await interaction.editReply({ embeds: [errorEmbed] });
+      }
+
+      const targetMember = Array.from(members.values())[index];
+      await guildService.transferVoiceChannelOwnership(interaction.guild.id, tempChannel.channelId, targetMember.id);
+
+      const successEmbed = embeds.createSuccess({ author: { id: interaction.user.id } }, `Voice channel ownership transferred to **${targetMember.displayName}**`);
+      await interaction.editReply({ embeds: [successEmbed] });
+    } catch (error) {
+      const errorEmbed = embeds.createDeny({ author: { id: interaction.user.id } }, 'Failed to transfer ownership');
+      await interaction.editReply({ embeds: [errorEmbed] });
+    }
+  });
+
+  collector.on('end', async (collected) => {
+    if (collected.size === 0) {
+      const timeoutEmbed = embeds.createWarn({ author: { id: interaction.user.id } }, 'Transfer timed out');
       await interaction.editReply({ embeds: [timeoutEmbed] }).catch(() => {});
     }
   });

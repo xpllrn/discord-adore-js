@@ -1,4 +1,4 @@
-const { PermissionFlagsBits, ChannelType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { PermissionFlagsBits, ChannelType, ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, isGlobalDev } = require('../../../utils/permissions');
 const { getService } = require('@services');
@@ -218,11 +218,12 @@ module.exports = {
         await handleRejectCommand(message, args, tempChannel);
         break;
       }
-      case 'permit': {
+      case 'permit':
+      case 'allow': {
         const subcommandInfo = {
           description: 'Permit a user to access your channel',
           syntax: '{guildprefix}voicemaster permit [@user]',
-          aliases: [],
+          aliases: ['allow'],
           parameters: ['user'],
           example: '{guildprefix}voicemaster permit @vwsn'
         };
@@ -409,116 +410,78 @@ async function handleResetCommand(message) {
 
 // Create voice manager panel with buttons
 async function createVoiceManagerPanel(client, channel) {
-  const panelEmbed = new EmbedBuilder()
-    .setTitle('**VoiceMaster Interface**')
-    .setDescription(
-      '-# Use the buttons below to control your voice channel.\n\n' +
-      '**Button Syntax:**\n' +
-      '> [**`Lock`**](https://dsc.gg/s-invite) the voice channel\n' +
-      '> [**`Unlock`**](https://dsc.gg/s-invite) the voice channel\n' +
-      '> [**`Ghost`**](https://dsc.gg/s-invite) the voice channel\n' +
-      '> [**`Reveal`**](https://dsc.gg/s-invite) the voice channel\n' +
-      '> [**`Increase`**](https://dsc.gg/s-invite) the user limit\n' +
-      '> [**`Decrease`**](https://dsc.gg/s-invite) the user limit\n' +
-      '> [**`Rename`**](https://dsc.gg/s-invite) the voice channel\n' +
-      '> [**`Info`**](https://dsc.gg/s-invite) channel information'
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("# Voice Master Panel\n-# Use the buttons below to control your voice channel.")
     )
-    .setColor(colors.embed)
-    .setThumbnail(client.user.displayAvatarURL());
-
-  // Create button rows - 4 buttons per row (8 total)
-  const row1 = new ActionRowBuilder()
-    .addComponents(
-      new ButtonBuilder()
-        .setCustomId('vm_lock')
-        .setEmoji(emojis.vmLock)
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('vm_unlock')
-        .setEmoji(emojis.vmUnlock)
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('vm_hide')
-        .setEmoji(emojis.vmHide)
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('vm_unhide')
-        .setEmoji(emojis.vmUnhide)
-        .setStyle(ButtonStyle.Secondary)
-    );
-
-  const row2 = new ActionRowBuilder()
-    .addComponents(
-      new ButtonBuilder()
-        .setCustomId('vm_increase')
-        .setEmoji(emojis.vmIncrease)
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('vm_decrease')
-        .setEmoji(emojis.vmDecrease)
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('vm_rename')
-        .setEmoji(emojis.vmRename)
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId('vm_info')
-        .setEmoji(emojis.vmInfo)
-        .setStyle(ButtonStyle.Secondary)
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+    )
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent("**Use these buttons to control**\n\nLock — Lock the voice channel\nUnlock — Unlock the voice channel\nHide — Ghost the voice channel\nUnhide — Reveal the voice channel\nKick — Kick a user from channel\n\nClaim — Claim an abandoned channel\nTransfer — Transfer ownership\nIncrease — Increase the user limit\nDecrease — Decrease the user limit\nName — Rename the voice channel")
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("lock")
+            .setCustomId("6800f9e6e8394c5cfd7b8c7f684b6cd2"),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("unlock")
+            .setCustomId("bc719b5197e94fb68e1db816f8fb00e6"),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("hide")
+            .setCustomId("8a7385beb791449f9a7893ed5536e7e3"),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("unhide")
+            .setCustomId("4da0c243b63143d4a574d30c806e962b"),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("kick")
+            .setCustomId("0c34acff106f453d84e4ba7122f868a5")
+        )
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("claim")
+            .setCustomId("2c8e65c78329459ee077b3c0e853e4a2"),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("transfer")
+            .setCustomId("f33fa78ce7964964cd5c155b5a15ebb7"),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("increase")
+            .setCustomId("d0f359515fe244b0ad8824fb3c066d4b"),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("decrease")
+            .setCustomId("7f5598b8836e442ccd33a88afc00865c"),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("name")
+            .setCustomId("48e538acf6e741aadc391f9d36977473")
+        )
     );
 
   try {
     await channel.send({
-      embeds: [panelEmbed],
-      components: [row1, row2]
+      components: [container],
+      flags: MessageFlags.IsComponentsV2
     });
   } catch (error) {
-    // Fallback with labels only if emojis still fail
-    const fallbackRow1 = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('vm_lock')
-          .setLabel('Lock')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('vm_unlock')
-          .setLabel('Unlock')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('vm_hide')
-          .setLabel('Hide')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('vm_unhide')
-          .setLabel('Unhide')
-          .setStyle(ButtonStyle.Secondary)
-      );
-
-    const fallbackRow2 = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('vm_increase')
-          .setLabel('Increase')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('vm_decrease')
-          .setLabel('Decrease')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('vm_rename')
-          .setLabel('Rename')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('vm_info')
-          .setLabel('Info')
-          .setStyle(ButtonStyle.Secondary)
-      );
-
-    await channel.send({
-      embeds: [panelEmbed],
-      components: [fallbackRow1, fallbackRow2]
-    });
-    console.log('Voice manager panel created with fallback buttons');
+    logger.webhook.error(error, { guild: channel.guild, channel });
+    throw error;
   }
 }
 

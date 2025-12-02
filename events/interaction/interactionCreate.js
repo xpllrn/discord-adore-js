@@ -129,7 +129,15 @@ module.exports = {
       // Handle button interactions
       if (interaction.isButton()) {
         // Handle voice manager buttons, logic is in ./voiceManagerButtons.js
-        if (interaction.customId.startsWith('vm_')) {
+        const vmButtonIds = [
+          '6800f9e6e8394c5cfd7b8c7f684b6cd2', 'bc719b5197e94fb68e1db816f8fb00e6',
+          '8a7385beb791449f9a7893ed5536e7e3', '4da0c243b63143d4a574d30c806e962b',
+          '0c34acff106f453d84e4ba7122f868a5', '2c8e65c78329459ee077b3c0e853e4a2',
+          'f33fa78ce7964964cd5c155b5a15ebb7', 'd0f359515fe244b0ad8824fb3c066d4b',
+          '7f5598b8836e442ccd33a88afc00865c', '48e538acf6e741aadc391f9d36977473'
+        ];
+        
+        if (interaction.customId.startsWith('vm_') || vmButtonIds.includes(interaction.customId)) {
           return voiceManagerButtons.handleVMButton(interaction);
         }
 
