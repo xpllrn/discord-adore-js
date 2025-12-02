@@ -9,6 +9,8 @@ module.exports = {
   syntax: 'serverinfo',
   example: 'serverinfo',
   run: async (client, message) => {
+    console.log('[SERVERINFO] Command started');
+    console.log('[SERVERINFO] MessageFlags.IsComponentsV2:', MessageFlags.IsComponentsV2);
     try {
       const guild = message.guild;
 
@@ -111,11 +113,18 @@ module.exports = {
       };
 
       // Send result
-      return message.channel.send({
+      console.log('[SERVERINFO] About to send message');
+      console.log('[SERVERINFO] Flag value:', MessageFlags.IsComponentsV2);
+      
+      const payload = {
         flags: MessageFlags.IsComponentsV2,
         embeds: [embed],
         components: [actionRow]
-      });
+      };
+      
+      console.log('[SERVERINFO] Payload:', JSON.stringify(payload, null, 2));
+      
+      return message.channel.send(payload);
 
     } catch (error) {
       console.error('[SERVERINFO ERROR]', error);
