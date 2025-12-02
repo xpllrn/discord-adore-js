@@ -244,7 +244,8 @@ function executeRoleplaySlash(action, actionPastTense) {
 
       return interaction.editReply({
         components: [container],
-        flags: MessageFlags.IsComponentsV2
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: ['users'] }
       });
 
     } catch (error) {
@@ -257,7 +258,8 @@ function executeRoleplaySlash(action, actionPastTense) {
 
       return interaction.editReply({
         components: [errorContainer],
-        flags: MessageFlags.IsComponentsV2
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: ['users'] }
       });
     }
   };
@@ -383,7 +385,8 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
 
       return message.channel.send({
         components: [container],
-        flags: MessageFlags.IsComponentsV2
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: ['users'] }
       });
 
     } catch (error) {
@@ -396,7 +399,8 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
 
       return message.channel.send({
         components: [errorContainer],
-        flags: MessageFlags.IsComponentsV2
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: ['users'] }
       });
     }
   };
