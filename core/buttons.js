@@ -63,17 +63,20 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
 
     // Send initial message
     const content = createEmbed(currentPage);
-    const buttons = createButtons(currentPage);
 
     // Determine if content is a container (Components V2) or embed
     const isContainer = content.constructor.name === 'ContainerBuilder';
     
-    const messagePayload = {
-        components: isContainer ? [content, buttons] : [buttons]
-    };
+    const messagePayload = {};
     
-    if (!isContainer) {
+    if (isContainer) {
+        // Container already has buttons inside, just send it
+        messagePayload.components = [content];
+    } else {
+        // Embed needs external buttons
+        const buttons = createButtons(currentPage);
         messagePayload.embeds = [content];
+        messagePayload.components = [buttons];
     }
     
     if (flags) {
@@ -127,14 +130,15 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                 currentPage = Math.max(1, currentPage - 1);
 
                 const newContent = createEmbed(currentPage);
-                const newButtons = createButtons(currentPage);
                 const isNewContainer = newContent.constructor.name === 'ContainerBuilder';
                 
-                const updatePayload = {
-                    components: isNewContainer ? [newContent, newButtons] : [newButtons]
-                };
-                if (!isNewContainer) {
+                const updatePayload = {};
+                if (isNewContainer) {
+                    updatePayload.components = [newContent];
+                } else {
+                    const newButtons = createButtons(currentPage);
                     updatePayload.embeds = [newContent];
+                    updatePayload.components = [newButtons];
                 }
                 if (flags) {
                     updatePayload.flags = flags;
@@ -154,14 +158,15 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                 currentPage = Math.min(totalPages, currentPage + 1);
 
                 const newContent = createEmbed(currentPage);
-                const newButtons = createButtons(currentPage);
                 const isNewContainer = newContent.constructor.name === 'ContainerBuilder';
                 
-                const updatePayload = {
-                    components: isNewContainer ? [newContent, newButtons] : [newButtons]
-                };
-                if (!isNewContainer) {
+                const updatePayload = {};
+                if (isNewContainer) {
+                    updatePayload.components = [newContent];
+                } else {
+                    const newButtons = createButtons(currentPage);
                     updatePayload.embeds = [newContent];
+                    updatePayload.components = [newButtons];
                 }
                 if (flags) {
                     updatePayload.flags = flags;
@@ -223,14 +228,15 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
 
                     currentPage = pageNumber;
                     const newContent = createEmbed(currentPage);
-                    const newButtons = createButtons(currentPage);
                     const isNewContainer = newContent.constructor.name === 'ContainerBuilder';
                     
-                    const updatePayload = {
-                        components: isNewContainer ? [newContent, newButtons] : [newButtons]
-                    };
-                    if (!isNewContainer) {
+                    const updatePayload = {};
+                    if (isNewContainer) {
+                        updatePayload.components = [newContent];
+                    } else {
+                        const newButtons = createButtons(currentPage);
                         updatePayload.embeds = [newContent];
+                        updatePayload.components = [newButtons];
                     }
                     if (flags) {
                         updatePayload.flags = flags;

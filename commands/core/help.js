@@ -3,7 +3,7 @@ const path = require('path')
 const fs = require('fs')
 const config = require('../../config/setup')
 const { embeds } = require('../../core/embeds')
-const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed } = require('../../utils/embeds/helpEmbedBuilder')
+const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed, addPaginationButtons, addFooter } = require('../../utils/embeds/helpEmbedBuilder')
 const { createPagination } = require('../../core/buttons')
 
 // ============================================================================
@@ -326,22 +326,30 @@ async function showHelpShared(context, client, commandQuery) {
 
         // Create page array: parent page + subcommand pages
         const pages = [];
+        const totalPages = subcommands.length + 1;
 
         // Page 1: Parent command overview
-        pages.push(createParentCommandPage(command, guildprefix, subcommands.length));
+        const parentPage = createParentCommandPage(command, guildprefix, subcommands.length);
+        pages.push(parentPage);
 
         // Pages 2+: Individual subcommand pages
-        const totalPages = subcommands.length + 1;
         subcommands.forEach((subcommand, index) => {
           const pageNumber = index + 2; // +2 because page 1 is parent
           pages.push(createSubcommandPage(command, subcommand, pageNumber, totalPages));
         });
 
-        // Display paginated help using prebuilt pagination
+        // Display paginated help with buttons inside containers
         return createPagination(
           isInteraction ? context : message,
           pages,
-          (pageItems, currentPage, totalPages) => pageItems[0], // formatPage function returns the container
+          (pageItems, currentPage, totalPages) => {
+            const container = pageItems[0];
+            // Add pagination buttons
+            addPaginationButtons(container, currentPage, totalPages, false);
+            // Add footer
+            addFooter(container, currentPage, totalPages, subcommands.length, command.name);
+            return container;
+          },
           1, // 1 item per page (each item is already a full container)
           command.name,
           MessageFlags.IsComponentsV2 // Pass V2 flag for containers

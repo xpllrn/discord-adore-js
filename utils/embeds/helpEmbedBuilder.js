@@ -42,15 +42,69 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
     (text) => text.setContent(`**Syntax**\n\`\`\`\nSyntax: ${guildPrefix}${command.name} (subcommand) <args>\n\`\`\``)
   );
 
-  // Separator
+  return container;
+}
+
+/**
+ * Adds pagination buttons to a container
+ * @param {ContainerBuilder} container - Container to add buttons to
+ * @param {Number} currentPage - Current page number
+ * @param {Number} totalPages - Total number of pages
+ * @param {Boolean} disabled - Whether buttons should be disabled
+ * @returns {ContainerBuilder} - Container with buttons added
+ */
+function addPaginationButtons(container, currentPage, totalPages, disabled = false) {
+  const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+  const { emojis } = require('../../config/setup');
+
   container.addSeparatorComponents(
     (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
   );
 
-  // Footer with page counter
-  const totalPages = totalSubcommands + 1;
+  container.addActionRowComponents((actionRow) =>
+    actionRow.setComponents(
+      new ButtonBuilder()
+        .setCustomId('pagination_left')
+        .setEmoji(emojis.left)
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(disabled || currentPage === 1),
+      new ButtonBuilder()
+        .setCustomId('pagination_cancel')
+        .setEmoji(emojis.cancel)
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(disabled),
+      new ButtonBuilder()
+        .setCustomId('pagination_right')
+        .setEmoji(emojis.right)
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(disabled || currentPage === totalPages),
+      new ButtonBuilder()
+        .setCustomId('pagination_move')
+        .setEmoji(emojis.choose)
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(disabled || totalPages === 1)
+    )
+  );
+
+  return container;
+}
+
+/**
+ * Adds footer to a container
+ * @param {ContainerBuilder} container - Container to add footer to
+ * @param {Number} currentPage - Current page number
+ * @param {Number} totalPages - Total number of pages
+ * @param {Number} totalEntries - Total number of entries
+ * @param {String} moduleName - Module name
+ * @returns {ContainerBuilder} - Container with footer added
+ */
+function addFooter(container, currentPage, totalPages, totalEntries, moduleName) {
+  container.addSeparatorComponents(
+    (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
   container.addTextDisplayComponents(
-    (text) => text.setContent(`-# Page 1/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}`)
+    (text) => text.setContent(`-# Page ${currentPage}/${totalPages} (${totalEntries} entries) ∙ Module: ${moduleName}`)
   );
 
   return container;
@@ -107,17 +161,6 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
       (text) => text.setContent(`**Syntax**\n\`\`\`\n${syntaxLines.join('\n')}\n\`\`\``)
     );
   }
-
-  // Separator
-  container.addSeparatorComponents(
-    (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
-  );
-
-  // Footer with page counter
-  const totalSubcommands = totalPages - 1;
-  container.addTextDisplayComponents(
-    (text) => text.setContent(`-# Page ${pageNumber}/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}`)
-  );
 
   return container;
 }
@@ -184,5 +227,7 @@ function createTraditionalEmbed(command, guildPrefix) {
 module.exports = {
   createParentCommandPage,
   createSubcommandPage,
-  createTraditionalEmbed
+  createTraditionalEmbed,
+  addPaginationButtons,
+  addFooter
 };
