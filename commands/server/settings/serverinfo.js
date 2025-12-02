@@ -27,16 +27,6 @@ module.exports = {
       const roleCount = guild.roles.cache.size;
       const channelCount = guild.channels.cache.size;
       const emojiCount = guild.emojis.cache.size;
-
-      // Verification level mapping
-      const verificationLevels = {
-        0: 'None',
-        1: 'Low',
-        2: 'Medium',
-        3: 'High',
-        4: 'Very High'
-      };
-      const verificationLevel = verificationLevels[guild.verificationLevel] || 'Unknown';
       
       // Build container with display components
       const container = new ContainerBuilder()
@@ -48,7 +38,7 @@ module.exports = {
           section
             .addTextDisplayComponents(
               (text) => text.setContent(`# ${guild.name}`),
-              (text) => text.setContent(guild.description || '*No description set*')
+              (text) => text.setContent(`-# ${guild.description || '*No description set*'}`)
             )
             .setThumbnailAccessory((thumbnail) =>
               thumbnail
