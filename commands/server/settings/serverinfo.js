@@ -1,4 +1,4 @@
-const { MessageFlags } = require('discord.js');
+const { MessageFlags, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const logger = require('../../../utils/logger');
 
@@ -42,133 +42,69 @@ module.exports = {
       };
       const verificationLevel = verificationLevels[guild.verificationLevel] || 'Unknown';
 
-      // Build Components V2 message
-      const components = [];
-
-      // Header: Created timestamp
-      components.push({
-        type: 10, // Text Display
-        content: `Created <t:${createdTimestamp}:R>`
-      });
-
-      // Separator
-      components.push({
-        type: 12 // Separator
-      });
-
-      // Server name and owner section
-      let serverInfoText = `**${guild.name}** by **${owner.user.tag}**`;
-      if (guild.description) {
-        serverInfoText += `\n> ${guild.description}`;
-      }
-      components.push({
-        type: 10, // Text Display
-        content: serverInfoText
-      });
-
-      // Separator
-      components.push({
-        type: 12 // Separator
-      });
-
-      // Stats section with 3 inline text displays
-      components.push({
-        type: 11, // Section
-        components: [
-          {
-            type: 10, // Text Display
-            content: `**Members**\nTotal: ${totalMembers}\nHumans: ${humans}\nBots: ${bots}`
-          },
-          {
-            type: 10, // Text Display
-            content: `**Counts**\nRoles: ${roleCount}/250\nEmojis: ${emojiCount}/100`
-          },
-          {
-            type: 10, // Text Display
-            content: `**Information**\nVerification: ${verificationLevel}\nBoosts: ${boostCount} (level ${boostLevel})\nBoosters: ${boosterCount}`
-          }
-        ]
-      });
-
-      // Separator
-      components.push({
-        type: 12 // Separator
-      });
-
-      // Buttons row for Icon, Splash, Banner
+      // Build buttons
       const buttons = [];
       
-      if (guild.icon) {
-        buttons.push({
-          type: 2, // Button
-          style: 5, // Link
-          label: 'Icon',
-          url: guild.iconURL({ size: 1024 })
-        });
-      } else {
-        buttons.push({
-          type: 2, // Button
-          style: 5, // Link
-          label: 'Icon',
-          url: 'https://discord.com',
-          disabled: true
-        });
-      }
+      buttons.push(
+        new ButtonBuilder()
+          .setLabel('Icon')
+          .setStyle(ButtonStyle.Link)
+          .setURL(guild.iconURL({ size: 1024 }) || 'https://discord.com')
+          .setDisabled(!guild.icon)
+      );
 
-      if (guild.splash) {
-        buttons.push({
-          type: 2, // Button
-          style: 5, // Link
-          label: 'Splash',
-          url: guild.splashURL({ size: 1024 })
+      buttons.push(
+        new ButtonBuilder()
+          .setLabel('Splash')
+          .setStyle(ButtonStyle.Link)
+          .setURL(guild.splashURL({ size: 1024 }) || 'https://discord.com')
+          .setDisabled(!guild.splash)
+      );
+
+      buttons.push(
+        new ButtonBuilder()
+          .setLabel('Banner')
+          .setStyle(ButtonStyle.Link)
+          .setURL(guild.bannerURL({ size: 1024 }) || 'https://discord.com')
+          .setDisabled(!guild.banner)
+      );
+
+      const row = new ActionRowBuilder().addComponents(buttons);
+
+      // Build embed
+      const embed = new EmbedBuilder()
+        .setTitle(guild.name)
+        .setDescription(guild.description || null)
+        .addFields(
+          {
+            name: 'Created',
+            value: `<t:${createdTimestamp}:R>`
+          },
+          {
+            name: 'Members',
+            value: `Total: ${totalMembers}\nHumans: ${humans}\nBots: ${bots}`,
+            inline: true
+          },
+          {
+            name: 'Counts',
+            value: `Roles: ${roleCount}\nEmojis: ${emojiCount}`,
+            inline: true
+          },
+          {
+            name: 'Boosts',
+            value: `Boosts: ${boostCount} (level ${boostLevel})\nBoosters: ${boosterCount}`,
+            inline: true
+          }
+        )
+        .setFooter({
+          text: `ServerID: ${guild.id} • OwnerID: ${owner.id}`
         });
-      } else {
-        buttons.push({
-          type: 2, // Button
-          style: 5, // Link
-          label: 'Splash',
-          url: 'https://discord.com',
-          disabled: true
-        });
-      }
 
-      if (guild.banner) {
-        buttons.push({
-          type: 2, // Button
-          style: 5, // Link
-          label: 'Banner',
-          url: guild.bannerURL({ size: 1024 })
-        });
-      } else {
-        buttons.push({
-          type: 2, // Button
-          style: 5, // Link
-          label: 'Banner',
-          url: 'https://discord.com',
-          disabled: true
-        });
-      }
-
-      components.push({
-        type: 1, // Action Row
-        components: buttons
-      });
-
-      // Separator
-      components.push({
-        type: 12 // Separator
-      });
-
-      // Footer with IDs
-      components.push({
-        type: 10, // Text Display
-        content: `-# ServerID: ${guild.id}   OwnerID: ${owner.id}`
-      });
-
-      // Send with Components V2 flag
+      // Send with Components V2 flag and embed
       return message.channel.send({
         flags: MessageFlags.IsComponentsV2,
-        components: components
+        embeds: [embed],
+        components: [row]
       });
     } catch (error) {
       logger.webhook.error(error, message);
