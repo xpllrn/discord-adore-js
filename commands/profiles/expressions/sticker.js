@@ -35,9 +35,9 @@ function removeInviteLinks(text) {
 module.exports = {
   name: "sticker",
   aliases: [],
-  description: "Manage server stickers - steal, remove, and archive",
+  description: "Manage server stickers - add, steal, remove, and archive",
   syntax: 'sticker [subcommand]',
-  example: 'sticker steal (reply)',
+  example: 'sticker add <url> <name>',
   permission: 'manage_expressions',
   isGroupCommand: true,
   run: async (client, message, args) => {
@@ -52,6 +52,8 @@ module.exports = {
     }
 
     switch (subcommand) {
+      case 'add':
+        return await handleAdd(client, message, args.slice(1));
       case 'steal':
         return await handleSteal(client, message, args.slice(1));
       case 'remove':
@@ -68,6 +70,60 @@ module.exports = {
   }
 };
 
+
+// Handle sticker add subcommand
+async function handleAdd(client, message, args) {
+  if (args.length < 2) {
+    return embeds.warn(message, 'Please provide a sticker URL and name\n**Usage:** `sticker add <url> <name>`');
+  }
+
+  const stickerUrl = args[0];
+  const stickerName = args.slice(1).join(' ');
+
+  // Validate URL
+  if (!stickerUrl.match(/^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)$/i)) {
+    return embeds.warn(message, 'Please provide a valid image URL (png, jpg, jpeg, gif, or webp)');
+  }
+
+  // Validate name length (2-30 characters)
+  if (stickerName.length < 2 || stickerName.length > 30) {
+    return embeds.warn(message, 'Sticker name must be between 2 and 30 characters');
+  }
+
+  try {
+    // Check if server is at max stickers
+    if (message.guild.stickers.cache.size >= 60) {
+      return embeds.warn(message, 'Server is at **max slots** for stickers (60/60)');
+    }
+
+    const statusMessage = await embeds.loading(message, `Please wait, I'm adding sticker **\`${stickerName}\`** to the server`);
+
+    const cleanName = removeInviteLinks(stickerName);
+    const description = 'Sticker added using adore bot';
+
+    const createdSticker = await message.guild.stickers.create({
+      file: stickerUrl,
+      name: cleanName,
+      description: description,
+      tags: 'custom'
+    });
+
+    await statusMessage.edit({
+      embeds: [embeds.createSuccess(message, `Added sticker **\`${createdSticker.name}\`** to the server`)]
+    });
+
+  } catch (error) {
+    if (error.code === 50013) {
+      return embeds.deny(message, 'I don\'t have permission to manage stickers in this server');
+    } else if (error.code === 30039) {
+      return embeds.warn(message, 'Server is at **max slots** for stickers (60/60)');
+    } else if (error.message.includes('File cannot be larger than')) {
+      return embeds.warn(message, 'The sticker file is too large. Maximum size is 512KB');
+    } else {
+      throw error;
+    }
+  }
+}
 
 // Handle sticker steal subcommand
 async function handleSteal(client, message, args) {
