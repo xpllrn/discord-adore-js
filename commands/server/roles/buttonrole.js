@@ -193,6 +193,16 @@ module.exports = {
           // Get the existing container data
           const existingContainer = components[containerIndex];
           
+          console.log('=== CONTAINER DEBUG ===');
+          console.log('Container has', existingContainer.components?.length, 'components');
+          existingContainer.components?.forEach((comp, idx) => {
+            console.log(`Component ${idx}: type=${comp.type}, hasAccessory=${!!comp.accessory}`);
+            if (comp.accessory) {
+              console.log(`  Accessory type=${comp.accessory.type}, url=${comp.accessory.url}`);
+            }
+          });
+          console.log('======================');
+          
           // Create a new container and copy all existing components
           const newContainer = new ContainerBuilder();
           
