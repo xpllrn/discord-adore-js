@@ -229,14 +229,19 @@ module.exports = {
                 );
               } else {
                 // For other component types, use .from() to copy them
-                // This includes text displays, sections, separators, etc.
+                // Component types based on actual Discord API:
+                // Type 1 = ActionRow
+                // Type 10 = TextDisplay
+                // Type 11 = Section
+                // Type 12 = MediaGallery
+                // Type 14 = Separator
                 console.log('Copying component type:', comp.type);
                 try {
                   if (comp.type === 14) { // Separator
                     const separator = SeparatorBuilder.from(comp);
                     newContainer.addSeparatorComponents(() => separator);
                     console.log('Added separator');
-                  } else if (comp.type === 15) { // Text display
+                  } else if (comp.type === 10) { // Text display
                     const textDisplay = TextDisplayBuilder.from(comp);
                     newContainer.addTextDisplayComponents(() => textDisplay);
                     console.log('Added text display');
@@ -244,7 +249,7 @@ module.exports = {
                     const section = SectionBuilder.from(comp);
                     newContainer.addSectionComponents(() => section);
                     console.log('Added section');
-                  } else if (comp.type === 16) { // Media gallery
+                  } else if (comp.type === 12) { // Media gallery
                     const gallery = MediaGalleryBuilder.from(comp);
                     newContainer.addMediaGalleryComponents(() => gallery);
                     console.log('Added gallery');
