@@ -402,8 +402,8 @@ function handleSpotifyError(context, error) {
     return embeds.warn(context, '**Player command failed**: No `active device` found!');
   }
 
-  // Check if it's an authorization error (user not in beta list)
-  if (errorCode.includes('403') || errorCode.includes('Forbidden') || errorCode.includes('unauthorized')) {
+  // Check if it's a FORBIDDEN error (user not in beta list)
+  if (errorCode === 'FORBIDDEN' || errorCode.includes('403') || errorCode.includes('Forbidden') || errorCode.includes('unauthorized')) {
     const { EmbedBuilder } = require('discord.js');
     const config = require('../config/setup');
     // Support both message and interaction

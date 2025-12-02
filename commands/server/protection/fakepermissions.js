@@ -60,6 +60,16 @@ module.exports = {
         return handleList(message, args, guildService);
       }
 
+      case 'view': {
+        const subcommandInfo = {
+          description: 'View all fake permissions configured in the server',
+          syntax: '{guildprefix}fakepermissions view',
+          aliases: [],
+          example: '{guildprefix}fakepermissions view'
+        };
+        return handleViewAll(message, guildService);
+      }
+
       case 'reset': {
         const subcommandInfo = {
           description: 'Reset all fake permissions',
@@ -381,6 +391,56 @@ async function handleList(message, args, guildService) {
       iconURL: message.author.displayAvatarURL({ dynamic: true })
     })
     .setTimestamp();
+
+  return message.channel.send({ embeds: [embed] });
+}
+
+async function handleViewAll(message, guildService) {
+  const guildData = await guildService.ensureGuildData(message.guild.id);
+  
+  if (!guildData.FakePermissions || Object.keys(guildData.FakePermissions).length === 0) {
+    return embeds.warn(message, 'No fake permissions are configured in this server');
+  }
+
+  const fakePermissions = guildData.FakePermissions;
+  const roleEntries = Object.values(fakePermissions);
+
+  if (roleEntries.length === 0) {
+    return embeds.warn(message, 'No fake permissions are configured in this server');
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(colors.embed)
+    .setAuthor({
+      name: `${message.guild.name} Fake Permissions`,
+      iconURL: message.guild.iconURL({ dynamic: true })
+    })
+    .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+    .setDescription(
+      `**Total Roles:** ${roleEntries.length}\n\n` +
+      `-# Fake permissions allow roles to use bot commands without native Discord permissions.`
+    )
+    .setFooter({
+      text: `Requested by ${message.author.tag}`,
+      iconURL: message.author.displayAvatarURL({ dynamic: true })
+    })
+    .setTimestamp();
+
+  // Add fields for each role
+  for (const roleData of roleEntries) {
+    const role = message.guild.roles.cache.get(roleData.roleId);
+    const roleName = role ? role.name : roleData.roleName || 'Unknown Role';
+    const roleDisplay = role ? `${role}` : `**${roleName}** (Deleted)`;
+    const permissions = roleData.permissions || [];
+
+    if (permissions.length > 0) {
+      embed.addFields({
+        name: roleDisplay,
+        value: permissions.map(p => `\`${p}\``).join(', '),
+        inline: false
+      });
+    }
+  }
 
   return message.channel.send({ embeds: [embed] });
 }

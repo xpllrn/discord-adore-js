@@ -147,8 +147,9 @@ async function processCommand(message, isEdit = false) {
 
     // Log error to Discord webhook if error logger is available
     if (client.errorLogger) {
-      client.errorLogger.log(error, `Command Execution: ${command.name}`, {
-        command: command.name,
+      const cmdName = command?.name || commandName || 'Unknown';
+      client.errorLogger.log(error, `Command Execution: ${cmdName}`, {
+        command: cmdName,
         args: args.join(' ') || '',
         user: message.author,
         guild: message.guild,

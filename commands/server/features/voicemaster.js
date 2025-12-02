@@ -346,6 +346,9 @@ async function handleResetCommand(message) {
   }
 
   try {
+    // Send confirmation message before deleting channels
+    const confirmMsg = await message.channel.send('Resetting voicemaster...');
+
     // Delete all existing temporary channels first
     for (const tempChannel of voiceManager.tempChannels || []) {
       try {
@@ -374,11 +377,33 @@ async function handleResetCommand(message) {
     // Clear database configuration
     await guildService.disableVoiceManager(message.guild.id);
 
-    return embeds.success(message, '**Voicemaster interface** has been **reset**.');
+    // Try to edit the confirmation message, or send to a different channel if this one was deleted
+    try {
+      await confirmMsg.edit('**Voicemaster interface** has been **reset**.');
+    } catch (editError) {
+      // If we can't edit (channel was deleted), try to find a system channel or first text channel
+      const targetChannel = message.guild.systemChannel || 
+                           message.guild.channels.cache.find(ch => ch.isTextBased() && ch.permissionsFor(message.guild.members.me).has('SendMessages'));
+      
+      if (targetChannel) {
+        return embeds.success({ ...message, channel: targetChannel }, '**Voicemaster interface** has been **reset**.');
+      }
+    }
 
   } catch (error) {
     logger.webhook.error(error, message);
-    return embeds.deny(message, 'Failed to **reset** voicemaster. Please **check my permissions**.');
+    // Try to send error to a safe channel
+    try {
+      return embeds.deny(message, 'Failed to **reset** voicemaster. Please **check my permissions**.');
+    } catch (sendError) {
+      // If we can't send to the original channel, try system channel
+      const targetChannel = message.guild.systemChannel || 
+                           message.guild.channels.cache.find(ch => ch.isTextBased() && ch.permissionsFor(message.guild.members.me).has('SendMessages'));
+      
+      if (targetChannel) {
+        return embeds.deny({ ...message, channel: targetChannel }, 'Failed to **reset** voicemaster. Please **check my permissions**.');
+      }
+    }
   }
 }
 

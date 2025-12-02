@@ -710,6 +710,7 @@ class SpotifyService extends BaseService {
     if (error.response) {
       const status = error.response.status;
       const data = error.response.data;
+      const url = error.config?.url || '';
 
       switch (status) {
         case 401:
@@ -718,12 +719,25 @@ class SpotifyService extends BaseService {
           if (data.error && data.error.reason === 'PREMIUM_REQUIRED') {
             throw new ServiceError('PREMIUM_REQUIRED', 'Spotify Premium is required for this feature');
           }
-          throw new ServiceError('PLAYBACK_ERROR', 'Failed to control playback');
+          // Only treat 403 as PLAYBACK_ERROR for actual playback control endpoints
+          const isPlaybackControl = url.includes('/player/play') || 
+                                   url.includes('/player/pause') || 
+                                   url.includes('/player/next') || 
+                                   url.includes('/player/previous') || 
+                                   url.includes('/player/volume') || 
+                                   url.includes('/player/repeat') || 
+                                   url.includes('/player/shuffle') ||
+                                   url.includes('/player/queue');
+          
+          if (isPlaybackControl) {
+            throw new ServiceError('PLAYBACK_ERROR', 'Failed to control playback');
+          }
+          // For non-playback endpoints (like /devices), throw a more specific error
+          throw new ServiceError('FORBIDDEN', 'Access forbidden - your Spotify account may not be approved for this bot');
         case 404:
           // Only treat as NO_ACTIVE_DEVICE for actual playback control endpoints
           // Exclude data endpoints like recently-played, top tracks, etc.
-          const url = error.config.url || '';
-          const isPlaybackControl = url.includes('/player/play') || 
+          const isPlaybackControlFor404 = url.includes('/player/play') || 
                                    url.includes('/player/pause') || 
                                    url.includes('/player/next') || 
                                    url.includes('/player/previous') || 
@@ -733,7 +747,7 @@ class SpotifyService extends BaseService {
                                    url.includes('/player/queue') ||
                                    url.includes('/player/currently-playing');
           
-          if (isPlaybackControl) {
+          if (isPlaybackControlFor404) {
             throw new ServiceError('NO_ACTIVE_DEVICE', 'No active Spotify device found');
           }
           throw new ServiceError('NOT_FOUND', 'Resource not found');
