@@ -96,9 +96,14 @@ async function handleAdd(client, message, args) {
     stickerUrl = args[0];
     stickerName = args.slice(1).join(' ');
 
-    // Validate URL
-    if (!stickerUrl.match(/^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)$/i)) {
-      return embeds.warn(message, 'Please provide a valid image URL (png, jpg, jpeg, gif, or webp)');
+    // Validate URL (allow query parameters)
+    if (!stickerUrl.match(/^https?:\/\/.+/i)) {
+      return embeds.warn(message, 'Please provide a valid image URL');
+    }
+    
+    // Check if URL contains gif extension and warn user
+    if (stickerUrl.match(/\.gif(\?|$)/i)) {
+      return embeds.warn(message, 'GIF files cannot be used as stickers directly.\n\nDiscord stickers require PNG or APNG format. For animated stickers, you need to convert your GIF to APNG format first.');
     }
   }
 
@@ -130,14 +135,25 @@ async function handleAdd(client, message, args) {
     });
 
   } catch (error) {
+    await statusMessage.delete().catch(() => {});
+    
     if (error.code === 50013) {
       return embeds.deny(message, 'I don\'t have permission to manage stickers in this server');
     } else if (error.code === 30039) {
       return embeds.warn(message, 'Server is at **max slots** for stickers (60/60)');
+    } else if (error.code === 50035) {
+      return embeds.warn(message, 'Invalid sticker file. Stickers must be:\n• PNG or APNG format\n• Exactly 320x320 pixels\n• Under 512KB in size');
     } else if (error.message.includes('File cannot be larger than')) {
       return embeds.warn(message, 'The sticker file is too large. Maximum size is 512KB');
+    } else if (error.message.includes('Sticker file must be a png')) {
+      return embeds.warn(message, 'Sticker file must be PNG format. Discord only accepts PNG/APNG stickers.');
     } else {
-      throw error;
+      logger.webhook.error(error, 'Sticker Add Command', {
+        command: 'sticker add',
+        args: `Name: ${stickerName}, URL: ${stickerUrl}`,
+        error: error.message
+      });
+      return embeds.deny(message, `Failed to add sticker: ${error.message}`);
     }
   }
 }
