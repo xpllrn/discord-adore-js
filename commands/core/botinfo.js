@@ -17,7 +17,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor(colors.embed)
       .setTitle(`${client.user.username}`)
-      .setDescription(`Pre-release version of **${client.user.username}** discord bot by **[ren](https://discord.com/users/1439522065656053791)** \n> Currently used by **${servercount}** Guilds and **${usercount.toLocaleString()}** users`);
+      .setDescription(`Pre-release version of **${client.user.username}** discord bot by **[ren](https://discord.com/users/1442334476909809785)** \n> Currently used by **${servercount}** Guilds and **${usercount.toLocaleString()}** users`);
 
     // Create button
     const row = new ActionRowBuilder()

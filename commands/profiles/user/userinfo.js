@@ -14,14 +14,6 @@ async function createUserInfoContainer(client, user, member) {
   const mutualServers = client.guilds.cache.filter(guild => guild.members.cache.has(user.id));
   const mutualCount = mutualServers.size;
 
-  // Calculate join position if member exists
-  let joinPosition = null;
-  if (member && member.guild) {
-    const members = await member.guild.members.fetch();
-    const sortedMembers = members.sort((a, b) => a.joinedTimestamp - b.joinedTimestamp);
-    joinPosition = Array.from(sortedMembers.keys()).indexOf(member.id) + 1;
-  }
-
   // Fetch full user for banner check
   const fullUser = await client.users.fetch(user.id, { force: true });
 
@@ -99,20 +91,11 @@ async function createUserInfoContainer(client, user, member) {
     )
   );
 
-  // Footer with join position and mutual servers
-  container.addSeparatorComponents((separator) => separator);
-  
-  let footerText = '';
-  if (joinPosition) {
-    footerText = `-# Join position: ${joinPosition}`;
-  }
+  // Footer with mutual servers
   if (mutualCount > 0) {
-    footerText += footerText ? ` • ${mutualCount} mutual server${mutualCount === 1 ? '' : 's'}` : `-# ${mutualCount} mutual server${mutualCount === 1 ? '' : 's'}`;
-  }
-  
-  if (footerText) {
+    container.addSeparatorComponents((separator) => separator);
     container.addTextDisplayComponents(
-      (text) => text.setContent(footerText)
+      (text) => text.setContent(`-# ${mutualCount} mutual server${mutualCount === 1 ? '' : 's'}`)
     );
   }
 

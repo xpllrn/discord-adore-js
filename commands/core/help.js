@@ -405,7 +405,7 @@ async function showHelpShared(context, client, commandQuery) {
     }
 
   } else {
-    const msg = `Use https://adore.rest/ for command list and https://adore.rest/server the server`;
+    const msg = `Use https://adore.rest/ for command list and <https://adore.rest/server> the server`;
     if (isInteraction) {
       if (context.deferred || context.replied) {
         return context.editReply({ content: msg });
