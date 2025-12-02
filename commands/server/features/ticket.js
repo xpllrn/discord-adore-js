@@ -699,7 +699,7 @@ async function updateTicketSetupMessage(client, guild, ticketSystem, customMessa
     await setupMessage.edit(messageOptions);
 
   } catch (error) {
-    logger.webhook.error(error, message);
+    logger.webhook.error(error);
   }
 }
 
