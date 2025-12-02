@@ -137,7 +137,7 @@ module.exports = {
 
 // Get all Discord permissions
 function getAllPermissions() {
-  return {
+  const permissions = {
     'Administrator': PermissionFlagsBits.Administrator,
     'Manage Server': PermissionFlagsBits.ManageGuild,
     'Manage Roles': PermissionFlagsBits.ManageRoles,
@@ -150,7 +150,6 @@ function getAllPermissions() {
     'Manage Webhooks': PermissionFlagsBits.ManageWebhooks,
     'Manage Events': PermissionFlagsBits.ManageEvents,
     'View Audit Log': PermissionFlagsBits.ViewAuditLog,
-    'View Server Insights': PermissionFlagsBits.ViewCreatorMonetizationAnalytics,
     'Create Invite': PermissionFlagsBits.CreateInstantInvite,
     'Change Nickname': PermissionFlagsBits.ChangeNickname,
     'View Channels': PermissionFlagsBits.ViewChannel,
@@ -168,22 +167,26 @@ function getAllPermissions() {
     'Manage Threads': PermissionFlagsBits.ManageThreads,
     'Read Message History': PermissionFlagsBits.ReadMessageHistory,
     'Send TTS Messages': PermissionFlagsBits.SendTTSMessages,
-    'Send Voice Messages': PermissionFlagsBits.SendVoiceMessages,
     'Use Application Commands': PermissionFlagsBits.UseApplicationCommands,
     'Connect': PermissionFlagsBits.Connect,
     'Speak': PermissionFlagsBits.Speak,
     'Video': PermissionFlagsBits.Stream,
-    'Use Activities': PermissionFlagsBits.UseEmbeddedActivities,
-    'Use Soundboard': PermissionFlagsBits.UseSoundboard,
-    'Use External Sounds': PermissionFlagsBits.UseExternalSounds,
     'Use Voice Activity': PermissionFlagsBits.UseVAD,
     'Priority Speaker': PermissionFlagsBits.PrioritySpeaker,
     'Mute Members': PermissionFlagsBits.MuteMembers,
     'Deafen Members': PermissionFlagsBits.DeafenMembers,
-    'Move Members': PermissionFlagsBits.MoveMembers,
-    'Set Voice Channel Status': PermissionFlagsBits.SetVoiceChannelStatus,
-    'Request to Speak': PermissionFlagsBits.RequestToSpeak
+    'Move Members': PermissionFlagsBits.MoveMembers
   };
+
+  // Filter out undefined permissions (in case of older Discord.js versions)
+  const validPermissions = {};
+  for (const [name, bit] of Object.entries(permissions)) {
+    if (bit !== undefined) {
+      validPermissions[name] = bit;
+    }
+  }
+  
+  return validPermissions;
 }
 
 // Helper function to chunk permissions if they're too long
