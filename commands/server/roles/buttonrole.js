@@ -240,27 +240,9 @@ module.exports = {
                     const content = comp.content || '';
                     newContainer.addTextDisplayComponents((text) => text.setContent(content));
                   } else if (comp.type === 11) { // Section
-                    newContainer.addSectionComponents((section) => {
-                      // Copy section components (text displays)
-                      if (comp.components && Array.isArray(comp.components)) {
-                        const textDisplays = comp.components
-                          .filter(c => c.type === 10)
-                          .map(c => (text) => text.setContent(c.content || ''));
-                        if (textDisplays.length > 0) {
-                          section.addTextDisplayComponents(...textDisplays);
-                        }
-                      }
-                      // Copy thumbnail accessory if exists
-                      if (comp.accessory && comp.accessory.type === 13) {
-                        section.setThumbnailAccessory((thumbnail) => {
-                          if (comp.accessory.url) thumbnail.setURL(comp.accessory.url);
-                          if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
-                          if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
-                          return thumbnail;
-                        });
-                      }
-                      return section;
-                    });
+                    // Use SectionBuilder.from() to properly copy the section with all its accessories
+                    const copiedSection = SectionBuilder.from(comp);
+                    newContainer.addSectionComponents(() => copiedSection);
                   } else if (comp.type === 12) { // Media gallery
                     newContainer.addMediaGalleryComponents((gallery) => {
                       if (comp.items && Array.isArray(comp.items)) {
@@ -285,14 +267,18 @@ module.exports = {
           // Add the new button to the collection
           allExistingButtons.push(button);
           
-          // Add a separator before the buttons if there are any
-          if (allExistingButtons.length > 0) {
+          console.log(`Total buttons to add: ${allExistingButtons.length}`);
+          
+          // Add a separator before the buttons if there were existing buttons
+          if (allExistingButtons.length > 1) {
             newContainer.addSeparatorComponents((separator) => separator);
           }
 
           // Add all buttons in rows of 5 (Discord limit)
           for (let i = 0; i < allExistingButtons.length; i += 5) {
             const buttonSlice = allExistingButtons.slice(i, i + 5);
+            console.log(`Adding action row with ${buttonSlice.length} buttons`);
+            console.log('Button custom IDs:', buttonSlice.map(b => b.data?.custom_id || 'no-id'));
             newContainer.addActionRowComponents((actionRow) =>
               actionRow.setComponents(...buttonSlice)
             );
