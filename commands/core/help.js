@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js')
+const { MessageFlags, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js')
 const path = require('path')
 const fs = require('fs')
 const config = require('../../config/setup')
@@ -294,14 +294,14 @@ async function showHelpShared(context, client, commandQuery) {
 
         if (!commandFilePath) {
           // Fall back to traditional embed
-          const embed = createTraditionalEmbed(command, guildprefix);
+          const container = createTraditionalEmbed(command, guildprefix);
           if (isInteraction) {
             if (context.deferred || context.replied) {
-              return context.editReply({ embeds: [embed] });
+              return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
             }
-            return context.reply({ embeds: [embed], ephemeral: false });
+            return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2, ephemeral: false });
           } else {
-            return context.channel.send({ embeds: [embed] });
+            return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
         }
 
@@ -310,14 +310,14 @@ async function showHelpShared(context, client, commandQuery) {
 
         if (subcommands.length === 0) {
           // Fall back to traditional embed
-          const embed = createTraditionalEmbed(command, guildprefix);
+          const container = createTraditionalEmbed(command, guildprefix);
           if (isInteraction) {
             if (context.deferred || context.replied) {
-              return context.editReply({ embeds: [embed] });
+              return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
             }
-            return context.reply({ embeds: [embed], ephemeral: false });
+            return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2, ephemeral: false });
           } else {
-            return context.channel.send({ embeds: [embed] });
+            return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
         }
 
@@ -341,35 +341,36 @@ async function showHelpShared(context, client, commandQuery) {
         return createPagination(
           isInteraction ? context : message,
           pages,
-          (pageItems, currentPage, totalPages) => pageItems[0], // formatPage function returns the embed
-          1, // 1 item per page (each item is already a full embed)
-          command.name
+          (pageItems, currentPage, totalPages) => pageItems[0], // formatPage function returns the container
+          1, // 1 item per page (each item is already a full container)
+          command.name,
+          MessageFlags.IsComponentsV2 // Pass V2 flag for containers
         );
 
       } catch (error) {
         // Fall back to traditional embed on error
         console.error('[HELP ERROR] Error in group command help:', error);
         console.error('[HELP ERROR] Stack:', error.stack);
-        const embed = createTraditionalEmbed(command, guildprefix);
+        const container = createTraditionalEmbed(command, guildprefix);
         if (isInteraction) {
           if (context.deferred || context.replied) {
-            return context.editReply({ embeds: [embed] });
+            return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
-          return context.reply({ embeds: [embed], ephemeral: false });
+          return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2, ephemeral: false });
         } else {
-          return context.channel.send({ embeds: [embed] });
+          return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
         }
       }
     } else {
       // Traditional single-embed help for commands without subcommands
-      const embed = createTraditionalEmbed(command, guildprefix);
+      const container = createTraditionalEmbed(command, guildprefix);
       if (isInteraction) {
         if (context.deferred || context.replied) {
-          return context.editReply({ embeds: [embed] });
+          return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
         }
-        return context.reply({ embeds: [embed], ephemeral: false });
+        return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2, ephemeral: false });
       } else {
-        return context.channel.send({ embeds: [embed] });
+        return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
       }
     }
 
@@ -457,7 +458,7 @@ module.exports = {
               const singleSubcommandEmbed = createSubcommandPage(command, matchedSubcommand, 1, 1);
               // Remove the footer with page numbers since it's a single page
               singleSubcommandEmbed.setFooter({ text: `Module: ${command.name}` });
-              return message.channel.send({ embeds: [singleSubcommandEmbed] });
+              return message.channel.send({ components: [singleSubcommandEmbed], flags: MessageFlags.IsComponentsV2 });
             } else {
               // Subcommand not found - show error
               return embeds.warn(message, `Command \`${commandName} ${requestedSubcommand}\` does not exist`, false);

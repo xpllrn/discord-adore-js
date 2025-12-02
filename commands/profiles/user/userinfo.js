@@ -41,7 +41,7 @@ async function createUserInfoContainer(client, user, member) {
     // Partner
     if (flags.includes('Partner')) badges.push(config.emojis.partner);
     
-    // Verified Developer
+    // Verified Developer (Early Verified Bot Developer)
     if (flags.includes('VerifiedDeveloper')) badges.push(config.emojis.verifiedDeveloper);
     
     // Active Developer
@@ -67,6 +67,16 @@ async function createUserInfoContainer(client, user, member) {
     
     // HypeSquad Balance
     if (flags.includes('HypeSquadOnlineHouse3')) badges.push(config.emojis.hypesquadBalance);
+    
+    // Quest completion badge
+    if (flags.includes('CompletedQuest') || flags.includes('QuestCompleted')) badges.push(config.emojis.quest);
+    
+    // Check for Nitro subscription (avatar decoration or banner indicates Nitro)
+    if (user.banner || user.avatarDecoration || user.accentColor) {
+      // Check premium type if available
+      // Note: Discord.js doesn't expose premium_type directly, but we can infer from features
+      badges.push(config.emojis.goldNitro); // Default to gold nitro
+    }
     
     // Server boosting badges (if member exists)
     if (member && member.premiumSince) {

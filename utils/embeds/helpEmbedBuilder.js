@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { ContainerBuilder, SeparatorBuilder, SeparatorSpacingSize } = require('discord.js');
 const config = require('../../config/setup');
 
 /**
@@ -6,39 +6,54 @@ const config = require('../../config/setup');
  * @param {Object} command - Command object
  * @param {String} guildPrefix - Guild's command prefix
  * @param {Number} totalSubcommands - Total number of subcommands
- * @returns {EmbedBuilder} - Discord embed for parent command
+ * @returns {ContainerBuilder} - Discord container for parent command
  */
 function createParentCommandPage(command, guildPrefix, totalSubcommands) {
-  const embed = new EmbedBuilder()
-    .setColor(config.colors.embed)
-    .setTitle(`Group Command: ${command.name}`)
-    .setDescription(command.description || 'No description available');
+  const container = new ContainerBuilder()
+    .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
 
-  const fields = [];
+  // Title and description
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`## Group Command: ${command.name}\n${command.description || 'No description available'}`)
+  );
 
-  // Aliases field
+  // Separator
+  container.addSeparatorComponents(
+    (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  // Aliases and Permission
   const aliasValue = command.aliases && command.aliases.length > 0
-    ? command.aliases.join(', ')
-    : 'none';
-  fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
-
-  // Permission field - always show
+    ? command.aliases.map(a => `> ${a}`).join('\n')
+    : '> none';
   const permissionValue = command.permission || 'none';
-  fields.push({ name: '**Permission**', value: permissionValue, inline: true });
+  
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n> ${permissionValue}`)
+  );
 
-  // Syntax field - only show syntax for group commands
-  const syntaxValue = `\`\`\`Syntax: ${guildPrefix}${command.name} (subcommand) <args>\`\`\``;
-  fields.push({ name: '**Syntax**', value: syntaxValue, inline: false });
+  // Separator
+  container.addSeparatorComponents(
+    (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
 
-  embed.addFields(...fields);
+  // Syntax
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`**Syntax**\n\`\`\`\nSyntax: ${guildPrefix}${command.name} (subcommand) <args>\n\`\`\``)
+  );
 
-  // Footer with page counter and module name
-  const totalPages = totalSubcommands + 1; // +1 for parent page
-  embed.setFooter({
-    text: `Page 1/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}`
-  });
+  // Separator
+  container.addSeparatorComponents(
+    (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
 
-  return embed;
+  // Footer with page counter
+  const totalPages = totalSubcommands + 1;
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`-# Page 1/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}`)
+  );
+
+  return container;
 }
 
 /**
@@ -47,27 +62,33 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
  * @param {Object} subcommand - Subcommand data object
  * @param {Number} pageNumber - Current page number
  * @param {Number} totalPages - Total number of pages
- * @returns {EmbedBuilder} - Discord embed for subcommand
+ * @returns {ContainerBuilder} - Discord container for subcommand
  */
 function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
-  const embed = new EmbedBuilder()
-    .setColor(config.colors.embed)
-    .setTitle(`Command: ${subcommand.fullCommand}`)
-    .setDescription(subcommand.description || 'No description available');
+  const container = new ContainerBuilder()
+    .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
 
-  const fields = [];
+  // Title and description
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`## Command: ${subcommand.fullCommand}\n${subcommand.description || 'No description available'}`)
+  );
 
-  // Aliases field
+  // Separator
+  container.addSeparatorComponents(
+    (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  // Aliases and Permission
   const aliasValue = subcommand.aliases && subcommand.aliases.length > 0
-    ? subcommand.aliases.join(', ')
-    : 'none';
-  fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
-
-  // Permission field - always show
+    ? subcommand.aliases.map(a => `> ${a}`).join('\n')
+    : '> none';
   const permissionValue = command.permission || 'none';
-  fields.push({ name: '**Permission**', value: permissionValue, inline: true });
+  
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n> ${permissionValue}`)
+  );
 
-  // Syntax and Example fields
+  // Syntax and Example
   const syntaxLines = [];
   if (subcommand.syntax) {
     syntaxLines.push(`Syntax: ${subcommand.syntax}`);
@@ -77,69 +98,87 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
   }
 
   if (syntaxLines.length > 0) {
-    const syntaxValue = `\`\`\`${syntaxLines.join('\n')}\`\`\``;
-    fields.push({ name: '**Syntax & Example**', value: syntaxValue, inline: false });
+    // Separator
+    container.addSeparatorComponents(
+      (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+    );
+
+    container.addTextDisplayComponents(
+      (text) => text.setContent(`**Syntax**\n\`\`\`\n${syntaxLines.join('\n')}\n\`\`\``)
+    );
   }
 
-  embed.addFields(...fields);
+  // Separator
+  container.addSeparatorComponents(
+    (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
 
-  // Footer with page counter and module name
-  const totalSubcommands = totalPages - 1; // -1 for parent page
-  embed.setFooter({
-    text: `Page ${pageNumber}/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}`
-  });
+  // Footer with page counter
+  const totalSubcommands = totalPages - 1;
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`-# Page ${pageNumber}/${totalPages} (${totalSubcommands} entries) ∙ Module: ${command.name}`)
+  );
 
-  return embed;
+  return container;
 }
 
 /**
- * Creates traditional single-embed help (for commands without subcommands)
+ * Creates traditional single-container help (for commands without subcommands)
  * @param {Object} command - Command object
  * @param {String} guildPrefix - Guild's command prefix
- * @returns {EmbedBuilder} - Discord embed
+ * @returns {ContainerBuilder} - Discord container
  */
 function createTraditionalEmbed(command, guildPrefix) {
-  const embed = new EmbedBuilder()
-    .setColor(config.colors.embed)
-    .setTitle(`Command: ${command.name}`)
-    .setDescription(command.description || 'No description available');
+  const container = new ContainerBuilder()
+    .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
 
-  const fields = [];
+  // Title and description
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`## Command: ${command.name}\n${command.description || 'No description available'}`)
+  );
 
-  // Aliases field
+  // Separator
+  container.addSeparatorComponents(
+    (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  );
+
+  // Aliases and Permission
   const aliasValue = command.aliases && command.aliases.length > 0
-    ? command.aliases.join(', ')
-    : 'none';
-  fields.push({ name: '**Aliases**', value: aliasValue, inline: true });
-
-  // Permission field
+    ? command.aliases.map(a => `> ${a}`).join('\n')
+    : '> none';
   const permissionValue = command.permission || 'none';
-  fields.push({ name: '**Permission**', value: permissionValue, inline: true });
+  
+  container.addTextDisplayComponents(
+    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n> ${permissionValue}`)
+  );
 
-  // Syntax and Example field
+  // Syntax and Example
   if (command.syntax || command.example) {
-    const syntaxValue = [];
+    const syntaxLines = [];
 
     if (command.syntax) {
       const syntaxWithPrefix = `${guildPrefix}${command.syntax}`;
-      syntaxValue.push(`Syntax: ${syntaxWithPrefix}`);
+      syntaxLines.push(`Syntax: ${syntaxWithPrefix}`);
     }
 
     if (command.example) {
       const exampleWithPrefix = `${guildPrefix}${command.example}`;
-      syntaxValue.push(`Example: ${exampleWithPrefix}`);
+      syntaxLines.push(`Example: ${exampleWithPrefix}`);
     }
 
-    if (syntaxValue.length > 0) {
-      fields.push({ name: '**Syntax & Example**', value: `\`\`\`${syntaxValue.join('\n')}\`\`\``, inline: false });
+    if (syntaxLines.length > 0) {
+      // Separator
+      container.addSeparatorComponents(
+        (separator) => separator.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+      );
+
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**Syntax**\n\`\`\`\n${syntaxLines.join('\n')}\n\`\`\``)
+      );
     }
   }
 
-  if (fields.length > 0) {
-    embed.addFields(...fields);
-  }
-
-  return embed;
+  return container;
 }
 
 module.exports = {
