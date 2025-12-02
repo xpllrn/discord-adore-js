@@ -9,9 +9,10 @@ const { colors, emojis } = require('../config/setup');
  * @param {Function} formatPage - Function to format each page (receives items, currentPage, totalPages)
  * @param {Number} itemsPerPage - Number of items per page (default: 10)
  * @param {String} title - Title for the embed
+ * @param {Number} flags - Optional MessageFlags (e.g., MessageFlags.IsComponentsV2)
  * @returns {Promise} - Promise that resolves when pagination is complete
  */
-async function createPagination(message, items, formatPage, itemsPerPage = 10, title = 'List') {
+async function createPagination(message, items, formatPage, itemsPerPage = 10, title = 'List', flags = null) {
     // Determine if input is an interaction or message
     const isInteraction = !!message.user;
     const user = isInteraction ? message.user : message.author;
@@ -61,29 +62,37 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
     };
 
     // Send initial message
-    const embed = createEmbed(currentPage);
+    const content = createEmbed(currentPage);
     const buttons = createButtons(currentPage);
+
+    // Determine if content is a container (Components V2) or embed
+    const isContainer = content.constructor.name === 'ContainerBuilder';
+    
+    const messagePayload = {
+        components: isContainer ? [content, buttons] : [buttons]
+    };
+    
+    if (!isContainer) {
+        messagePayload.embeds = [content];
+    }
+    
+    if (flags) {
+        messagePayload.flags = flags;
+    }
 
     let sentMessage;
     if (isInteraction) {
         if (message.deferred || message.replied) {
-            sentMessage = await message.editReply({
-                embeds: [embed],
-                components: [buttons]
-            });
+            sentMessage = await message.editReply(messagePayload);
         } else {
             sentMessage = await message.reply({
-                embeds: [embed],
-                components: [buttons],
+                ...messagePayload,
                 fetchReply: true,
                 ephemeral: false
             });
         }
     } else {
-        sentMessage = await message.channel.send({
-            embeds: [embed],
-            components: [buttons]
-        });
+        sentMessage = await message.channel.send(messagePayload);
     }
 
     // Only create collector if there are multiple pages
@@ -117,17 +126,25 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
             if (interaction.customId === 'pagination_left') {
                 currentPage = Math.max(1, currentPage - 1);
 
-                const newEmbed = createEmbed(currentPage);
+                const newContent = createEmbed(currentPage);
                 const newButtons = createButtons(currentPage);
+                const isNewContainer = newContent.constructor.name === 'ContainerBuilder';
+                
+                const updatePayload = {
+                    components: isNewContainer ? [newContent, newButtons] : [newButtons]
+                };
+                if (!isNewContainer) {
+                    updatePayload.embeds = [newContent];
+                }
+                if (flags) {
+                    updatePayload.flags = flags;
+                }
 
                 try {
-                    await interaction.update({
-                        embeds: [newEmbed],
-                        components: [newButtons]
-                    });
+                    await interaction.update(updatePayload);
                 } catch (error) {
                     if (error.code === 10062) {
-                        await sentMessage.edit({ embeds: [newEmbed], components: [newButtons] });
+                        await sentMessage.edit(updatePayload);
                     } else {
                         throw error;
                     }
@@ -136,17 +153,25 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
             } else if (interaction.customId === 'pagination_right') {
                 currentPage = Math.min(totalPages, currentPage + 1);
 
-                const newEmbed = createEmbed(currentPage);
+                const newContent = createEmbed(currentPage);
                 const newButtons = createButtons(currentPage);
+                const isNewContainer = newContent.constructor.name === 'ContainerBuilder';
+                
+                const updatePayload = {
+                    components: isNewContainer ? [newContent, newButtons] : [newButtons]
+                };
+                if (!isNewContainer) {
+                    updatePayload.embeds = [newContent];
+                }
+                if (flags) {
+                    updatePayload.flags = flags;
+                }
 
                 try {
-                    await interaction.update({
-                        embeds: [newEmbed],
-                        components: [newButtons]
-                    });
+                    await interaction.update(updatePayload);
                 } catch (error) {
                     if (error.code === 10062) {
-                        await sentMessage.edit({ embeds: [newEmbed], components: [newButtons] });
+                        await sentMessage.edit(updatePayload);
                     } else {
                         throw error;
                     }
@@ -197,13 +222,21 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                     }
 
                     currentPage = pageNumber;
-                    const newEmbed = createEmbed(currentPage);
+                    const newContent = createEmbed(currentPage);
                     const newButtons = createButtons(currentPage);
+                    const isNewContainer = newContent.constructor.name === 'ContainerBuilder';
+                    
+                    const updatePayload = {
+                        components: isNewContainer ? [newContent, newButtons] : [newButtons]
+                    };
+                    if (!isNewContainer) {
+                        updatePayload.embeds = [newContent];
+                    }
+                    if (flags) {
+                        updatePayload.flags = flags;
+                    }
 
-                    await sentMessage.edit({
-                        embeds: [newEmbed],
-                        components: [newButtons]
-                    });
+                    await sentMessage.edit(updatePayload);
                 });
 
                 messageCollector.on('end', async () => {

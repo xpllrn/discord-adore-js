@@ -24,12 +24,12 @@ function createParentCommandPage(command, guildPrefix, totalSubcommands) {
 
   // Aliases and Permission
   const aliasValue = command.aliases && command.aliases.length > 0
-    ? command.aliases.map(a => `> ${a}`).join('\n')
-    : '> none';
+    ? command.aliases.join(', ')
+    : 'none';
   const permissionValue = command.permission || 'none';
   
   container.addTextDisplayComponents(
-    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n> ${permissionValue}`)
+    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n${permissionValue}`)
   );
 
   // Separator
@@ -80,12 +80,12 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
 
   // Aliases and Permission
   const aliasValue = subcommand.aliases && subcommand.aliases.length > 0
-    ? subcommand.aliases.map(a => `> ${a}`).join('\n')
-    : '> none';
+    ? subcommand.aliases.join(', ')
+    : 'none';
   const permissionValue = command.permission || 'none';
   
   container.addTextDisplayComponents(
-    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n> ${permissionValue}`)
+    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n${permissionValue}`)
   );
 
   // Syntax and Example
@@ -144,12 +144,12 @@ function createTraditionalEmbed(command, guildPrefix) {
 
   // Aliases and Permission
   const aliasValue = command.aliases && command.aliases.length > 0
-    ? command.aliases.map(a => `> ${a}`).join('\n')
-    : '> none';
+    ? command.aliases.join(', ')
+    : 'none';
   const permissionValue = command.permission || 'none';
   
   container.addTextDisplayComponents(
-    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n> ${permissionValue}`)
+    (text) => text.setContent(`**Aliases**\n${aliasValue}\n\n**Permission**\n${permissionValue}`)
   );
 
   // Syntax and Example
