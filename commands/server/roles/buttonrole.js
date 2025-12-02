@@ -163,29 +163,37 @@ module.exports = {
       try {
         if (isV2Message) {
           // V2 message - need to add button to container's action rows
-          const { ContainerBuilder, ActionRowBuilder: V2ActionRowBuilder, MessageFlags } = require('discord.js');
+          const { ContainerBuilder, MessageFlags } = require('discord.js');
           
           let components = [...targetMessage.components];
           
-          // Find the container component (usually the last one)
-          let containerIndex = components.findIndex(c => c.type === 0); // Container type
+          // Find the container - it's usually the last component
+          let containerIndex = -1;
+          for (let i = components.length - 1; i >= 0; i--) {
+            // Check if this looks like a container (has nested components)
+            if (components[i].components && Array.isArray(components[i].components)) {
+              containerIndex = i;
+              break;
+            }
+          }
           
           if (containerIndex === -1) {
-            return embeds.deny(message, 'Could not find container in v2 message!');
+            return embeds.deny(message, 'Could not find container in v2 message! Make sure this is a v2 message with a container.');
           }
 
-          // Get the container
+          // Rebuild the container from the existing one
           const existingContainer = components[containerIndex];
           const newContainer = ContainerBuilder.from(existingContainer);
 
-          // Add new action row with button to container
+          // Add the button as a new action row
           newContainer.addActionRowComponents((actionRow) =>
             actionRow.setComponents(button)
           );
 
-          // Replace the container in components
+          // Replace the container in the components array
           components[containerIndex] = newContainer;
 
+          // Edit the message with the updated container
           await targetMessage.edit({ 
             components: components,
             flags: MessageFlags.IsComponentsV2
@@ -287,36 +295,11 @@ module.exports = {
           const isV2Message = targetMessage.flags?.has('IsComponentsV2');
           
           if (isV2Message) {
-            // V2 message - handle container
-            const { ContainerBuilder, MessageFlags } = require('discord.js');
-            
-            let components = [...targetMessage.components];
-            let containerIndex = components.findIndex(c => c.type === 0);
-            
-            if (containerIndex !== -1) {
-              const existingContainer = components[containerIndex];
-              const newContainer = ContainerBuilder.from(existingContainer);
-              
-              // Remove the button by filtering action rows
-              // Note: This is a simplified approach - may need adjustment based on actual structure
-              const filteredComponents = existingContainer.components?.filter(comp => {
-                if (comp.type === 1) { // Action row
-                  return !comp.components?.some(btn => btn.customId === buttonRole.buttonId);
-                }
-                return true;
-              }) || [];
-              
-              // Rebuild container without the button
-              const rebuiltContainer = new ContainerBuilder();
-              // Copy non-button components
-              // This is complex - for now just try to edit
-              
-              components[containerIndex] = newContainer;
-              await targetMessage.edit({ 
-                components: components,
-                flags: MessageFlags.IsComponentsV2
-              });
-            }
+            // V2 message - removing buttons from containers is complex
+            // For now, we'll just skip the message edit and only update the database
+            // The button will remain visible but won't function after database removal
+            // TODO: Implement proper container reconstruction to remove specific buttons
+            console.log('Note: Button removed from database but still visible in v2 message');
           } else {
             // Regular message
             let components = targetMessage.components || [];
@@ -486,20 +469,9 @@ module.exports = {
               const isV2Message = targetMessage.flags?.has('IsComponentsV2');
               
               if (isV2Message) {
-                // V2 message - rebuild container without action rows
-                const { ContainerBuilder, MessageFlags } = require('discord.js');
-                
-                let components = [...targetMessage.components];
-                let containerIndex = components.findIndex(c => c.type === 0);
-                
-                if (containerIndex !== -1) {
-                  // Create new container without buttons
-                  // This is complex - for now just clear all components
-                  await targetMessage.edit({ 
-                    components: components.filter(c => c.type !== 1), // Remove action rows
-                    flags: MessageFlags.IsComponentsV2
-                  });
-                }
+                // V2 message - removing all buttons from containers
+                // For now, skip message edit - buttons removed from database only
+                console.log('Note: Buttons removed from database but still visible in v2 message');
               } else {
                 // Regular message - just clear components
                 await targetMessage.edit({ components: [] });
