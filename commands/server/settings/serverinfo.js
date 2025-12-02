@@ -1,5 +1,4 @@
-const { EmbedBuilder, MessageFlags } = require('discord.js');
-const { embeds } = require('../../../core/embeds');
+const { ContainerBuilder, SectionBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -9,8 +8,6 @@ module.exports = {
   syntax: 'serverinfo',
   example: 'serverinfo',
   run: async (client, message) => {
-    console.log('[SERVERINFO] Command started');
-    console.log('[SERVERINFO] MessageFlags.IsComponentsV2:', MessageFlags.IsComponentsV2);
     try {
       const guild = message.guild;
 
@@ -44,87 +41,112 @@ module.exports = {
       };
       const verificationLevel = verificationLevels[guild.verificationLevel] || 'Unknown';
 
-      // Build EMBED (the correct way to format structured text)
-      const embed = new EmbedBuilder()
-        .setTitle(guild.name)
-        .setDescription(guild.description ? guild.description : null)
-        .addFields(
-          {
-            name: 'Created',
-            value: `<t:${createdTimestamp}:R>`,
-            inline: false
-          },
-          {
-            name: 'Members',
-            value: `Total: **${totalMembers}**\nHumans: **${humans}**\nBots: **${bots}**`,
-            inline: true
-          },
-          {
-            name: 'Counts',
-            value: `Roles: **${roleCount}**\nEmojis: **${emojiCount}**`,
-            inline: true
-          },
-          {
-            name: 'Boosts',
-            value: `Boosts: **${boostCount}** (level ${boostLevel})\nBoosters: **${boosterCount}**`,
-            inline: true
-          },
-          {
-            name: 'Verification',
-            value: verificationLevel,
-            inline: true
-          }
-        )
-        .setFooter({
-          text: `ServerID: ${guild.id} • OwnerID: ${owner.id}`
-        })
-        .setThumbnail(guild.iconURL({ size: 1024 }) || null);
+      // Build container with display components
+      const container = new ContainerBuilder()
+        .setAccentColor(0x0099ff);
 
-      // Build BUTTONS (actual valid components)
+      // Title and description section
+      if (guild.iconURL({ size: 1024 })) {
+        container.addSectionComponents((section) =>
+          section
+            .addTextDisplayComponents(
+              (text) => text.setContent(`# ${guild.name}`),
+              (text) => text.setContent(guild.description || '*No description set*')
+            )
+            .setThumbnailAccessory((thumbnail) =>
+              thumbnail
+                .setURL(guild.iconURL({ size: 1024 }))
+                .setDescription(`${guild.name} icon`)
+            )
+        );
+      } else {
+        container.addTextDisplayComponents(
+          (text) => text.setContent(`# ${guild.name}`),
+          (text) => text.setContent(guild.description || '*No description set*')
+        );
+      }
+
+      // Created date
+      container.addSeparatorComponents((separator) => separator);
+      container.addTextDisplayComponents((text) =>
+        text.setContent(`**Created:** <t:${createdTimestamp}:R>`)
+      );
+
+      // Members section
+      container.addSeparatorComponents((separator) => separator);
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**Members**`),
+        (text) => text.setContent(`Total: **${totalMembers}** • Humans: **${humans}** • Bots: **${bots}**`)
+      );
+
+      // Counts section
+      container.addSeparatorComponents((separator) => separator);
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**Server Stats**`),
+        (text) => text.setContent(`Roles: **${roleCount}** • Emojis: **${emojiCount}**`)
+      );
+
+      // Boosts section
+      container.addSeparatorComponents((separator) => separator);
+      container.addTextDisplayComponents(
+        (text) => text.setContent(`**Boosts**`),
+        (text) => text.setContent(`Level ${boostLevel} • ${boostCount} boosts from ${boosterCount} boosters`)
+      );
+
+      // Verification section
+      container.addSeparatorComponents((separator) => separator);
+      container.addTextDisplayComponents((text) =>
+        text.setContent(`**Verification Level:** ${verificationLevel}`)
+      );
+
+      // Footer
+      container.addSeparatorComponents((separator) => separator);
+      container.addTextDisplayComponents((text) =>
+        text.setContent(`*Server ID: ${guild.id} • Owner ID: ${owner.id}*`)
+      );
+
+      // Build buttons for server assets
       const buttons = [];
 
-      buttons.push({
-        type: 2,
-        style: 5,
-        label: 'Icon',
-        url: guild.iconURL({ size: 1024 }) || 'https://discord.com',
-        disabled: !guild.icon
+      if (guild.icon) {
+        buttons.push(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('Icon')
+            .setURL(guild.iconURL({ size: 1024 }))
+        );
+      }
+
+      if (guild.splash) {
+        buttons.push(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('Splash')
+            .setURL(guild.splashURL({ size: 1024 }))
+        );
+      }
+
+      if (guild.banner) {
+        buttons.push(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel('Banner')
+            .setURL(guild.bannerURL({ size: 1024 }))
+        );
+      }
+
+      // Add buttons to container if any exist
+      if (buttons.length > 0) {
+        container.addActionRowComponents((actionRow) =>
+          actionRow.setComponents(...buttons)
+        );
+      }
+
+      // Send with Components V2 flag
+      return message.channel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
       });
-
-      buttons.push({
-        type: 2,
-        style: 5,
-        label: 'Splash',
-        url: guild.splashURL({ size: 1024 }) || 'https://discord.com',
-        disabled: !guild.splash
-      });
-
-      buttons.push({
-        type: 2,
-        style: 5,
-        label: 'Banner',
-        url: guild.bannerURL({ size: 1024 }) || 'https://discord.com',
-        disabled: !guild.banner
-      });
-
-      const actionRow = {
-        type: 1,
-        components: buttons
-      };
-
-      // Send result
-      console.log('[SERVERINFO] About to send message');
-      console.log('[SERVERINFO] Flag value:', MessageFlags.IsComponentsV2);
-      
-      const payload = {
-        flags: MessageFlags.IsComponentsV2,
-        embeds: [embed],
-        components: [actionRow]
-      };
-      
-      console.log('[SERVERINFO] Payload:', JSON.stringify(payload, null, 2));
-      
-      return message.channel.send(payload);
 
     } catch (error) {
       console.error('[SERVERINFO ERROR]', error);
