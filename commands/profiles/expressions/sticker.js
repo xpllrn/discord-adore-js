@@ -73,16 +73,33 @@ module.exports = {
 
 // Handle sticker add subcommand
 async function handleAdd(client, message, args) {
-  if (args.length < 2) {
-    return embeds.warn(message, 'Please provide a sticker URL and name\n**Usage:** `sticker add <url> <name>`');
-  }
+  let stickerUrl;
+  let stickerName;
 
-  const stickerUrl = args[0];
-  const stickerName = args.slice(1).join(' ');
+  // Check for attachment first
+  if (message.attachments.size > 0) {
+    const attachment = message.attachments.first();
+    
+    // Validate attachment is an image
+    if (!attachment.contentType || !attachment.contentType.startsWith('image/')) {
+      return embeds.warn(message, 'Please attach a valid image file (png, jpg, jpeg, gif, or webp)');
+    }
 
-  // Validate URL
-  if (!stickerUrl.match(/^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)$/i)) {
-    return embeds.warn(message, 'Please provide a valid image URL (png, jpg, jpeg, gif, or webp)');
+    stickerUrl = attachment.url;
+    stickerName = args.join(' ') || attachment.name.split('.')[0];
+  } else {
+    // No attachment, check for URL in args
+    if (args.length < 2) {
+      return embeds.warn(message, 'Please provide a sticker URL and name, or attach an image\n**Usage:** `sticker add <url> <name>` or `sticker add <name>` (with attachment)');
+    }
+
+    stickerUrl = args[0];
+    stickerName = args.slice(1).join(' ');
+
+    // Validate URL
+    if (!stickerUrl.match(/^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)$/i)) {
+      return embeds.warn(message, 'Please provide a valid image URL (png, jpg, jpeg, gif, or webp)');
+    }
   }
 
   // Validate name length (2-30 characters)
