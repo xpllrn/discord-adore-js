@@ -13,8 +13,7 @@ const recommendedEnvVars = [
   'CLIENT_ID',
   'ERROR_WEBHOOK_URL',
   'GUILD_WEBHOOK_URL',
-  'PREMIUM_ROLE_ID',
-  'DEV_ROLE_ID'
+  'PREMIUM_ROLE_ID'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
@@ -63,8 +62,7 @@ module.exports = {
 
   // Permission system configuration
   permissions: {
-    premiumRoleId: process.env.PREMIUM_ROLE_ID || null,
-    devRoleId: process.env.DEV_ROLE_ID || null
+    premiumRoleId: process.env.PREMIUM_ROLE_ID || null
   },
 
   // Colors Configuration

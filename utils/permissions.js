@@ -77,15 +77,8 @@ async function hasInstancePermission(userId, permission) {
     // DEV_ID user has access to ALL instance permissions
     if (userId === config.bot.ownerId) return true;
 
-    const { System } = database;
-    if (!System) return false;
-
-    // Get system data
-    const systemData = await System.findOne({ _id: 'system' });
-    if (!systemData) return false;
-
-    // For now, return true for all permissions since we removed instance-based permissions
-    return true;
+    // No other users have instance-based permissions
+    return false;
 
   } catch (error) {
     return false;
