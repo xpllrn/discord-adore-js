@@ -75,18 +75,28 @@ class CustomContainerBuilder {
                 Container.setAccentColor(colorValue);
             } else if (paramName === 'section') {
                 // Section with text and optional thumbnail
-                // Format: text1&&text2&&thumbnail_url
-                const parts = paramValue.split('&&');
-                const text1 = parts[0]?.trim();
-                const text2 = parts[1]?.trim();
-                const thumbnailUrl = parts[2]?.trim();
+                // Format: text1&&thumbnail_url OR text1&&text2&&thumbnail_url
+                const parts = paramValue.split('&&').map(p => p.trim());
+                
+                let text1, text2, thumbnailUrl;
+                
+                if (parts.length === 2) {
+                    // Format: text&&thumbnail
+                    text1 = parts[0];
+                    thumbnailUrl = parts[1];
+                } else if (parts.length >= 3) {
+                    // Format: text1&&text2&&thumbnail
+                    text1 = parts[0];
+                    text2 = parts[1];
+                    thumbnailUrl = parts[2];
+                }
 
                 if (text1) {
                     Container.addSectionComponents((section) => {
                         const sectionBuilder = section;
                         
                         // Add text displays
-                        if (text2) {
+                        if (text2 && text2.length > 0) {
                             sectionBuilder.addTextDisplayComponents(
                                 (text) => text.setContent(text1),
                                 (text) => text.setContent(text2)
