@@ -2656,21 +2656,25 @@ class UserService extends BaseService {
   }
 
   /**
-   * Get global swear leaderboard
-   * @param {number} limit - Number of users to return (default: 100)
+   * Get swear leaderboard for specific users (e.g., guild members)
+   * @param {Array<string>} userIds - Array of user IDs to include
    * @returns {Promise<Array>} Array of user swear data sorted by total
    */
-  async getSwearLeaderboard(limit = 100) {
+  async getSwearLeaderboardForUsers(userIds) {
+    if (!userIds || userIds.length === 0) {
+      return [];
+    }
+
     try {
       const User = this.model;
       
-      // Find users with swear data, sorted by total swears
+      // Find users with swear data, filtered by user IDs
       const users = await User.find({
+        UserID: { $in: userIds },
         'SwearTracker.totalSwears': { $gt: 0 }
       })
       .select('UserID SwearTracker')
       .sort({ 'SwearTracker.totalSwears': -1 })
-      .limit(limit)
       .lean();
 
       const today = new Date();
@@ -2700,7 +2704,7 @@ class UserService extends BaseService {
 
       return leaderboard;
     } catch (error) {
-      console.error('Error getting global swear leaderboard:', error.message);
+      console.error('Error getting swear leaderboard for users:', error.message);
       return [];
     }
   }

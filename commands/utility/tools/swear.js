@@ -124,7 +124,7 @@ module.exports = {
 
     } else if (args[0] === 'leaderboard' || args[0] === 'lb') {
       const subcommandInfo = {
-        description: 'Show the global swear leaderboard',
+        description: 'Show the server swear leaderboard',
         syntax: '{guildprefix}swear leaderboard',
         aliases: ['lb'],
         parameters: [],
@@ -132,60 +132,31 @@ module.exports = {
       };
 
       try {
-        const leaderboard = await userService.getSwearLeaderboard(100);
+        // Get all guild members' user IDs
+        await message.guild.members.fetch();
+        const guildMemberIds = message.guild.members.cache.map(member => member.id);
+
+        // Get swear data for guild members only
+        const leaderboard = await userService.getSwearLeaderboardForUsers(guildMemberIds);
 
         if (leaderboard.length === 0) {
-          return embeds.warn(message, 'No swear data found');
+          return embeds.warn(message, 'No swear data found for this server');
         }
 
-        const userPosition = await userService.getUserSwearPosition(message.author.id);
+        const userPosition = leaderboard.findIndex(userData => userData.userId === message.author.id);
 
         // Pre-fetch all usernames to avoid async issues in pagination
-        const leaderboardWithUsernames = await Promise.all(
-          leaderboard.map(async (userData, index) => {
-            let username = `User ${index + 1}`;
+        const leaderboardWithUsernames = leaderboard.map((userData, index) => {
+          const userId = userData.userId;
+          const member = message.guild.members.cache.get(userId);
+          const username = member ? member.displayName : `User ${userId.slice(-4)}`;
 
-            // Extract userId from Mongoose document structure
-            const userId = userData.userId || userData._doc?.userId || userData.toObject?.()?.userId;
-
-            try {
-              // Try to get from guild members first (most reliable)
-              const member = message.guild.members.cache.get(userId);
-              if (member) {
-                username = member.displayName;
-              } else {
-                // Try to get from Discord users cache
-                const cachedUser = client.users.cache.get(userId);
-                if (cachedUser) {
-                  username = cachedUser.username;
-                } else if (userId && /^\d{17,19}$/.test(userId)) {
-                  // Try to fetch from Discord API (with timeout)
-                  try {
-                    const fetchedUser = await Promise.race([
-                      client.users.fetch(userId),
-                      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
-                    ]);
-                    if (fetchedUser) {
-                      username = fetchedUser.username;
-                    }
-                  } catch (fetchError) {
-                    // Use fallback with user ID
-                    username = `User ${userId.slice(-4)}`;
-                  }
-                }
-              }
-            } catch (error) {
-              // Use position-based fallback if everything fails
-              username = `User ${index + 1}`;
-            }
-
-            return {
-              ...userData,
-              userId: userId,
-              username: username
-            };
-          })
-        );
+          return {
+            ...userData,
+            userId: userId,
+            username: username
+          };
+        });
 
         const formatPage = (pageUsers, currentPage, totalPages) => {
           const startIndex = (currentPage - 1) * 10;
@@ -195,18 +166,18 @@ module.exports = {
             return `\`${position.toString().padStart(2, '0')}\` **${userData.username}** - ${userData.calculatedTotal} swears`;
           }).join('\n');
 
-          const footerText = userPosition
-            ? `Your position: #${userPosition} • Page ${currentPage}/${totalPages}`
+          const footerText = userPosition !== -1
+            ? `Your position: #${userPosition + 1} • Page ${currentPage}/${totalPages}`
             : `Page ${currentPage}/${totalPages}`;
 
           return new EmbedBuilder()
             .setColor(config.colors.embed)
-            .setTitle('Global Swear Leaderboard')
+            .setTitle(`${message.guild.name} Swear Leaderboard`)
             .setDescription(leaderboardList)
             .setFooter({ text: footerText });
         };
 
-        await createPagination(message, leaderboardWithUsernames, formatPage, 10, 'Global Swear Leaderboard');
+        await createPagination(message, leaderboardWithUsernames, formatPage, 10, 'Swear Leaderboard');
       } catch (error) {
         throw error;
       }
