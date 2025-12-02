@@ -1,5 +1,6 @@
 const { MessageFlags } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
+const logger = require('../../../utils/logger');
 
 module.exports = {
   name: 'serverinfo',
@@ -170,7 +171,7 @@ module.exports = {
         components: components
       });
     } catch (error) {
-      console.error('[SERVERINFO ERROR]', error);
+      logger.webhook.error(error, message);
       return embeds.deny(message, 'Failed to fetch server information');
     }
   }
