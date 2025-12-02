@@ -1,5 +1,5 @@
 const { ContainerBuilder, SectionBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
-const { colors } = require('../../../config/setup');
+const { colors, emojis } = require('../../../config/setup');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -62,7 +62,7 @@ module.exports = {
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents(
         (text) => text.setContent(`**Information**`),
-        (text) => text.setContent(`We have a total of ${totalMembers} members with ${bots} apps\n ${roleCount} roles with ${channelCount} channels and ${emojiCount} emotes`),
+        (text) => text.setContent(`${emojis.nextline} Total of **${totalMembers} members** with **${bots} apps**\n ${emojis.nextline} **${roleCount} roles** and **${channelCount} channels**`),
       );
 
       // Build buttons for server assets (always show all 3, disable if not available)

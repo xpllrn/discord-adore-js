@@ -108,7 +108,10 @@ module.exports = {
     vmClaim: '<:claim:1445338178184679504>',
     vmTransfer: '<:transfer:1445338196027113545>',
     vmRename: '<:rename:1445338193711857767>',
-    vmInfo: '<:info:1439540965655445606>'
+    vmInfo: '<:info:1439540965655445606>',
+    
+    // Server Info Emojis
+    nextline: '<:nextline:1445350467465908264>'
   },
 
   // Voice Manager Button Labels
