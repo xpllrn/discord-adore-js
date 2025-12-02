@@ -201,12 +201,15 @@ module.exports = {
             newContainer.setAccentColor(existingContainer.data.accent_color);
           }
           
+          // Collect all existing buttons first
+          const allExistingButtons = [];
+          
           // Copy all existing components from the container
           if (existingContainer.components && Array.isArray(existingContainer.components)) {
             for (const comp of existingContainer.components) {
               // Reconstruct each component based on its type
               if (comp.type === 1) {
-                // Action row with buttons - copy existing buttons
+                // Action row with buttons - collect them
                 const existingButtons = comp.components.map(btnData => {
                   const btn = new V2ButtonBuilder();
                   if (btnData.custom_id) btn.setCustomId(btnData.custom_id);
@@ -217,10 +220,7 @@ module.exports = {
                   if (btnData.disabled) btn.setDisabled(btnData.disabled);
                   return btn;
                 });
-                
-                newContainer.addActionRowComponents((actionRow) =>
-                  actionRow.setComponents(...existingButtons)
-                );
+                allExistingButtons.push(...existingButtons);
               } else {
                 // For other component types, manually reconstruct them
                 // Component types based on actual Discord API:
@@ -282,13 +282,21 @@ module.exports = {
             }
           }
 
-          // Add a separator before the button
-          newContainer.addSeparatorComponents((separator) => separator);
+          // Add the new button to the collection
+          allExistingButtons.push(button);
+          
+          // Add a separator before the buttons if there are any
+          if (allExistingButtons.length > 0) {
+            newContainer.addSeparatorComponents((separator) => separator);
+          }
 
-          // Add the new button as a new action row
-          newContainer.addActionRowComponents((actionRow) =>
-            actionRow.setComponents(button)
-          );
+          // Add all buttons in rows of 5 (Discord limit)
+          for (let i = 0; i < allExistingButtons.length; i += 5) {
+            const buttonSlice = allExistingButtons.slice(i, i + 5);
+            newContainer.addActionRowComponents((actionRow) =>
+              actionRow.setComponents(...buttonSlice)
+            );
+          }
 
           // Replace the container in the components array
           components[containerIndex] = newContainer;
