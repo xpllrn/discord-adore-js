@@ -358,11 +358,6 @@ module.exports = {
           allExistingButtons.forEach((btn, idx) => {
             console.log(`Button ${idx}: customId=${btn.data?.custom_id}, label=${btn.data?.label}`);
           });
-          
-          // Add a separator before the buttons if there were existing buttons
-          if (allExistingButtons.length > 1) {
-            newContainer.addSeparatorComponents((separator) => separator);
-          }
 
           // Add all buttons in rows of 5 (Discord limit)
           for (let i = 0; i < allExistingButtons.length; i += 5) {
