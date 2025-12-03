@@ -69,32 +69,6 @@ const guildSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  // Vanity system
-  Vanity: {
-    type: String,
-    default: null
-  },
-  VanityRoles: {
-    type: [String],
-    default: []
-  },
-  VanityMessage: {
-    type: String,
-    default: null
-  },
-  VanityLogChannel: {
-    type: String,
-    default: null
-  },
-  VanityDisabled: {
-    type: Boolean,
-    default: false
-  },
-  VanityDisabledReason: {
-    type: String,
-    default: null,
-    maxlength: 500
-  },
   // Auto roles
   AutoRoles: {
     type: [String],
