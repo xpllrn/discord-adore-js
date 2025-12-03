@@ -164,7 +164,7 @@ class GuildService extends BaseService {
       AutoResponder: [],
       Moderation: [],
       MessageStats: [],
-      SwearTracker: [],
+
       Reminders: [],
       GuildNameHistory: [],
       StarboardChannel: null,

@@ -235,39 +235,7 @@ const guildSchema = new mongoose.Schema({
     }
   },
 
-  // Swear tracking system (per server)
-  SwearTracker: [{
-    userId: {
-      type: String,
-      required: true
-    },
-    swears: [{
-      word: {
-        type: String,
-        required: true
-      },
-      count: {
-        type: Number,
-        default: 1
-      },
-      lastUsed: {
-        type: Date,
-        default: Date.now
-      }
-    }],
-    totalSwears: {
-      type: Number,
-      default: 0
-    },
-    todaySwears: {
-      type: Number,
-      default: 0
-    },
-    lastSwearDate: {
-      type: Date,
-      default: Date.now
-    }
-  }],
+
 
   // Guild name history tracking
   GuildNameHistory: [{
@@ -1352,10 +1320,7 @@ guildSchema.index({ 'VoiceStats.userId': 1 });
 guildSchema.index({ 'VoiceStats.date': 1 });
 guildSchema.index({ 'VoiceStats.userId': 1, 'VoiceStats.date': 1 }); // Compound for user daily stats
 
-// Swear tracker indexes
-guildSchema.index({ 'SwearTracker.userId': 1 });
-guildSchema.index({ 'SwearTracker.date': 1 });
-guildSchema.index({ 'SwearTracker.userId': 1, 'SwearTracker.date': 1 }); // Compound for user daily swears
+
 
 // Starboard indexes
 guildSchema.index({ 'StarboardMessages.originalMessageId': 1 });

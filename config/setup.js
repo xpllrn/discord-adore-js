@@ -71,8 +71,8 @@ module.exports = {
     success: '#51e395',
     error: '#f44336',
     warn: '#f29c1e',
-    info: '#242429',
-    embed: '#242429',
+    info: '#96968c',
+    embed: '#96968c',
     spotify: '#1DB954'
   },
 

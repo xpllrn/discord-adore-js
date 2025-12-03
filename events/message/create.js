@@ -33,8 +33,7 @@ module.exports = {
     // Process message tracking
     await processMessageTracking(message);
 
-    // Process swear tracking
-    await processSwearTracking(message);
+
 
     // Process level system (XP gaining)
     await processLevelSystem(message);
@@ -361,63 +360,6 @@ async function processMessageTracking(message) {
 
   } catch (error) {
     // Silent fail for message tracking
-  }
-}
-
-async function processSwearTracking(message) {
-  try {
-    // Skip bots
-    if (message.author.bot) return;
-
-    // Skip if message is empty or only whitespace
-    if (!message.content || !message.content.trim()) return;
-
-    // Check if database models are available
-    const { getModels, isDatabaseReady } = require('../../database');
-    if (!isDatabaseReady()) {
-      // Database not ready yet, skip swear tracking
-      return;
-    }
-
-    const models = getModels();
-    if (!models || !models.User || !models.Guild || !models.System) {
-      // Database models not ready yet, skip swear tracking
-      return;
-    }
-
-    // Ensure guild data exists
-    const { ensureGuildData } = require('../../database');
-    const guildData = await ensureGuildData(message.guild.id);
-
-
-
-    // Import swear detection function
-    const { detectSwears } = require('../../commands/utility/tools/swear');
-
-    // Detect swears in the message
-    const foundSwears = detectSwears(message.content);
-
-    if (foundSwears.length > 0) {
-      const { getService } = require('@services');
-      const userService = getService('user');
-
-      // Add each detected swear to the database using service layer
-      for (const swear of foundSwears) {
-        await userService.addSwear(message.author.id, swear);
-      }
-    }
-
-  } catch (error) {
-    // Send error to webhook instead of console
-    if (message.client?.errorLogger) {
-      message.client.errorLogger.log(error, 'Swear Tracking', {
-        command: 'Swear Tracking',
-        args: `Message: ${message.content?.substring(0, 50) || 'Unknown'}`,
-        user: message.author,
-        guild: message.guild,
-        channel: message.channel
-      });
-    }
   }
 }
 
