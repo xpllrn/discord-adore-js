@@ -219,25 +219,28 @@ module.exports = {
                     .filter(btnData => btnData && btnData.type === 2) // Type 2 = Button
                     .map(btnData => {
                       console.log('Reconstructing button from data:', JSON.stringify(btnData, null, 2));
-                      console.log('btnData.custom_id value:', btnData.custom_id);
-                      console.log('btnData.custom_id type:', typeof btnData.custom_id);
+                      
+                      // Access custom_id using bracket notation since it has underscore
+                      const customId = btnData['custom_id'] || btnData.customId;
+                      const url = btnData.url;
+                      
+                      console.log('Extracted customId:', customId);
+                      console.log('Extracted url:', url);
                       
                       const btn = new V2ButtonBuilder();
                       
                       // Set custom_id or url FIRST (one is required)
-                      if (btnData.custom_id) {
-                        console.log('Setting customId:', btnData.custom_id);
-                        btn.setCustomId(btnData.custom_id);
-                        console.log('After setCustomId, btn.data:', JSON.stringify(btn.data, null, 2));
-                      } else if (btnData.url) {
-                        console.log('Setting url:', btnData.url);
-                        btn.setURL(btnData.url);
+                      if (customId) {
+                        console.log('Setting customId:', customId);
+                        btn.setCustomId(customId);
+                      } else if (url) {
+                        console.log('Setting url:', url);
+                        btn.setURL(url);
                       }
                       
                       // Set style (required)
                       if (btnData.style) {
                         btn.setStyle(btnData.style);
-                        console.log('After setStyle, btn.data:', JSON.stringify(btn.data, null, 2));
                       }
                       
                       // Set label
@@ -254,7 +257,7 @@ module.exports = {
                       // Set disabled state
                       if (btnData.disabled) btn.setDisabled(btnData.disabled);
                       
-                      console.log('Final button data:', JSON.stringify(btn.data, null, 2));
+                      console.log('Final button customId:', btn.data?.custom_id);
                       return btn;
                     });
                   allExistingButtons.push(...existingButtons);
