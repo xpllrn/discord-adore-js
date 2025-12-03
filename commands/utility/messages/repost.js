@@ -718,7 +718,7 @@ module.exports = {
         const url = args[0];
 
         if (!url || !url.match(/^https?:\/\/.+/)) {
-            return message.reply('Please provide a valid Instagram or TikTok URL');
+            return embeds.deny(message, 'Please provide a valid **Instagram** or **TikTok** URL');
         }
 
         await message.channel.sendTyping();
@@ -729,11 +729,11 @@ module.exports = {
             } else if (url.match(/tiktok\.com/)) {
                 return await handleTikTok(message, url, client);
             } else {
-                return message.reply('Please provide a valid Instagram or TikTok URL');
+                return embeds.deny(message, 'Please provide a valid **Instagram** or **TikTok** URL');
             }
         } catch (error) {
             logger.webhook.error(error, message);
-            return message.reply('An error occurred while downloading the content');
+            return embeds.deny(message, 'An error occurred while **downloading** the content');
         }
     },
 
@@ -759,7 +759,7 @@ module.exports = {
         const url = interaction.options.getString('url');
 
         if (!url || !url.match(/^https?:\/\/.+/)) {
-            return embeds.deny(interaction, 'Please provide a valid Instagram or TikTok URL');
+            return embeds.deny(interaction, 'Please provide a valid **Instagram** or **TikTok** URL');
         }
 
         await interaction.deferReply();
@@ -770,11 +770,11 @@ module.exports = {
             } else if (url.match(/tiktok\.com/)) {
                 return await handleTikTokSlash(interaction, url);
             } else {
-                return embeds.deny(interaction, 'Please provide a valid Instagram or TikTok URL');
+                return embeds.deny(interaction, 'Please provide a valid **Instagram** or **TikTok** URL');
             }
         } catch (error) {
             logger.webhook.error(error, interaction);
-            return embeds.deny(interaction, 'An error occurred while downloading the content');
+            return embeds.deny(interaction, 'An error occurred while **downloading** the content');
         }
     }
 };
@@ -893,12 +893,12 @@ async function handleInstagramSlash(interaction, url) {
         if (attachments.length > 0) {
             return interaction.editReply({ files: attachments });
         } else {
-            return embeds.deny(interaction, 'Failed to download Instagram content');
+            return embeds.deny(interaction, 'Failed to download **Instagram** content');
         }
 
     } catch (error) {
         logger.webhook.error(error, interaction);
-        return embeds.deny(interaction, 'An error occurred while downloading Instagram content');
+        return embeds.deny(interaction, 'An error occurred while downloading **Instagram** content');
     }
 }
 
@@ -1040,14 +1040,14 @@ async function handleTikTokSlash(interaction, url) {
         });
 
         if (!response.data || response.data.code !== 0) {
-            return embeds.deny(interaction, 'Failed to download TikTok content');
+            return embeds.deny(interaction, 'Failed to download **TikTok** content');
         }
 
         const videoData = response.data.data;
         let videoUrl = videoData.play || videoData.download_addr || videoData.video?.downloadAddr;
 
         if (!videoUrl) {
-            return embeds.deny(interaction, 'Failed to download TikTok content');
+            return embeds.deny(interaction, 'Failed to download **TikTok** content');
         }
 
         if (videoUrl.startsWith('/')) {
@@ -1067,7 +1067,7 @@ async function handleTikTokSlash(interaction, url) {
         const fileSizeMB = buffer.length / (1024 * 1024);
 
         if (fileSizeMB > 25) {
-            return embeds.deny(interaction, 'Video file is too large (max 25MB)');
+            return embeds.deny(interaction, 'Video file is **too large** (max `25MB`)');
         }
 
         const filename = `tiktok_${Date.now()}.mp4`;
@@ -1077,7 +1077,7 @@ async function handleTikTokSlash(interaction, url) {
 
     } catch (error) {
         logger.webhook.error(error, interaction);
-        return embeds.deny(interaction, 'An error occurred while downloading TikTok content');
+        return embeds.deny(interaction, 'An error occurred while downloading **TikTok** content');
     }
 }
 

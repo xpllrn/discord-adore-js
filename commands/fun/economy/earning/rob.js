@@ -4,6 +4,7 @@ const { getService } = require('@services');
 const { findUser } = require('../../../../handlers/finder');
 const { emojis } = require('../../../../config/setup');
 const { getGuildPrefix } = require('../../../../utils/commandProcessor');
+const { checkBotAction } = require('../../../../utils/permissions');
 const logger = require('../../../../utils/logger');
 
 // Utility functions embedded within the command
@@ -77,9 +78,7 @@ module.exports = {
       }
 
       // Can't rob the bot (specific check first)
-      if (targetUser.id === message.guild.members.me.id) {
-        return message.channel.send('Leave me alone!');
-      }
+      if (!checkBotAction(message, targetUser)) return;
 
       // Can't rob other bots
       if (targetUser.bot) {

@@ -19,6 +19,7 @@ const { colors } = require('../config/setup');
 const { embeds } = require('../core/embeds');
 const { getService } = require('@services');
 const { findUser } = require('../handlers/finder');
+const { checkBotAction } = require('./permissions');
 
 // ===== SHARED UTILITIES =====
 
@@ -106,9 +107,7 @@ function createRoleplayCommand(action, actionPastTense) {
       const actualUser = targetUser.user || targetUser;
       targetUser = actualUser;
 
-      if (targetUser.id === message.guild.members.me.id) {
-        return message.channel.send('Leave me alone!');
-      }
+      if (!checkBotAction(message, targetUser)) return;
 
       const gifUrl = await fetchWaifuGif(action);
       const userService = getService('user');
@@ -341,9 +340,7 @@ function createNSFWRoleplayCommand(action, actionPastTense) {
       const targetId = targetUser.id || (targetUser.user && targetUser.user.id);
       const actualUser = targetUser.user || targetUser;
 
-      if (actualUser.id === message.guild.members.me.id) {
-        return message.channel.send('Leave me alone!');
-      }
+      if (!checkBotAction(message, actualUser)) return;
 
       const gifUrl = await fetchNSFWGif(action);
       const targetUserId = targetId;

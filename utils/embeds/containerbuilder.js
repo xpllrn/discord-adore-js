@@ -258,12 +258,12 @@ class CustomContainerBuilder {
                             .setCustomId(`custom_button_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
                         // Add emoji if provided and valid
-                        if (emoji && emoji !== 'disabled' && emoji !== 'disable' && this.isValidEmoji(emoji)) {
+                        if (emoji && this.isValidEmoji(emoji)) {
                             button.setEmoji(emoji);
                         }
 
                         // Set disabled state
-                        if (disabled || emoji === 'disabled' || emoji === 'disable') {
+                        if (disabled) {
                             button.setDisabled(true);
                         }
                     }

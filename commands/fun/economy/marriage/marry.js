@@ -2,7 +2,7 @@ const { embeds } = require('../../../../core/embeds');
 const { createConfirmation } = require('../../../../core/buttons');
 const { getService } = require('@services');
 const { findUser } = require('../../../../handlers/finder');
-const { hasDiscordPermission } = require('../../../../utils/permissions');
+const { hasDiscordPermission, checkBotAction } = require('../../../../utils/permissions');
 const logger = require('../../../../utils/logger');
 
 module.exports = {
@@ -34,9 +34,7 @@ module.exports = {
     }
 
     // Check if trying to marry the bot (specific check first)
-    if (targetUser.id === message.guild.members.me.id) {
-      return message.channel.send('Leave me alone!');
-    }
+    if (!checkBotAction(message, targetUser)) return;
 
     // Prevent bot marriage
     if (targetUser.bot) {

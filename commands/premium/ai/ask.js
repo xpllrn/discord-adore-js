@@ -192,7 +192,7 @@ module.exports = {
       } else {
         // Prefix command
         if (!args || !args.length) {
-          return context.channel.send('sup, I am adore');
+          return embeds.info(context, 'sup, I am adore');
         }
         question = args.join(' ');
       }

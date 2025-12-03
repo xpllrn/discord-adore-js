@@ -170,7 +170,7 @@ class CustomEmbedBuilder {
                     const styleOrUrl = buttonParts[0]?.trim();
                     const label = buttonParts[1]?.trim();
                     const emojiOrState = buttonParts[2]?.trim();
-                    const welcomeMessage = buttonParts[3]?.trim();
+                    const fourthParam = buttonParts[3]?.trim();
 
                     if (styleOrUrl && label) {
                         const button = new ButtonBuilder();
@@ -183,10 +183,10 @@ class CustomEmbedBuilder {
                             let emoji = '';
                             let message = '';
                             
-                            if (welcomeMessage) {
+                            if (fourthParam) {
                                 // 4 parameters: welcome && label && emoji && message
                                 emoji = emojiOrState;
-                                message = welcomeMessage;
+                                message = fourthParam;
                             } else {
                                 // 3 parameters: welcome && label && message
                                 message = emojiOrState;
@@ -201,11 +201,8 @@ class CustomEmbedBuilder {
                                 .setCustomId(customId);
 
                             // Add emoji if provided and valid
-                            if (emoji && emoji !== 'disabled' && emoji !== 'disable' && emoji !== 'enable' && emoji !== 'enabled') {
-                                // Check if it's a valid emoji (Unicode emoji or custom emoji format)
-                                if (this.isValidEmoji(emoji)) {
-                                    button.setEmoji(emoji);
-                                }
+                            if (emoji && this.isValidEmoji(emoji)) {
+                                button.setEmoji(emoji);
                             }
                         }
                         // Check if it's a URL button
@@ -245,15 +242,15 @@ class CustomEmbedBuilder {
                                 .setCustomId(`custom_button_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
                             // Add emoji for regular buttons if provided and valid
-                            if (emojiOrState && emojiOrState !== 'disabled' && emojiOrState !== 'disable' && emojiOrState !== 'enable' && emojiOrState !== 'enabled') {
-                                if (this.isValidEmoji(emojiOrState)) {
-                                    button.setEmoji(emojiOrState);
-                                }
+                            if (emojiOrState && this.isValidEmoji(emojiOrState)) {
+                                button.setEmoji(emojiOrState);
                             }
                         }
 
-                        // Handle disabled state for all button types
-                        if (emojiOrState === 'disabled' || emojiOrState === 'disable') {
+                        // Handle disabled state for all button types (check both 3rd and 4th parameter)
+                        const isDisabled = emojiOrState === 'disabled' || emojiOrState === 'disable' || 
+                                          fourthParam === 'disabled' || fourthParam === 'disable';
+                        if (isDisabled) {
                             button.setDisabled(true);
                         }
 
@@ -347,7 +344,7 @@ class CustomEmbedBuilder {
             };
 
             return embeds.deny(fakeMessage, `There's something wrong with your embed code, please check again.`).catch(() => {
-                return channel.send('Invalid embed code, try again')
+                return embeds.deny(fakeMessage, 'Invalid embed code, try again')
             })
         })
     }

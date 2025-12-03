@@ -2,6 +2,7 @@ const { embeds } = require('../../../../core/embeds');
 const { getService } = require('@services');
 const { findUser } = require('../../../../handlers/finder');
 const { runHelpCommand, getGuildPrefix } = require('../../../../utils/commandProcessor');
+const { checkBotAction } = require('../../../../utils/permissions');
 const logger = require('../../../../utils/logger');
 
 // Utility functions embedded within the command
@@ -85,9 +86,7 @@ module.exports = {
       }
 
       // Can't give money to the bot (specific check first)
-      if (targetUser.id === message.guild.members.me.id) {
-        return message.channel.send('Leave me alone!');
-      }
+      if (!checkBotAction(message, targetUser)) return;
 
       // Can't give money to other bots
       if (targetUser.bot) {

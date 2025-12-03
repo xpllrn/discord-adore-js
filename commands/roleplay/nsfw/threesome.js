@@ -5,6 +5,7 @@ const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const { findUser } = require('../../../handlers/finder');
 const { isNSFWChannel, getOrdinal } = require('../../../utils/helpers');
+const { checkBotAction } = require('../../../utils/permissions');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -47,9 +48,8 @@ module.exports = {
       const actualUser2 = targetUser2.user || targetUser2;
 
       // Check if trying to target the bot
-      if (actualUser1.id === message.guild.members.me.id || actualUser2.id === message.guild.members.me.id) {
-        return message.channel.send('Leave me alone!');
-      }
+      if (!checkBotAction(message, actualUser1)) return;
+      if (!checkBotAction(message, actualUser2)) return;
 
       // Check if same user is mentioned twice
       if (actualUser1.id === actualUser2.id) {

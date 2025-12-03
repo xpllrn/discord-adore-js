@@ -213,16 +213,7 @@ client.login(config.bot.token)
 
 // Auto-start selfbot when main bot is ready
 client.once('ready', async () => {
-  // Start webhook server (handles both GitHub and Top.gg)
-  // DISABLED: GitHub webhook server
-  // try {
-  //   const GitHubWebhook = require('./webhooks/github');
-  //   const githubWebhook = new GitHubWebhook(client);
-  //   await githubWebhook.start();
-  //   global.githubWebhook = githubWebhook;
-  // } catch (error) {
-  //   logger.console.error('❌ Failed to start webhook server:', error.message);
-  // }
+  // Ready
 });
 
 // Music player removed - Lavalink integration disabled

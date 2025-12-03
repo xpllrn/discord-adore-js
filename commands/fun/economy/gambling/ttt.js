@@ -6,6 +6,7 @@ const { colors, emojis } = require('../../../../config/setup');
 const { findUser } = require('../../../../handlers/finder');
 const { getService } = require('@services');
 const { runHelpCommand } = require('../../../../utils/commandProcessor');
+const { checkBotAction } = require('../../../../utils/permissions');
 const logger = require('../../../../utils/logger');
 
 // Utility functions
@@ -86,9 +87,7 @@ module.exports = {
     }
 
     // Can't play against the bot (specific check first)
-    if (opponentUser.id === message.guild.members.me.id) {
-      return message.channel.send('Leave me alone!');
-    }
+    if (!checkBotAction(message, opponentUser)) return;
 
     if (opponentUser.bot) {
       return embeds.warn(message, 'You cannot play against bots!');
