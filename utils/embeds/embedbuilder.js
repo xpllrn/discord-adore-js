@@ -210,6 +210,11 @@ class CustomEmbedBuilder {
                             button.setStyle(ButtonStyle.Link)
                                 .setURL(styleOrUrl)
                                 .setLabel(label);
+                            
+                            // Add emoji if provided and valid
+                            if (emojiOrState && this.isValidEmoji(emojiOrState)) {
+                                button.setEmoji(emojiOrState);
+                            }
                         } else {
                             // Style button
                             let style = ButtonStyle.Secondary; // Default

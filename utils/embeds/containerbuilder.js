@@ -229,6 +229,11 @@ class CustomContainerBuilder {
                         if (emoji && this.isValidEmoji(emoji)) {
                             button.setEmoji(emoji);
                         }
+                        
+                        // Set disabled state for link buttons
+                        if (disabled) {
+                            button.setDisabled(true);
+                        }
                     } else {
                         // Style button
                         let style = ButtonStyle.Secondary;
