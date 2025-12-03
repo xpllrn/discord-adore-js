@@ -206,10 +206,14 @@ module.exports = {
           // First pass: Collect all existing buttons
           const allExistingButtons = [];
           
+          console.log('Starting button collection from', existingContainer.components?.length, 'components');
+          
           if (existingContainer.components && Array.isArray(existingContainer.components)) {
             for (const comp of existingContainer.components) {
+              console.log(`Checking component type ${comp.type}`);
               if (comp.type === 1) {
                 // Action row with buttons - collect them
+                console.log('Found action row with', comp.components?.length, 'components');
                 if (comp.components && Array.isArray(comp.components)) {
                   const existingButtons = comp.components
                     .filter(btnData => btnData && btnData.type === 2) // Type 2 = Button
