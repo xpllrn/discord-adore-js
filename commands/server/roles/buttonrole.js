@@ -267,13 +267,17 @@ module.exports = {
                       }
                       // Copy accessory (thumbnail or button)
                       if (comp.accessory) {
-                        if (comp.accessory.type === 11 && comp.accessory.url) { // Thumbnail with URL
-                          section.setThumbnailAccessory((thumbnail) => {
-                            thumbnail.setURL(comp.accessory.url);
-                            if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
-                            if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
-                            return thumbnail;
-                          });
+                        if (comp.accessory.type === 11) { // Thumbnail
+                          // URL is in media.url for fetched messages
+                          const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                          if (thumbnailUrl) {
+                            section.setThumbnailAccessory((thumbnail) => {
+                              thumbnail.setURL(thumbnailUrl);
+                              if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                              if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                              return thumbnail;
+                            });
+                          }
                         } else if (comp.accessory.type === 2) { // Button accessory
                           section.setButtonAccessory((btn) => {
                             if (comp.accessory.custom_id) btn.setCustomId(comp.accessory.custom_id);
@@ -647,12 +651,15 @@ module.exports = {
                                   }
                                 }
                                 if (comp.accessory && comp.accessory.type === 11) {
-                                  section.setThumbnailAccessory((thumbnail) => {
-                                    if (comp.accessory.url) thumbnail.setURL(comp.accessory.url);
-                                    if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
-                                    if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
-                                    return thumbnail;
-                                  });
+                                  const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                                  if (thumbnailUrl) {
+                                    section.setThumbnailAccessory((thumbnail) => {
+                                      thumbnail.setURL(thumbnailUrl);
+                                      if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                                      if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                                      return thumbnail;
+                                    });
+                                  }
                                 }
                                 return section;
                               });
