@@ -83,18 +83,12 @@ module.exports = {
       try {
         const userData = await userService.getUserSwearData(targetUser.id);
 
-        if (!userData || !userData.totalSwears || userData.totalSwears === 0) {
+        if (!userData || !userData.swears || userData.swears.length === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
           return embeds.warn(message, `**${username}** has no recorded swears`);
         }
 
-        const usedSwears = userData.swears.filter(swear => swear.count > 0);
-        const sortedSwears = usedSwears.sort((a, b) => b.count - a.count);
-
-        if (sortedSwears.length === 0) {
-          const username = targetMember ? targetMember.displayName : targetUser.username;
-          return embeds.warn(message, `**${username}** has no recorded swears`);
-        }
+        const sortedSwears = userData.swears.sort((a, b) => b.count - a.count);
 
         const calculatedTotal = userData.totalSwears;
 

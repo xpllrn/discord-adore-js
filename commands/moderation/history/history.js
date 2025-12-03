@@ -54,9 +54,9 @@ module.exports = {
           .setColor(colors.embed)
           .setTitle(`Case #${moderationCase.caseId} | ${moderationCase.action}`)
           .addFields(
-            { name: 'User', value: targetUser ? `${targetUser.username} (${targetUser.id})` : `Unknown User (${moderationCase.userId})`, inline: true },
-            { name: 'Moderator', value: moderator ? `${moderator.username} (${moderator.id})` : `Unknown User (${moderationCase.moderatorId})`, inline: true },
-            { name: 'Timestamp', value: `<t:${timestamp}:f>`, inline: true },
+            { name: 'User', value: targetUser ? `${targetUser.username} (\`${targetUser.id}\`)` : `Unknown User (\`${moderationCase.userId}\`)`, inline: true },
+            { name: 'Moderator', value: moderator ? `${moderator.username} (\`${moderator.id}\`)` : `Unknown User (\`${moderationCase.moderatorId}\`)`, inline: true },
+            { name: 'Timestamp', value: `<t:${timestamp}:F>`, inline: true },
             { name: 'Reason', value: moderationCase.reason, inline: false }
           );
 

@@ -2635,6 +2635,9 @@ class UserService extends BaseService {
         ? (swearTracker.todaySwears || 0)
         : 0;
 
+      // Calculate total from swears array
+      const calculatedTotal = swearTracker.swears.reduce((sum, s) => sum + (s.count || 0), 0);
+
       return {
         userId,
         swears: swearTracker.swears.map(s => ({
@@ -2642,7 +2645,7 @@ class UserService extends BaseService {
           count: s.count
         })),
         todaySwears,
-        totalSwears: swearTracker.totalSwears || 0
+        totalSwears: calculatedTotal
       };
     } catch (error) {
       console.error(`Error getting user swear data for user ${userId}:`, error.message);
