@@ -16,6 +16,20 @@ class GuildService extends BaseService {
     });
 
     this.initialized = true;
+    // Track if this is initial setup (suppress warnings for first 5 minutes after service start)
+    this.setupStartTime = Date.now();
+    this.setupGracePeriod = 5 * 60 * 1000; // 5 minutes
+    
+    // Log grace period activation
+    console.log(`[GuildService] Initialization grace period active for ${this.setupGracePeriod / 1000 / 60} minutes - suppressing new guild/missing field warnings`);
+  }
+
+  /**
+   * Check if we're still in the initial setup grace period
+   * @returns {boolean} True if in grace period
+   */
+  isInSetupGracePeriod() {
+    return (Date.now() - this.setupStartTime) < this.setupGracePeriod;
   }
 
   // ===== DATABASE OPERATIONS (BaseService Implementation) =====
@@ -339,11 +353,15 @@ class GuildService extends BaseService {
         } else {
           // Query succeeded AND returned null - guild genuinely doesn't exist
           // This is the ONLY case where we should create new data
-          console.log(`[GuildService] Guild ${guildId} not found in database - creating new data`);
-
-          // Send webhook alert
-          const stackTrace = new Error().stack;
-          this.sendGuildAlert('NEW_GUILD_CREATED', guildId, stackTrace);
+          
+          // Only log if not in setup grace period
+          if (!this.isInSetupGracePeriod()) {
+            console.log(`[GuildService] Guild ${guildId} not found in database - creating new data`);
+            
+            // Send webhook alert
+            const stackTrace = new Error().stack;
+            this.sendGuildAlert('NEW_GUILD_CREATED', guildId, stackTrace);
+          }
 
           guildData = this.getDefaultGuildData(guildId);
 
@@ -375,11 +393,14 @@ class GuildService extends BaseService {
         // ISSUE: Missing fields were added to memory but never saved to database
         // This caused fields to "randomly" disappear when cache expired or bot restarted
         if (hasChanges) {
-          console.log(`⚠️  [GuildService] Adding missing fields to guild ${guildId}: ${addedFields.join(', ')}`);
+          // Only log and alert if not in setup grace period
+          if (!this.isInSetupGracePeriod()) {
+            console.log(`⚠️  [GuildService] Adding missing fields to guild ${guildId}: ${addedFields.join(', ')}`);
 
-          // Send webhook alert
-          const stackTrace = new Error().stack;
-          this.sendGuildAlert('MISSING_FIELDS_ADDED', guildId, stackTrace, addedFields);
+            // Send webhook alert
+            const stackTrace = new Error().stack;
+            this.sendGuildAlert('MISSING_FIELDS_ADDED', guildId, stackTrace, addedFields);
+          }
 
           await this.set(guildId, guildData);
         }
