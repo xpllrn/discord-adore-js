@@ -19,9 +19,6 @@ class GuildService extends BaseService {
     // Track if this is initial setup (suppress warnings for first 5 minutes after service start)
     this.setupStartTime = Date.now();
     this.setupGracePeriod = 5 * 60 * 1000; // 5 minutes
-    
-    // Log grace period activation
-    console.log(`[GuildService] Initialization grace period active for ${this.setupGracePeriod / 1000 / 60} minutes - suppressing new guild/missing field warnings`);
   }
 
   /**
