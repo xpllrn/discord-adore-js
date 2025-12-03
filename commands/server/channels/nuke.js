@@ -57,7 +57,6 @@ module.exports = {
           
           // Get single channel reference settings
           const starboardChannel = await guildService.getStarboardChannel(message.guild.id);
-          const vanityConfig = await guildService.getVanitySettings(message.guild.id);
           const voiceManager = await guildService.getVoiceManager(message.guild.id);
           const ticketSystem = await guildService.getTicketSystem(message.guild.id);
           const levelUpChannel = await guildService.getLevelUpChannel(message.guild.id);
@@ -115,18 +114,6 @@ module.exports = {
           // Update single channel reference settings
           if (starboardChannel === channelId) {
             await guildService.setStarboardChannel(message.guild.id, newChannel.id);
-          }
-
-
-
-          if (vanityConfig && vanityConfig.logChannelId === channelId) {
-            await guildService.setVanitySettings(
-              message.guild.id,
-              vanityConfig.vanityText,
-              vanityConfig.roles,
-              newChannel.id,
-              vanityConfig.message
-            );
           }
 
           if (voiceManager) {
