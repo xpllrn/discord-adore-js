@@ -83,7 +83,7 @@ module.exports = {
       try {
         const userData = await userService.getUserSwearData(targetUser.id);
 
-        if (!userData || userData.swears.length === 0) {
+        if (!userData || !userData.totalSwears || userData.totalSwears === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
           return embeds.warn(message, `**${username}** has no recorded swears`);
         }
@@ -96,7 +96,7 @@ module.exports = {
           return embeds.warn(message, `**${username}** has no recorded swears`);
         }
 
-        const calculatedTotal = usedSwears.reduce((total, swear) => total + swear.count, 0);
+        const calculatedTotal = userData.totalSwears;
 
         const formatPage = (pageSwears, currentPage, totalPages) => {
           const swearsList = pageSwears.map((swear, index) => {
@@ -205,20 +205,13 @@ module.exports = {
       try {
         const userData = await userService.getUserSwearData(userId);
 
-        if (!userData || !userData.swears || userData.swears.length === 0) {
-          const username = targetMember ? targetMember.displayName : targetUser.username;
-          return embeds.info(message, `**${username}** has no recorded swears`);
-        }
-
-        const calculatedTotal = userData.swears.reduce((total, swear) => total + swear.count, 0);
-
-        if (calculatedTotal === 0) {
+        if (!userData || !userData.totalSwears || userData.totalSwears === 0) {
           const username = targetMember ? targetMember.displayName : targetUser.username;
           return embeds.info(message, `**${username}** has no recorded swears`);
         }
 
         const username = targetMember ? targetMember.displayName : targetUser.username;
-        return embeds.info(message, `**${username}** has sweared **${calculatedTotal}** times`);
+        return embeds.info(message, `**${username}** has sweared **${userData.totalSwears}** times`);
       } catch (error) {
         throw error;
       }
@@ -228,18 +221,11 @@ module.exports = {
       try {
         const userData = await userService.getUserSwearData(message.author.id);
 
-        if (!userData || !userData.swears || userData.swears.length === 0) {
+        if (!userData || !userData.totalSwears || userData.totalSwears === 0) {
           return embeds.info(message, 'You have no recorded swears');
         }
 
-        // Calculate actual total from individual word counts
-        const calculatedTotal = userData.swears.reduce((total, swear) => total + swear.count, 0);
-
-        if (calculatedTotal === 0) {
-          return embeds.info(message, 'You have no recorded swears');
-        }
-
-        return embeds.info(message, `You have sweared **${calculatedTotal}** times`);
+        return embeds.info(message, `You have sweared **${userData.totalSwears}** times`);
       } catch (error) {
         throw error;
       }
