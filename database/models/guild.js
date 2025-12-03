@@ -1292,35 +1292,9 @@ const guildSchema = new mongoose.Schema({
   }],
 
   // Fake Permissions system - allows server owners to grant bot command permissions to roles
+  // Stored as an object with roleId as keys: { "roleId": { roleId, roleName, permissions: [] } }
   FakePermissions: {
-    type: Map,
-    of: {
-      roleId: {
-        type: String,
-        required: true
-      },
-      roleName: {
-        type: String,
-        required: true
-      },
-      permissions: [{
-        type: String,
-        enum: [
-          'administrator',
-          'ban_members',
-          'kick_members',
-          'manage_channels',
-          'manage_expressions',
-          'manage_guild',
-          'manage_messages',
-          'manage_roles',
-          'manage_webhooks',
-          'moderate_members',
-          'change_nickname',
-          'manage_nicknames'
-        ]
-      }]
-    },
+    type: mongoose.Schema.Types.Mixed,
     default: {}
   }
 }, {
