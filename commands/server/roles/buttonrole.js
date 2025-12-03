@@ -193,15 +193,7 @@ module.exports = {
           // Get the existing container data
           const existingContainer = components[containerIndex];
           
-          console.log('=== CONTAINER DEBUG ===');
-          console.log('Container has', existingContainer.components?.length, 'components');
-          existingContainer.components?.forEach((comp, idx) => {
-            console.log(`Component ${idx}: type=${comp.type}, hasAccessory=${!!comp.accessory}`);
-            if (comp.accessory) {
-              console.log(`  Accessory:`, JSON.stringify(comp.accessory, null, 2));
-            }
-          });
-          console.log('======================');
+
           
           // Create a new container and copy all existing components
           const newContainer = new ContainerBuilder();
@@ -218,33 +210,30 @@ module.exports = {
             for (const comp of existingContainer.components) {
               if (comp.type === 1) {
                 // Action row with buttons - collect them
-                console.log('Found action row, components:', comp.components?.length);
                 if (comp.components && Array.isArray(comp.components)) {
-                  console.log('Action row components:', JSON.stringify(comp.components, null, 2));
                   const existingButtons = comp.components
-                    .filter(btnData => {
-                      const isValid = btnData && (btnData.custom_id || btnData.url);
-                      console.log(`Button valid: ${isValid}, custom_id: ${btnData?.custom_id}, url: ${btnData?.url}`);
-                      return isValid;
-                    })
+                    .filter(btnData => btnData && btnData.type === 2) // Type 2 = Button
                     .map(btnData => {
                       const btn = new V2ButtonBuilder();
+                      // Access properties directly from the data object
                       if (btnData.custom_id) btn.setCustomId(btnData.custom_id);
                       if (btnData.label) btn.setLabel(btnData.label);
                       if (btnData.style) btn.setStyle(btnData.style);
-                      if (btnData.emoji) btn.setEmoji(btnData.emoji);
+                      if (btnData.emoji) {
+                        // Emoji might be an object with name property
+                        const emojiValue = typeof btnData.emoji === 'object' ? btnData.emoji.name : btnData.emoji;
+                        if (emojiValue) btn.setEmoji(emojiValue);
+                      }
                       if (btnData.url) btn.setURL(btnData.url);
                       if (btnData.disabled) btn.setDisabled(btnData.disabled);
                       return btn;
                     });
-                  console.log(`Collected ${existingButtons.length} buttons from this action row`);
                   allExistingButtons.push(...existingButtons);
                 }
               }
             }
           }
-          
-          console.log(`Total collected ${allExistingButtons.length} existing buttons`);
+
           
           // Second pass: Copy all non-button components
           if (existingContainer.components && Array.isArray(existingContainer.components)) {
@@ -333,8 +322,6 @@ module.exports = {
           // Add the new button to the collection
           allExistingButtons.push(button);
           
-          console.log(`Total buttons to add: ${allExistingButtons.length}`);
-          
           // Add a separator before the buttons if there were existing buttons
           if (allExistingButtons.length > 1) {
             newContainer.addSeparatorComponents((separator) => separator);
@@ -343,8 +330,6 @@ module.exports = {
           // Add all buttons in rows of 5 (Discord limit)
           for (let i = 0; i < allExistingButtons.length; i += 5) {
             const buttonSlice = allExistingButtons.slice(i, i + 5);
-            console.log(`Adding action row with ${buttonSlice.length} buttons`);
-            console.log('Button custom IDs:', buttonSlice.map(b => b.data?.custom_id || 'no-id'));
             newContainer.addActionRowComponents((actionRow) =>
               actionRow.setComponents(...buttonSlice)
             );
