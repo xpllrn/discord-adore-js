@@ -339,29 +339,27 @@ async function handleList(message, args, guildService) {
       return embeds.warn(message, 'No fake permissions are configured in this server');
     }
 
+    // Build description with numbered entries
+    const entries = roleEntries.map((roleData, index) => {
+      const role = message.guild.roles.cache.get(roleData.roleId);
+      const permissions = roleData.permissions || [];
+      const permsList = permissions.map(p => `\`${p}\``).join(', ');
+      const roleDisplay = role ? `${role}` : `**${roleData.roleName}** (Deleted)`;
+      const num = String(index + 1).padStart(2, '0');
+      
+      return `\`${num}\` ${roleDisplay} - ${permsList}`;
+    }).join('\n');
+
     const embed = new EmbedBuilder()
       .setColor(colors.embed)
       .setAuthor({
         name: 'Fake Permissions',
         iconURL: message.author.displayAvatarURL({ dynamic: true })
       })
+      .setDescription(entries)
       .setFooter({
         text: `Page 1/1 (${roleEntries.length} ${roleEntries.length === 1 ? 'entry' : 'entries'})`
       });
-
-    // Add fields for each role
-    for (const roleData of roleEntries) {
-      const role = message.guild.roles.cache.get(roleData.roleId);
-      const permissions = roleData.permissions || [];
-      const permsList = permissions.map(p => `\`${p}\``).join(', ');
-      const roleDisplay = role ? `${role}` : `**${roleData.roleName}** (Deleted)`;
-      
-      embed.addFields({
-        name: `${roleEntries.indexOf(roleData) + 1}`,
-        value: `${roleDisplay} - ${permsList}`,
-        inline: false
-      });
-    }
 
     return message.channel.send({ embeds: [embed] });
   }
@@ -386,6 +384,7 @@ async function handleList(message, args, guildService) {
   }
 
   const permsList = permissions.map(p => `\`${p}\``).join(', ');
+  const description = `\`01\` ${role} - ${permsList}`;
 
   const embed = new EmbedBuilder()
     .setColor(colors.embed)
@@ -393,11 +392,7 @@ async function handleList(message, args, guildService) {
       name: `Fake Permissions for ${role.name}`,
       iconURL: message.author.displayAvatarURL({ dynamic: true })
     })
-    .addFields({
-      name: '1',
-      value: `${role} - ${permsList}`,
-      inline: false
-    })
+    .setDescription(description)
     .setFooter({
       text: `Page 1/1 (1 entry)`
     });
