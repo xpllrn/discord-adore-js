@@ -279,6 +279,7 @@ async function fetchNSFWGif(action) {
     if (!response.ok) throw new Error(`API returned ${response.status}`);
     const data = await response.json();
     if (data.error) throw new Error(data.message || 'API returned an error');
+    if (!data.link) throw new Error('API response missing link field');
     return data.link;
   } catch (error) {
     console.log(`Purrbot API failed for ${action}:`, error.message);

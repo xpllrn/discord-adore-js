@@ -319,7 +319,7 @@ module.exports.execute = async function(interaction) {
 
     if (!formattedBirthday) {
       if (isOwnBirthday) {
-        return embeds.info(interaction, `🎂 No birthday set. Use \`/birthday-set\` to set it`, false);
+        return embeds.info(interaction, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`, false);
       } else {
         return embeds.info(interaction, `🎂 **${targetUser.username}** has no birthday set`, false);
       }

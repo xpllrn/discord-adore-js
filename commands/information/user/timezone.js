@@ -234,7 +234,7 @@ async function showUserTimezoneSlash(interaction, userId, targetUser) {
 
     if (!userTimezone) {
       if (isOwnTimezone) {
-        return embeds.warn(interaction, `You have not set a **timezone** yet. Use \`/timezone-set\` to set one.`, false);
+        return embeds.warn(interaction, `You have not set a **timezone** yet. Use \`,tz set [city]\` to set one.`, false);
       } else {
         return embeds.warn(interaction, `**${targetUser.username}** has not set a **timezone** yet.`, false);
       }

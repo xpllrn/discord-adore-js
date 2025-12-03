@@ -239,8 +239,9 @@ module.exports = {
                 // For other component types, manually reconstruct them
                 // Component types based on actual Discord API:
                 // Type 1 = ActionRow
+                // Type 9 = Section
                 // Type 10 = TextDisplay
-                // Type 11 = Section
+                // Type 11 = Thumbnail (when used as accessory)
                 // Type 12 = MediaGallery
                 // Type 14 = Separator
                 try {
@@ -253,7 +254,7 @@ module.exports = {
                   } else if (comp.type === 10) { // Text display
                     const content = comp.content || '';
                     newContainer.addTextDisplayComponents((text) => text.setContent(content));
-                  } else if (comp.type === 11) { // Section
+                  } else if (comp.type === 9) { // Section
                     newContainer.addSectionComponents((section) => {
                       // Copy section text displays
                       if (comp.components && Array.isArray(comp.components)) {
@@ -266,7 +267,7 @@ module.exports = {
                       }
                       // Copy accessory (thumbnail or button)
                       if (comp.accessory) {
-                        if (comp.accessory.type === 13) { // Thumbnail
+                        if (comp.accessory.type === 11) { // Thumbnail
                           section.setThumbnailAccessory((thumbnail) => {
                             if (comp.accessory.url) thumbnail.setURL(comp.accessory.url);
                             if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
@@ -635,7 +636,7 @@ module.exports = {
                             } else if (comp.type === 10) { // Text display
                               const content = comp.content || '';
                               newContainer.addTextDisplayComponents((text) => text.setContent(content));
-                            } else if (comp.type === 11) { // Section
+                            } else if (comp.type === 9) { // Section
                               newContainer.addSectionComponents((section) => {
                                 if (comp.components && Array.isArray(comp.components)) {
                                   const textDisplays = comp.components
@@ -645,7 +646,7 @@ module.exports = {
                                     section.addTextDisplayComponents(...textDisplays);
                                   }
                                 }
-                                if (comp.accessory && comp.accessory.type === 13) {
+                                if (comp.accessory && comp.accessory.type === 11) {
                                   section.setThumbnailAccessory((thumbnail) => {
                                     if (comp.accessory.url) thumbnail.setURL(comp.accessory.url);
                                     if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
