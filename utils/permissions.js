@@ -235,7 +235,7 @@ function checkDiscordActionable(message, member, action) {
 }
 
 // Discord permission checks
-function hasDiscordPermission(message, permission, permissionName, customMessage = null) {
+async function hasDiscordPermission(message, permission, permissionName, customMessage = null) {
   // DEV_ID user bypasses all Discord permission checks
   if (isGlobalDev(message.author.id)) {
     return true;
@@ -246,16 +246,53 @@ function hasDiscordPermission(message, permission, permissionName, customMessage
     return true;
   }
 
-  if (!message.member.permissions.has(permission)) {
-    const errorMessage = customMessage || `You need \`${permissionName}\` permission to use this command!`;
-    embeds.warn(message, errorMessage);
+  // Check actual Discord permissions first
+  if (message.member.permissions.has(permission)) {
+    return true;
+  }
+
+  // Check fake permissions
+  const hasFakePerm = await checkFakePermission(message, permissionName);
+  if (hasFakePerm) {
+    return true;
+  }
+
+  const errorMessage = customMessage || `You need \`${permissionName}\` permission to use this command!`;
+  embeds.warn(message, errorMessage);
+  return false;
+}
+
+// Check if user has fake permission through their roles
+async function checkFakePermission(message, permissionName) {
+  try {
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+    const guildData = await guildService.ensureGuildData(message.guild.id);
+
+    if (!guildData.FakePermissions || Object.keys(guildData.FakePermissions).length === 0) {
+      return false;
+    }
+
+    // Convert permission name to snake_case format used in fake permissions
+    // e.g., "Manage Roles" -> "manage_roles"
+    const permissionKey = permissionName.toLowerCase().replace(/\s+/g, '_');
+
+    // Check if any of the user's roles have this fake permission
+    for (const role of message.member.roles.cache.values()) {
+      const rolePerms = guildData.FakePermissions[role.id];
+      if (rolePerms && rolePerms.permissions && rolePerms.permissions.includes(permissionKey)) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
     return false;
   }
-  return true;
 }
 
 // Multiple Discord permission checks
-function hasMultipleDiscordPermissions(message, permissions, permissionNames) {
+async function hasMultipleDiscordPermissions(message, permissions, permissionNames) {
   // DEV_ID user bypasses all Discord permission checks
   if (isGlobalDev(message.author.id)) {
     return true;
@@ -269,7 +306,10 @@ function hasMultipleDiscordPermissions(message, permissions, permissionNames) {
   const missingPermissions = [];
 
   for (let i = 0; i < permissions.length; i++) {
-    if (!message.member.permissions.has(permissions[i])) {
+    const hasRealPerm = message.member.permissions.has(permissions[i]);
+    const hasFakePerm = await checkFakePermission(message, permissionNames[i]);
+    
+    if (!hasRealPerm && !hasFakePerm) {
       missingPermissions.push(permissionNames[i]);
     }
   }
@@ -425,6 +465,7 @@ module.exports = {
   // Discord permissions
   hasDiscordPermission,
   hasMultipleDiscordPermissions,
+  checkFakePermission,
   PermissionFlagsBits,
 
   // Permission references

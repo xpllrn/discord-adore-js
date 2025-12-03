@@ -45,7 +45,7 @@ module.exports = {
 
     // Setup and Reset commands - require Manage Channels permission
     if (subcommand === 'setup' || subcommand === 'reset') {
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
       if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageChannels)) {
         return embeds.deny(message, 'I need **Manage Channels** permission to manage voicemaster');

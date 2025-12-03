@@ -19,7 +19,7 @@ module.exports = {
     const { getService } = require('@services');
     const guildService = getService('guild');
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
     if (!args[0]) return false;
 

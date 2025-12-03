@@ -12,7 +12,7 @@ module.exports = {
   permission: "administrator",
   run: async (client, message, args) => {
     try {
-      if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
 
       const text = args.join(" ");
       if (!text) {

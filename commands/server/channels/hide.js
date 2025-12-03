@@ -13,7 +13,7 @@ module.exports = {
   permission: 'manage_channels',
   run: async (client, message, args) => {
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageChannels)) {
       return embeds.deny(message, 'I need **Manage Channels** permission to use this command');

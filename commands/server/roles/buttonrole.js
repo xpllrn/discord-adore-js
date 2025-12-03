@@ -193,8 +193,6 @@ module.exports = {
           // Get the existing container data
           const existingContainer = components[containerIndex];
           
-
-          
           // Create a new container and copy all existing components
           const newContainer = new ContainerBuilder();
           
@@ -206,35 +204,24 @@ module.exports = {
           // First pass: Collect all existing buttons
           const allExistingButtons = [];
           
-          console.log('Starting button collection from', existingContainer.components?.length, 'components');
-          
           if (existingContainer.components && Array.isArray(existingContainer.components)) {
             for (const comp of existingContainer.components) {
-              console.log(`Checking component type ${comp.type}`);
               if (comp.type === 1) {
                 // Action row with buttons - collect them
-                console.log('Found action row with', comp.components?.length, 'components');
                 if (comp.components && Array.isArray(comp.components)) {
                   const existingButtons = comp.components
                     .filter(btnData => btnData && btnData.type === 2) // Type 2 = Button
                     .map(btnData => {
-                      console.log('Reconstructing button from data:', JSON.stringify(btnData, null, 2));
-                      
                       // Access custom_id using bracket notation since it has underscore
                       const customId = btnData['custom_id'] || btnData.customId;
                       const url = btnData.url;
-                      
-                      console.log('Extracted customId:', customId);
-                      console.log('Extracted url:', url);
                       
                       const btn = new V2ButtonBuilder();
                       
                       // Set custom_id or url FIRST (one is required)
                       if (customId) {
-                        console.log('Setting customId:', customId);
                         btn.setCustomId(customId);
                       } else if (url) {
-                        console.log('Setting url:', url);
                         btn.setURL(url);
                       }
                       
@@ -257,7 +244,6 @@ module.exports = {
                       // Set disabled state
                       if (btnData.disabled) btn.setDisabled(btnData.disabled);
                       
-                      console.log('Final button customId:', btn.data?.custom_id);
                       return btn;
                     });
                   allExistingButtons.push(...existingButtons);
@@ -353,16 +339,10 @@ module.exports = {
 
           // Add the new button to the collection
           allExistingButtons.push(button);
-          
-          console.log(`Total buttons: ${allExistingButtons.length}`);
-          allExistingButtons.forEach((btn, idx) => {
-            console.log(`Button ${idx}: customId=${btn.data?.custom_id}, label=${btn.data?.label}`);
-          });
 
           // Add all buttons in rows of 5 (Discord limit)
           for (let i = 0; i < allExistingButtons.length; i += 5) {
             const buttonSlice = allExistingButtons.slice(i, i + 5);
-            console.log(`Adding row ${Math.floor(i/5)} with ${buttonSlice.length} buttons`);
             newContainer.addActionRowComponents((actionRow) =>
               actionRow.setComponents(...buttonSlice)
             );
@@ -476,8 +456,6 @@ module.exports = {
             // V2 message - removing buttons from containers is complex
             // For now, we'll just skip the message edit and only update the database
             // The button will remain visible but won't function after database removal
-            // TODO: Implement proper container reconstruction to remove specific buttons
-            console.log('Note: Button removed from database but still visible in v2 message');
           } else {
             // Regular message
             let components = targetMessage.components || [];
@@ -608,16 +586,10 @@ module.exports = {
             processedCount++;
             try {
               const channel = message.guild.channels.cache.get(data.channelId);
-              if (!channel) {
-                console.log(`Channel ${data.channelId} not found for message ${messageId}`);
-                continue;
-              }
+              if (!channel) continue;
               
               const targetMessage = await channel.messages.fetch(messageId).catch(() => null);
-              if (!targetMessage) {
-                console.log(`Message ${messageId} not found in channel ${data.channelId}`);
-                continue;
-              }
+              if (!targetMessage) continue;
               
               const isV2Message = targetMessage.flags?.has('IsComponentsV2');
               
@@ -723,7 +695,6 @@ module.exports = {
                         components: components,
                         flags: MessageFlags.IsComponentsV2
                       });
-                      console.log(`Removed buttons from v2 message ${messageId}`);
                       removedCount++;
                     }
                   } else {
@@ -737,15 +708,12 @@ module.exports = {
                     }).filter(row => row.components.length > 0);
 
                     await targetMessage.edit({ components: components });
-                    console.log(`Removed buttons from regular message ${messageId}`);
                     removedCount++;
                   }
             } catch (error) {
               console.error('Error removing buttons from message:', messageId, error);
             }
           }
-          
-          console.log(`Processed ${processedCount} messages, successfully removed buttons from ${removedCount}`);
 
           // Clear from database
           await guildService.clearAllButtonRoles(message.guild.id);
@@ -809,7 +777,6 @@ module.exports = {
               if (isV2Message) {
                 // V2 message - removing all buttons from containers
                 // For now, skip message edit - buttons removed from database only
-                console.log('Note: Buttons removed from database but still visible in v2 message');
               } else {
                 // Regular message - just clear components
                 await targetMessage.edit({ components: [] });

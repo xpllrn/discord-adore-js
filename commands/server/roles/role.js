@@ -22,7 +22,7 @@ module.exports = {
   run: async (client, message, args) => {
 
     // Permission checks first using utils/permissions.js
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
       return embeds.deny(message, 'I need **Manage Roles** permission to use this command');

@@ -45,7 +45,7 @@ module.exports = {
         example: '{guildprefix}boostrole cleanup 30'
       };
 
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
       return await handleCleanup(client, message, args.slice(1));
     }
 

@@ -47,10 +47,10 @@ module.exports = {
 
     if (isSelf) {
       // Renaming self - check for ChangeNickname permission
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ChangeNickname, 'Change Nickname')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ChangeNickname, 'Change Nickname')) return;
     } else {
       // Renaming others - check for ManageNicknames permission
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames')) return;
       
       if (!checkBotAction(message, member)) return;
 

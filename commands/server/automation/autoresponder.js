@@ -18,7 +18,7 @@ module.exports = {
   run: async(client, message, args) => {
     const guildService = getService('guild');
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
     // Ensure guild data exists in the database
     await ensureGuildData(message.guild.id);

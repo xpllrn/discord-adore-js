@@ -18,7 +18,7 @@ module.exports = {
   run: async(client, message, args) => {
     const guildService = getService('guild');
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       return embeds.deny(message, 'I need **Moderate Members** permission to use this command');

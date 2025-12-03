@@ -18,7 +18,7 @@ module.exports = {
     const guildService = getService('guild');
 
     // Permission checks first
-    if (!hasDiscordPermission(message, PermissionFlagsBits.KickMembers, 'Kick Members')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.KickMembers, 'Kick Members')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.KickMembers)) {
       return embeds.deny(message, 'I need **Kick Members** permission to use this command');

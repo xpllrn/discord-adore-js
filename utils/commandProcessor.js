@@ -178,47 +178,47 @@ async function checkCommandPermission(message, permission) {
   // Map permission strings to permission checks (underscore format only)
   switch (permission.toLowerCase()) {
     case 'administrator':
-      return hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator');
+      return await hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator');
 
     case 'manage_messages':
-      return hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages');
+      return await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages');
 
     case 'manage_guild':
-      return hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild');
+      return await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild');
 
     case 'manage_expressions':
-      return hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions');
+      return await hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions');
 
     case 'moderate_members':
-      return hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members');
+      return await hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members');
 
     case 'manage_guild_&_manage_roles':
-      return hasMultipleDiscordPermissions(message,
+      return await hasMultipleDiscordPermissions(message,
         [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles],
         ['Manage Guild', 'Manage Roles']);
 
     case 'manage_guild_&_manage_nicknames':
-      return hasMultipleDiscordPermissions(message,
+      return await hasMultipleDiscordPermissions(message,
         [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageNicknames],
         ['Manage Guild', 'Manage Nicknames']);
 
     case 'manage_roles':
-      return hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles');
+      return await hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles');
 
     case 'manage_channels':
-      return hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels');
+      return await hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels');
 
     case 'manage_nicknames':
-      return hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames');
+      return await hasDiscordPermission(message, PermissionFlagsBits.ManageNicknames, 'Manage Nicknames');
 
     case 'ban_members':
-      return hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members');
+      return await hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members');
 
     case 'kick_members':
-      return hasDiscordPermission(message, PermissionFlagsBits.KickMembers, 'Kick Members');
+      return await hasDiscordPermission(message, PermissionFlagsBits.KickMembers, 'Kick Members');
 
     case 'attach_files':
-      return hasDiscordPermission(message, PermissionFlagsBits.AttachFiles, 'Attach Files');
+      return await hasDiscordPermission(message, PermissionFlagsBits.AttachFiles, 'Attach Files');
 
     case 'antinuke_admin':
       // Check if user is antinuke admin or server owner

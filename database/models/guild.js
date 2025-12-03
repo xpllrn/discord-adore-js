@@ -1289,7 +1289,40 @@ const guildSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+
+  // Fake Permissions system - allows server owners to grant bot command permissions to roles
+  FakePermissions: {
+    type: Map,
+    of: {
+      roleId: {
+        type: String,
+        required: true
+      },
+      roleName: {
+        type: String,
+        required: true
+      },
+      permissions: [{
+        type: String,
+        enum: [
+          'administrator',
+          'ban_members',
+          'kick_members',
+          'manage_channels',
+          'manage_expressions',
+          'manage_guild',
+          'manage_messages',
+          'manage_roles',
+          'manage_webhooks',
+          'moderate_members',
+          'change_nickname',
+          'manage_nicknames'
+        ]
+      }]
+    },
+    default: {}
+  }
 }, {
   timestamps: true
 });
@@ -1465,6 +1498,9 @@ guildSchema.index({ 'ConfessionSystem.ignoredUsers': 1 });
 
 // Hardban system indexes
 guildSchema.index({ 'Hardbans.userId': 1 });
+
+// Fake Permissions indexes
+guildSchema.index({ 'FakePermissions': 1 });
 
 module.exports = {
   schema: guildSchema,

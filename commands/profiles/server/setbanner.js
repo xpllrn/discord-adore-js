@@ -13,7 +13,7 @@ module.exports = {
     try {
 
     // Check user permissions
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) {
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) {
       return;
     }
 

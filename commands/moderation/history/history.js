@@ -84,7 +84,7 @@ module.exports = {
         return runHelpCommand(message, 'history');
       }
 
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
 
       const userResult = await findUser(message.guild, args[1], client);
       if (!userResult.found) {
@@ -131,7 +131,7 @@ module.exports = {
         return runHelpCommand(message, 'history');
       }
 
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
 
       const userResult = await findUser(message.guild, args[1], client);
       if (!userResult.found) {

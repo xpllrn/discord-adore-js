@@ -149,7 +149,7 @@ module.exports = {
 
 async function handleSetup(client, message, args) {
   try {
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
     const guildService = getService('guild');
     const ticketSystem = await guildService.getTicketSystem(message.guild.id);
@@ -232,7 +232,7 @@ async function handleSetup(client, message, args) {
 
 async function handleReset(client, message, args) {
   try {
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
     const guildService = getService('guild');
     const ticketSystem = await guildService.getTicketSystem(message.guild.id);
@@ -269,7 +269,7 @@ async function handleReset(client, message, args) {
 
 async function handleCategory(client, message, args) {
   try {
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
     const guildService = getService('guild');
     if (!args[1]) {
@@ -558,7 +558,7 @@ async function handleSupport(client, message, args) {
 
 async function handleMessage(client, message, args) {
   try {
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
     // Check cooldown (1 minute)
     const cooldownKey = `${message.guild.id}-${message.author.id}`;

@@ -15,7 +15,7 @@ module.exports = {
     const guildService = getService('guild');
 
     // Permission checks
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageChannels)) {
       return embeds.deny(message, 'I need **Manage Channels** permission to use this command');

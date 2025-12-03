@@ -17,7 +17,7 @@ module.exports = {
   run: async(client, message, args) => {
     const guildService = getService('guild');
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.BanMembers, 'Ban Members')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.BanMembers)) {
       return embeds.deny(message, 'I need **Ban Members** permission to use this command');

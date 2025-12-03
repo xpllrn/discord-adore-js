@@ -13,7 +13,7 @@ module.exports = {
   example: 'clearsnipe',
   run: async(_, message) => {
     try {
-      if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
 
       const channelId = message.channel.id;
 

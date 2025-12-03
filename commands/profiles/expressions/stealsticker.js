@@ -120,7 +120,7 @@ module.exports = {
     try {
     await ensureGuildData(message.guild.id);
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageGuildExpressions)) {
       return embeds.deny(message, 'I need **Manage Expressions** permission to use this command');

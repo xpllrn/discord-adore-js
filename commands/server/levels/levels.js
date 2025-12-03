@@ -29,12 +29,12 @@ module.exports = {
 
       // Handle subcommands that require Manage Guild permissions
       if (['unlock', 'enable', 'lock', 'disable', 'add', 'remove', 'set', 'sync', 'messagemode'].includes(subcommand)) {
-        if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
       }
 
       // Handle subcommands that require Administrator permissions
       if (['reset', 'cleanup'].includes(subcommand)) {
-        if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
       }
 
       switch (subcommand) {
@@ -724,7 +724,7 @@ async function handleLevelMessage(client, message, args) {
   }
 
   // Require Manage Guild permission for setting/removing messages
-  if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+  if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
   try {
     const levelMessage = args.slice(1).join(' ');

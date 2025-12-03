@@ -42,7 +42,7 @@ module.exports = {
   isGroupCommand: true,
   run: async (client, message, args) => {
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Emojis and Stickers')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Emojis and Stickers')) return;
 
     const subcommand = args[0]?.toLowerCase();
 

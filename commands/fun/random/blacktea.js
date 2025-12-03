@@ -114,7 +114,7 @@ module.exports = {
           aliases: [],
           example: '{guildprefix}blacktea time 15'
         };
-        if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) {
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) {
           return;
         }
 

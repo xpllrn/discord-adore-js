@@ -18,7 +18,7 @@ module.exports = {
 
   run: async(client, message, args) => {
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
 
     if (!args[0]) {
       return runHelpCommand(message, 'giveaways');

@@ -16,7 +16,7 @@ module.exports = {
   run: async (client, message, args) => {
 
     // Permission checks first - Admin only
-    if (!hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.Administrator, 'Administrator')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
       return embeds.deny(message, 'I need **Manage Roles** permission to use this command');

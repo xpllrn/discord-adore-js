@@ -11,7 +11,7 @@ module.exports = {
   permission: "manage_messages",
   run: async(client, message) => {
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageMessages)) {
       return embeds.deny(message, 'I need **Manage Messages** permission to use this command');

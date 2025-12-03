@@ -18,7 +18,7 @@ module.exports = {
     const guildService = getService('guild');
 
     // Permission checks first
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
       return embeds.deny(message, 'I need **Manage Roles** permission to use this command');

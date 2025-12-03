@@ -16,7 +16,7 @@ module.exports = {
   isGroupCommand: true,
   run: async (client, message, args) => {
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageGuild)) {
       return embeds.deny(message, 'I need **Manage Guild** permission to manage AutoMod rules');

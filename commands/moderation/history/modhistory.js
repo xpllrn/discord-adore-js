@@ -18,7 +18,7 @@ module.exports = {
   run: async(client, message, args) => {
     const guildService = getService('guild');
 
-    if (!hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
 
     if (!args[0]) {
       return runHelpCommand(message, 'modhistory');
