@@ -218,9 +218,15 @@ module.exports = {
             for (const comp of existingContainer.components) {
               if (comp.type === 1) {
                 // Action row with buttons - collect them
+                console.log('Found action row, components:', comp.components?.length);
                 if (comp.components && Array.isArray(comp.components)) {
+                  console.log('Action row components:', JSON.stringify(comp.components, null, 2));
                   const existingButtons = comp.components
-                    .filter(btnData => btnData && (btnData.custom_id || btnData.url)) // Only valid buttons
+                    .filter(btnData => {
+                      const isValid = btnData && (btnData.custom_id || btnData.url);
+                      console.log(`Button valid: ${isValid}, custom_id: ${btnData?.custom_id}, url: ${btnData?.url}`);
+                      return isValid;
+                    })
                     .map(btnData => {
                       const btn = new V2ButtonBuilder();
                       if (btnData.custom_id) btn.setCustomId(btnData.custom_id);
@@ -231,13 +237,14 @@ module.exports = {
                       if (btnData.disabled) btn.setDisabled(btnData.disabled);
                       return btn;
                     });
+                  console.log(`Collected ${existingButtons.length} buttons from this action row`);
                   allExistingButtons.push(...existingButtons);
                 }
               }
             }
           }
           
-          console.log(`Collected ${allExistingButtons.length} existing buttons`);
+          console.log(`Total collected ${allExistingButtons.length} existing buttons`);
           
           // Second pass: Copy all non-button components
           if (existingContainer.components && Array.isArray(existingContainer.components)) {
