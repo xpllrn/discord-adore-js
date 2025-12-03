@@ -1192,7 +1192,7 @@ async function handleWelcomeButton(interaction) {
  */
 async function handleButtonRole(interaction) {
   try {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const guildService = getService('guild');
     const buttonRoles = await guildService.getButtonRoles(interaction.guild.id);

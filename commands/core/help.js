@@ -292,7 +292,7 @@ async function showHelpShared(context, client, commandQuery) {
             if (context.deferred || context.replied) {
               return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
             }
-            return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2, ephemeral: false });
+            return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
           } else {
             return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
@@ -308,7 +308,7 @@ async function showHelpShared(context, client, commandQuery) {
             if (context.deferred || context.replied) {
               return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
             }
-            return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2, ephemeral: false });
+            return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
           } else {
             return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
@@ -369,7 +369,7 @@ async function showHelpShared(context, client, commandQuery) {
           if (context.deferred || context.replied) {
             return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
-          return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2, ephemeral: false });
+          return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
         } else {
           return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
         }
@@ -381,7 +381,7 @@ async function showHelpShared(context, client, commandQuery) {
         if (context.deferred || context.replied) {
           return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
         }
-        return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2, ephemeral: false });
+        return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
       } else {
         return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
       }
@@ -396,7 +396,7 @@ async function showHelpShared(context, client, commandQuery) {
       if (context.deferred || context.replied) {
         return context.editReply({ content: helpMessage });
       }
-      return context.reply({ content: helpMessage, ephemeral: false });
+      return context.reply({ content: helpMessage });
     } else {
       return context.channel.send({ content: helpMessage });
     }

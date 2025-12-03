@@ -97,7 +97,7 @@ async function viewConfigShared(context, guildService) {
     .setFooter({ text: `Guild ID: ${guild.id}` });
 
   if (isInteraction) {
-    return context.reply({ embeds: [embed], ephemeral: false });
+    return context.reply({ embeds: [embed] });
   } else {
     return context.channel.send({ embeds: [embed] });
   }

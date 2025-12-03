@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
@@ -116,7 +116,7 @@ async function viewConfessionConfigShared(context, confessionService) {
     .setFooter({ text: `Guild ID: ${guild.id}` });
 
   if (isInteraction) {
-    return context.reply({ embeds: [embed], ephemeral: false });
+    return context.reply({ embeds: [embed] });
   } else {
     return context.channel.send({ embeds: [embed] });
   }
@@ -199,7 +199,7 @@ async function submitConfession(context, confessionText) {
     .setDescription(`${config.emojis.success} <@${user.id}>: Your confession has **been submitted**. Confession ID: **${confessionId}**`);
 
   if (isInteraction) {
-    return context.reply({ embeds: [confirmEmbed], ephemeral: true }); // Keep confirmation ephemeral for privacy!
+    return context.reply({ embeds: [confirmEmbed], flags: MessageFlags.Ephemeral }); // Keep confirmation ephemeral for privacy!
   } else {
     return context.channel.send({ embeds: [confirmEmbed] });
   }

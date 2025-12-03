@@ -199,7 +199,7 @@ function executeRoleplaySlash(action, actionPastTense) {
       const author = interaction.user;
 
       if (targetUser.id === interaction.client.user.id) {
-        return interaction.reply({ content: 'Leave me alone!', ephemeral: true });
+        return interaction.reply({ content: 'Leave me alone!', flags: MessageFlags.Ephemeral });
       }
 
       await interaction.deferReply();

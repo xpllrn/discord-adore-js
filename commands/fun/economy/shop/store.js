@@ -1,4 +1,4 @@
-const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, MessageFlags } = require('discord.js');
 const { embeds } = require('../../../../core/embeds');
 const { colors, emojis } = require('../../../../config/setup');
 const { getService } = require('@services');
@@ -104,7 +104,7 @@ async function showCategoriesOverview(message, categories) {
       if (interaction.user.id !== message.author.id) {
         return interaction.reply({ 
           content: 'Only the command user can use these buttons!', 
-          ephemeral: true 
+          flags: MessageFlags.Ephemeral 
         });
       }
 

@@ -1,4 +1,4 @@
-const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { getService } = require('@services');
 const config = require('../../config/setup');
 
@@ -15,7 +15,7 @@ module.exports = {
       if (interaction.user.id !== userId) {
         return interaction.reply({
           content: '❌ This button is not for you!',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -55,13 +55,13 @@ module.exports = {
       if (interaction.user.id !== userId) {
         return interaction.reply({
           content: '❌ This is not your authorization!',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
       const code = interaction.fields.getTextInputValue('spotify_code').trim();
 
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       const spotifyService = getService('spotify');
 
@@ -72,15 +72,13 @@ module.exports = {
 
         if (!authSession) {
           return interaction.editReply({
-            content: '❌ Invalid or expired authorization session. Please run the command again.',
-            ephemeral: true
+            content: '❌ Invalid or expired authorization session. Please run the command again.'
           });
         }
 
         if (authSession.userId !== userId) {
           return interaction.editReply({
-            content: '❌ This authorization session does not belong to you.',
-            ephemeral: true
+            content: '❌ This authorization session does not belong to you.'
           });
         }
 

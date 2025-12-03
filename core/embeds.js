@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, MessageFlags } = require('discord.js');
 const { colors, emojis } = require('../config/setup');
 
 // Pre-built embed system with user's preferred format
@@ -16,7 +16,9 @@ const embeds = {
             if (context.deferred || context.replied) {
                 return context.editReply({ embeds: [embed] });
             }
-            return context.reply({ embeds: [embed], ephemeral: ephemeral });
+            const options = { embeds: [embed] };
+            if (ephemeral) options.flags = MessageFlags.Ephemeral;
+            return context.reply(options);
         } else {
             return context.channel.send({ embeds: [embed] });
         }
@@ -34,7 +36,9 @@ const embeds = {
             if (context.deferred || context.replied) {
                 return context.editReply({ embeds: [embed] });
             }
-            return context.reply({ embeds: [embed], ephemeral: ephemeral });
+            const options = { embeds: [embed] };
+            if (ephemeral) options.flags = MessageFlags.Ephemeral;
+            return context.reply(options);
         } else {
             return context.channel.send({ embeds: [embed] });
         }
@@ -52,7 +56,9 @@ const embeds = {
             if (context.deferred || context.replied) {
                 return context.editReply({ embeds: [embed] });
             }
-            return context.reply({ embeds: [embed], ephemeral: ephemeral });
+            const options = { embeds: [embed] };
+            if (ephemeral) options.flags = MessageFlags.Ephemeral;
+            return context.reply(options);
         } else {
             return context.channel.send({ embeds: [embed] });
         }
@@ -70,7 +76,9 @@ const embeds = {
             if (context.deferred || context.replied) {
                 return context.editReply({ embeds: [embed] });
             }
-            return context.reply({ embeds: [embed], ephemeral: ephemeral });
+            const options = { embeds: [embed] };
+            if (ephemeral) options.flags = MessageFlags.Ephemeral;
+            return context.reply(options);
         } else {
             return context.channel.send({ embeds: [embed] });
         }
@@ -88,7 +96,9 @@ const embeds = {
             if (context.deferred || context.replied) {
                 return context.editReply({ embeds: [embed] });
             }
-            return context.reply({ embeds: [embed], ephemeral: ephemeral });
+            const options = { embeds: [embed] };
+            if (ephemeral) options.flags = MessageFlags.Ephemeral;
+            return context.reply(options);
         } else {
             return context.channel.send({ embeds: [embed] });
         }
@@ -106,7 +116,9 @@ const embeds = {
             if (context.deferred || context.replied) {
                 return context.editReply({ embeds: [embed] });
             }
-            return context.reply({ embeds: [embed], ephemeral: ephemeral });
+            const options = { embeds: [embed] };
+            if (ephemeral) options.flags = MessageFlags.Ephemeral;
+            return context.reply(options);
         } else {
             return context.channel.send({ embeds: [embed] });
         }
