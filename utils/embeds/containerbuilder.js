@@ -217,11 +217,6 @@ class CustomContainerBuilder {
                         return gallery;
                     });
                 }
-            } else if (paramName === 'footer') {
-                // Footer text (small text)
-                Container.addTextDisplayComponents(
-                    (text) => text.setContent(`-# ${paramValue}`)
-                );
             } else if (paramName === 'message' || paramName === 'content') {
                 Content = paramValue;
             } else if (paramName === 'button') {

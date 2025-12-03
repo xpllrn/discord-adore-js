@@ -198,7 +198,7 @@ module.exports = {
           existingContainer.components?.forEach((comp, idx) => {
             console.log(`Component ${idx}: type=${comp.type}, hasAccessory=${!!comp.accessory}`);
             if (comp.accessory) {
-              console.log(`  Accessory type=${comp.accessory.type}, url=${comp.accessory.url}`);
+              console.log(`  Accessory:`, JSON.stringify(comp.accessory, null, 2));
             }
           });
           console.log('======================');
@@ -267,9 +267,9 @@ module.exports = {
                       }
                       // Copy accessory (thumbnail or button)
                       if (comp.accessory) {
-                        if (comp.accessory.type === 11) { // Thumbnail
+                        if (comp.accessory.type === 11 && comp.accessory.url) { // Thumbnail with URL
                           section.setThumbnailAccessory((thumbnail) => {
-                            if (comp.accessory.url) thumbnail.setURL(comp.accessory.url);
+                            thumbnail.setURL(comp.accessory.url);
                             if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
                             if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
                             return thumbnail;
