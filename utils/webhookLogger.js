@@ -973,6 +973,7 @@ class WebhookLogger {
   getActionColor(action) {
     const colors = {
       ban: config.colors.error,
+      hardban: config.colors.error,
       unban: config.colors.success,
       kick: config.colors.warn,
       timeout: config.colors.warn,
@@ -998,6 +999,7 @@ class WebhookLogger {
   getActionTitle(action) {
     const titles = {
       ban: 'Member Banned',
+      hardban: 'Member Hardbanned',
       unban: 'Member Unbanned',
       kick: 'Member Kicked',
       timeout: 'Member Timed Out',
