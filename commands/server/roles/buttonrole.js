@@ -214,18 +214,34 @@ module.exports = {
                   const existingButtons = comp.components
                     .filter(btnData => btnData && btnData.type === 2) // Type 2 = Button
                     .map(btnData => {
+                      console.log('Reconstructing button from data:', JSON.stringify(btnData, null, 2));
                       const btn = new V2ButtonBuilder();
-                      // Access properties directly from the data object
-                      if (btnData.custom_id) btn.setCustomId(btnData.custom_id);
-                      if (btnData.label) btn.setLabel(btnData.label);
+                      
+                      // Set style first (required)
                       if (btnData.style) btn.setStyle(btnData.style);
+                      
+                      // Set label
+                      if (btnData.label) btn.setLabel(btnData.label);
+                      
+                      // Set custom_id or url (one is required)
+                      if (btnData.custom_id) {
+                        console.log('Setting customId:', btnData.custom_id);
+                        btn.setCustomId(btnData.custom_id);
+                      } else if (btnData.url) {
+                        console.log('Setting url:', btnData.url);
+                        btn.setURL(btnData.url);
+                      }
+                      
+                      // Set emoji if present
                       if (btnData.emoji) {
-                        // Emoji might be an object with name property
                         const emojiValue = typeof btnData.emoji === 'object' ? btnData.emoji.name : btnData.emoji;
                         if (emojiValue) btn.setEmoji(emojiValue);
                       }
-                      if (btnData.url) btn.setURL(btnData.url);
+                      
+                      // Set disabled state
                       if (btnData.disabled) btn.setDisabled(btnData.disabled);
+                      
+                      console.log('Created button with customId:', btn.data?.custom_id);
                       return btn;
                     });
                   allExistingButtons.push(...existingButtons);
