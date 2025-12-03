@@ -296,16 +296,40 @@ async function getNextBirthdayTimestamp(userId) {
 // Add slash command data
 module.exports.data = new SlashCommandBuilder()
   .setName('birthday')
-  .setDescription('View a user\'s birthday')
+  .setDescription('Manage your birthday')
   .setIntegrationTypes([
     ApplicationIntegrationType.GuildInstall,
     ApplicationIntegrationType.UserInstall
   ])
-  .addUserOption(option =>
-    option
-      .setName('user')
-      .setDescription('The user to views')
-      .setRequired(false)
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('view')
+      .setDescription('View a user\'s birthday')
+      .addUserOption(option =>
+        option
+          .setName('user')
+          .setDescription('The user to view')
+          .setRequired(false)
+      )
+  )
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('set')
+      .setDescription('Set your birthday (can only be set once)')
+      .addIntegerOption(option =>
+        option
+          .setName('day')
+          .setDescription('Day of birth (1-31)')
+          .setMinValue(1)
+          .setMaxValue(31)
+          .setRequired(true)
+      )
+      .addStringOption(option =>
+        option
+          .setName('month')
+          .setDescription('Month of birth (e.g., January, March or 1, 3)')
+          .setRequired(true)
+      )
   );
 
 // Add slash command execute
@@ -313,32 +337,91 @@ module.exports.execute = async function(interaction) {
   const userService = getService('user');
 
   try {
-    const targetUser = interaction.options.getUser('user') || interaction.user;
-    const isOwnBirthday = targetUser.id === interaction.user.id;
-    const formattedBirthday = await userService.getFormattedBirthday(targetUser.id);
+    const subcommand = interaction.options.getSubcommand();
 
-    if (!formattedBirthday) {
-      if (isOwnBirthday) {
-        return embeds.info(interaction, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`, false);
-      } else {
-        return embeds.info(interaction, `🎂 **${targetUser.username}** has no birthday set`, false);
+    if (subcommand === 'view') {
+      const targetUser = interaction.options.getUser('user') || interaction.user;
+      const isOwnBirthday = targetUser.id === interaction.user.id;
+      const formattedBirthday = await userService.getFormattedBirthday(targetUser.id);
+
+      if (!formattedBirthday) {
+        if (isOwnBirthday) {
+          return embeds.info(interaction, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`, false);
+        } else {
+          return embeds.info(interaction, `🎂 **${targetUser.username}** has no birthday set`, false);
+        }
       }
-    }
 
-    const isBirthdayToday = await userService.isBirthday(targetUser.id);
+      const isBirthdayToday = await userService.isBirthday(targetUser.id);
 
-    if (isBirthdayToday) {
-      if (isOwnBirthday) {
-        return embeds.info(interaction, `🎂 Your birthday is today! Happy birthday!`, false);
+      if (isBirthdayToday) {
+        if (isOwnBirthday) {
+          return embeds.info(interaction, `🎂 Your birthday is today! Happy birthday!`, false);
+        } else {
+          return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}** (Today!)`, false);
+        }
       } else {
-        return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}** (Today!)`, false);
+        const nextBirthdayTimestamp = await getNextBirthdayTimestamp(targetUser.id);
+        if (isOwnBirthday) {
+          return embeds.info(interaction, `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`, false);
+        } else {
+          return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`, false);
+        }
       }
-    } else {
-      const nextBirthdayTimestamp = await getNextBirthdayTimestamp(targetUser.id);
-      if (isOwnBirthday) {
-        return embeds.info(interaction, `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`, false);
+    } else if (subcommand === 'set') {
+      const day = interaction.options.getInteger('day');
+      const monthInput = interaction.options.getString('month').toLowerCase();
+
+      // Parse month (accept both numbers and names)
+      let month;
+      const monthNames = [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december'
+      ];
+      const monthShort = [
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+      ];
+
+      if (!isNaN(monthInput)) {
+        month = parseInt(monthInput);
+        if (month < 1 || month > 12) {
+          return embeds.warn(interaction, 'Month must be a number between **1** and **12**', false);
+        }
       } else {
-        return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`, false);
+        const monthIndex = monthNames.indexOf(monthInput) !== -1 ?
+          monthNames.indexOf(monthInput) :
+          monthShort.indexOf(monthInput);
+
+        if (monthIndex === -1) {
+          return embeds.warn(interaction, 'Invalid month. Use month name (e.g., March) or number (1-12)', false);
+        }
+        month = monthIndex + 1;
+      }
+
+      // Validate day for specific month (basic validation)
+      if ((month === 2 && day > 29) ||
+        ([4, 6, 9, 11].includes(month) && day > 30)) {
+        return embeds.warn(interaction, 'Invalid day for the specified month', false);
+      }
+
+      // Ensure user data exists
+      await ensureUserData(interaction.user.id);
+
+      try {
+        // Check if user already has a birthday set
+        const existingBirthday = await userService.getBirthday(interaction.user.id);
+
+        if (existingBirthday && existingBirthday.day && existingBirthday.month) {
+          const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
+          return embeds.warn(interaction, `You already have a birthday set to **${formattedBirthday}**. Birthdays cannot be changed once set.`, false);
+        }
+
+        await userService.setBirthday(interaction.user.id, day, month);
+        const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
+        return embeds.success(interaction, `Set your birthday to **${formattedBirthday}**`, false);
+      } catch (error) {
+        throw error;
       }
     }
   } catch (error) {

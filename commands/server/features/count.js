@@ -4,6 +4,107 @@ const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const logger = require('../../../utils/logger');
 
+// SHARED LOGIC: View counting config
+async function viewCountingConfigShared(context) {
+  const guildService = getService('guild');
+  const countingData = await guildService.getCounting(context.guild.id);
+  
+  if (countingData.channelId) {
+    const strictMode = countingData.strict !== false ? 'on' : 'off';
+    const status = countingData.enabled !== false ? 'enabled' : 'disabled';
+    return embeds.info(context, `The counting channel is <#${countingData.channelId}>\nStatus: **${status}**\nStrict mode: **${strictMode}**\nCurrent count: **${countingData.currentCount}**`);
+  } else {
+    return embeds.info(context, `There is no counting channel set`);
+  }
+}
+
+// SHARED LOGIC: Set counting channel
+async function setCountingChannelShared(context, channel) {
+  const guildService = getService('guild');
+  
+  await guildService.setCounting(context.guild.id, {
+    channelId: channel.id,
+    currentCount: 0,
+    lastCounterId: null,
+    strict: true,
+    enabled: true
+  });
+
+  return embeds.success(context, `Counting channel has been **set** to ${channel} and **enabled**. Start counting from **1**!`);
+}
+
+// SHARED LOGIC: Toggle strict mode
+async function toggleStrictModeShared(context, mode) {
+  const guildService = getService('guild');
+  const countingData = await guildService.getCounting(context.guild.id);
+  
+  if (!countingData.channelId) {
+    return embeds.warn(context, 'Please set a counting channel first using `/count channel #channel`');
+  }
+
+  if (mode === 'on') {
+    countingData.strict = true;
+    await guildService.setCounting(context.guild.id, countingData);
+    return embeds.success(context, '**Strict mode** has been **enabled**. Wrong counts will reset the game');
+  } else if (mode === 'off') {
+    countingData.strict = false;
+    await guildService.setCounting(context.guild.id, countingData);
+    return embeds.success(context, '**Strict mode** has been **disabled**. Wrong counts will be ignored but the game continues');
+  }
+}
+
+// SHARED LOGIC: Toggle blacklist user
+async function toggleBlacklistUserShared(context, user) {
+  const guildService = getService('guild');
+  const countingData = await guildService.getCounting(context.guild.id);
+  
+  if (!countingData.channelId) {
+    return embeds.warn(context, 'Please set a counting channel first using `/count channel #channel`');
+  }
+
+  if (!countingData.ignoredUsers) {
+    countingData.ignoredUsers = [];
+  }
+
+  if (countingData.ignoredUsers.includes(user.id)) {
+    countingData.ignoredUsers = countingData.ignoredUsers.filter(id => id !== user.id);
+    await guildService.setCounting(context.guild.id, countingData);
+    return embeds.success(context, `**${user.tag}** is no longer **blacklisted** in the counting system`);
+  } else {
+    countingData.ignoredUsers.push(user.id);
+    await guildService.setCounting(context.guild.id, countingData);
+    return embeds.success(context, `**${user.tag}** is now **blacklisted** in the counting system`);
+  }
+}
+
+// SHARED LOGIC: View blacklisted users
+async function viewBlacklistedUsersShared(context) {
+  const guildService = getService('guild');
+  const client = context.client || context;
+  const countingData = await guildService.getCounting(context.guild.id);
+  
+  if (!countingData.channelId) {
+    return embeds.warn(context, 'Please set a counting channel first using `/count channel #channel`');
+  }
+
+  if (!countingData.ignoredUsers || countingData.ignoredUsers.length === 0) {
+    return embeds.info(context, 'There are no **blacklisted users** in the counting system');
+  }
+
+  const userList = await Promise.all(
+    countingData.ignoredUsers.map(async (userId, index) => {
+      try {
+        const user = await client.users.fetch(userId);
+        return `${index + 1}. **${user.tag}** (${userId})`;
+      } catch {
+        return `${index + 1}. Unknown User (${userId})`;
+      }
+    })
+  );
+
+  return embeds.info(context, `**Blacklisted Users (${countingData.ignoredUsers.length}):**\n${userList.join('\n')}`);
+}
+
 module.exports = {
   // PREFIX COMMAND
   name: 'count',
@@ -14,8 +115,6 @@ module.exports = {
   permission: 'manage_guild',
   isGroupCommand: true,
   run: async (client, message, args) => {
-    const guildService = getService('guild');
-
     if (!message.member.permissions.has('ManageGuild')) {
       return embeds.permission(message, 'Manage Guild');
     }
@@ -28,32 +127,11 @@ module.exports = {
 
     // CONFIG subcommand
     if (subcommand === 'config') {
-      const subcommandInfo = {
-        description: 'View current counting configuration',
-        syntax: '{guildprefix}count config',
-        aliases: [],
-        example: '{guildprefix}count config'
-      };
-      const countingData = await guildService.getCounting(message.guild.id);
-      
-      if (countingData.channelId) {
-        const strictMode = countingData.strict !== false ? 'on' : 'off';
-        const status = countingData.enabled !== false ? 'enabled' : 'disabled';
-        return embeds.info(message, `The counting channel is <#${countingData.channelId}>\nStatus: **${status}**\nStrict mode: **${strictMode}**\nCurrent count: **${countingData.currentCount}**`);
-      } else {
-        return embeds.info(message, `There is no counting channel set`);
-      }
+      return await viewCountingConfigShared(message);
     }
 
     // CHANNEL subcommand
     if (subcommand === 'channel') {
-      const subcommandInfo = {
-        description: 'Set the counting channel',
-        syntax: '{guildprefix}count channel [#channel]',
-        aliases: [],
-        example: '{guildprefix}count channel #counting'
-      };
-
       if (!args[1]) {
         return runHelpCommand(message, 'count');
       }
@@ -66,114 +144,38 @@ module.exports = {
         return embeds.warn(message, 'Invalid channel provided');
       }
 
-      await guildService.setCounting(message.guild.id, {
-        channelId: channel.id,
-        currentCount: 0,
-        lastCounterId: null,
-        strict: true,
-        enabled: true
-      });
+      if (!channel.isTextBased()) {
+        return embeds.deny(message, 'Counting channel must be a text channel', false);
+      }
 
-      return embeds.success(message, `Counting channel has been **set** to ${channel} and **enabled**. Start counting from **1**!`);
+      return await setCountingChannelShared(message, channel);
     }
 
     // STRICT subcommand
     if (subcommand === 'strict') {
-      const subcommandInfo = {
-        description: 'Toggle strict mode for counting',
-        syntax: '{guildprefix}count strict [on/off]',
-        aliases: [],
-        example: '{guildprefix}count strict on'
-      };
-
-      const countingData = await guildService.getCounting(message.guild.id);
-      
-      if (!countingData.channelId) {
-        return embeds.warn(message, 'Please set a counting channel first using `,count channel #channel`');
-      }
-
       const mode = args[1]?.toLowerCase();
       
-      if (mode === 'on') {
-        countingData.strict = true;
-        await guildService.setCounting(message.guild.id, countingData);
-        return embeds.success(message, '**Strict mode** has been **enabled**. Wrong counts will reset the game');
-      } else if (mode === 'off') {
-        countingData.strict = false;
-        await guildService.setCounting(message.guild.id, countingData);
-        return embeds.success(message, '**Strict mode** has been **disabled**. Wrong counts will be ignored but the game continues');
-      } else {
+      if (!mode || (mode !== 'on' && mode !== 'off')) {
         return runHelpCommand(message, 'count');
       }
+
+      return await toggleStrictModeShared(message, mode);
     }
 
     // BLACKLIST subcommand
     if (subcommand === 'blacklist') {
-      const subcommandInfo = {
-        description: 'Toggle blacklist for a user in counting',
-        syntax: '{guildprefix}count blacklist [user]',
-        aliases: [],
-        example: '{guildprefix}count blacklist @user'
-      };
-
-      const countingData = await guildService.getCounting(message.guild.id);
-      
-      if (!countingData.channelId) {
-        return embeds.warn(message, 'Please set a counting channel first using `,count channel #channel`');
-      }
-
-      const user = message.mentions.users.first() || await message.client.users.fetch(args[1]).catch(() => null);
+      const user = message.mentions.users.first() || await client.users.fetch(args[1]).catch(() => null);
       
       if (!user) {
         return runHelpCommand(message, 'count');
       }
 
-      if (!countingData.ignoredUsers) {
-        countingData.ignoredUsers = [];
-      }
-
-      if (countingData.ignoredUsers.includes(user.id)) {
-        countingData.ignoredUsers = countingData.ignoredUsers.filter(id => id !== user.id);
-        await guildService.setCounting(message.guild.id, countingData);
-        return embeds.success(message, `**${user.tag}** is no longer **blacklisted** in the counting system`);
-      } else {
-        countingData.ignoredUsers.push(user.id);
-        await guildService.setCounting(message.guild.id, countingData);
-        return embeds.success(message, `**${user.tag}** is now **blacklisted** in the counting system`);
-      }
+      return await toggleBlacklistUserShared(message, user);
     }
 
     // BLACKLISTS subcommand
     if (subcommand === 'blacklists') {
-      const subcommandInfo = {
-        description: 'View all blacklisted users in counting',
-        syntax: '{guildprefix}count blacklists',
-        aliases: [],
-        example: '{guildprefix}count blacklists'
-      };
-
-      const countingData = await guildService.getCounting(message.guild.id);
-      
-      if (!countingData.channelId) {
-        return embeds.warn(message, 'Please set a counting channel first using `,count channel #channel`');
-      }
-
-      if (!countingData.ignoredUsers || countingData.ignoredUsers.length === 0) {
-        return embeds.info(message, 'There are no **blacklisted users** in the counting system');
-      }
-
-      const userList = await Promise.all(
-        countingData.ignoredUsers.map(async (userId, index) => {
-          try {
-            const user = await client.users.fetch(userId);
-            return `${index + 1}. **${user.tag}** (${userId})`;
-          } catch {
-            return `${index + 1}. Unknown User (${userId})`;
-          }
-        })
-      );
-
-      return embeds.info(message, `**Blacklisted Users (${countingData.ignoredUsers.length}):**\n${userList.join('\n')}`);
+      return await viewBlacklistedUsersShared(message);
     }
 
     return runHelpCommand(message, 'count');
@@ -237,20 +239,11 @@ module.exports = {
         return embeds.deny(interaction, 'You need **Manage Guild** permission to use this command', false);
       }
 
-      const guildService = getService('guild');
       const subcommand = interaction.options.getSubcommand();
 
       // CONFIG subcommand
       if (subcommand === 'config') {
-        const countingData = await guildService.getCounting(interaction.guild.id);
-        
-        if (countingData.channelId) {
-          const strictMode = countingData.strict !== false ? 'on' : 'off';
-          const status = countingData.enabled !== false ? 'enabled' : 'disabled';
-          return embeds.info(interaction, `The counting channel is <#${countingData.channelId}>\nStatus: **${status}**\nStrict mode: **${strictMode}**\nCurrent count: **${countingData.currentCount}**`, false);
-        } else {
-          return embeds.info(interaction, `There is no counting channel set`, false);
-        }
+        return await viewCountingConfigShared(interaction);
       }
 
       // CHANNEL subcommand
@@ -261,87 +254,24 @@ module.exports = {
           return embeds.deny(interaction, 'Counting channel must be a text channel', false);
         }
 
-        await guildService.setCounting(interaction.guild.id, {
-          channelId: channel.id,
-          currentCount: 0,
-          lastCounterId: null,
-          strict: true,
-          enabled: true
-        });
-
-        return embeds.success(interaction, `Counting channel has been **set** to ${channel} and **enabled**. Start counting from **1**!`, false);
+        return await setCountingChannelShared(interaction, channel);
       }
 
       // STRICT subcommand
       if (subcommand === 'strict') {
-        const countingData = await guildService.getCounting(interaction.guild.id);
-        
-        if (!countingData.channelId) {
-          return embeds.warn(interaction, 'Please set a counting channel first using `/count channel #channel`', false);
-        }
-
         const mode = interaction.options.getString('mode');
-        
-        if (mode === 'on') {
-          countingData.strict = true;
-          await guildService.setCounting(interaction.guild.id, countingData);
-          return embeds.success(interaction, '**Strict mode** has been **enabled**. Wrong counts will reset the game', false);
-        } else if (mode === 'off') {
-          countingData.strict = false;
-          await guildService.setCounting(interaction.guild.id, countingData);
-          return embeds.success(interaction, '**Strict mode** has been **disabled**. Wrong counts will be ignored but the game continues', false);
-        }
+        return await toggleStrictModeShared(interaction, mode);
       }
 
       // BLACKLIST subcommand
       if (subcommand === 'blacklist') {
-        const countingData = await guildService.getCounting(interaction.guild.id);
-        
-        if (!countingData.channelId) {
-          return embeds.warn(interaction, 'Please set a counting channel first using `/count channel #channel`', false);
-        }
-
         const user = interaction.options.getUser('user');
-
-        if (!countingData.ignoredUsers) {
-          countingData.ignoredUsers = [];
-        }
-
-        if (countingData.ignoredUsers.includes(user.id)) {
-          countingData.ignoredUsers = countingData.ignoredUsers.filter(id => id !== user.id);
-          await guildService.setCounting(interaction.guild.id, countingData);
-          return embeds.success(interaction, `**${user.tag}** is no longer **blacklisted** in the counting system`, false);
-        } else {
-          countingData.ignoredUsers.push(user.id);
-          await guildService.setCounting(interaction.guild.id, countingData);
-          return embeds.success(interaction, `**${user.tag}** is now **blacklisted** in the counting system`, false);
-        }
+        return await toggleBlacklistUserShared(interaction, user);
       }
 
       // BLACKLISTS subcommand
       if (subcommand === 'blacklists') {
-        const countingData = await guildService.getCounting(interaction.guild.id);
-        
-        if (!countingData.channelId) {
-          return embeds.warn(interaction, 'Please set a counting channel first using `/count channel #channel`', false);
-        }
-
-        if (!countingData.ignoredUsers || countingData.ignoredUsers.length === 0) {
-          return embeds.info(interaction, 'There are no **blacklisted users** in the counting system', false);
-        }
-
-        const userList = await Promise.all(
-          countingData.ignoredUsers.map(async (userId, index) => {
-            try {
-              const user = await interaction.client.users.fetch(userId);
-              return `${index + 1}. **${user.tag}** (${userId})`;
-            } catch {
-              return `${index + 1}. Unknown User (${userId})`;
-            }
-          })
-        );
-
-        return embeds.info(interaction, `**Blacklisted Users (${countingData.ignoredUsers.length}):**\n${userList.join('\n')}`, false);
+        return await viewBlacklistedUsersShared(interaction);
       }
 
     } catch (error) {

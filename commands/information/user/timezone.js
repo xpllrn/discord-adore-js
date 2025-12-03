@@ -202,23 +202,46 @@ async function setUserTimezone(message, cityName) {
 // Add slash command data
 module.exports.data = new SlashCommandBuilder()
   .setName('timezone')
-  .setDescription('View a user\'s timezone')
+  .setDescription('Manage your timezone')
   .setIntegrationTypes([
     ApplicationIntegrationType.GuildInstall,
     ApplicationIntegrationType.UserInstall
   ])
-  .addUserOption(option =>
-    option
-      .setName('user')
-      .setDescription('The user to view')
-      .setRequired(false)
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('view')
+      .setDescription('View a user\'s timezone')
+      .addUserOption(option =>
+        option
+          .setName('user')
+          .setDescription('The user to view')
+          .setRequired(false)
+      )
+  )
+  .addSubcommand(subcommand =>
+    subcommand
+      .setName('set')
+      .setDescription('Set your timezone by city name')
+      .addStringOption(option =>
+        option
+          .setName('city')
+          .setDescription('City name (e.g., London, New York, Tokyo)')
+          .setRequired(true)
+      )
   );
 
 // Add slash command execute
 module.exports.execute = async function(interaction) {
   try {
-    const targetUser = interaction.options.getUser('user') || interaction.user;
-    return await showUserTimezoneSlash(interaction, targetUser.id, targetUser);
+    const subcommand = interaction.options.getSubcommand();
+
+    if (subcommand === 'view') {
+      const targetUser = interaction.options.getUser('user') || interaction.user;
+      return await showUserTimezoneSlash(interaction, targetUser.id, targetUser);
+    } else if (subcommand === 'set') {
+      const cityName = interaction.options.getString('city');
+      return await setUserTimezoneSlash(interaction, cityName);
+    }
   } catch (error) {
     logger.webhook.error(error, { author: interaction.user, guild: interaction.guild, channel: interaction.channel });
     return embeds.deny(interaction, 'An error occurred while processing your request', false);

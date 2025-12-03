@@ -635,9 +635,23 @@ async function handleMessage(client, message, args) {
 async function updateTicketSetupMessage(client, guild, ticketSystem, customMessage) {
   try {
     const setupChannel = guild.channels.cache.get(ticketSystem.setupChannelId);
-    if (!setupChannel) return;
+    if (!setupChannel) {
+      // Channel doesn't exist, clear setup data
+      const guildService = getService('guild');
+      await guildService.setTicketSetup(guild.id, null, null);
+      return;
+    }
 
-    const setupMessage = await setupChannel.messages.fetch(ticketSystem.setupMessageId);
+    let setupMessage;
+    try {
+      setupMessage = await setupChannel.messages.fetch(ticketSystem.setupMessageId);
+    } catch (error) {
+      // Message doesn't exist (deleted), clear setup data
+      const guildService = getService('guild');
+      await guildService.setTicketSetup(guild.id, null, null);
+      return;
+    }
+    
     if (!setupMessage) return;
 
     let embed;

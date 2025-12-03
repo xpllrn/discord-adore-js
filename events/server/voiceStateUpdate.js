@@ -6,14 +6,14 @@ module.exports = {
   name: 'voiceStateUpdate',
   async execute(oldState, newState, client) {
     try {
-      // Skip if no guild
-      if (!newState.guild) return;
-
-      // Log voice state changes (before skipping bots)
-      await logVoiceStateChange(oldState, newState);
+      // Skip if no guild or member
+      if (!newState.guild || !newState.member) return;
 
       // Skip bots for voice manager functionality
       if (newState.member.user.bot) return;
+
+      // Log voice state changes (after bot check)
+      await logVoiceStateChange(oldState, newState);
 
       const guild = newState.guild;
       const member = newState.member;
