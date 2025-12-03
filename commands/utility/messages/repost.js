@@ -4,6 +4,7 @@ const cheerio = require('cheerio');
 const { Buffer } = require('buffer');
 const FileType = require('file-type');
 const logger = require('../../../utils/logger');
+const { embeds } = require('../../../core/embeds');
 
 // Instagram Scraper Module
 class InstagramScraper {
@@ -758,7 +759,7 @@ module.exports = {
         const url = interaction.options.getString('url');
 
         if (!url || !url.match(/^https?:\/\/.+/)) {
-            return interaction.reply({ content: 'Please provide a valid Instagram or TikTok URL', ephemeral: true });
+            return embeds.deny(interaction, 'Please provide a valid Instagram or TikTok URL');
         }
 
         await interaction.deferReply();
@@ -769,11 +770,11 @@ module.exports = {
             } else if (url.match(/tiktok\.com/)) {
                 return await handleTikTokSlash(interaction, url);
             } else {
-                return interaction.editReply({ content: 'Please provide a valid Instagram or TikTok URL' });
+                return embeds.deny(interaction, 'Please provide a valid Instagram or TikTok URL');
             }
         } catch (error) {
             logger.webhook.error(error, interaction);
-            return interaction.editReply({ content: 'An error occurred while downloading the content' });
+            return embeds.deny(interaction, 'An error occurred while downloading the content');
         }
     }
 };
@@ -892,12 +893,12 @@ async function handleInstagramSlash(interaction, url) {
         if (attachments.length > 0) {
             return interaction.editReply({ files: attachments });
         } else {
-            return interaction.editReply({ content: 'Failed to download Instagram content' });
+            return embeds.deny(interaction, 'Failed to download Instagram content');
         }
 
     } catch (error) {
         logger.webhook.error(error, interaction);
-        return interaction.editReply({ content: 'An error occurred while downloading Instagram content' });
+        return embeds.deny(interaction, 'An error occurred while downloading Instagram content');
     }
 }
 
@@ -1039,14 +1040,14 @@ async function handleTikTokSlash(interaction, url) {
         });
 
         if (!response.data || response.data.code !== 0) {
-            return interaction.editReply({ content: 'Failed to download TikTok content' });
+            return embeds.deny(interaction, 'Failed to download TikTok content');
         }
 
         const videoData = response.data.data;
         let videoUrl = videoData.play || videoData.download_addr || videoData.video?.downloadAddr;
 
         if (!videoUrl) {
-            return interaction.editReply({ content: 'Failed to download TikTok content' });
+            return embeds.deny(interaction, 'Failed to download TikTok content');
         }
 
         if (videoUrl.startsWith('/')) {
@@ -1066,7 +1067,7 @@ async function handleTikTokSlash(interaction, url) {
         const fileSizeMB = buffer.length / (1024 * 1024);
 
         if (fileSizeMB > 25) {
-            return interaction.editReply({ content: 'Video file is too large (max 25MB)' });
+            return embeds.deny(interaction, 'Video file is too large (max 25MB)');
         }
 
         const filename = `tiktok_${Date.now()}.mp4`;
@@ -1076,7 +1077,7 @@ async function handleTikTokSlash(interaction, url) {
 
     } catch (error) {
         logger.webhook.error(error, interaction);
-        return interaction.editReply({ content: 'An error occurred while downloading TikTok content' });
+        return embeds.deny(interaction, 'An error occurred while downloading TikTok content');
     }
 }
 

@@ -273,14 +273,7 @@ async function showHelpShared(context, client, commandQuery) {
     // Only show dev commands to the actual dev (DEV_ID)
     if (userId !== setupConfig.bot.ownerId) {
       // Pretend the command doesn't exist for non-devs
-      if (isInteraction) {
-        if (context.deferred || context.replied) {
-          return context.editReply({ content: `Command \`${commandQuery}\` does not exist` });
-        }
-        return context.reply({ content: `Command \`${commandQuery}\` does not exist`, ephemeral: false });
-      } else {
-        return embeds.warn(message, `Command \`${commandQuery}\` does not exist`, false);
-      }
+      return embeds.warn(isInteraction ? context : message, `Command \`${commandQuery}\` does not exist`, false);
     }
   }
 
@@ -395,25 +388,10 @@ async function showHelpShared(context, client, commandQuery) {
     }
 
   } else if (commandQuery) {
-    if (isInteraction) {
-      if (context.deferred || context.replied) {
-        return context.editReply({ content: `Command \`${commandQuery}\` does not exist` });
-      }
-      return context.reply({ content: `Command \`${commandQuery}\` does not exist`, ephemeral: false });
-    } else {
-      return embeds.warn(message, `Command \`${commandQuery}\` does not exist`, false);
-    }
+    return embeds.warn(isInteraction ? context : message, `Command \`${commandQuery}\` does not exist`, false);
 
   } else {
-    const msg = `Use https://adore.rest/ for command list and <https://adore.rest/server> the server`;
-    if (isInteraction) {
-      if (context.deferred || context.replied) {
-        return context.editReply({ content: msg });
-      }
-      return context.reply({ content: msg, ephemeral: false });
-    } else {
-      return context.channel.send(msg);
-    }
+    return embeds.info(isInteraction ? context : message, `Use https://adore.rest/ for command list and <https://adore.rest/server> the server`, false);
   }
 }
 

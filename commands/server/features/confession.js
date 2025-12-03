@@ -134,34 +134,19 @@ async function submitConfession(context, confessionText) {
 
   // Check if system is enabled
   if (!confessionConfig.enabled || !confessionConfig.channelId) {
-    const errorMsg = `${config.emojis.error} <@${user.id}>: The confession system is **not enabled** on this server.`;
-    if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: false });
-    } else {
-      return embeds.deny(context, 'The confession system is **not enabled** on this server.', false);
-    }
+    return embeds.deny(context, 'The confession system is **not enabled** on this server.', false);
   }
 
   // Check if user is blacklisted
   const isBlacklisted = await confessionService.isUserIgnored(guild.id, user.id);
   if (isBlacklisted) {
-    const errorMsg = `${config.emojis.error} <@${user.id}>: You are **blacklisted** from submitting confessions in this server.`;
-    if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: false });
-    } else {
-      return embeds.deny(context, 'You are **blacklisted** from submitting confessions in this server.', false);
-    }
+    return embeds.deny(context, 'You are **blacklisted** from submitting confessions in this server.', false);
   }
 
   // Get confession channel
   const confessionChannel = guild.channels.cache.get(confessionConfig.channelId);
   if (!confessionChannel) {
-    const errorMsg = `${config.emojis.error} <@${user.id}>: The confession channel **no longer exists**.`;
-    if (isInteraction) {
-      return context.reply({ content: errorMsg, ephemeral: false });
-    } else {
-      return embeds.deny(context, 'The confession channel **no longer exists**.', false);
-    }
+    return embeds.deny(context, 'The confession channel **no longer exists**.', false);
   }
 
   // Get next confession ID

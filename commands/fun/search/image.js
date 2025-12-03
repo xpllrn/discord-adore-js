@@ -46,9 +46,6 @@ async function imageSearchShared(context, query) {
 
     // Check if we got results
     if (!data.items || data.items.length === 0) {
-      if (isInteraction) {
-        return context.editReply({ content: `No images found for: **${query}**` });
-      }
       return embeds.warn(context, `No images found for: **${query}**`, false);
     }
 
