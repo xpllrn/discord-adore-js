@@ -211,13 +211,11 @@ module.exports = {
             newContainer.setAccentColor(existingContainer.data.accent_color);
           }
           
-          // Collect all existing buttons first
+          // First pass: Collect all existing buttons
           const allExistingButtons = [];
           
-          // Copy all existing components from the container
           if (existingContainer.components && Array.isArray(existingContainer.components)) {
             for (const comp of existingContainer.components) {
-              // Reconstruct each component based on its type
               if (comp.type === 1) {
                 // Action row with buttons - collect them
                 if (comp.components && Array.isArray(comp.components)) {
@@ -235,80 +233,92 @@ module.exports = {
                     });
                   allExistingButtons.push(...existingButtons);
                 }
-              } else {
-                // For other component types, manually reconstruct them
-                // Component types based on actual Discord API:
-                // Type 1 = ActionRow
-                // Type 9 = Section
-                // Type 10 = TextDisplay
-                // Type 11 = Thumbnail (when used as accessory)
-                // Type 12 = MediaGallery
-                // Type 14 = Separator
-                try {
-                  if (comp.type === 14) { // Separator
-                    newContainer.addSeparatorComponents((separator) => {
-                      if (comp.divider !== undefined) separator.setDivider(comp.divider);
-                      if (comp.spacing !== undefined) separator.setSpacing(comp.spacing);
-                      return separator;
-                    });
-                  } else if (comp.type === 10) { // Text display
-                    const content = comp.content || '';
-                    newContainer.addTextDisplayComponents((text) => text.setContent(content));
-                  } else if (comp.type === 9) { // Section
-                    newContainer.addSectionComponents((section) => {
-                      // Copy section text displays
-                      if (comp.components && Array.isArray(comp.components)) {
-                        const textDisplays = comp.components
-                          .filter(c => c.type === 10)
-                          .map(c => (text) => text.setContent(c.content || ''));
-                        if (textDisplays.length > 0) {
-                          section.addTextDisplayComponents(...textDisplays);
-                        }
+              }
+            }
+          }
+          
+          console.log(`Collected ${allExistingButtons.length} existing buttons`);
+          
+          // Second pass: Copy all non-button components
+          if (existingContainer.components && Array.isArray(existingContainer.components)) {
+            for (const comp of existingContainer.components) {
+              // Skip action rows (buttons) - we'll add them all at the end
+              if (comp.type === 1) {
+                continue;
+              }
+              
+              // Copy other component types
+              // Component types based on actual Discord API:
+              // Type 1 = ActionRow
+              // Type 9 = Section
+              // Type 10 = TextDisplay
+              // Type 11 = Thumbnail (when used as accessory)
+              // Type 12 = MediaGallery
+              // Type 14 = Separator
+              try {
+                if (comp.type === 14) { // Separator
+                  newContainer.addSeparatorComponents((separator) => {
+                    if (comp.divider !== undefined) separator.setDivider(comp.divider);
+                    if (comp.spacing !== undefined) separator.setSpacing(comp.spacing);
+                    return separator;
+                  });
+                } else if (comp.type === 10) { // Text display
+                  const content = comp.content || '';
+                  newContainer.addTextDisplayComponents((text) => text.setContent(content));
+                } else if (comp.type === 9) { // Section
+                  newContainer.addSectionComponents((section) => {
+                    // Copy section text displays
+                    if (comp.components && Array.isArray(comp.components)) {
+                      const textDisplays = comp.components
+                        .filter(c => c.type === 10)
+                        .map(c => (text) => text.setContent(c.content || ''));
+                      if (textDisplays.length > 0) {
+                        section.addTextDisplayComponents(...textDisplays);
                       }
-                      // Copy accessory (thumbnail or button)
-                      if (comp.accessory) {
-                        if (comp.accessory.type === 11) { // Thumbnail
-                          // URL is in media.url for fetched messages
-                          const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
-                          if (thumbnailUrl) {
-                            section.setThumbnailAccessory((thumbnail) => {
-                              thumbnail.setURL(thumbnailUrl);
-                              if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
-                              if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
-                              return thumbnail;
-                            });
-                          }
-                        } else if (comp.accessory.type === 2) { // Button accessory
-                          section.setButtonAccessory((btn) => {
-                            if (comp.accessory.custom_id) btn.setCustomId(comp.accessory.custom_id);
-                            if (comp.accessory.label) btn.setLabel(comp.accessory.label);
-                            if (comp.accessory.style) btn.setStyle(comp.accessory.style);
-                            if (comp.accessory.emoji) btn.setEmoji(comp.accessory.emoji);
-                            if (comp.accessory.url) btn.setURL(comp.accessory.url);
-                            if (comp.accessory.disabled) btn.setDisabled(comp.accessory.disabled);
-                            return btn;
+                    }
+                    // Copy accessory (thumbnail or button)
+                    if (comp.accessory) {
+                      if (comp.accessory.type === 11) { // Thumbnail
+                        // URL is in media.url for fetched messages
+                        const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                        if (thumbnailUrl) {
+                          section.setThumbnailAccessory((thumbnail) => {
+                            thumbnail.setURL(thumbnailUrl);
+                            if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                            if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                            return thumbnail;
                           });
                         }
-                      }
-                      return section;
-                    });
-                  } else if (comp.type === 12) { // Media gallery
-                    newContainer.addMediaGalleryComponents((gallery) => {
-                      if (comp.items && Array.isArray(comp.items)) {
-                        const items = comp.items.map(item => (mediaItem) => {
-                          if (item.url) mediaItem.setURL(item.url);
-                          if (item.description) mediaItem.setDescription(item.description);
-                          if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
-                          return mediaItem;
+                      } else if (comp.accessory.type === 2) { // Button accessory
+                        section.setButtonAccessory((btn) => {
+                          if (comp.accessory.custom_id) btn.setCustomId(comp.accessory.custom_id);
+                          if (comp.accessory.label) btn.setLabel(comp.accessory.label);
+                          if (comp.accessory.style) btn.setStyle(comp.accessory.style);
+                          if (comp.accessory.emoji) btn.setEmoji(comp.accessory.emoji);
+                          if (comp.accessory.url) btn.setURL(comp.accessory.url);
+                          if (comp.accessory.disabled) btn.setDisabled(comp.accessory.disabled);
+                          return btn;
                         });
-                        gallery.addItems(...items);
                       }
-                      return gallery;
-                    });
-                  }
-                } catch (err) {
-                  console.error('Error copying component:', err);
+                    }
+                    return section;
+                  });
+                } else if (comp.type === 12) { // Media gallery
+                  newContainer.addMediaGalleryComponents((gallery) => {
+                    if (comp.items && Array.isArray(comp.items)) {
+                      const items = comp.items.map(item => (mediaItem) => {
+                        if (item.url) mediaItem.setURL(item.url);
+                        if (item.description) mediaItem.setDescription(item.description);
+                        if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
+                        return mediaItem;
+                      });
+                      gallery.addItems(...items);
+                    }
+                    return gallery;
+                  });
                 }
+              } catch (err) {
+                console.error('Error copying component:', err);
               }
             }
           }
