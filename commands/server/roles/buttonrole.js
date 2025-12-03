@@ -219,21 +219,30 @@ module.exports = {
                     .filter(btnData => btnData && btnData.type === 2) // Type 2 = Button
                     .map(btnData => {
                       console.log('Reconstructing button from data:', JSON.stringify(btnData, null, 2));
+                      console.log('btnData.custom_id value:', btnData.custom_id);
+                      console.log('btnData.custom_id type:', typeof btnData.custom_id);
+                      
                       const btn = new V2ButtonBuilder();
                       
-                      // Set style first (required)
-                      if (btnData.style) btn.setStyle(btnData.style);
-                      
-                      // Set label
-                      if (btnData.label) btn.setLabel(btnData.label);
-                      
-                      // Set custom_id or url (one is required)
+                      // Set custom_id or url FIRST (one is required)
                       if (btnData.custom_id) {
                         console.log('Setting customId:', btnData.custom_id);
                         btn.setCustomId(btnData.custom_id);
+                        console.log('After setCustomId, btn.data:', JSON.stringify(btn.data, null, 2));
                       } else if (btnData.url) {
                         console.log('Setting url:', btnData.url);
                         btn.setURL(btnData.url);
+                      }
+                      
+                      // Set style (required)
+                      if (btnData.style) {
+                        btn.setStyle(btnData.style);
+                        console.log('After setStyle, btn.data:', JSON.stringify(btn.data, null, 2));
+                      }
+                      
+                      // Set label
+                      if (btnData.label) {
+                        btn.setLabel(btnData.label);
                       }
                       
                       // Set emoji if present
@@ -245,7 +254,7 @@ module.exports = {
                       // Set disabled state
                       if (btnData.disabled) btn.setDisabled(btnData.disabled);
                       
-                      console.log('Created button with customId:', btn.data?.custom_id);
+                      console.log('Final button data:', JSON.stringify(btn.data, null, 2));
                       return btn;
                     });
                   allExistingButtons.push(...existingButtons);
