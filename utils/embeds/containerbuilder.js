@@ -98,15 +98,6 @@ class CustomContainerBuilder {
                 continue;
             }
 
-            // Handle timestamp (no colon)
-            if (param.trim().toLowerCase() === 'timestamp') {
-                const timestamp = Math.floor(Date.now() / 1000);
-                Container.addTextDisplayComponents(
-                    (text) => text.setContent(`-# <t:${timestamp}:R>`)
-                );
-                continue;
-            }
-
             if (colonIndex === -1) continue;
 
             const paramName = param.substring(0, colonIndex).trim().toLowerCase();
@@ -166,33 +157,30 @@ class CustomContainerBuilder {
                 );
             } else if (paramName === 'section') {
                 // Section with text and optional thumbnail
-                // Format: text1&&text2&&...&&thumbnail_url (up to 3 text displays)
-                // If last part is a URL, it's treated as thumbnail
-                const parts = paramValue.split('&&').map(p => p.trim());
+                // Format: text content&&thumbnail_url
+                // If last part after && is a URL, it's treated as thumbnail
+                const parts = paramValue.split('&&');
                 
-                let textParts = [];
+                let textContent = paramValue;
                 let thumbnailUrl = null;
                 
-                // Check if last part is a URL (thumbnail)
-                const lastPart = parts[parts.length - 1];
-                if (lastPart && (lastPart.startsWith('http://') || lastPart.startsWith('https://'))) {
-                    thumbnailUrl = lastPart;
-                    textParts = parts.slice(0, -1); // All parts except last
-                } else {
-                    textParts = parts; // All parts are text
+                // Check if there's a && separator and last part is a URL
+                if (parts.length === 2) {
+                    const lastPart = parts[1].trim();
+                    if (lastPart && (lastPart.startsWith('http://') || lastPart.startsWith('https://'))) {
+                        thumbnailUrl = lastPart;
+                        textContent = parts[0]; // Everything before &&
+                    }
                 }
 
-                if (textParts.length > 0) {
+                if (textContent.trim().length > 0) {
                     Container.addSectionComponents((section) => {
                         const sectionBuilder = section;
                         
-                        // Add up to 3 text displays
-                        const textsToAdd = textParts.slice(0, 3).filter(t => t.length > 0);
-                        if (textsToAdd.length > 0) {
-                            sectionBuilder.addTextDisplayComponents(
-                                ...textsToAdd.map(t => (text) => text.setContent(t))
-                            );
-                        }
+                        // Add single text display with the content
+                        sectionBuilder.addTextDisplayComponents(
+                            (text) => text.setContent(textContent.trim())
+                        );
 
                         // Add thumbnail if provided
                         if (thumbnailUrl) {

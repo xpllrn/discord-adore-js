@@ -1,5 +1,6 @@
 const { ContainerBuilder, SectionBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { colors, emojis } = require('../../../config/setup');
+const { embeds } = require('../../../core/embeds');
 const logger = require('../../../utils/logger');
 
 module.exports = {
@@ -17,9 +18,7 @@ module.exports = {
         guild = client.guilds.cache.get(guildId);
         
         if (!guild) {
-          return message.channel.send({
-            content: `❌ I'm not in a server with ID \`${guildId}\` or it doesn't exist.`
-          });
+          return embeds.deny(message, `I'm not in a server with ID \`${guildId}\` or it doesn't exist.`);
         }
       } else {
         guild = message.guild;
