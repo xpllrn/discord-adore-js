@@ -2671,18 +2671,20 @@ class UserService extends BaseService {
       // Find users with swear data, filtered by user IDs
       const users = await User.find({
         UserID: { $in: userIds },
-        'SwearTracker.totalSwears': { $gt: 0 }
+        'SwearTracker.swears.0': { $exists: true }
       })
       .select('UserID SwearTracker')
-      .sort({ 'SwearTracker.totalSwears': -1 })
       .lean();
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Map to leaderboard format
+      // Map to leaderboard format and calculate totals
       const leaderboard = users.map(user => {
         const swearTracker = user.SwearTracker || {};
+        
+        // Calculate total from swears array
+        const calculatedTotal = (swearTracker.swears || []).reduce((sum, s) => sum + (s.count || 0), 0);
         
         // Check if todaySwears needs to be reset
         const lastSwearDate = new Date(swearTracker.lastSwearDate);
@@ -2693,14 +2695,16 @@ class UserService extends BaseService {
 
         return {
           userId: user.UserID,
-          calculatedTotal: swearTracker.totalSwears || 0,
+          calculatedTotal,
           todaySwears,
           swears: (swearTracker.swears || []).map(s => ({
             word: s.word,
             count: s.count
           }))
         };
-      });
+      })
+      .filter(user => user.calculatedTotal > 0)
+      .sort((a, b) => b.calculatedTotal - a.calculatedTotal);
 
       return leaderboard;
     } catch (error) {
