@@ -391,7 +391,7 @@ async function showHelpShared(context, client, commandQuery) {
     return embeds.warn(isInteraction ? context : message, `Command \`${commandQuery}\` does not exist`, false);
 
   } else {
-    const helpMessage = `Use https://adore.rest/ for command list and https://adore.rest/server for server information`;
+    const helpMessage = `Use https://adore.rest/ for command list and <https://adore.rest/server> for server information`;
     if (isInteraction) {
       if (context.deferred || context.replied) {
         return context.editReply({ content: helpMessage });
