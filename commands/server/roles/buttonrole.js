@@ -322,6 +322,11 @@ module.exports = {
           // Add the new button to the collection
           allExistingButtons.push(button);
           
+          console.log(`Total buttons: ${allExistingButtons.length}`);
+          allExistingButtons.forEach((btn, idx) => {
+            console.log(`Button ${idx}: customId=${btn.data?.custom_id}, label=${btn.data?.label}`);
+          });
+          
           // Add a separator before the buttons if there were existing buttons
           if (allExistingButtons.length > 1) {
             newContainer.addSeparatorComponents((separator) => separator);
@@ -330,6 +335,7 @@ module.exports = {
           // Add all buttons in rows of 5 (Discord limit)
           for (let i = 0; i < allExistingButtons.length; i += 5) {
             const buttonSlice = allExistingButtons.slice(i, i + 5);
+            console.log(`Adding row ${Math.floor(i/5)} with ${buttonSlice.length} buttons`);
             newContainer.addActionRowComponents((actionRow) =>
               actionRow.setComponents(...buttonSlice)
             );
