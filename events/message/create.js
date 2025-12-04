@@ -701,11 +701,11 @@ const STICKY_COOLDOWN = 2000; // 2 seconds cooldown to prevent spam
 // Process sticky messages - repost sticky message when new messages are sent
 async function processStickyMessage(message) {
   try {
-    // Skip if message is from bot
-    if (message.author.bot) return;
-
     const { getService } = require('@services');
     const guildService = getService('guild');
+
+    // Skip if message is from this bot
+    if (message.author.id === message.client.user.id) return;
 
     // Get sticky message for this channel
     const stickyData = await guildService.getStickyMessage(message.guild.id, message.channel.id);
