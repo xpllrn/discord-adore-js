@@ -1,4 +1,4 @@
-// NOTE: Cache system has been updated to ensure ALL data is loaded before bot starts
+// NOTE: Cache system has been updated to ensure ALL daIta is loaded before bot starts
 // All cache write enabling checks are now redundant but left for backward compatibility
 // The bot will not start until ALL cache data is loaded from the database
 

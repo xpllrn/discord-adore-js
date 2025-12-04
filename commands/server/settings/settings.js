@@ -117,7 +117,7 @@ async function handleBaseRoleShared(context, role, guildService) {
     const baseRole = guild.roles.cache.get(baseRoleId);
     if (!baseRole) {
       // Base role was deleted, disable system
-      await guildService.setBoosterRoleBaseRole(guild.id, null);
+      await guildService.setBoosterRoleSystem(guild.id, null, false);
       return embeds.warn(context, 'The base role was deleted. Booster role system has been disabled.', false);
     }
 
