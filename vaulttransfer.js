@@ -170,8 +170,25 @@ client.once('ready', async () => {
               console.log(`      ✓ Progress: ${forwarded}/${mediaMessages.length} (${Math.round(forwarded/mediaMessages.length*100)}%)`);
             }
           } catch (err) {
-            failed++;
-            console.log(`      ⚠️  Failed to forward msg ${msg.id}: ${err.message}`);
+            // Fallback: just send the attachment URLs directly
+            try {
+              const urls = msg.attachments
+                .filter(att => isMediaAttachment(att))
+                .map(att => att.url);
+              
+              if (urls.length > 0) {
+                await targetChannel.send({ content: urls.join('\n') });
+                forwarded++;
+                totalMediaForwarded++;
+                console.log(`      ↪ Fallback sent for msg ${msg.id}`);
+              } else {
+                failed++;
+                console.log(`      ⚠️  Failed msg ${msg.id}: ${err.message}`);
+              }
+            } catch (fallbackErr) {
+              failed++;
+              console.log(`      ⚠️  Failed msg ${msg.id}: ${err.message}`);
+            }
           }
 
           // Rate limit - 1 second between forwards
