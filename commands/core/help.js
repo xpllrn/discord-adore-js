@@ -19,96 +19,40 @@ function hasSubcommands(command) {
 
 /**
  * Parses command file to extract all subcommandInfo objects
+ * SIMPLIFIED: Just find ALL subcommandInfo blocks, extract the name field, and use that
  */
 function parseSubcommands(commandFilePath, commandName, guildPrefix) {
   try {
     const fileContent = fs.readFileSync(commandFilePath, 'utf8');
     const subcommands = [];
+    const seenNames = new Set(); // Track duplicates
 
-    // Regex to find subcommand blocks with subcommandInfo
-    const subcommandBlockRegex = /if\s*\(\s*(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"]\s*(?:\|\|\s*(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"])*\s*\)\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+    // SINGLE REGEX: Find all subcommandInfo blocks anywhere in the file
+    // This matches: const subcommandInfo = { ... };
+    const subcommandInfoRegex = /const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
 
     let match;
-    while ((match = subcommandBlockRegex.exec(fileContent)) !== null) {
-      const subcommandName = match[1];
-      const subcommandInfoContent = match[3];
-
-      const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
-      const aliasesFromConditional = extractAliasesFromConditional(match[0]);
-
-      if (aliasesFromConditional.length > 0) {
-        subcommandData.aliases = [...new Set([...subcommandData.aliases, ...aliasesFromConditional])];
-      }
-
-      subcommands.push(subcommandData);
-    }
-
-    // Also try to find switch case statements with subcommandInfo
-    const switchCaseRegex = /case\s+['"](\w+)['"]\s*:\s*(?:case\s+['"](\w+)['"]\s*:\s*)*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
-
-    while ((match = switchCaseRegex.exec(fileContent)) !== null) {
-      const subcommandName = match[1];
-      const subcommandInfoContent = match[3];
-
-      const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
-      const aliasesFromCases = extractAliasesFromSwitchCases(match[0]);
-
-      if (aliasesFromCases.length > 0) {
-        subcommandData.aliases = [...new Set([...subcommandData.aliases, ...aliasesFromCases])];
-      }
-
-      subcommands.push(subcommandData);
-    }
-
-    // NEW: Handle catch-all else-if blocks with subcommandInfo (e.g., "} else if (args[0]) {")
-    // These blocks have a 'name' field in subcommandInfo that we can extract
-    const catchAllRegex = /\}\s*else\s+if\s*\(\s*args\[0\]\s*\)\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
-
-    while ((match = catchAllRegex.exec(fileContent)) !== null) {
+    while ((match = subcommandInfoRegex.exec(fileContent)) !== null) {
       const subcommandInfoContent = match[1];
 
-      // Extract the name from subcommandInfo
+      // Extract the name field (required)
       const nameMatch = subcommandInfoContent.match(/name:\s*[`'"]([^`'"]*)[`'"]/);
-      if (nameMatch) {
-        const subcommandName = nameMatch[1];
-        const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
-        subcommands.push(subcommandData);
+      if (!nameMatch) {
+        // Skip if no name field - this is likely a nested/helper subcommandInfo
+        continue;
       }
-    }
 
-    // NEW: Handle final else blocks with subcommandInfo (e.g., "} else {")
-    const finalElseRegex = /\}\s*else\s*\{[\s\S]*?const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+      const subcommandName = nameMatch[1];
 
-    while ((match = finalElseRegex.exec(fileContent)) !== null) {
-      const subcommandInfoContent = match[1];
-
-      // Extract the name from subcommandInfo
-      const nameMatch = subcommandInfoContent.match(/name:\s*[`'"]([^`'"]*)[`'"]/);
-      if (nameMatch) {
-        const subcommandName = nameMatch[1];
-        const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, guildPrefix);
-        subcommands.push(subcommandData);
+      // Skip duplicates (same subcommand defined multiple times)
+      if (seenNames.has(subcommandName)) {
+        continue;
       }
-    }
+      seenNames.add(subcommandName);
 
-    // NEW: Handle delegated commands (e.g., role command that delegates to reactionrole/buttonrole)
-    // Look for patterns like: const xxxCommand = require('../essentials/path/to/file');
-    //                         return xxxCommand.run(client, message, args.slice(1));
-    const delegationRegex = /const\s+(\w+Command)\s*=\s*require\(['"](\.\/[^'"]+)['"]\);[\s\S]*?return\s+\1\.run\(/g;
-
-    while ((match = delegationRegex.exec(fileContent)) !== null) {
-      const delegatedPath = match[2];
-
-      // Resolve the delegated file path relative to the current command file
-      const commandDir = path.dirname(commandFilePath);
-      const delegatedFilePath = path.resolve(commandDir, delegatedPath + '.js');
-
-      // Check if the delegated file exists
-      if (fs.existsSync(delegatedFilePath)) {
-        // Recursively parse the delegated file
-        const delegatedSubcommands = parseSubcommands(delegatedFilePath, commandName, guildPrefix);
-        subcommands.push(...delegatedSubcommands);
-      }
+      // Parse the full subcommand data
+      const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
+      subcommands.push(subcommandData);
     }
 
     return subcommands;
@@ -281,25 +225,38 @@ async function showHelpShared(context, client, commandQuery) {
     // Check if this is a group command with subcommands
     if (hasSubcommands(command)) {
       try {
-        // Get the command file path
-        const commandsDir = path.join(__dirname, '..');
-        const commandFilePath = getCommandFilePath(command.name, commandsDir);
+        let subcommands = [];
 
-        if (!commandFilePath) {
-          // Fall back to traditional embed
-          const container = createTraditionalEmbed(command, guildprefix);
-          if (isInteraction) {
-            if (context.deferred || context.replied) {
-              return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
+        // PRIORITY 1: Check if command has explicit subcommands array
+        if (command.subcommands && Array.isArray(command.subcommands)) {
+          // Use the declarative subcommands array (preferred method)
+          subcommands = command.subcommands.map(sub => ({
+            ...sub,
+            fullCommand: `${command.name} ${sub.name}`,
+            syntax: sub.syntax ? sub.syntax.replace(/\{guildprefix\}/g, guildprefix) : '',
+            example: sub.example ? sub.example.replace(/\{guildprefix\}/g, guildprefix) : ''
+          }));
+        } else {
+          // PRIORITY 2: Fall back to parsing the file (legacy method)
+          const commandsDir = path.join(__dirname, '..');
+          const commandFilePath = getCommandFilePath(command.name, commandsDir);
+
+          if (!commandFilePath) {
+            // Fall back to traditional embed
+            const container = createTraditionalEmbed(command, guildprefix);
+            if (isInteraction) {
+              if (context.deferred || context.replied) {
+                return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
+              }
+              return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
+            } else {
+              return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
             }
-            return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
-          } else {
-            return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
-        }
 
-        // Parse subcommands from the file
-        const subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
+          // Parse subcommands from the file
+          subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
+        }
 
         if (subcommands.length === 0) {
           // Fall back to traditional embed

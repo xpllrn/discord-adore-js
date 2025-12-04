@@ -50,7 +50,7 @@ class WebhookLogger {
    * Send a log message to all configured webhooks
    * @param {string} guildId - Guild ID
    * @param {string} logType - Log type (moderator, message, events)
-   * @param {EmbedBuilder} embed - The embed to send
+   * @param {EmbedBuilder|ContainerBuilder|string} embed - The embed, container, or container syntax string to send
    * @param {Array} files - Optional array of files to send
    * @returns {Promise<void>}
    */
@@ -66,7 +66,36 @@ class WebhookLogger {
           if (!webhook) return;
 
           try {
-            const messageOptions = { embeds: [embed] };
+            let messageOptions;
+            
+            // Check if it's a container syntax string
+            if (typeof embed === 'string' && (embed.startsWith('{container}') || embed.startsWith('{v2}'))) {
+              // Process container syntax string
+              const { CustomContainerBuilder } = require('./embeds/containerbuilder');
+              const { getService } = require('@services');
+              
+              // Get guild for processing
+              const client = global.discordClient;
+              const guild = client?.guilds?.cache?.get(guildId);
+              
+              // Get channel from config
+              const channel = guild?.channels?.cache?.get(config.channelId);
+              
+              if (channel) {
+                const containerBuilder = new CustomContainerBuilder(channel, embed, {}, null);
+                messageOptions = containerBuilder.build();
+              } else {
+                // Fallback: send as plain text if channel not found
+                messageOptions = { content: embed };
+              }
+            } else if (embed.constructor.name === 'ContainerBuilder') {
+              // Already a ContainerBuilder
+              messageOptions = { components: [embed] };
+            } else {
+              // Regular embed
+              messageOptions = { embeds: [embed] };
+            }
+            
             if (files && files.length > 0) {
               messageOptions.files = files;
             }
@@ -148,62 +177,41 @@ class WebhookLogger {
   }
 
   /**
-   * Create a moderator action log embed
+   * Create a moderator action log embed using container format
    * @param {Object} options - Log options
-   * @returns {EmbedBuilder} - The log embed
+   * @returns {string} - Container syntax string
    */
   createModeratorLog(options) {
     const { action, executor, target, reason, duration, until, caseNumber, guild } = options;
 
-    const embed = new EmbedBuilder()
-      .setColor(config.colors.embed)
-      .setTimestamp();
-
-    // Title section
-    let titleText = '## Moderation action';
-    embed.setDescription(titleText);
+    // Build container syntax string
+    let containerSyntax = '{container}$v{text: ## Moderation action}$v{separator}$v{text: ';
 
     // Case and action info
-    let infoText = '';
     if (caseNumber && caseNumber !== 'Unknown') {
-      infoText += `**Case #${caseNumber}** || `;
+      containerSyntax += `**Case #${caseNumber}** || `;
     }
     
-    // Action name (capitalize first letter)
+    // Action name
     const actionName = this.getActionDisplayName(action);
-    infoText += `**${actionName}**\n`;
+    containerSyntax += `**${actionName}**\n`;
     
-    infoText += `**User:** ${target?.username || 'Unknown'} (\`${target?.id || 'Unknown'}\`)\n`;
-    infoText += `**Moderator**: ${executor?.username || 'Unknown'} (\`${executor?.id || 'Unknown'}\`)\n`;
-    infoText += `**Reason:** ${reason || 'No reason provided'}`;
-
-    embed.addFields({
-      name: '\u200b',
-      value: infoText,
-      inline: false
-    });
+    containerSyntax += `**User:** ${target?.username || 'Unknown'} (\`${target?.id || 'Unknown'}\`)\n`;
+    containerSyntax += `**Moderator**: ${executor?.username || 'Unknown'} (\`${executor?.id || 'Unknown'}\`)\n`;
+    containerSyntax += `**Reason:** ${reason || 'No reason provided'}`;
+    
+    containerSyntax += '}';
 
     // Add duration/expiry info if applicable
     if (duration && duration !== '0m' && duration !== '0s' && duration !== '') {
-      let durationText = `-# ${duration}`;
-      embed.addFields({
-        name: '\u200b',
-        value: durationText,
-        inline: false
-      });
+      containerSyntax += `$v{separator}$v{text: -# ${duration}}`;
     }
 
     if (until) {
-      const untilTimestamp = Math.floor(until.getTime() / 1000);
-      let expiryText = `-# **Expires at** <t:${untilTimestamp}:F>`;
-      embed.addFields({
-        name: '\u200b',
-        value: expiryText,
-        inline: false
-      });
+      containerSyntax += `$v{separator}$v{text: -# **Expires at** <t:${Math.floor(until.getTime() / 1000)}:F>}`;
     }
 
-    return embed;
+    return containerSyntax;
   }
 
   /**
@@ -235,42 +243,36 @@ class WebhookLogger {
   }
 
   /**
-   * Create a DM notification embed for moderation actions
+   * Create a DM notification embed for moderation actions using container format
    * @param {Object} options - DM options
-   * @returns {EmbedBuilder} - The DM embed
+   * @returns {string} - Container syntax string
    */
   createModeratorDM(options) {
     const { action, executor, reason, duration, until, guild } = options;
 
-    const embed = new EmbedBuilder()
-      .setColor(config.colors.embed)
-      .setTimestamp();
-
-    // Title with action and guild info
-    const actionName = this.getActionDisplayName(action);
-    let titleText = `## __${actionName.toLowerCase()}__\n**You have been ${actionName.toLowerCase()} in**\n${guild?.name || 'Unknown Server'} (\`${guild?.id || 'Unknown'}\`)`;
+    // Get action name
+    const actionName = this.getActionDisplayName(action).toLowerCase();
     
-    embed.setDescription(titleText);
-
-    // Set guild icon as thumbnail if available
+    // Build container syntax with section (includes guild icon)
+    let containerSyntax = `{v2}$v{section: ## __${actionName}__\n**You have been ${actionName} in**\n${guild?.name || 'Unknown Server'} (\`${guild?.id || 'Unknown'}\`)`;
+    
+    // Add guild icon if available
     if (guild?.iconURL) {
-      embed.setThumbnail(guild.iconURL({ dynamic: true }));
+      const iconUrl = typeof guild.iconURL === 'function' ? guild.iconURL({ dynamic: true }) : guild.iconURL;
+      containerSyntax += ` && ${iconUrl}`;
     }
-
+    
+    containerSyntax += ' }$v{separator}$v{text: ';
+    
     // Moderator and reason info
-    let infoText = `**Moderator**\n${executor?.username || 'Unknown'} (\`${executor?.id || 'Unknown'}\`)\n\n`;
-    infoText += `**Reason**\n${reason || 'No reason provided'}`;
-
-    embed.addFields({
-      name: '\u200b',
-      value: infoText,
-      inline: false
-    });
+    containerSyntax += `**Moderator**\n${executor?.username || 'Unknown'} (\`${executor?.id || 'Unknown'}\`)\n\n`;
+    containerSyntax += `**Reason**\n${reason || 'No reason provided'}`;
+    
+    containerSyntax += ' }';
 
     // Add expiry info for temporary actions
     if (until) {
-      const untilTimestamp = Math.floor(until.getTime() / 1000);
-      let expiryText = `-# **Expires at** \`${new Date(until).toLocaleString('en-US', { 
+      const formattedDate = new Date(until).toLocaleString('en-US', { 
         weekday: 'long', 
         year: 'numeric', 
         month: 'long', 
@@ -278,23 +280,13 @@ class WebhookLogger {
         hour: 'numeric', 
         minute: '2-digit', 
         hour12: true 
-      })}\``;
-      
-      embed.addFields({
-        name: '\u200b',
-        value: expiryText,
-        inline: false
       });
+      containerSyntax += `$v{separator}$v{text: -# **Expires at** \`${formattedDate}\` }`;
     } else if (duration && duration !== '0m' && duration !== '0s' && duration !== '') {
-      let durationText = `-# **Duration:** ${duration}`;
-      embed.addFields({
-        name: '\u200b',
-        value: durationText,
-        inline: false
-      });
+      containerSyntax += `$v{separator}$v{text: -# **Duration:** ${duration} }`;
     }
 
-    return embed;
+    return containerSyntax;
   }
 
   /**
@@ -312,8 +304,8 @@ class WebhookLogger {
     }
 
     try {
-      // Create DM embed
-      const embed = this.createModeratorDM({
+      // Create DM container syntax
+      const containerSyntax = this.createModeratorDM({
         action,
         executor,
         reason,
@@ -322,8 +314,18 @@ class WebhookLogger {
         guild
       });
 
+      // Process container syntax string
+      const { CustomContainerBuilder } = require('./embeds/containerbuilder');
+      
+      // Create a DM channel context (we'll use the target's DM channel)
+      const dmChannel = await target.createDM();
+      
+      // Build the container
+      const containerBuilder = new CustomContainerBuilder(dmChannel, containerSyntax, {}, null);
+      const messageOptions = containerBuilder.build();
+
       // Try to send DM
-      await target.send({ embeds: [embed] });
+      await target.send(messageOptions);
       return true;
     } catch (error) {
       // Silent fail - user might have DMs disabled
