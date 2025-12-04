@@ -2685,6 +2685,54 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Update an existing autoresponder
+   * @param {string} guildId - Guild ID
+   * @param {string} trigger - Trigger text to update
+   * @param {Object} updateData - Updated autoresponder data
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateAutoResponder(guildId, trigger, updateData) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!trigger) {
+      throw new ValidationError('Trigger is required', 'trigger', trigger);
+    }
+
+    if (!updateData || typeof updateData !== 'object') {
+      throw new ValidationError('Update data is required', 'updateData', updateData);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const autoResponders = guildData.AutoResponder || [];
+
+      const index = autoResponders.findIndex(ar => ar.trigger === trigger);
+      
+      if (index === -1) {
+        throw new ValidationError('Autoresponder not found', 'trigger', trigger);
+      }
+
+      // Update the autoresponder while keeping the trigger
+      autoResponders[index] = {
+        trigger,
+        ...updateData
+      };
+
+      guildData.AutoResponder = autoResponders;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update autoresponder for guild ${guildId}`, error);
+    }
+  }
+
+  /**
    * Clear all autoresponders
    * @param {string} guildId - Guild ID
    * @returns {Promise<boolean>} Success status

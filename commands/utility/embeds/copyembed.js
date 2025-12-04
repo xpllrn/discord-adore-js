@@ -105,6 +105,12 @@ module.exports = {
           return embeds.warn(message, 'Message does not contain any display components');
         }
 
+        // Debug: Log the full message structure
+        console.log('Full message structure:', JSON.stringify({
+          components: copyembed.components,
+          flags: copyembed.flags.bitfield
+        }, null, 2));
+
         const customSyntax = toContainerSyntax(copyembed.components);
 
         const copiedembed = new EmbedBuilder()
@@ -289,14 +295,13 @@ module.exports = {
         parts.push(`{message: ${content}}`);
       }
 
-      // 2. Add author
+      // 2. Add author (simplified format: name&&icon)
       if (messageEmbed.author) {
         let authorParts = [];
         if (messageEmbed.author.name) authorParts.push(messageEmbed.author.name);
-        if (messageEmbed.author.iconURL) authorParts.push(`icon: ${messageEmbed.author.iconURL}`);
-        if (messageEmbed.author.url) authorParts.push(`url: ${messageEmbed.author.url}`);
+        if (messageEmbed.author.iconURL) authorParts.push(messageEmbed.author.iconURL);
         if (authorParts.length > 0) {
-          parts.push(`{author: ${authorParts.join(' && ')}}`);
+          parts.push(`{author: ${authorParts.join('&&')}}`);
         }
       }
 
@@ -330,12 +335,12 @@ module.exports = {
         parts.push(`{image: ${messageEmbed.image.url}}`);
       }
 
-      // 9. Add fields (if any)
+      // 9. Add fields (simplified format: name&&value&&inline)
       if (messageEmbed.fields && messageEmbed.fields.length > 0) {
         messageEmbed.fields.forEach(field => {
-          let fieldParts = [`name: ${field.name}`, `value: ${field.value}`];
-          if (field.inline) fieldParts.push('inline');
-          parts.push(`{field: ${fieldParts.join(' && ')}}`);
+          let fieldParts = [field.name, field.value];
+          if (field.inline) fieldParts.push('true');
+          parts.push(`{field: ${fieldParts.join('&&')}}`);
         });
       }
 
@@ -344,13 +349,13 @@ module.exports = {
         parts.push(`{timestamp}`);
       }
 
-      // 11. Add footer
+      // 11. Add footer (simplified format: text&&icon)
       if (messageEmbed.footer) {
         let footerParts = [];
-        if (messageEmbed.footer.text) footerParts.push(`text: ${messageEmbed.footer.text}`);
-        if (messageEmbed.footer.iconURL) footerParts.push(`icon: ${messageEmbed.footer.iconURL}`);
+        if (messageEmbed.footer.text) footerParts.push(messageEmbed.footer.text);
+        if (messageEmbed.footer.iconURL) footerParts.push(messageEmbed.footer.iconURL);
         if (footerParts.length > 0) {
-          parts.push(`{footer: ${footerParts.join(' && ')}}`);
+          parts.push(`{footer: ${footerParts.join('&&')}}`);
         }
       }
 
@@ -364,9 +369,8 @@ module.exports = {
 
                 // Determine button type
                 if (button.style === 5) { // Link button
-                  buttonParts.push('link');
-                  buttonParts.push(button.label || '');
                   buttonParts.push(button.url || '');
+                  buttonParts.push(button.label || '');
                   if (button.emoji) {
                     if (button.emoji.id) {
                       // Custom emoji
@@ -396,13 +400,10 @@ module.exports = {
                       // Unicode emoji
                       buttonParts.push(button.emoji.name);
                     }
-                  } else {
-                    buttonParts.push(''); // Empty emoji slot
                   }
-                  buttonParts.push(button.disabled ? 'disabled' : 'enabled');
                 }
 
-                parts.push(`{button: ${buttonParts.join(' && ')}}`);
+                parts.push(`{button: ${buttonParts.join('&&')}}`);
               }
             });
           }

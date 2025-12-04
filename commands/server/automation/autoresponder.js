@@ -213,6 +213,100 @@ module.exports = {
 
 
 
+    } else if (args[0] === 'update' || args[0] === 'edit') {
+      const subcommandInfo = {
+        description: 'Update an existing autoresponder',
+        syntax: '{guildprefix}autoresponder update [trigger], [new response] [--options]',
+        aliases: ['edit'],
+        parameters: ['trigger', 'new response', 'options (optional)'],
+        example: '{guildprefix}autoresponder update hello, Hey there! --reply'
+      };
+
+      const fullInput = args.slice(1).join(' ');
+
+      // Handle cases where trigger starts with comma
+      let commaIndex;
+      if (fullInput.startsWith(',')) {
+        // If input starts with comma, find the second comma
+        commaIndex = fullInput.indexOf(',', 1);
+      } else {
+        // Normal case: find first comma
+        commaIndex = fullInput.indexOf(',');
+      }
+
+      if (commaIndex === -1) {
+        return runHelpCommand(message, 'autoresponder');
+      }
+
+      const trigger = fullInput.substring(0, commaIndex).trim();
+      const responseAndOptions = fullInput.substring(commaIndex + 1).trim();
+
+      // Parse options from the response
+      const optionRegex = /--(reply|strict|not_strict|delete|self_destruct)\s*(\d+)?/g;
+      let response = responseAndOptions;
+      let options = {
+        reply: false,
+        strict: true,
+        delete: false,
+        selfDestruct: 0
+      };
+
+      let match;
+      while ((match = optionRegex.exec(responseAndOptions)) !== null) {
+        const option = match[1];
+        const value = match[2];
+
+        // Remove the option from response
+        response = response.replace(match[0], '').trim();
+
+        switch (option) {
+          case 'reply':
+            options.reply = true;
+            break;
+          case 'strict':
+            options.strict = true;
+            break;
+          case 'not_strict':
+            options.strict = false;
+            break;
+          case 'delete':
+            options.delete = true;
+            break;
+          case 'self_destruct':
+            options.selfDestruct = parseInt(value) || 5;
+            break;
+        }
+      }
+
+      if (!trigger || !response) {
+        return runHelpCommand(message, 'autoresponder');
+      }
+
+      // Check if autoresponder exists using cache system
+      const existingResponder = await guildService.findAutoResponder(message.guild.id, trigger);
+
+      if (!existingResponder) {
+        return embeds.deny(message, `No autoresponder found for **${trigger}**`);
+      }
+
+      // Update using cache system
+      await guildService.updateAutoResponder(message.guild.id, trigger, {
+        response,
+        ...options
+      });
+
+      // Build options display
+      let optionsDisplay = [];
+      if (options.reply) optionsDisplay.push('reply');
+      if (!options.strict) optionsDisplay.push('not_strict');
+      if (options.delete) optionsDisplay.push('delete');
+      if (options.selfDestruct > 0) optionsDisplay.push(`self_destruct ${options.selfDestruct}s`);
+
+      const optionsText = optionsDisplay.length > 0 ? ` with options: ${optionsDisplay.join(', ')}` : '';
+      return embeds.success(message, `Updated autoresponder for **${trigger}**${optionsText}`);
+
+
+
     } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
       const subcommandInfo = {
         description: 'Remove an autoresponder',
