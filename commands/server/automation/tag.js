@@ -373,11 +373,25 @@ module.exports = {
       return subcommand.handler(client, message, args.slice(1), guildService);
     }
 
-    // If no subcommand matched, check if it's a tag trigger (for quick view)
+    // If no subcommand matched, check if it's a tag trigger (send the response)
     const tag = await guildService.findTag(message.guild.id, sub);
     if (tag) {
-      // Show tag info
-      return module.exports.subcommands.info.handler(client, message, [sub], guildService);
+      // Send the tag response (same as autoresponder behavior)
+      const trimmedResponse = tag.response.trim();
+      if (trimmedResponse.startsWith('{embed}') || trimmedResponse.startsWith('{v2}') || trimmedResponse.startsWith('{container}')) {
+        const { EmbedVariableProcessor } = require('../../../utils/embeds/embedbuilder');
+        const variables = {
+          user: message.author,
+          guild: message.guild,
+          channel: message.channel
+        };
+        await EmbedVariableProcessor.process(message.channel, tag.response, variables, message);
+      } else {
+        await message.channel.send(tag.response);
+      }
+      // Increment uses
+      await guildService.incrementTagUses(message.guild.id, tag.trigger);
+      return;
     }
 
     // No tag found for this trigger
