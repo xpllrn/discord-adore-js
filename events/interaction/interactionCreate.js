@@ -100,6 +100,15 @@ module.exports = {
         }
 
         try {
+          // Check if user is blacklisted (skip for blacklist command itself)
+          if (command.data?.name !== 'blacklist') {
+            const systemService = getService('system');
+            const isBlacklisted = await systemService.isUserBlacklisted(interaction.user.id);
+            if (isBlacklisted) {
+              return interaction.reply({ content: '🤡', ephemeral: true });
+            }
+          }
+
           await command.execute(interaction);
         } catch (error) {
           console.error(`Error executing slash command ${interaction.commandName}:`, error);
