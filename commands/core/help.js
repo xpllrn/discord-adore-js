@@ -103,21 +103,37 @@ async function showHelpShared(context, client, commandQuery) {
 
         // Create page array: parent page + subcommand pages
         const pages = [];
-        const totalPages = subcommands.length + 1;
 
         // Page 1: Parent command overview
         const parentPage = createParentCommandPage(command, guildprefix, subcommands.length);
-        pages.push(parentPage);
+        if (parentPage) pages.push(parentPage);
 
         // Pages 2+: Individual subcommand pages
         subcommands.forEach((subcommand, index) => {
           const pageNumber = index + 2; // +2 because page 1 is parent
-          pages.push(createSubcommandPage(command, subcommand, pageNumber, totalPages));
+          const page = createSubcommandPage(command, subcommand, pageNumber, subcommands.length + 1);
+          if (page) pages.push(page);
         });
+
+        const totalPages = pages.length;
 
         // Create a function to build pages with buttons and footer
         const buildPage = (pageIndex, currentPage, totalPages, disabled = false) => {
           const container = pages[pageIndex];
+          
+          // Safety check - if container is undefined, return a fallback
+          if (!container || !container.components) {
+            console.error(`[HELP ERROR] Page ${pageIndex} is undefined or has no components`);
+            const fallbackContainer = new (require('discord.js').ContainerBuilder)()
+              .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
+            fallbackContainer.addTextDisplayComponents(
+              (text) => text.setContent(`## Error\nFailed to load page ${currentPage}`)
+            );
+            addPaginationButtons(fallbackContainer, currentPage, totalPages, disabled);
+            addFooter(fallbackContainer, currentPage, totalPages, subcommands.length, command.name);
+            return fallbackContainer;
+          }
+          
           // Clone the container to avoid modifying the original
           const newContainer = new (require('discord.js').ContainerBuilder)()
             .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
