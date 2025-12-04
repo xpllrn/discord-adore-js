@@ -93,8 +93,8 @@ module.exports = {
       }
 
       // Check trigger length limit
-      if (trigger.length > 12) {
-        return embeds.deny(message, `Trigger word cannot be more than **12 letters**. Your trigger is **${trigger.length} letters**`);
+      if (trigger.length > 50) {
+        return embeds.deny(message, `Trigger word cannot be more than **50 letters**. Your trigger is **${trigger.length} letters**`);
       }
 
       if (trigger.startsWith(',')) {
