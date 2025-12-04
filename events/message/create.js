@@ -696,7 +696,7 @@ async function handleLevelUp(message, newLevel, userData) {
 
 // Cooldown map for sticky messages (channelId -> timeout)
 const stickyMessageCooldowns = new Map();
-const STICKY_COOLDOWN = 5000; // 5 seconds cooldown to prevent spam
+const STICKY_COOLDOWN = 3000; // 3 seconds cooldown to prevent spam
 
 // Process sticky messages - repost sticky message when new messages are sent
 async function processStickyMessage(message) {

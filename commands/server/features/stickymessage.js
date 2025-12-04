@@ -68,7 +68,7 @@ module.exports = {
         await sendStickyMessage(client, targetChannel, stickyContent, guildService, message.guild.id);
 
         const action = existingForChannel ? 'Updated' : 'Added';
-        return embeds.success(message, `${action} sticky message for ${targetChannel}`);
+        return embeds.success(message, `${action} **sticky message** for ${targetChannel}`);
       }
     },
 
@@ -96,7 +96,7 @@ module.exports = {
         const stickyData = await guildService.getStickyMessage(message.guild.id, targetChannel.id);
         
         if (!stickyData) {
-          return embeds.deny(message, `No sticky message found for ${targetChannel}`);
+          return embeds.deny(message, `No **sticky message** found for ${targetChannel}`);
         }
 
         // Try to delete the current sticky message
@@ -112,7 +112,7 @@ module.exports = {
         // Remove from database
         await guildService.removeStickyMessage(message.guild.id, targetChannel.id);
 
-        return embeds.success(message, `Removed sticky message from ${targetChannel}`);
+        return embeds.success(message, `Removed **sticky message** from ${targetChannel}`);
       }
     },
 
@@ -138,7 +138,7 @@ module.exports = {
         const stickyData = await guildService.getStickyMessage(message.guild.id, targetChannel.id);
 
         if (!stickyData) {
-          return embeds.warn(message, `No sticky message found for ${targetChannel}`);
+          return embeds.warn(message, `No **sticky message** found for ${targetChannel}`);
         }
 
         // Check if it's an embed message
@@ -177,7 +177,7 @@ module.exports = {
         const stickyMessages = await guildService.getStickyMessages(message.guild.id);
 
         if (!stickyMessages || stickyMessages.length === 0) {
-          return embeds.warn(message, 'No sticky messages configured');
+          return embeds.warn(message, 'No **sticky messages** configured');
         }
 
         const formatPage = (pageStickies, currentPage, totalPages) => {
