@@ -381,6 +381,6 @@ module.exports = {
     }
 
     // No tag found for this trigger
-    return embeds.deny(message, `No existing **tag** found for **${sub}**`);
+    return embeds.warn(message, `No existing **tag** found for **${sub}**`);
   }
 };
