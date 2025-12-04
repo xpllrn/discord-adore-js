@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+const { EmbedBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const { colors } = require('../../../config/setup')
 const { ensureGuildData } = require('../../../database')
 const { embeds } = require('../../../core/embeds')
@@ -96,24 +96,185 @@ module.exports = {
         return embeds.warn(message, 'Message not found');
       }
 
-      if (!copyembed.embeds || copyembed.embeds.length === 0) {
-        return embeds.warn(message, 'Message does not contain any embeds');
+      // Check if message uses Components V2 (containers)
+      const isComponentsV2 = copyembed.flags?.has(MessageFlags.IsComponentsV2);
+
+      if (isComponentsV2) {
+        // Handle Components V2 (containers)
+        if (!copyembed.components || copyembed.components.length === 0) {
+          return embeds.warn(message, 'Message does not contain any display components');
+        }
+
+        const customSyntax = toContainerSyntax(copyembed.components);
+
+        const copiedembed = new EmbedBuilder()
+          .setColor(colors.success)
+          .setDescription(`**Custom Container Syntax:**\n\`\`\`\n${customSyntax}\`\`\``)
+          .setFooter({ text: `Successfully copied the container code` })
+
+        return message.channel.send({ embeds: [copiedembed] });
+      } else {
+        // Handle old embeds
+        if (!copyembed.embeds || copyembed.embeds.length === 0) {
+          return embeds.warn(message, 'Message does not contain any embeds');
+        }
+
+        const customSyntax = toCustomSyntax(copyembed.content, copyembed.embeds[0], copyembed.components)
+
+        const copiedembed = new EmbedBuilder()
+          .setColor(colors.success)
+          .setDescription(`**Custom Syntax:**\n\`\`\`\n${customSyntax}\`\`\``)
+          .setFooter({ text: `Successfully copied the embed code` })
+
+        return message.channel.send({ embeds: [copiedembed] });
       }
-
-      const customSyntax = toCustomSyntax(copyembed.content, copyembed.embeds[0], copyembed.components)
-
-      const copiedembed = new EmbedBuilder()
-        .setColor(colors.success)
-        .setDescription(`**Custom Syntax:**\n\`\`\`\n${customSyntax}\`\`\``)
-        .setFooter({ text: `Successfully copied the embed code` })
-
-      return message.channel.send({ embeds: [copiedembed] })
 
     } catch (error) {
       throw error;
     }
 
 
+
+    function toContainerSyntax(components) {
+      let parts = [];
+
+      // Start with {container} or {v2} prefix
+      parts.push('{container}');
+
+      for (const component of components) {
+        // Handle TextDisplayBuilder (standalone content)
+        if (component.type === 14) { // TEXT_DISPLAY
+          if (component.content) {
+            parts.push(`{text: ${component.content}}`);
+          }
+          continue;
+        }
+
+        // Handle ContainerBuilder
+        if (component.type === 13) { // CONTAINER
+          // Add accent color if present
+          if (component.accent_color !== undefined && component.accent_color !== null) {
+            const hexColor = '#' + component.accent_color.toString(16).padStart(6, '0');
+            parts.push(`{color: ${hexColor}}`);
+          }
+
+          // Process container components
+          if (component.components && component.components.length > 0) {
+            for (const innerComponent of component.components) {
+              // Text Display
+              if (innerComponent.type === 14) {
+                if (innerComponent.content) {
+                  parts.push(`{text: ${innerComponent.content}}`);
+                }
+              }
+              // Section
+              else if (innerComponent.type === 15) {
+                let sectionText = '';
+                let thumbnailUrl = null;
+
+                // Extract text from section
+                if (innerComponent.components) {
+                  const textDisplays = innerComponent.components.filter(c => c.type === 14);
+                  sectionText = textDisplays.map(t => t.content).join('\n');
+                }
+
+                // Extract thumbnail from accessory
+                if (innerComponent.accessory) {
+                  if (innerComponent.accessory.type === 17) { // THUMBNAIL
+                    thumbnailUrl = innerComponent.accessory.url;
+                  }
+                }
+
+                // Build section syntax
+                if (sectionText) {
+                  if (thumbnailUrl) {
+                    parts.push(`{section: ${sectionText}&&${thumbnailUrl}}`);
+                  } else {
+                    parts.push(`{section: ${sectionText}}`);
+                  }
+                }
+              }
+              // Separator
+              else if (innerComponent.type === 16) {
+                if (innerComponent.divider) {
+                  parts.push(`{separator.line}`);
+                } else {
+                  parts.push(`{separator}`);
+                }
+              }
+              // Media Gallery
+              else if (innerComponent.type === 18) {
+                if (innerComponent.items && innerComponent.items.length > 0) {
+                  const urls = innerComponent.items.map(item => item.url).filter(url => url);
+                  if (urls.length > 0) {
+                    parts.push(`{gallery: ${urls.join('&&')}}`);
+                  }
+                }
+              }
+              // Action Row (buttons)
+              else if (innerComponent.type === 1) {
+                if (innerComponent.components) {
+                  for (const button of innerComponent.components) {
+                    if (button.type === 2) { // BUTTON
+                      let buttonParts = [];
+
+                      if (button.style === 5) { // Link button
+                        buttonParts.push(button.url || '');
+                        buttonParts.push(button.label || '');
+                        
+                        if (button.emoji) {
+                          if (button.emoji.id) {
+                            buttonParts.push(`<${button.emoji.animated ? 'a' : ''}:${button.emoji.name}:${button.emoji.id}>`);
+                          } else {
+                            buttonParts.push(button.emoji.name || '');
+                          }
+                        } else {
+                          buttonParts.push('');
+                        }
+
+                        if (button.disabled) {
+                          buttonParts.push('disabled');
+                        }
+                      } else {
+                        // Colored button
+                        let buttonStyle = 'secondary';
+                        switch (button.style) {
+                          case 1: buttonStyle = 'primary'; break;
+                          case 2: buttonStyle = 'secondary'; break;
+                          case 3: buttonStyle = 'success'; break;
+                          case 4: buttonStyle = 'danger'; break;
+                        }
+
+                        buttonParts.push(buttonStyle);
+                        buttonParts.push(button.label || '');
+                        
+                        if (button.emoji) {
+                          if (button.emoji.id) {
+                            buttonParts.push(`<${button.emoji.animated ? 'a' : ''}:${button.emoji.name}:${button.emoji.id}>`);
+                          } else {
+                            buttonParts.push(button.emoji.name || '');
+                          }
+                        } else {
+                          buttonParts.push('');
+                        }
+
+                        if (button.disabled) {
+                          buttonParts.push('disabled');
+                        }
+                      }
+
+                      parts.push(`{button: ${buttonParts.join('&&')}}`);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return parts.join('$v');
+    }
 
     function toCustomSyntax(content, messageEmbed, components = []) {
       let parts = [];
