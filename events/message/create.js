@@ -696,7 +696,7 @@ async function handleLevelUp(message, newLevel, userData) {
 
 // Cooldown map for sticky messages (channelId -> timeout)
 const stickyMessageCooldowns = new Map();
-const STICKY_COOLDOWN = 3000; // 3 seconds cooldown to prevent spam
+const STICKY_COOLDOWN = 2000; // 2 seconds cooldown to prevent spam
 
 // Process sticky messages - repost sticky message when new messages are sent
 async function processStickyMessage(message) {
@@ -742,12 +742,22 @@ async function processStickyMessage(message) {
         let sentMessage;
 
         if (trimmedContent.startsWith('{embed}') || trimmedContent.startsWith('{v2}') || trimmedContent.startsWith('{container}')) {
+          // For embeds, use EmbedVariableProcessor and capture the last bot message
           const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
           const variables = {
             guild: message.guild,
             channel: message.channel
           };
-          sentMessage = await EmbedVariableProcessor.process(message.channel, currentStickyData.message, variables, null);
+          
+          // Process the embed (this sends the message internally)
+          EmbedVariableProcessor.process(message.channel, currentStickyData.message, variables, null);
+          
+          // Wait a bit for the message to be sent, then fetch the latest bot message
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Fetch recent messages and find the one sent by the bot
+          const recentMessages = await message.channel.messages.fetch({ limit: 5 });
+          sentMessage = recentMessages.find(m => m.author.id === message.client.user.id);
         } else {
           sentMessage = await message.channel.send(currentStickyData.message);
         }
