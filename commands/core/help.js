@@ -18,41 +18,63 @@ function hasSubcommands(command) {
 }
 
 /**
- * Parses command file to extract all subcommandInfo objects
- * SIMPLIFIED: Just find ALL subcommandInfo blocks, extract the name field, and use that
+ * Parses command file to extract subcommands in order
+ * Strategy: Find if/else-if/case blocks, extract subcommand names from conditions,
+ * then find the matching subcommandInfo inside each block
  */
 function parseSubcommands(commandFilePath, commandName, guildPrefix) {
   try {
     const fileContent = fs.readFileSync(commandFilePath, 'utf8');
     const subcommands = [];
-    const seenNames = new Set(); // Track duplicates
+    const seenNames = new Set();
 
-    // SINGLE REGEX: Find all subcommandInfo blocks anywhere in the file
-    // This matches: const subcommandInfo = { ... };
-    const subcommandInfoRegex = /const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
+    // Step 1: Find all if/else-if conditions and switch cases to get subcommand names IN ORDER
+    const conditionPatterns = [
+      // Matches: if (args[0] === 'add' || args[0] === 'create')
+      /(?:if|else\s+if)\s*\(\s*args\[0\]\s*===\s*['"](\w+)['"]/g,
+      // Matches: case 'add':
+      /case\s+['"](\w+)['"]\s*:/g
+    ];
 
-    let match;
-    while ((match = subcommandInfoRegex.exec(fileContent)) !== null) {
-      const subcommandInfoContent = match[1];
-
-      // Extract the name field (required)
-      const nameMatch = subcommandInfoContent.match(/name:\s*[`'"]([^`'"]*)[`'"]/);
-      if (!nameMatch) {
-        // Skip if no name field - this is likely a nested/helper subcommandInfo
-        continue;
+    const orderedSubcommandNames = [];
+    
+    for (const pattern of conditionPatterns) {
+      let match;
+      while ((match = pattern.exec(fileContent)) !== null) {
+        const subcommandName = match[1];
+        if (!seenNames.has(subcommandName)) {
+          seenNames.add(subcommandName);
+          orderedSubcommandNames.push(subcommandName);
+        }
       }
+    }
 
-      const subcommandName = nameMatch[1];
-
-      // Skip duplicates (same subcommand defined multiple times)
-      if (seenNames.has(subcommandName)) {
-        continue;
+    // Step 2: For each subcommand name, find its subcommandInfo block
+    for (const subcommandName of orderedSubcommandNames) {
+      // Find the subcommandInfo block that has this name
+      const subcommandInfoRegex = new RegExp(
+        `const\\s+subcommandInfo\\s*=\\s*\\{([\\s\\S]*?)name:\\s*['"\`]${subcommandName}['"\`][\\s\\S]*?\\};`,
+        'i'
+      );
+      
+      const match = subcommandInfoRegex.exec(fileContent);
+      
+      if (match) {
+        const subcommandInfoContent = match[1] + match[0].substring(match[1].length);
+        const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
+        subcommands.push(subcommandData);
+      } else {
+        // No subcommandInfo found, create basic entry
+        subcommands.push({
+          name: subcommandName,
+          fullCommand: `${commandName} ${subcommandName}`,
+          description: `${subcommandName} subcommand`,
+          aliases: [],
+          parameters: [],
+          syntax: `{guildprefix}${commandName} ${subcommandName}`.replace(/\{guildprefix\}/g, guildPrefix),
+          example: `{guildprefix}${commandName} ${subcommandName}`.replace(/\{guildprefix\}/g, guildPrefix)
+        });
       }
-      seenNames.add(subcommandName);
-
-      // Parse the full subcommand data
-      const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
-      subcommands.push(subcommandData);
     }
 
     return subcommands;

@@ -25,6 +25,7 @@ module.exports = {
 
     if (args[0] === 'add' || args[0] === 'create') {
       const subcommandInfo = {
+        name: 'add',
         description: 'Add a new autoresponder trigger',
         syntax: '{guildprefix}autoresponder add [trigger], [response] [--options]',
         aliases: ['create'],
@@ -141,6 +142,7 @@ module.exports = {
       
     } else if (args[0] === 'reset') {
       const subcommandInfo = {
+        name: 'reset',
         description: 'Remove all autoresponders',
         syntax: '{guildprefix}autoresponder reset',
         aliases: [],
@@ -175,6 +177,7 @@ module.exports = {
 
     } else if (args[0] === 'list') {
       const subcommandInfo = {
+        name: 'list',
         description: 'List all autoresponders',
         syntax: '{guildprefix}autoresponder list',
         aliases: [],
@@ -215,6 +218,7 @@ module.exports = {
 
     } else if (args[0] === 'update' || args[0] === 'edit') {
       const subcommandInfo = {
+        name: 'update',
         description: 'Update an existing autoresponder',
         syntax: '{guildprefix}autoresponder update [trigger], [new response] [--options]',
         aliases: ['edit'],
@@ -309,6 +313,7 @@ module.exports = {
 
     } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
       const subcommandInfo = {
+        name: 'remove',
         description: 'Remove an autoresponder',
         syntax: '{guildprefix}autoresponder remove [trigger]',
         aliases: ['delete', 'rm', 'del'],
