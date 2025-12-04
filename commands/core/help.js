@@ -72,6 +72,8 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
       
       if (foundInfo) {
         const subcommandData = parseSubcommandInfo(foundInfo, subcommandName, commandName, guildPrefix);
+        console.log(`[HELP DEBUG] Found subcommandInfo with name field for: ${subcommandName}`);
+        console.log(`[HELP DEBUG] Parsed data:`, subcommandData);
         subcommands.push(subcommandData);
       } else {
         // No subcommandInfo with name field found
@@ -85,10 +87,14 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
         
         if (blockMatch) {
           // Found subcommandInfo without name field - parse it
+          console.log(`[HELP DEBUG] Found subcommandInfo in block for: ${subcommandName}`);
+          console.log(`[HELP DEBUG] Block content:`, blockMatch[1].substring(0, 200));
           const subcommandData = parseSubcommandInfo(blockMatch[1], subcommandName, commandName, guildPrefix);
+          console.log(`[HELP DEBUG] Parsed data:`, subcommandData);
           subcommands.push(subcommandData);
         } else {
           // No subcommandInfo found at all, create basic entry
+          console.log(`[HELP DEBUG] No subcommandInfo found for: ${subcommandName}, creating basic entry`);
           subcommands.push({
             name: subcommandName,
             fullCommand: `${commandName} ${subcommandName}`,
