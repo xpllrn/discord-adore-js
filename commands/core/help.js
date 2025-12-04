@@ -51,29 +51,54 @@ function parseSubcommands(commandFilePath, commandName, guildPrefix) {
 
     // Step 2: For each subcommand name, find its subcommandInfo block
     for (const subcommandName of orderedSubcommandNames) {
-      // Find the subcommandInfo block that has this name
-      const subcommandInfoRegex = new RegExp(
-        `const\\s+subcommandInfo\\s*=\\s*\\{([\\s\\S]*?)name:\\s*['"\`]${subcommandName}['"\`][\\s\\S]*?\\};`,
-        'i'
-      );
+      // Find the subcommandInfo block that contains name: 'subcommandName'
+      // Match: const subcommandInfo = { ... name: 'add' ... };
+      const subcommandInfoRegex = /const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
       
-      const match = subcommandInfoRegex.exec(fileContent);
+      let match;
+      let foundInfo = null;
       
-      if (match) {
-        const subcommandInfoContent = match[1] + match[0].substring(match[1].length);
-        const subcommandData = parseSubcommandInfo(subcommandInfoContent, subcommandName, commandName, guildPrefix);
+      // Search through all subcommandInfo blocks
+      while ((match = subcommandInfoRegex.exec(fileContent)) !== null) {
+        const blockContent = match[1];
+        
+        // Check if this block has the matching name field
+        const nameMatch = blockContent.match(/name:\s*['"`](\w+)['"`]/);
+        if (nameMatch && nameMatch[1] === subcommandName) {
+          foundInfo = blockContent;
+          break;
+        }
+      }
+      
+      if (foundInfo) {
+        const subcommandData = parseSubcommandInfo(foundInfo, subcommandName, commandName, guildPrefix);
         subcommands.push(subcommandData);
       } else {
-        // No subcommandInfo found, create basic entry
-        subcommands.push({
-          name: subcommandName,
-          fullCommand: `${commandName} ${subcommandName}`,
-          description: `${subcommandName} subcommand`,
-          aliases: [],
-          parameters: [],
-          syntax: `{guildprefix}${commandName} ${subcommandName}`.replace(/\{guildprefix\}/g, guildPrefix),
-          example: `{guildprefix}${commandName} ${subcommandName}`.replace(/\{guildprefix\}/g, guildPrefix)
-        });
+        // No subcommandInfo with name field found
+        // Try to find ANY subcommandInfo in the if/else block for this subcommand
+        const blockRegex = new RegExp(
+          `(?:if|else\\s+if)\\s*\\(\\s*args\\[0\\]\\s*===\\s*['"]${subcommandName}['"][\\s\\S]*?const\\s+subcommandInfo\\s*=\\s*\\{([\\s\\S]*?)\\};`,
+          'i'
+        );
+        
+        const blockMatch = blockRegex.exec(fileContent);
+        
+        if (blockMatch) {
+          // Found subcommandInfo without name field - parse it
+          const subcommandData = parseSubcommandInfo(blockMatch[1], subcommandName, commandName, guildPrefix);
+          subcommands.push(subcommandData);
+        } else {
+          // No subcommandInfo found at all, create basic entry
+          subcommands.push({
+            name: subcommandName,
+            fullCommand: `${commandName} ${subcommandName}`,
+            description: `${subcommandName} subcommand`,
+            aliases: [],
+            parameters: [],
+            syntax: `{guildprefix}${commandName} ${subcommandName}`.replace(/\{guildprefix\}/g, guildPrefix),
+            example: `{guildprefix}${commandName} ${subcommandName}`.replace(/\{guildprefix\}/g, guildPrefix)
+          });
+        }
       }
     }
 
