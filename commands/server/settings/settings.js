@@ -182,11 +182,17 @@ module.exports = {
       name: 'baserole',
       aliases: [],
       description: 'Set base role for booster role positioning',
-      syntax: '{guildprefix}settings baserole [@role]',
+      syntax: '{guildprefix}settings baserole [@role/none]',
       parameters: ['role'],
       example: '{guildprefix}settings baserole @Booster',
 
       handler: async (client, message, args, guildService) => {
+        // Handle "none" to remove base role
+        if (args[0]?.toLowerCase() === 'none') {
+          await guildService.setBoosterRoleSystem(message.guild.id, null, false);
+          return embeds.success(message, 'Base role has been **removed**. Booster role system is now disabled.', false);
+        }
+
         let role = null;
         if (args[0]) {
           const roleResult = findRole(message.guild, args.join(' '));
