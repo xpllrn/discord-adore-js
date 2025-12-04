@@ -152,9 +152,6 @@ module.exports = {
 
         // Handle ContainerBuilder
         if (component.type === 17) { // CONTAINER
-          // Debug: log the entire component to see all properties
-          console.log('Container component:', JSON.stringify(component, null, 2));
-          
           // Add accent color if present - check multiple possible property names
           const accentColor = component.accent_color || component.accentColor || component.data?.accent_color || component.data?.accentColor;
           
