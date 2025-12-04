@@ -32,7 +32,8 @@ module.exports = {
     // Process autoresponders
     await processAutoresponder(message);
 
-
+    // Process tags
+    await processTags(message);
 
     // Process message tracking
     await processMessageTracking(message);
@@ -406,6 +407,53 @@ async function processAutoresponder(message) {
     }
   } catch (error) {
     // Silent fail for autoresponder system
+  }
+}
+
+async function processTags(message) {
+  try {
+    // Skip if message is empty or only whitespace
+    if (!message.content || !message.content.trim()) return;
+
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+
+    // Get all tags for this guild
+    const tags = await guildService.getTags(message.guild.id);
+
+    if (!tags || tags.length === 0) return;
+
+    // Get the first word of the message (tag trigger must be one word)
+    const firstWord = message.content.trim().split(/\s+/)[0].toLowerCase();
+
+    // Find matching tag
+    const tag = tags.find(t => t.trigger.toLowerCase() === firstWord);
+
+    if (!tag) return;
+
+    try {
+      // Check if response contains embed syntax
+      const trimmedResponse = tag.response.trim();
+      if (trimmedResponse.startsWith('{embed}') || trimmedResponse.startsWith('{v2}') || trimmedResponse.startsWith('{container}')) {
+        const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
+        const variables = {
+          user: message.author,
+          guild: message.guild,
+          channel: message.channel
+        };
+        await EmbedVariableProcessor.process(message.channel, tag.response, variables, message);
+      } else {
+        await message.channel.send(tag.response);
+      }
+
+      // Increment uses (async, non-blocking)
+      guildService.incrementTagUses(message.guild.id, tag.trigger).catch(() => {});
+
+    } catch (error) {
+      // Silent fail for individual tag
+    }
+  } catch (error) {
+    // Silent fail for tag system
   }
 }
 

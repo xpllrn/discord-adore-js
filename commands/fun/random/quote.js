@@ -62,8 +62,12 @@ module.exports = {
         quoteText = quoteText.substring(0, 497) + '...';
       }
 
+      // Get member for server avatar (if available)
+      const member = message.guild?.members.cache.get(targetUser.id) 
+        || await message.guild?.members.fetch(targetUser.id).catch(() => null);
+
       // Create the quote image
-      const buffer = await createQuoteImage(targetUser, quoteText);
+      const buffer = await createQuoteImage(targetUser, quoteText, member);
 
       const attachment = new AttachmentBuilder(buffer, {
         name: `quote-${targetUser.username}.png`
@@ -78,13 +82,14 @@ module.exports = {
   }
 };
 
-async function createQuoteImage(user, text) {
+async function createQuoteImage(user, text, member) {
   const width = 1000;
   const height = 400;
 
   try {
-
-    const avatarUrl = user.displayAvatarURL({ extension: 'png', size: 512 });
+    // Use server avatar if available, otherwise fall back to user avatar
+    const avatarUrl = member?.displayAvatarURL({ extension: 'png', size: 512 }) 
+      || user.displayAvatarURL({ extension: 'png', size: 512 });
     const avatarBuffer = await downloadImage(avatarUrl);
 
 

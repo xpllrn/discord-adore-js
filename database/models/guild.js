@@ -1238,7 +1238,33 @@ const guildSchema = new mongoose.Schema({
   FakePermissions: {
     type: mongoose.Schema.Types.Mixed,
     default: {}
-  }
+  },
+
+  // Tags system - custom triggers with responses (like autoresponder but simpler)
+  Tags: [{
+    trigger: {
+      type: String,
+      required: true,
+      maxlength: 50
+    },
+    response: {
+      type: String,
+      required: true,
+      maxlength: 2000
+    },
+    authorId: {
+      type: String,
+      required: true
+    },
+    uses: {
+      type: Number,
+      default: 0
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });
@@ -1414,6 +1440,10 @@ guildSchema.index({ 'Hardbans.userId': 1 });
 
 // Fake Permissions indexes
 guildSchema.index({ 'FakePermissions': 1 });
+
+// Tags indexes
+guildSchema.index({ 'Tags.trigger': 1 });
+guildSchema.index({ 'Tags.authorId': 1 });
 
 module.exports = {
   schema: guildSchema,

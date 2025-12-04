@@ -251,7 +251,8 @@ class GuildService extends BaseService {
         threshold: 5,
         action: 'delete', // delete, mute
         duration: null // for mute action (e.g., '10m')
-      }
+      },
+      Tags: []
     };
   }
 
@@ -8629,6 +8630,327 @@ class GuildService extends BaseService {
     } catch (error) {
       // Silent fail - don't let webhook errors break the service
       console.error('Failed to send guild alert webhook:', error.message);
+    }
+  }
+
+  // ===== TAGS SYSTEM =====
+
+  /**
+   * Get all tags for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of tag objects
+   */
+  async getTags(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.Tags || [];
+    } catch (error) {
+      console.error(`Error getting tags for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Find a tag by trigger
+   * @param {string} guildId - Guild ID
+   * @param {string} trigger - Tag trigger
+   * @returns {Promise<Object|null>} Tag object or null
+   */
+  async findTag(guildId, trigger) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!trigger || typeof trigger !== 'string') {
+      throw new ValidationError('Trigger is required', 'trigger', trigger);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const tags = guildData.Tags || [];
+
+      const triggerLower = trigger.toLowerCase();
+      return tags.find(t => t.trigger && t.trigger.toLowerCase() === triggerLower) || null;
+    } catch (error) {
+      console.error(`Error finding tag for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Add a new tag
+   * @param {string} guildId - Guild ID
+   * @param {Object} tagData - Tag data { trigger, response, authorId }
+   * @returns {Promise<boolean>} Success status
+   */
+  async addTag(guildId, tagData) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!tagData || typeof tagData !== 'object') {
+      throw new ValidationError('Tag data is required', 'tagData', tagData);
+    }
+
+    const { trigger, response, authorId } = tagData;
+
+    if (!trigger || typeof trigger !== 'string') {
+      throw new ValidationError('Trigger is required', 'trigger', trigger);
+    }
+
+    if (!response || typeof response !== 'string') {
+      throw new ValidationError('Response is required', 'response', response);
+    }
+
+    if (!authorId) {
+      throw new ValidationError('Author ID is required', 'authorId', authorId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const tags = guildData.Tags || [];
+
+      tags.push({
+        trigger: trigger.toLowerCase(),
+        response,
+        authorId,
+        uses: 0,
+        createdAt: new Date()
+      });
+
+      guildData.Tags = tags;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add tag for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove a tag
+   * @param {string} guildId - Guild ID
+   * @param {string} trigger - Tag trigger
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeTag(guildId, trigger) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!trigger) {
+      throw new ValidationError('Trigger is required', 'trigger', trigger);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const tags = guildData.Tags || [];
+      const triggerLower = trigger.toLowerCase();
+
+      guildData.Tags = tags.filter(t => t.trigger.toLowerCase() !== triggerLower);
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove tag for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Update a tag's response
+   * @param {string} guildId - Guild ID
+   * @param {string} trigger - Tag trigger
+   * @param {string} newResponse - New response
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateTagResponse(guildId, trigger, newResponse) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!trigger) {
+      throw new ValidationError('Trigger is required', 'trigger', trigger);
+    }
+
+    if (!newResponse || typeof newResponse !== 'string') {
+      throw new ValidationError('New response is required', 'newResponse', newResponse);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const tags = guildData.Tags || [];
+      const triggerLower = trigger.toLowerCase();
+
+      const index = tags.findIndex(t => t.trigger.toLowerCase() === triggerLower);
+      if (index === -1) {
+        return false;
+      }
+
+      tags[index].response = newResponse;
+      guildData.Tags = tags;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update tag for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Rename a tag
+   * @param {string} guildId - Guild ID
+   * @param {string} oldTrigger - Current trigger
+   * @param {string} newTrigger - New trigger
+   * @returns {Promise<boolean>} Success status
+   */
+  async renameTag(guildId, oldTrigger, newTrigger) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!oldTrigger) {
+      throw new ValidationError('Old trigger is required', 'oldTrigger', oldTrigger);
+    }
+
+    if (!newTrigger || typeof newTrigger !== 'string') {
+      throw new ValidationError('New trigger is required', 'newTrigger', newTrigger);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const tags = guildData.Tags || [];
+      const oldTriggerLower = oldTrigger.toLowerCase();
+      const newTriggerLower = newTrigger.toLowerCase();
+
+      // Check if new trigger already exists
+      if (tags.some(t => t.trigger.toLowerCase() === newTriggerLower)) {
+        return false;
+      }
+
+      const index = tags.findIndex(t => t.trigger.toLowerCase() === oldTriggerLower);
+      if (index === -1) {
+        return false;
+      }
+
+      tags[index].trigger = newTriggerLower;
+      guildData.Tags = tags;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to rename tag for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Increment tag usage count
+   * @param {string} guildId - Guild ID
+   * @param {string} trigger - Tag trigger
+   * @returns {Promise<boolean>} Success status
+   */
+  async incrementTagUses(guildId, trigger) {
+    if (!guildId || !trigger) return false;
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const tags = guildData.Tags || [];
+      const triggerLower = trigger.toLowerCase();
+
+      const index = tags.findIndex(t => t.trigger.toLowerCase() === triggerLower);
+      if (index === -1) return false;
+
+      tags[index].uses = (tags[index].uses || 0) + 1;
+      guildData.Tags = tags;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get tags by author
+   * @param {string} guildId - Guild ID
+   * @param {string} authorId - Author ID
+   * @returns {Promise<Array>} Array of tags by author
+   */
+  async getTagsByAuthor(guildId, authorId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!authorId) {
+      throw new ValidationError('Author ID is required', 'authorId', authorId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const tags = guildData.Tags || [];
+      return tags.filter(t => t.authorId === authorId);
+    } catch (error) {
+      console.error(`Error getting tags by author for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get a random tag
+   * @param {string} guildId - Guild ID
+   * @param {string} authorId - Optional author ID to filter by
+   * @returns {Promise<Object|null>} Random tag or null
+   */
+  async getRandomTag(guildId, authorId = null) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      let tags = guildData.Tags || [];
+
+      if (authorId) {
+        tags = tags.filter(t => t.authorId === authorId);
+      }
+
+      if (tags.length === 0) return null;
+
+      const randomIndex = Math.floor(Math.random() * tags.length);
+      return tags[randomIndex];
+    } catch (error) {
+      console.error(`Error getting random tag for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Clear all tags
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearAllTags(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.Tags = [];
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to clear tags for guild ${guildId}`, error);
     }
   }
 }
