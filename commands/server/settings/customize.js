@@ -45,7 +45,7 @@ function checkSubcommandCooldown(userId, subcommand) {
 
 module.exports = {
   name: "customize",
-  aliases: ['custom'],
+  aliases: ['customise'],
   description: 'Customize the bot\'s server profile (avatar, banner, bio)',
   syntax: 'customize [subcommand] (value)',
   example: 'customize avatar https://example.com/image.png',

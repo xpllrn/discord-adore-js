@@ -44,14 +44,20 @@ module.exports = {
         }
         case 'links':
         case 'link': {
-          const subcommandInfo = {
-            description: 'Manage link filtering',
-            syntax: '{guildprefix}filter links [on/off]',
-            aliases: [],
-            parameters: ['on/off'],
-            example: '{guildprefix}filter links on'
-          };
-          return await handleLinksCategory(message, subcommand, args.slice(2));
+          if (!subcommand) {
+            return runHelpCommand(message, 'filter');
+          }
+          
+          switch (subcommand) {
+            case 'on':
+              return await handleLinksToggle(message, true);
+            case 'off':
+              return await handleLinksToggle(message, false);
+            case 'exempt':
+              return await handleLinksExempt(message, args.slice(2));
+            default:
+              return runHelpCommand(message, 'filter');
+          }
         }
         case 'add': {
           const subcommandInfo = {
@@ -106,21 +112,21 @@ module.exports = {
         case 'massmention':
         case 'mentions': {
           const subcommandInfo = {
-            description: 'Manage mass mention filtering',
-            syntax: '{guildprefix}filter massmention [on/off]',
+            description: 'Manage mass mention filtering with custom threshold',
+            syntax: '{guildprefix}filter massmention [on/off] --threshold [num] --do [action]',
             aliases: ['mentions'],
-            parameters: ['on/off'],
-            example: '{guildprefix}filter massmention on'
+            parameters: ['on/off', '--threshold', '--do'],
+            example: '{guildprefix}filter massmention on --threshold 10 --do mute 5m'
           };
           return await handleMassMentionCategory(message, subcommand, args.slice(2));
         }
         case 'spam': {
           const subcommandInfo = {
-            description: 'Manage spam filtering',
-            syntax: '{guildprefix}filter spam [channel/all] [on/off] OR {guildprefix}filter spam exempt [role]',
+            description: 'Manage spam filtering with custom actions',
+            syntax: '{guildprefix}filter spam [on/off] --threshold [num] --do [action]',
             aliases: [],
-            parameters: ['channel/all', 'on/off', 'exempt', 'role'],
-            example: '{guildprefix}filter spam all on'
+            parameters: ['on/off', '--threshold', '--do'],
+            example: '{guildprefix}filter spam on --threshold 5 --do mute 10m'
           };
           return await handleSpamCategory(message, subcommand, args.slice(2));
         }
@@ -1327,16 +1333,52 @@ async function handleSpamCategory(message, subcommand, args) {
     return runHelpCommand(message, 'filter');
   }
 
-  if (subcommand === 'exempt') {
-    return await handleSpamExempt(message, args);
+  if (subcommand === 'on') {
+    const subcommandInfo = {
+      description: 'Enable spam filter with custom settings',
+      syntax: '{guildprefix}filter spam on --threshold [num] --do [delete/mute/jail]',
+      aliases: [],
+      parameters: ['--threshold', '--do'],
+      example: '{guildprefix}filter spam on --threshold 5 --do mute 10m'
+    };
+    return await handleSpamToggle(message, 'all', true, args);
   }
 
-  // Handle channel/all toggle
-  const target = subcommand.toLowerCase();
-  const toggle = args[0]?.toLowerCase();
+  if (subcommand === 'off') {
+    const subcommandInfo = {
+      description: 'Disable spam filter',
+      syntax: '{guildprefix}filter spam off',
+      aliases: [],
+      parameters: [],
+      example: '{guildprefix}filter spam off'
+    };
+    return await handleSpamToggle(message, 'all', false, args);
+  }
 
-  if ((target === 'channel' || target === 'all') && (toggle === 'on' || toggle === 'off')) {
-    return await handleSpamToggle(message, target, toggle === 'on', args.slice(1));
+  if (subcommand === 'channel') {
+    const subcommandInfo = {
+      description: 'Enable/disable spam filter for specific channel',
+      syntax: '{guildprefix}filter spam channel [#channel] [on/off] --threshold [num] --do [action]',
+      aliases: [],
+      parameters: ['channel', 'on/off', '--threshold', '--do'],
+      example: '{guildprefix}filter spam channel #general on --threshold 7 --do jail'
+    };
+    const toggle = args[1]?.toLowerCase();
+    if (toggle === 'on' || toggle === 'off') {
+      return await handleSpamToggle(message, 'channel', toggle === 'on', args.slice(2));
+    }
+    return runHelpCommand(message, 'filter');
+  }
+
+  if (subcommand === 'exempt') {
+    const subcommandInfo = {
+      description: 'Exempt role or channel from spam filter',
+      syntax: '{guildprefix}filter spam exempt [@role/#channel]',
+      aliases: [],
+      parameters: ['role/channel'],
+      example: '{guildprefix}filter spam exempt @Moderator'
+    };
+    return await handleSpamExempt(message, args);
   }
 
   return runHelpCommand(message, 'filter');
@@ -1567,129 +1609,4 @@ async function handleSpamToggleExempt(message, args) {
   }
 }
 
-// ===== LINKS WHITELIST =====
 
-async function handleLinksWhitelist(message, args) {
-  const { findChannel } = require('../../../handlers/finder');
-
-  if (!args[0]) {
-    return runHelpCommand(message, 'filter');
-  }
-
-  if (args[0] === 'list') {
-    return await handleLinksWhitelistList(message);
-  }
-
-  if (!args[1]) {
-    return embeds.warn(message, 'Please provide a channel and URL to whitelist');
-  }
-
-  const channelResult = findChannel(message.guild, args[0]);
-  if (!channelResult.found) {
-    return embeds.warn(message, channelResult.error);
-  }
-
-  const channel = channelResult.channel;
-  const url = args.slice(1).join(' ').trim();
-
-  // Basic URL validation - extract domain/keyword for allowList
-  let allowKeyword;
-  try {
-    const urlObj = new URL(url);
-    // Use hostname as the keyword (e.g., "example.com" from "https://example.com/page")
-    allowKeyword = urlObj.hostname;
-  } catch (error) {
-    // If not a full URL, treat as domain/keyword directly
-    allowKeyword = url;
-  }
-
-  // Validate keyword length (Discord AutoMod limit)
-  if (allowKeyword.length > 60) {
-    return embeds.warn(message, 'URL/domain cannot be longer than 60 characters');
-  }
-
-  try {
-    // Get the links AutoMod rule
-    const rule = await getLinksAutoModRule(message.guild);
-    
-    if (!rule) {
-      return embeds.warn(message, 'No **links filter** found. Enable **links filtering** first with `,filter links on`');
-    }
-
-    // Get current allowList and exemptChannels
-    const currentAllowList = rule.triggerMetadata.allowList || [];
-    const currentExemptChannels = Array.isArray(rule.exemptChannels) ? rule.exemptChannels : [];
-
-    // Check if URL is already whitelisted
-    const isWhitelisted = currentAllowList.includes(allowKeyword);
-
-    if (isWhitelisted) {
-      // Remove from allowList
-      const newAllowList = currentAllowList.filter(keyword => keyword !== allowKeyword);
-      
-      await rule.edit({
-        triggerMetadata: {
-          ...rule.triggerMetadata,
-          allowList: newAllowList
-        }
-      });
-
-      return embeds.success(message, `Removed **${allowKeyword}** from links whitelist`);
-    } else {
-      // Add to allowList
-      const newAllowList = [...currentAllowList, allowKeyword];
-      
-      await rule.edit({
-        triggerMetadata: {
-          ...rule.triggerMetadata,
-          allowList: newAllowList
-        }
-      });
-
-      return embeds.success(message, `Added **${allowKeyword}** to links whitelist (will be allowed in all channels)`);
-    }
-  } catch (error) {
-    logger.webhook.error(error, 'Links Whitelist', {
-      user: message.author,
-      guild: message.guild,
-      channel: channel.name,
-      url: url
-    });
-    return embeds.deny(message, 'Failed to update links whitelist');
-  }
-}
-
-async function handleLinksWhitelistList(message) {
-  try {
-    const rule = await getLinksAutoModRule(message.guild);
-    
-    if (!rule) {
-      return embeds.warn(message, 'No **links filter** found');
-    }
-
-    const allowList = rule.triggerMetadata.allowList || [];
-
-    if (allowList.length === 0) {
-      return embeds.warn(message, 'No whitelisted URLs/domains found');
-    }
-
-    const urlList = allowList.map((keyword, index) => {
-      const urlNumber = (index + 1).toString().padStart(2, '0');
-      return `\`${urlNumber}\` **${keyword}**`;
-    }).join('\n');
-
-    const embed = new EmbedBuilder()
-      .setColor(colors.embed)
-      .setTitle('Links Filter - Whitelisted URLs/Domains')
-      .setDescription(urlList)
-      .setFooter({ text: `${allowList.length} whitelisted URL${allowList.length === 1 ? '' : 's'}` });
-
-    return message.channel.send({ embeds: [embed] });
-  } catch (error) {
-    logger.webhook.error(error, 'Links Whitelist List', {
-      user: message.author,
-      guild: message.guild
-    });
-    return embeds.deny(message, 'Failed to retrieve whitelist');
-  }
-}
