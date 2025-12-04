@@ -2,13 +2,13 @@ const { SlashCommandBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
 const { hasDiscordPermission, PermissionFlagsBits } = require('../../utils/permissions');
+const { runHelpCommand } = require('../../utils/commandProcessor');
 
 // Shared handler functions that work with both message and interaction contexts
 async function handleSetGuildPrefix(context, newPrefix) {
   const isInteraction = !!context.user;
   const member = isInteraction ? context.member : context.member;
 
-  // Check if user has Administrator permission
   if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
     return embeds.deny(context, 'You need **Administrator** permission to use this command.', false);
   }
@@ -47,7 +47,6 @@ async function handleRemoveGuildPrefix(context) {
   const isInteraction = !!context.user;
   const member = isInteraction ? context.member : context.member;
 
-  // Check if user has Administrator permission
   if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
     return embeds.deny(context, 'You need **Administrator** permission to use this command.', false);
   }
@@ -89,53 +88,61 @@ module.exports = {
   syntax: 'prefix [subcommand] (value)',
   example: 'prefix set !',
 
-  // PREFIX COMMAND
-  run: async (_, message, args) => {
-    if (!args[0]) {
-      const { runHelpCommand } = require('../../utils/commandProcessor');
+  subcommands: {
+    view: {
+      name: 'view',
+      aliases: [],
+      description: 'View the current server prefix',
+      syntax: '{guildprefix}prefix view',
+      parameters: [],
+      example: '{guildprefix}prefix view',
+
+      handler: async (client, message, args) => {
+        return handleViewGuildPrefix(message);
+      }
+    },
+
+    set: {
+      name: 'set',
+      aliases: [],
+      description: 'Set a new server prefix',
+      syntax: '{guildprefix}prefix set [prefix]',
+      parameters: ['prefix'],
+      example: '{guildprefix}prefix set !',
+
+      handler: async (client, message, args) => {
+        return handleSetGuildPrefix(message, args[0]);
+      }
+    },
+
+    remove: {
+      name: 'remove',
+      aliases: ['reset', 'default'],
+      description: 'Reset server prefix to default',
+      syntax: '{guildprefix}prefix remove',
+      parameters: [],
+      example: '{guildprefix}prefix remove',
+
+      handler: async (client, message, args) => {
+        return handleRemoveGuildPrefix(message);
+      }
+    }
+  },
+
+  run: async (client, message, args) => {
+    const sub = args[0]?.toLowerCase();
+    if (!sub) {
       return runHelpCommand(message, 'prefix');
     }
 
-    const subcommand = args[0].toLowerCase();
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
 
-    switch (subcommand) {
-      case 'view': {
-        const subcommandInfo = {
-          description: 'View the current server prefix',
-          syntax: '{guildprefix}prefix view',
-          aliases: [],
-          example: '{guildprefix}prefix view'
-        };
-        return handleViewGuildPrefix(message);
-      }
-
-      case 'set': {
-        const subcommandInfo = {
-          description: 'Set a new server prefix',
-          syntax: '{guildprefix}prefix set [prefix]',
-          aliases: [],
-          example: '{guildprefix}prefix set !'
-        };
-        return handleSetGuildPrefix(message, args[1]);
-      }
-
-      case 'remove':
-      case 'reset':
-      case 'default': {
-        const subcommandInfo = {
-          description: 'Reset server prefix to default',
-          syntax: '{guildprefix}prefix remove',
-          aliases: ['reset', 'default'],
-          example: '{guildprefix}prefix remove'
-        };
-        return handleRemoveGuildPrefix(message);
-      }
-
-      default: {
-        const { runHelpCommand } = require('../../utils/commandProcessor');
-        return runHelpCommand(message, 'prefix');
-      }
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
+
+    return runHelpCommand(message, 'prefix');
   },
 
   // SLASH COMMAND

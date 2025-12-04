@@ -114,6 +114,97 @@ module.exports = {
   example: 'count config',
   permission: 'manage_guild',
   isGroupCommand: true,
+
+  subcommands: {
+    config: {
+      name: 'config',
+      aliases: [],
+      description: 'View current counting configuration',
+      syntax: '{guildprefix}count config',
+      parameters: [],
+      example: '{guildprefix}count config',
+      handler: async (client, message, args) => {
+        return await viewCountingConfigShared(message);
+      }
+    },
+
+    channel: {
+      name: 'channel',
+      aliases: [],
+      description: 'Set the counting channel',
+      syntax: '{guildprefix}count channel [#channel]',
+      parameters: ['channel'],
+      example: '{guildprefix}count channel #counting',
+      handler: async (client, message, args) => {
+        if (!args[0]) {
+          return runHelpCommand(message, 'count');
+        }
+
+        const mentionedChannel = message.mentions.channels.first();
+        const channel = (mentionedChannel && mentionedChannel.guild.id === message.guild.id) ? mentionedChannel :
+                        message.guild.channels.cache.get(args[0]);
+        
+        if (!channel) {
+          return embeds.warn(message, 'Invalid channel provided');
+        }
+
+        if (!channel.isTextBased()) {
+          return embeds.deny(message, 'Counting channel must be a text channel', false);
+        }
+
+        return await setCountingChannelShared(message, channel);
+      }
+    },
+
+    strict: {
+      name: 'strict',
+      aliases: [],
+      description: 'Toggle strict mode (wrong counts reset the game)',
+      syntax: '{guildprefix}count strict [on/off]',
+      parameters: ['on/off'],
+      example: '{guildprefix}count strict on',
+      handler: async (client, message, args) => {
+        const mode = args[0]?.toLowerCase();
+        
+        if (!mode || (mode !== 'on' && mode !== 'off')) {
+          return runHelpCommand(message, 'count');
+        }
+
+        return await toggleStrictModeShared(message, mode);
+      }
+    },
+
+    blacklist: {
+      name: 'blacklist',
+      aliases: [],
+      description: 'Toggle blacklist for a user',
+      syntax: '{guildprefix}count blacklist [@user]',
+      parameters: ['user'],
+      example: '{guildprefix}count blacklist @user',
+      handler: async (client, message, args) => {
+        const user = message.mentions.users.first() || await client.users.fetch(args[0]).catch(() => null);
+        
+        if (!user) {
+          return runHelpCommand(message, 'count');
+        }
+
+        return await toggleBlacklistUserShared(message, user);
+      }
+    },
+
+    blacklists: {
+      name: 'blacklists',
+      aliases: [],
+      description: 'View all blacklisted users',
+      syntax: '{guildprefix}count blacklists',
+      parameters: [],
+      example: '{guildprefix}count blacklists',
+      handler: async (client, message, args) => {
+        return await viewBlacklistedUsersShared(message);
+      }
+    }
+  },
+
   run: async (client, message, args) => {
     if (!message.member.permissions.has('ManageGuild')) {
       return embeds.permission(message, 'Manage Guild');
@@ -123,59 +214,14 @@ module.exports = {
       return runHelpCommand(message, 'count');
     }
 
-    const subcommand = args[0].toLowerCase();
+    const sub = args[0].toLowerCase();
 
-    // CONFIG subcommand
-    if (subcommand === 'config') {
-      return await viewCountingConfigShared(message);
-    }
+    // Find matching subcommand
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
 
-    // CHANNEL subcommand
-    if (subcommand === 'channel') {
-      if (!args[1]) {
-        return runHelpCommand(message, 'count');
-      }
-
-      const mentionedChannel = message.mentions.channels.first();
-      const channel = (mentionedChannel && mentionedChannel.guild.id === message.guild.id) ? mentionedChannel :
-                      message.guild.channels.cache.get(args[1]);
-      
-      if (!channel) {
-        return embeds.warn(message, 'Invalid channel provided');
-      }
-
-      if (!channel.isTextBased()) {
-        return embeds.deny(message, 'Counting channel must be a text channel', false);
-      }
-
-      return await setCountingChannelShared(message, channel);
-    }
-
-    // STRICT subcommand
-    if (subcommand === 'strict') {
-      const mode = args[1]?.toLowerCase();
-      
-      if (!mode || (mode !== 'on' && mode !== 'off')) {
-        return runHelpCommand(message, 'count');
-      }
-
-      return await toggleStrictModeShared(message, mode);
-    }
-
-    // BLACKLIST subcommand
-    if (subcommand === 'blacklist') {
-      const user = message.mentions.users.first() || await client.users.fetch(args[1]).catch(() => null);
-      
-      if (!user) {
-        return runHelpCommand(message, 'count');
-      }
-
-      return await toggleBlacklistUserShared(message, user);
-    }
-
-    // BLACKLISTS subcommand
-    if (subcommand === 'blacklists') {
-      return await viewBlacklistedUsersShared(message);
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
 
     return runHelpCommand(message, 'count');

@@ -1,13 +1,11 @@
 const { MessageFlags, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js')
-const path = require('path')
-const fs = require('fs')
 const config = require('../../config/setup')
 const { embeds } = require('../../core/embeds')
 const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed, addPaginationButtons, addFooter } = require('../../utils/embeds/helpEmbedBuilder')
 const { createPagination } = require('../../core/buttons')
 
 // ============================================================================
-// SUBCOMMAND PARSER - Integrated into help.js
+// SUBCOMMAND HELPERS
 // ============================================================================
 
 /**
@@ -15,189 +13,6 @@ const { createPagination } = require('../../core/buttons')
  */
 function hasSubcommands(command) {
   return command.isGroupCommand === true;
-}
-
-/**
- * Parses command file to extract all subcommandInfo blocks
- * Simple approach: Just find all subcommandInfo blocks and extract their data
- */
-function parseSubcommands(commandFilePath, commandName, guildPrefix) {
-  try {
-    const fileContent = fs.readFileSync(commandFilePath, 'utf8');
-    const subcommands = [];
-    const seenNames = new Set();
-
-    // Find ALL subcommandInfo blocks in the file
-    const subcommandInfoRegex = /const\s+subcommandInfo\s*=\s*\{([\s\S]*?)\};/g;
-    
-    let match;
-    while ((match = subcommandInfoRegex.exec(fileContent)) !== null) {
-      const blockContent = match[1];
-      
-      // Try to extract name field
-      const nameMatch = blockContent.match(/name:\s*['"`](\w+)['"`]/);
-      
-      if (nameMatch) {
-        const subcommandName = nameMatch[1];
-        
-        // Skip duplicates
-        if (seenNames.has(subcommandName)) {
-          continue;
-        }
-        seenNames.add(subcommandName);
-        
-        // Parse the subcommand data
-        const subcommandData = parseSubcommandInfo(blockContent, subcommandName, commandName, guildPrefix);
-        subcommands.push(subcommandData);
-      } else {
-        // No name field - try to extract from description or syntax
-        const descMatch = blockContent.match(/description:\s*[`'"]([^`'"]*)[`'"]/);
-        const syntaxMatch = blockContent.match(/syntax:\s*[`'"]([^`'"]*)[`'"]/);
-        
-        if (descMatch || syntaxMatch) {
-          // Extract subcommand name from syntax if possible
-          let subcommandName = 'unknown';
-          if (syntaxMatch) {
-            const syntaxParts = syntaxMatch[1].split(' ');
-            if (syntaxParts.length >= 2) {
-              subcommandName = syntaxParts[1].replace(/[^\w]/g, '');
-            }
-          }
-          
-          // Skip duplicates
-          if (seenNames.has(subcommandName)) {
-            continue;
-          }
-          seenNames.add(subcommandName);
-          
-          // Parse the subcommand data
-          const subcommandData = parseSubcommandInfo(blockContent, subcommandName, commandName, guildPrefix);
-          subcommands.push(subcommandData);
-        }
-      }
-    }
-
-    return subcommands;
-  } catch (error) {
-    console.error(`Error parsing subcommands from ${commandFilePath}:`, error.message);
-    return [];
-  }
-}
-
-/**
- * Extracts aliases from conditional block
- */
-function extractAliasesFromConditional(conditional) {
-  const aliases = [];
-  const aliasRegex = /(?:args\[0\]|subcommand)\s*===\s*['"](\w+)['"]/g;
-  let match;
-
-  while ((match = aliasRegex.exec(conditional)) !== null) {
-    aliases.push(match[1]);
-  }
-
-  return aliases.slice(1); // Remove first one (main subcommand name)
-}
-
-/**
- * Extracts aliases from switch case statements
- */
-function extractAliasesFromSwitchCases(caseBlock) {
-  const aliases = [];
-  const caseRegex = /case\s+['"](\w+)['"]\s*:/g;
-  let match;
-
-  while ((match = caseRegex.exec(caseBlock)) !== null) {
-    aliases.push(match[1]);
-  }
-
-  return aliases.slice(1); // Remove first one (main subcommand name)
-}
-
-/**
- * Parses subcommandInfo object literal from code
- */
-function parseSubcommandInfo(objectContent, subcommandName, commandName, guildPrefix) {
-  const subcommandData = {
-    name: subcommandName,
-    fullCommand: `${commandName} ${subcommandName}`,
-    description: '',
-    aliases: [],
-    parameters: [],
-    syntax: '',
-    example: ''
-  };
-
-  // Extract description
-  const descMatch = objectContent.match(/description:\s*[`'"]([^`'"]*)[`'"]/);
-  if (descMatch) {
-    subcommandData.description = descMatch[1];
-  }
-
-  // Extract usage/syntax
-  const usageMatch = objectContent.match(/syntax:\s*[`'"]([^`'"]*)[`'"]/);
-  if (usageMatch) {
-    let usage = usageMatch[1].replace(/\{guildprefix\}/g, guildPrefix);
-    subcommandData.syntax = usage;
-  }
-
-  // Extract aliases array
-  const aliasesMatch = objectContent.match(/aliases:\s*\[(.*?)\]/s);
-  if (aliasesMatch) {
-    const aliasesStr = aliasesMatch[1];
-    const aliases = aliasesStr.match(/['"](\w+)['"]/g);
-    if (aliases) {
-      subcommandData.aliases = aliases.map(a => a.replace(/['"]/g, ''));
-    }
-  }
-
-  // Extract parameters array
-  const paramsMatch = objectContent.match(/parameters:\s*\[(.*?)\]/s);
-  if (paramsMatch) {
-    const paramsStr = paramsMatch[1];
-    const params = paramsStr.match(/['"]([^'"]+)['"]/g);
-    if (params) {
-      subcommandData.parameters = params.map(p => p.replace(/['"]/g, ''));
-    }
-  }
-
-  // Extract example
-  const exampleMatch = objectContent.match(/example:\s*[`'"]([^`'"]*)[`'"]/);
-  if (exampleMatch) {
-    subcommandData.example = exampleMatch[1].replace(/\{guildprefix\}/g, guildPrefix);
-  }
-
-  return subcommandData;
-}
-
-/**
- * Gets the file path for a command
- */
-function getCommandFilePath(commandName, commandsDir) {
-  try {
-    function searchDirectory(dir) {
-      const files = fs.readdirSync(dir);
-
-      for (const file of files) {
-        const fullPath = path.join(dir, file);
-        const stat = fs.statSync(fullPath);
-
-        if (stat.isDirectory()) {
-          const result = searchDirectory(fullPath);
-          if (result) return result;
-        } else if (file === `${commandName}.js`) {
-          return fullPath;
-        }
-      }
-
-      return null;
-    }
-
-    return searchDirectory(commandsDir);
-  } catch (error) {
-    console.error(`Error finding command file for ${commandName}:`, error.message);
-    return null;
-  }
 }
 
 // ============================================================================
@@ -247,38 +62,31 @@ async function showHelpShared(context, client, commandQuery) {
     // Check if this is a group command with subcommands
     if (hasSubcommands(command)) {
       try {
-        let subcommands = [];
-
-        // PRIORITY 1: Check if command has explicit subcommands array
-        if (command.subcommands && Array.isArray(command.subcommands)) {
-          // Use the declarative subcommands array (preferred method)
-          subcommands = command.subcommands.map(sub => ({
-            ...sub,
-            fullCommand: `${command.name} ${sub.name}`,
-            syntax: sub.syntax ? sub.syntax.replace(/\{guildprefix\}/g, guildprefix) : '',
-            example: sub.example ? sub.example.replace(/\{guildprefix\}/g, guildprefix) : ''
-          }));
-        } else {
-          // PRIORITY 2: Fall back to parsing the file (legacy method)
-          const commandsDir = path.join(__dirname, '..');
-          const commandFilePath = getCommandFilePath(command.name, commandsDir);
-
-          if (!commandFilePath) {
-            // Fall back to traditional embed
-            const container = createTraditionalEmbed(command, guildprefix);
-            if (isInteraction) {
-              if (context.deferred || context.replied) {
-                return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
-              }
-              return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
-            } else {
-              return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
+        // Check if command has explicit subcommands object (new format)
+        if (!command.subcommands) {
+          // No subcommands object - fall back to traditional embed
+          const container = createTraditionalEmbed(command, guildprefix);
+          if (isInteraction) {
+            if (context.deferred || context.replied) {
+              return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
             }
+            return context.reply({ components: [container], flags: MessageFlags.IsComponentsV2 });
+          } else {
+            return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
-
-          // Parse subcommands from the file
-          subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
         }
+
+        // Support both array and object formats
+        const subcommandsList = Array.isArray(command.subcommands) 
+          ? command.subcommands 
+          : Object.values(command.subcommands);
+        
+        const subcommands = subcommandsList.map(sub => ({
+          ...sub,
+          fullCommand: `${command.name} ${sub.name}`,
+          syntax: sub.syntax ? sub.syntax.replace(/\{guildprefix\}/g, guildprefix) : '',
+          example: sub.example ? sub.example.replace(/\{guildprefix\}/g, guildprefix) : ''
+        }));
 
         if (subcommands.length === 0) {
           // Fall back to traditional embed
@@ -292,9 +100,6 @@ async function showHelpShared(context, client, commandQuery) {
             return context.channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
           }
         }
-
-        // Note: Subcommand filtering (args[1]) is handled by prefix command only
-        // Slash commands would need a separate option for this if needed
 
         // Create page array: parent page + subcommand pages
         const pages = [];
@@ -333,7 +138,7 @@ async function showHelpShared(context, client, commandQuery) {
         return createPagination(
           isInteraction ? context : message,
           pages,
-          (pageItems, currentPage, totalPages) => buildPage(currentPage - 1, currentPage, totalPages),
+          (currentPage, totalPages) => buildPage(currentPage - 1, currentPage, totalPages),
           1, // 1 item per page (each item is already a full container)
           command.name,
           MessageFlags.IsComponentsV2 // Pass V2 flag for containers
@@ -409,6 +214,11 @@ module.exports = {
 
       if (command && hasSubcommands(command)) {
         try {
+          // Check if command has subcommands object (new format)
+          if (!command.subcommands) {
+            return embeds.warn(message, `Command \`${commandName}\` does not have subcommands`, false);
+          }
+
           // Get guild prefix
           let guildprefix = config.bot.defaultPrefix;
           try {
@@ -424,35 +234,37 @@ module.exports = {
             }
           } catch (e) { }
 
-          // Get the command file path and parse subcommands
-          const commandsDir = path.join(__dirname, '..');
-          const commandFilePath = getCommandFilePath(command.name, commandsDir);
+          // Get subcommands from the command object
+          const subcommandsList = Array.isArray(command.subcommands) 
+            ? command.subcommands 
+            : Object.values(command.subcommands);
+          
+          const subcommands = subcommandsList.map(sub => ({
+            ...sub,
+            fullCommand: `${command.name} ${sub.name}`,
+            syntax: sub.syntax ? sub.syntax.replace(/\{guildprefix\}/g, guildprefix) : '',
+            example: sub.example ? sub.example.replace(/\{guildprefix\}/g, guildprefix) : ''
+          }));
 
-          if (commandFilePath) {
-            const subcommands = parseSubcommands(commandFilePath, command.name, guildprefix);
-            const requestedSubcommand = args[1].toLowerCase();
+          const requestedSubcommand = args[1].toLowerCase();
 
-            // Find the matching subcommand (check both name and aliases)
-            const matchedSubcommand = subcommands.find(sub =>
-              sub.name.toLowerCase() === requestedSubcommand ||
-              (sub.aliases && sub.aliases.some(alias => alias.toLowerCase() === requestedSubcommand))
-            );
+          // Find the matching subcommand (check both name and aliases)
+          const matchedSubcommand = subcommands.find(sub =>
+            sub.name.toLowerCase() === requestedSubcommand ||
+            (sub.aliases && sub.aliases.some(alias => alias.toLowerCase() === requestedSubcommand))
+          );
 
-            if (matchedSubcommand) {
-              // Show ONLY this subcommand's info (no pagination, no buttons)
-              const singleSubcommandEmbed = createSubcommandPage(command, matchedSubcommand, 1, 1);
-              return message.channel.send({ components: [singleSubcommandEmbed], flags: MessageFlags.IsComponentsV2 });
-            } else {
-              // Subcommand not found - show error instead of falling through
-              return embeds.warn(message, `Subcommand \`${commandName} ${requestedSubcommand}\` does not exist`, false);
-            }
+          if (matchedSubcommand) {
+            // Show ONLY this subcommand's info (no pagination, no buttons)
+            const singleSubcommandEmbed = createSubcommandPage(command, matchedSubcommand, 1, 1);
+            return message.channel.send({ components: [singleSubcommandEmbed], flags: MessageFlags.IsComponentsV2 });
           } else {
-            // Command file not found - show error
+            // Subcommand not found - show error
             return embeds.warn(message, `Subcommand \`${commandName} ${requestedSubcommand}\` does not exist`, false);
           }
         } catch (e) {
-          // Error parsing subcommands - show error instead of falling through
-          console.error('[HELP] Error parsing subcommands:', e);
+          // Error processing subcommands - show error
+          console.error('[HELP] Error processing subcommands:', e);
           return embeds.warn(message, `Subcommand \`${commandName} ${requestedSubcommand}\` does not exist`, false);
         }
       } else if (command) {

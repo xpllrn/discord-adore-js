@@ -67,6 +67,7 @@ async function searchYouTube(query) {
   }
 }
 
+
 function detectPlatform(url) {
   const patterns = {
     discord: /discord\.com\/users\/|discordapp\.com\/users\//i,
@@ -100,543 +101,514 @@ module.exports = {
   syntax: 'about [subcommand] (parameters)',
   example: 'about create username',
   isGroupCommand: true,
-  run: async (client, message, args) => {
-    try {
-      if (!args[0]) {
-        return runHelpCommand(message, 'about');
+
+  subcommands: {
+    create: {
+      name: 'create',
+      aliases: [],
+      description: 'Create your ADORE profile',
+      syntax: '{guildprefix}about create [username]',
+      parameters: ['username (optional)'],
+      example: '{guildprefix}about create myusername',
+
+      handler: async (client, message, args) => {
+        const username = args[0] || message.author.username;
+
+        const now = Date.now();
+        const cooldownEnd = createCooldowns.get(message.author.id);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before creating a profile again`);
+        }
+
+        const existingProfile = await getProfile(message.author.id);
+        if (existingProfile) {
+          return embeds.warn(message, `You already have a profile at **https://adore.rest/${existingProfile.username}**\nProfiles can only be created **once** per account`);
+        }
+
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+          return embeds.warn(message, 'Username can **only** contain letters, numbers, and underscores');
+        }
+
+        if (username.length < 3) {
+          return embeds.warn(message, 'Username must be at least **3 characters** long');
+        }
+
+        if (username.length > 20) {
+          return embeds.warn(message, 'Username **cannot** be longer than **20 characters**');
+        }
+
+        createCooldowns.set(message.author.id, now + COOLDOWN_TIME);
+
+        const profileData = {
+          username: username.toLowerCase(),
+          displayName: username,
+          discordId: message.author.id,
+          avatar: message.author.displayAvatarURL({ size: 512, extension: 'png' }),
+          links: [
+            { type: 'discord', url: `https://discord.com/users/${message.author.id}` }
+          ]
+        };
+
+        await updateProfile(profileData);
+        createCooldowns.delete(message.author.id);
+
+        return embeds.success(message, `**Created** your ADORE profile\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
       }
+    },
 
-      const subcommand = args[0].toLowerCase();
+    rename: {
+      name: 'rename',
+      aliases: [],
+      description: 'Change your ADORE profile display name',
+      syntax: '{guildprefix}about rename [name]',
+      parameters: ['name'],
+      example: '{guildprefix}about rename Cool Name',
 
-      switch (subcommand) {
-        case 'create': {
-          const subcommandInfo = {
-            description: 'Create your ADORE profile',
-            syntax: '{guildprefix}about create [username]',
-            aliases: [],
-            parameters: ['username (optional)'],
-            example: '{guildprefix}about create myusername'
-          };
+      handler: async (client, message, args) => {
+        const name = args.join(' ');
+        if (!name) return runHelpCommand(message, 'about');
 
-          const username = args[1] || message.author.username;
-
-          // Check cooldown
-          const now = Date.now();
-          const cooldownEnd = createCooldowns.get(message.author.id);
-          if (cooldownEnd && now < cooldownEnd) {
-            const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
-            return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before creating a profile again`);
-          }
-
-          // Check if user already has a profile
-          const existingProfile = await getProfile(message.author.id);
-          if (existingProfile) {
-            return embeds.warn(message, `You already have a profile at **https://adore.rest/${existingProfile.username}**\nProfiles can only be created **once** per account`);
-          }
-
-          // Validate username format
-          if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-            return embeds.warn(message, 'Username can **only** contain letters, numbers, and underscores');
-          }
-
-          // Validate username length
-          if (username.length < 3) {
-            return embeds.warn(message, 'Username must be at least **3 characters** long');
-          }
-
-          if (username.length > 20) {
-            return embeds.warn(message, 'Username **cannot** be longer than **20 characters**');
-          }
-
-          // Set cooldown
-          createCooldowns.set(message.author.id, now + COOLDOWN_TIME);
-
-          const profileData = {
-            username: username.toLowerCase(),
-            displayName: username,
-            discordId: message.author.id,
-            avatar: message.author.displayAvatarURL({ size: 512, extension: 'png' }),
-            links: [
-              { type: 'discord', url: `https://discord.com/users/${message.author.id}` }
-            ]
-          };
-
-          await updateProfile(profileData);
-
-          // Clear cooldown on success
-          createCooldowns.delete(message.author.id);
-
-          return embeds.success(message, `**Created** your ADORE profile\n\n**Username:** ${username}\n**Profile:** https://adore.rest/${username.toLowerCase()}`);
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to **create a profile** first using `about create`');
         }
 
-        case 'rename': {
-          const subcommandInfo = {
-            description: 'Change your ADORE profile display name',
-            syntax: '{guildprefix}about rename [name]',
-            aliases: [],
-            parameters: ['name'],
-            example: '{guildprefix}about rename Cool Name'
-          };
-
-          const name = args.slice(1).join(' ');
-          if (!name) return runHelpCommand(message, 'about');
-
-          // Check if user has a profile
-          const existingProfile = await getProfile(message.author.id);
-          if (!existingProfile) {
-            return embeds.deny(message, 'You need to **create a profile** first using `about create`');
-          }
-
-          // Validate name length
-          if (name.length > 32) {
-            return embeds.warn(message, 'Display name **cannot** be longer than **32 characters**');
-          }
-
-          // Check cooldown
-          const now = Date.now();
-          const cooldownEnd = updateCooldowns.get(`${message.author.id}-rename`);
-          if (cooldownEnd && now < cooldownEnd) {
-            const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
-            return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your name again`);
-          }
-
-          // Set cooldown
-          updateCooldowns.set(`${message.author.id}-rename`, now + UPDATE_COOLDOWN);
-
-          await updateProfile({
-            discordId: message.author.id,
-            displayName: name
-          });
-
-          return embeds.success(message, `**Updated** your display name to **${name}**`);
+        if (name.length > 32) {
+          return embeds.warn(message, 'Display name **cannot** be longer than **32 characters**');
         }
 
-        case 'bio': {
-          const subcommandInfo = {
-            description: 'Set your ADORE profile bio',
-            syntax: '{guildprefix}about bio [description]',
-            aliases: [],
-            parameters: ['description'],
-            example: '{guildprefix}about bio Hey! I love music 🎵'
-          };
-
-          const bio = args.slice(1).join(' ');
-          if (!bio) return runHelpCommand(message, 'about');
-
-          // Check if user has a profile
-          const existingProfile = await getProfile(message.author.id);
-          if (!existingProfile) {
-            return embeds.deny(message, 'You need to **create a profile** first using `about create`');
-          }
-
-          // Check cooldown
-          const now = Date.now();
-          const cooldownEnd = updateCooldowns.get(`${message.author.id}-bio`);
-          if (cooldownEnd && now < cooldownEnd) {
-            const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
-            return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your bio again`);
-          }
-
-          // Validate bio length
-          if (bio.length > 200) {
-            return embeds.warn(message, `Bio is **too long**! Maximum **200 characters** (yours is **${bio.length}**)`);
-          }
-
-          // Set cooldown
-          updateCooldowns.set(`${message.author.id}-bio`, now + UPDATE_COOLDOWN);
-
-          await updateProfile({
-            discordId: message.author.id,
-            bio: bio
-          });
-
-          return embeds.success(message, `**Updated** your bio\n\n${bio}`);
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-rename`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your name again`);
         }
 
-        case 'avatar': {
-          const subcommandInfo = {
-            description: 'Set your ADORE profile avatar',
-            syntax: '{guildprefix}about avatar (attachment/user)',
-            aliases: [],
-            parameters: ['attachment or user mention (optional)'],
-            example: '{guildprefix}about avatar @user'
-          };
+        updateCooldowns.set(`${message.author.id}-rename`, now + UPDATE_COOLDOWN);
 
-          // Check if user has a profile
-          const existingProfile = await getProfile(message.author.id);
-          if (!existingProfile) {
-            return embeds.deny(message, 'You need to **create a profile** first using `about create`');
-          }
+        await updateProfile({
+          discordId: message.author.id,
+          displayName: name
+        });
 
-          // Check cooldown
-          const now = Date.now();
-          const cooldownEnd = updateCooldowns.get(`${message.author.id}-avatar`);
-          if (cooldownEnd && now < cooldownEnd) {
-            const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
-            return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your avatar again`);
-          }
+        return embeds.success(message, `**Updated** your display name to **${name}**`);
+      }
+    },
 
-          let avatarUrl;
-          const mentionedUser = message.mentions.users.first();
-          const attachment = message.attachments.first();
+    bio: {
+      name: 'bio',
+      aliases: [],
+      description: 'Set your ADORE profile bio',
+      syntax: '{guildprefix}about bio [description]',
+      parameters: ['description'],
+      example: '{guildprefix}about bio Hey! I love music 🎵',
 
-          // Set cooldown
-          updateCooldowns.set(`${message.author.id}-avatar`, now + UPDATE_COOLDOWN);
+      handler: async (client, message, args) => {
+        const bio = args.join(' ');
+        if (!bio) return runHelpCommand(message, 'about');
 
-          if (attachment) {
-            // Validate file type
-            if (!attachment.contentType?.startsWith('image/')) {
-              return embeds.deny(message, 'File must be an **image**');
-            }
-
-            // Validate file size (5MB)
-            if (attachment.size > 5 * 1024 * 1024) {
-              return embeds.deny(message, 'Image **too large**! Maximum **5MB**');
-            }
-
-            avatarUrl = attachment.url;
-          } else if (mentionedUser) {
-            avatarUrl = mentionedUser.displayAvatarURL({ size: 512, extension: 'png' });
-          } else {
-            avatarUrl = message.author.displayAvatarURL({ size: 512, extension: 'png' });
-          }
-
-          await updateProfile({
-            discordId: message.author.id,
-            avatar: avatarUrl
-          });
-
-          return embeds.success(message, '**Avatar updated** successfully');
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to **create a profile** first using `about create`');
         }
 
-        case 'banner': {
-          const subcommandInfo = {
-            description: 'Set your ADORE profile banner',
-            syntax: '{guildprefix}about banner (attachment/user)',
-            aliases: [],
-            parameters: ['attachment or user mention (optional)'],
-            example: '{guildprefix}about banner @user'
-          };
-
-          // Check if user has a profile
-          const existingProfile = await getProfile(message.author.id);
-          if (!existingProfile) {
-            return embeds.deny(message, 'You need to **create a profile** first using `about create`');
-          }
-
-          // Check cooldown
-          const now = Date.now();
-          const cooldownEnd = updateCooldowns.get(`${message.author.id}-banner`);
-          if (cooldownEnd && now < cooldownEnd) {
-            const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
-            return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your banner again`);
-          }
-
-          let bannerUrl = null;
-          const mentionedUser = message.mentions.users.first();
-          const attachment = message.attachments.first();
-
-          // Set cooldown
-          updateCooldowns.set(`${message.author.id}-banner`, now + UPDATE_COOLDOWN);
-
-          if (attachment) {
-            // Validate file type
-            if (!attachment.contentType?.startsWith('image/')) {
-              return embeds.deny(message, 'File must be an **image**');
-            }
-
-            // Validate file size (8MB)
-            if (attachment.size > 8 * 1024 * 1024) {
-              return embeds.deny(message, 'Image **too large**! Maximum **8MB**');
-            }
-
-            bannerUrl = attachment.url;
-          } else if (mentionedUser) {
-            const fetchedUser = await mentionedUser.fetch();
-            bannerUrl = fetchedUser.bannerURL({ size: 1024, extension: 'png' });
-          }
-
-          await updateProfile({
-            discordId: message.author.id,
-            banner: bannerUrl
-          });
-
-          return embeds.success(message, bannerUrl ? '**Banner updated** successfully' : '**Banner removed** successfully');
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-bio`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your bio again`);
         }
 
-        case 'music':
-        case 'song': {
-          const subcommandInfo = {
-            description: 'Set your favorite song on your ADORE profile',
-            syntax: '{guildprefix}about music [youtube link or song name] (--time 2:30) (--name Song Name)',
-            aliases: ['song'],
-            parameters: ['youtube link or song name', 'time (optional)', 'name (optional)'],
-            example: '{guildprefix}about music https://youtube.com/watch?v=... --time 1:30 --name My Favorite Song'
-          };
-
-          const fullInput = args.slice(1).join(' ');
-          if (!fullInput) return runHelpCommand(message, 'about');
-
-          // Check if user has a profile
-          const existingProfile = await getProfile(message.author.id);
-          if (!existingProfile) {
-            return embeds.deny(message, 'You need to **create a profile** first using `about create`');
-          }
-
-          // Check cooldown
-          const now = Date.now();
-          const cooldownEnd = updateCooldowns.get(`${message.author.id}-music`);
-          if (cooldownEnd && now < cooldownEnd) {
-            const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
-            return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your song again`);
-          }
-
-          // Set cooldown
-          updateCooldowns.set(`${message.author.id}-music`, now + UPDATE_COOLDOWN);
-
-          // Parse flags
-          const timeMatch = fullInput.match(/--time\s+(\d+):(\d+)/);
-          const nameMatch = fullInput.match(/--name\s+(.+?)(?:\s+--|$)/);
-
-          let startTime = 0;
-          if (timeMatch) {
-            const minutes = parseInt(timeMatch[1]);
-            const seconds = parseInt(timeMatch[2]);
-            startTime = minutes * 60 + seconds;
-          }
-
-          const customName = nameMatch ? nameMatch[1].trim() : null;
-
-          // Remove flags from input
-          const input = fullInput.replace(/--time\s+\d+:\d+/g, '').replace(/--name\s+.+?(?=\s+--|$)/g, '').trim();
-
-          // Check if input is a YouTube link
-          const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-          const match = input.match(youtubeRegex);
-
-          let videoData;
-
-          if (match) {
-            const videoId = match[1];
-
-            // If no custom name, fetch video title from YouTube
-            let videoTitle = customName;
-            if (!customName) {
-              try {
-                const ytResponse = await axios.post(`${API_BASE_URL}/youtube/info`,
-                  { videoId },
-                  {
-                    headers: {
-                      'X-API-Key': BOT_API_KEY,
-                      'Content-Type': 'application/json'
-                    }
-                  }
-                );
-                videoTitle = ytResponse.data.title;
-              } catch (error) {
-                videoTitle = 'YouTube Video';
-              }
-            }
-
-            videoData = {
-              videoId: videoId,
-              title: videoTitle,
-              thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-              url: `https://www.youtube.com/watch?v=${videoId}`
-            };
-          } else {
-            videoData = await searchYouTube(input);
-
-            if (!videoData) {
-              return embeds.deny(message, '**No songs found** with that name on YouTube');
-            }
-
-            if (customName) {
-              videoData.title = customName;
-            }
-          }
-
-          await updateProfile({
-            discordId: message.author.id,
-            song: videoData.title,
-            songArtist: 'YouTube',
-            songCover: videoData.thumbnail,
-            songPreview: null,
-            songUrl: videoData.url,
-            youtubeId: videoData.videoId,
-            songStartTime: startTime
-          });
-
-          const timeInfo = startTime > 0 ? `\n⏱️ Starts at ${Math.floor(startTime / 60)}:${(startTime % 60).toString().padStart(2, '0')}` : '';
-          return embeds.success(message, `**Song updated** successfully\n\n🎵 **${videoData.title}**${timeInfo}\n🔗 [Watch on YouTube](${videoData.url})`);
+        if (bio.length > 200) {
+          return embeds.warn(message, `Bio is **too long**! Maximum **200 characters** (yours is **${bio.length}**)`);
         }
 
-        case 'social':
-        case 'link': {
-          const subcommandInfo = {
-            description: 'Add a social media link to your ADORE profile',
-            syntax: '{guildprefix}about social [url] (--platform)',
-            aliases: ['link'],
-            parameters: ['url', 'platform (optional)'],
-            example: '{guildprefix}about social https://github.com/username --github'
-          };
+        updateCooldowns.set(`${message.author.id}-bio`, now + UPDATE_COOLDOWN);
 
-          const fullInput = args.slice(1).join(' ');
-          if (!fullInput) return runHelpCommand(message, 'about');
+        await updateProfile({
+          discordId: message.author.id,
+          bio: bio
+        });
 
-          // Check cooldown
-          const now = Date.now();
-          const cooldownEnd = updateCooldowns.get(`${message.author.id}-social`);
-          if (cooldownEnd && now < cooldownEnd) {
-            const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
-            return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before adding another link`);
-          }
+        return embeds.success(message, `**Updated** your bio\n\n${bio}`);
+      }
+    },
 
-          // Set cooldown
-          updateCooldowns.set(`${message.author.id}-social`, now + UPDATE_COOLDOWN);
+    avatar: {
+      name: 'avatar',
+      aliases: [],
+      description: 'Set your ADORE profile avatar',
+      syntax: '{guildprefix}about avatar (attachment/user)',
+      parameters: ['attachment or user mention (optional)'],
+      example: '{guildprefix}about avatar @user',
 
-          // Parse platform flag
-          const platformMatch = fullInput.match(/--(\w+)$/);
-          const platform = platformMatch ? platformMatch[1] : null;
-          const link = platform ? fullInput.replace(/--\w+$/, '').trim() : fullInput.trim();
-
-          if (!link) return runHelpCommand(message, 'about');
-
-          // Get current profile
-          const profile = await getProfile(message.author.id);
-
-          if (!profile) {
-            return embeds.deny(message, 'You need to **create a profile** first using `about create`');
-          }
-
-          // Add new link
-          const links = profile.links || [];
-          const detectedPlatform = platform || detectPlatform(link);
-
-          links.push({
-            type: detectedPlatform,
-            url: link
-          });
-
-          await updateProfile({
-            discordId: message.author.id,
-            links: links
-          });
-
-          const platformName = detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1);
-          return embeds.success(message, `**Social link added**\n\n**Platform:** ${platformName}\n**URL:** ${link}\n**Total Links:** ${links.length}`);
+      handler: async (client, message, args) => {
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to **create a profile** first using `about create`');
         }
 
-        case 'view':
-        case 'show': {
-          const subcommandInfo = {
-            description: 'View an ADORE profile',
-            syntax: '{guildprefix}about view (@user)',
-            aliases: ['show'],
-            parameters: ['user (optional)'],
-            example: '{guildprefix}about view @user'
-          };
-
-          const targetUser = message.mentions.users.first() || message.author;
-          const profile = await getProfile(targetUser.id);
-
-          if (!profile) {
-            return embeds.deny(message, `<@${targetUser.id}> doesn't have an **ADORE profile** yet`);
-          }
-
-          const embed = new EmbedBuilder()
-            .setColor(config.colors.embed)
-            .setTitle(`${profile.displayName || profile.username}'s Profile`)
-            .setURL(`https://adore.rest/${profile.username}`)
-            .setThumbnail(profile.avatar);
-
-          if (profile.banner) {
-            embed.setImage(profile.banner);
-          }
-
-          if (profile.bio) {
-            embed.setDescription(profile.bio);
-          }
-
-          if (profile.song && profile.songArtist) {
-            embed.addFields({
-              name: '🎵 Now Playing',
-              value: `**${profile.song}** by ${profile.songArtist}`,
-              inline: false
-            });
-          }
-
-          if (profile.links && profile.links.length > 0) {
-            const linksText = profile.links.map(l => `• [${l.type.charAt(0).toUpperCase() + l.type.slice(1)}](${l.url})`).join('\n');
-            embed.addFields({
-              name: '🔗 Links',
-              value: linksText,
-              inline: false
-            });
-          }
-
-          embed.setFooter({ text: `Created ${new Date(profile.createdAt).toLocaleDateString()}` });
-
-          return message.channel.send({ embeds: [embed] });
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-avatar`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your avatar again`);
         }
 
-        case 'delete':
-        case 'remove': {
-          const subcommandInfo = {
-            description: 'Delete your ADORE profile',
-            syntax: '{guildprefix}about delete',
-            aliases: ['remove'],
-            parameters: [],
-            example: '{guildprefix}about delete'
-          };
+        let avatarUrl;
+        const mentionedUser = message.mentions.users.first();
+        const attachment = message.attachments.first();
 
-          // Check if user has a profile
-          const existingProfile = await getProfile(message.author.id);
-          if (!existingProfile) {
-            return embeds.deny(message, 'You don\'t have a profile to **delete**');
+        updateCooldowns.set(`${message.author.id}-avatar`, now + UPDATE_COOLDOWN);
+
+        if (attachment) {
+          if (!attachment.contentType?.startsWith('image/')) {
+            return embeds.deny(message, 'File must be an **image**');
           }
 
-          await createConfirmation(
-            message,
-            'Are you sure you want to **delete your profile**? This action **cannot** be undone',
-            async (interaction) => {
-              try {
-                await axios.delete(`${API_BASE_URL}/profile`, {
+          if (attachment.size > 5 * 1024 * 1024) {
+            return embeds.deny(message, 'Image **too large**! Maximum **5MB**');
+          }
+
+          avatarUrl = attachment.url;
+        } else if (mentionedUser) {
+          avatarUrl = mentionedUser.displayAvatarURL({ size: 512, extension: 'png' });
+        } else {
+          avatarUrl = message.author.displayAvatarURL({ size: 512, extension: 'png' });
+        }
+
+        await updateProfile({
+          discordId: message.author.id,
+          avatar: avatarUrl
+        });
+
+        return embeds.success(message, '**Avatar updated** successfully');
+      }
+    },
+
+    banner: {
+      name: 'banner',
+      aliases: [],
+      description: 'Set your ADORE profile banner',
+      syntax: '{guildprefix}about banner (attachment/user)',
+      parameters: ['attachment or user mention (optional)'],
+      example: '{guildprefix}about banner @user',
+
+      handler: async (client, message, args) => {
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to **create a profile** first using `about create`');
+        }
+
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-banner`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your banner again`);
+        }
+
+        let bannerUrl = null;
+        const mentionedUser = message.mentions.users.first();
+        const attachment = message.attachments.first();
+
+        updateCooldowns.set(`${message.author.id}-banner`, now + UPDATE_COOLDOWN);
+
+        if (attachment) {
+          if (!attachment.contentType?.startsWith('image/')) {
+            return embeds.deny(message, 'File must be an **image**');
+          }
+
+          if (attachment.size > 8 * 1024 * 1024) {
+            return embeds.deny(message, 'Image **too large**! Maximum **8MB**');
+          }
+
+          bannerUrl = attachment.url;
+        } else if (mentionedUser) {
+          const fetchedUser = await mentionedUser.fetch();
+          bannerUrl = fetchedUser.bannerURL({ size: 1024, extension: 'png' });
+        }
+
+        await updateProfile({
+          discordId: message.author.id,
+          banner: bannerUrl
+        });
+
+        return embeds.success(message, bannerUrl ? '**Banner updated** successfully' : '**Banner removed** successfully');
+      }
+    },
+
+
+    music: {
+      name: 'music',
+      aliases: ['song'],
+      description: 'Set your favorite song on your ADORE profile',
+      syntax: '{guildprefix}about music [youtube link or song name] (--time 2:30) (--name Song Name)',
+      parameters: ['youtube link or song name', 'time (optional)', 'name (optional)'],
+      example: '{guildprefix}about music https://youtube.com/watch?v=... --time 1:30 --name My Favorite Song',
+
+      handler: async (client, message, args) => {
+        const fullInput = args.join(' ');
+        if (!fullInput) return runHelpCommand(message, 'about');
+
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You need to **create a profile** first using `about create`');
+        }
+
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-music`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before updating your song again`);
+        }
+
+        updateCooldowns.set(`${message.author.id}-music`, now + UPDATE_COOLDOWN);
+
+        const timeMatch = fullInput.match(/--time\s+(\d+):(\d+)/);
+        const nameMatch = fullInput.match(/--name\s+(.+?)(?:\s+--|$)/);
+
+        let startTime = 0;
+        if (timeMatch) {
+          const minutes = parseInt(timeMatch[1]);
+          const seconds = parseInt(timeMatch[2]);
+          startTime = minutes * 60 + seconds;
+        }
+
+        const customName = nameMatch ? nameMatch[1].trim() : null;
+        const input = fullInput.replace(/--time\s+\d+:\d+/g, '').replace(/--name\s+.+?(?=\s+--|$)/g, '').trim();
+
+        const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const match = input.match(youtubeRegex);
+
+        let videoData;
+
+        if (match) {
+          const videoId = match[1];
+
+          let videoTitle = customName;
+          if (!customName) {
+            try {
+              const ytResponse = await axios.post(`${API_BASE_URL}/youtube/info`,
+                { videoId },
+                {
                   headers: {
                     'X-API-Key': BOT_API_KEY,
                     'Content-Type': 'application/json'
-                  },
-                  data: {
-                    discordId: message.author.id
                   }
-                });
-
-                const successEmbed = new EmbedBuilder()
-                  .setColor(config.colors.success)
-                  .setDescription(`${config.emojis.success} <@${message.author.id}>: Profile **deleted** successfully`);
-
-                await interaction.editReply({ embeds: [successEmbed], components: [] });
-              } catch (error) {
-                logger.webhook.error(error, message);
-                const errorEmbed = new EmbedBuilder()
-                  .setColor(config.colors.error)
-                  .setDescription(`${config.emojis.error} <@${message.author.id}>: ${error.response?.data?.error || 'Failed to delete profile'}`);
-
-                await interaction.editReply({ embeds: [errorEmbed], components: [] });
-              }
+                }
+              );
+              videoTitle = ytResponse.data.title;
+            } catch (error) {
+              videoTitle = 'YouTube Video';
             }
-          );
-          break;
+          }
+
+          videoData = {
+            videoId: videoId,
+            title: videoTitle,
+            thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+            url: `https://www.youtube.com/watch?v=${videoId}`
+          };
+        } else {
+          videoData = await searchYouTube(input);
+
+          if (!videoData) {
+            return embeds.deny(message, '**No songs found** with that name on YouTube');
+          }
+
+          if (customName) {
+            videoData.title = customName;
+          }
         }
 
-        default: {
-          return runHelpCommand(message, 'about');
-        }
+        await updateProfile({
+          discordId: message.author.id,
+          song: videoData.title,
+          songArtist: 'YouTube',
+          songCover: videoData.thumbnail,
+          songPreview: null,
+          songUrl: videoData.url,
+          youtubeId: videoData.videoId,
+          songStartTime: startTime
+        });
+
+        const timeInfo = startTime > 0 ? `\n⏱️ Starts at ${Math.floor(startTime / 60)}:${(startTime % 60).toString().padStart(2, '0')}` : '';
+        return embeds.success(message, `**Song updated** successfully\n\n🎵 **${videoData.title}**${timeInfo}\n🔗 [Watch on YouTube](${videoData.url})`);
       }
+    },
+
+    social: {
+      name: 'social',
+      aliases: ['link'],
+      description: 'Add a social media link to your ADORE profile',
+      syntax: '{guildprefix}about social [url] (--platform)',
+      parameters: ['url', 'platform (optional)'],
+      example: '{guildprefix}about social https://github.com/username --github',
+
+      handler: async (client, message, args) => {
+        const fullInput = args.join(' ');
+        if (!fullInput) return runHelpCommand(message, 'about');
+
+        const now = Date.now();
+        const cooldownEnd = updateCooldowns.get(`${message.author.id}-social`);
+        if (cooldownEnd && now < cooldownEnd) {
+          const timeLeft = Math.ceil((cooldownEnd - now) / 1000);
+          return embeds.cooldown(message, `Please wait **${timeLeft} seconds** before adding another link`);
+        }
+
+        updateCooldowns.set(`${message.author.id}-social`, now + UPDATE_COOLDOWN);
+
+        const platformMatch = fullInput.match(/--(\w+)$/);
+        const platform = platformMatch ? platformMatch[1] : null;
+        const link = platform ? fullInput.replace(/--\w+$/, '').trim() : fullInput.trim();
+
+        if (!link) return runHelpCommand(message, 'about');
+
+        const profile = await getProfile(message.author.id);
+
+        if (!profile) {
+          return embeds.deny(message, 'You need to **create a profile** first using `about create`');
+        }
+
+        const links = profile.links || [];
+        const detectedPlatform = platform || detectPlatform(link);
+
+        links.push({
+          type: detectedPlatform,
+          url: link
+        });
+
+        await updateProfile({
+          discordId: message.author.id,
+          links: links
+        });
+
+        const platformName = detectedPlatform.charAt(0).toUpperCase() + detectedPlatform.slice(1);
+        return embeds.success(message, `**Social link added**\n\n**Platform:** ${platformName}\n**URL:** ${link}\n**Total Links:** ${links.length}`);
+      }
+    },
+
+    view: {
+      name: 'view',
+      aliases: ['show'],
+      description: 'View an ADORE profile',
+      syntax: '{guildprefix}about view (@user)',
+      parameters: ['user (optional)'],
+      example: '{guildprefix}about view @user',
+
+      handler: async (client, message, args) => {
+        const targetUser = message.mentions.users.first() || message.author;
+        const profile = await getProfile(targetUser.id);
+
+        if (!profile) {
+          return embeds.deny(message, `<@${targetUser.id}> doesn't have an **ADORE profile** yet`);
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(config.colors.embed)
+          .setTitle(`${profile.displayName || profile.username}'s Profile`)
+          .setURL(`https://adore.rest/${profile.username}`)
+          .setThumbnail(profile.avatar);
+
+        if (profile.banner) {
+          embed.setImage(profile.banner);
+        }
+
+        if (profile.bio) {
+          embed.setDescription(profile.bio);
+        }
+
+        if (profile.song && profile.songArtist) {
+          embed.addFields({
+            name: '🎵 Now Playing',
+            value: `**${profile.song}** by ${profile.songArtist}`,
+            inline: false
+          });
+        }
+
+        if (profile.links && profile.links.length > 0) {
+          const linksText = profile.links.map(l => `• [${l.type.charAt(0).toUpperCase() + l.type.slice(1)}](${l.url})`).join('\n');
+          embed.addFields({
+            name: '🔗 Links',
+            value: linksText,
+            inline: false
+          });
+        }
+
+        embed.setFooter({ text: `Created ${new Date(profile.createdAt).toLocaleDateString()}` });
+
+        return message.channel.send({ embeds: [embed] });
+      }
+    },
+
+    delete: {
+      name: 'delete',
+      aliases: ['remove'],
+      description: 'Delete your ADORE profile',
+      syntax: '{guildprefix}about delete',
+      parameters: [],
+      example: '{guildprefix}about delete',
+
+      handler: async (client, message, args) => {
+        const existingProfile = await getProfile(message.author.id);
+        if (!existingProfile) {
+          return embeds.deny(message, 'You don\'t have a profile to **delete**');
+        }
+
+        await createConfirmation(
+          message,
+          'Are you sure you want to **delete your profile**? This action **cannot** be undone',
+          async (interaction) => {
+            try {
+              await axios.delete(`${API_BASE_URL}/profile`, {
+                headers: {
+                  'X-API-Key': BOT_API_KEY,
+                  'Content-Type': 'application/json'
+                },
+                data: {
+                  discordId: message.author.id
+                }
+              });
+
+              const successEmbed = new EmbedBuilder()
+                .setColor(config.colors.success)
+                .setDescription(`${config.emojis.success} <@${message.author.id}>: Profile **deleted** successfully`);
+
+              await interaction.editReply({ embeds: [successEmbed], components: [] });
+            } catch (error) {
+              logger.webhook.error(error, message);
+              const errorEmbed = new EmbedBuilder()
+                .setColor(config.colors.error)
+                .setDescription(`${config.emojis.error} <@${message.author.id}>: ${error.response?.data?.error || 'Failed to delete profile'}`);
+
+              await interaction.editReply({ embeds: [errorEmbed], components: [] });
+            }
+          }
+        );
+      }
+    }
+  },
+
+  run: async (client, message, args) => {
+    try {
+      const sub = args[0]?.toLowerCase();
+      if (!sub) {
+        return runHelpCommand(message, 'about');
+      }
+
+      const subcommand = Object.values(module.exports.subcommands)
+        .find(s => s.name === sub || s.aliases.includes(sub));
+
+      if (subcommand) {
+        return subcommand.handler(client, message, args.slice(1));
+      }
+
+      return runHelpCommand(message, 'about');
     } catch (error) {
       logger.webhook.error(error, message);
       const errorMessage = error.response?.data?.error || 'An error occurred';
       return embeds.deny(message, errorMessage);
     }
   }
-}
+};

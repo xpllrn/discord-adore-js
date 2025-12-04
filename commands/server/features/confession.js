@@ -2,6 +2,7 @@ const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, Butt
 const { embeds } = require('../../../core/embeds');
 const { getService } = require('@services');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
+const { hasDiscordPermission } = require('../../../utils/permissions');
 const config = require('../../../config/setup');
 const logger = require('../../../utils/logger');
 
@@ -199,7 +200,7 @@ async function submitConfession(context, confessionText) {
     .setDescription(`${config.emojis.success} <@${user.id}>: Your confession has **been submitted**. Confession ID: **${confessionId}**`);
 
   if (isInteraction) {
-    return context.reply({ embeds: [confirmEmbed], flags: MessageFlags.Ephemeral }); // Keep confirmation ephemeral for privacy!
+    return context.reply({ embeds: [confirmEmbed], flags: MessageFlags.Ephemeral });
   } else {
     return context.channel.send({ embeds: [confirmEmbed] });
   }
@@ -214,35 +215,28 @@ module.exports = {
   example: 'confession channel #confessions',
   permission: 'manage_guild',
   isGroupCommand: true,
-  run: async (client, message, args) => {
-    try {
-      const confessionService = getService('confession');
 
-      // Normalize subcommand to lowercase
-      const subcommand = args[0]?.toLowerCase();
+  subcommands: {
+    channel: {
+      name: 'channel',
+      aliases: [],
+      description: 'Set or view the confession channel',
+      syntax: '{guildprefix}confession channel [#channel]',
+      parameters: ['channel (optional)'],
+      example: '{guildprefix}confession channel #confessions',
 
-      if (subcommand === 'channel') {
-
-        const subcommandInfo = {
-          description: 'Set or view the confession channel',
-          syntax: '{guildprefix}confession channel [#channel]',
-          aliases: [],
-          parameters: ['channel (optional)'],
-          example: '{guildprefix}confession channel #confessions'
-        };
-
-        // Check permissions for config commands
+      handler: async (client, message, args, confessionService) => {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
           return embeds.deny(message, 'You need **Manage Server** permission to use this command', false);
         }
 
-        if (!args[1]) {
+        if (!args[0]) {
           return await viewConfessionChannelShared(message, confessionService);
         }
 
         const mentionedChannel = message.mentions.channels.first();
         const channel = (mentionedChannel && mentionedChannel.guild.id === message.guild.id) ? mentionedChannel :
-                        message.guild.channels.cache.get(args[1]);
+                        message.guild.channels.cache.get(args[0]);
         if (!channel) {
           return embeds.deny(message, 'Invalid channel provided', false);
         }
@@ -252,65 +246,94 @@ module.exports = {
         }
 
         return await setConfessionChannelShared(message, channel, confessionService);
+      }
+    },
 
-      } else if (subcommand === 'blacklist') {
-        const subcommandInfo = {
-          description: 'Add or remove users from the confession blacklist',
-          syntax: '{guildprefix}confession blacklist [@user]',
-          aliases: [],
-          parameters: ['user (optional)'],
-          example: '{guildprefix}confession blacklist @user'
-        };
+    blacklist: {
+      name: 'blacklist',
+      aliases: [],
+      description: 'Add or remove users from the confession blacklist',
+      syntax: '{guildprefix}confession blacklist [@user]',
+      parameters: ['user (optional)'],
+      example: '{guildprefix}confession blacklist @user',
 
-        // Check permissions for config commands
+      handler: async (client, message, args, confessionService) => {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
           return embeds.deny(message, 'You need **Manage Server** permission to use this command', false);
         }
 
-        if (!args[1]) {
+        if (!args[0]) {
           return await viewBlacklistedUsersShared(message, confessionService);
         }
 
-        const user = message.mentions.users.first() || await client.users.fetch(args[1]).catch(() => null);
+        const user = message.mentions.users.first() || await client.users.fetch(args[0]).catch(() => null);
         if (!user) {
           return embeds.deny(message, 'Invalid user provided', false);
         }
 
         return await toggleBlacklistUserShared(message, user, confessionService);
+      }
+    },
 
-      } else if (subcommand === 'config') {
-        const subcommandInfo = {
-          description: 'View the confession system configuration',
-          syntax: '{guildprefix}confession config',
-          aliases: [],
-          parameters: [],
-          example: '{guildprefix}confession config'
-        };
+    config: {
+      name: 'config',
+      aliases: [],
+      description: 'View the confession system configuration',
+      syntax: '{guildprefix}confession config',
+      parameters: [],
+      example: '{guildprefix}confession config',
 
-        // Check permissions for config commands
+      handler: async (client, message, args, confessionService) => {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
           return embeds.deny(message, 'You need **Manage Server** permission to use this command', false);
         }
 
         return await viewConfessionConfigShared(message, confessionService);
+      }
+    },
 
-      } else if (subcommand === 'toggle' || subcommand === 'enable' || subcommand === 'disable') {
-        // Check permissions for config commands
+    toggle: {
+      name: 'toggle',
+      aliases: ['enable', 'disable'],
+      description: 'Toggle the confession system on/off',
+      syntax: '{guildprefix}confession toggle',
+      parameters: [],
+      example: '{guildprefix}confession toggle',
+
+      handler: async (client, message, args, confessionService) => {
         if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
           return embeds.deny(message, 'You need **Manage Server** permission to use this command', false);
         }
 
         const confessionConfig = await confessionService.getConfessionConfig(message.guild.id);
-        const newStatus = subcommand === 'disable' ? false : !confessionConfig.enabled;
+        const newStatus = !confessionConfig.enabled;
 
         await confessionService.setConfessionEnabled(message.guild.id, newStatus);
 
         return embeds.success(message, `Confession system ${newStatus ? 'enabled' : 'disabled'}`, false);
+      }
+    }
+  },
 
-      } else {
-        // Show help for invalid subcommand
+  run: async (client, message, args) => {
+    try {
+      const confessionService = getService('confession');
+
+      if (!args[0]) {
         return runHelpCommand(message, 'confession');
       }
+
+      const sub = args[0].toLowerCase();
+
+      // Find matching subcommand
+      const subcommand = Object.values(module.exports.subcommands)
+        .find(s => s.name === sub || s.aliases.includes(sub));
+
+      if (subcommand) {
+        return subcommand.handler(client, message, args.slice(1), confessionService);
+      }
+
+      return runHelpCommand(message, 'confession');
     } catch (error) {
       logger.webhook.error(error, message);
 
@@ -392,19 +415,16 @@ module.exports = {
 
         // CHANNEL subcommand
         if (subcommand === 'channel') {
-          // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
             return embeds.deny(interaction, 'You need **Manage Server** permission to use this command', false);
           }
 
           const channel = interaction.options.getChannel('channel');
 
-          // If no channel provided, show current
           if (!channel) {
             return await viewConfessionChannelShared(interaction, confessionService);
           }
 
-          // Validate channel
           if (!channel.isTextBased()) {
             return embeds.deny(interaction, 'Confession channel must be a text channel', false);
           }
@@ -414,25 +434,21 @@ module.exports = {
 
         // BLACKLIST subcommand
         if (subcommand === 'blacklist') {
-          // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
             return embeds.deny(interaction, 'You need **Manage Server** permission to use this command', false);
           }
 
           const user = interaction.options.getUser('user');
 
-          // If no user provided, show list
           if (!user) {
             return await viewBlacklistedUsersShared(interaction, confessionService);
           }
 
-          // Toggle blacklist status
           return await toggleBlacklistUserShared(interaction, user, confessionService);
         }
 
         // CONFIG subcommand
         if (subcommand === 'config') {
-          // Check permissions
           if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
             return embeds.deny(interaction, 'You need **Manage Server** permission to use this command', false);
           }

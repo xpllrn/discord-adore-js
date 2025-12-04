@@ -1,95 +1,129 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { embeds } = require('../../core/embeds');
 const { getService } = require('@services');
+const { runHelpCommand } = require('../../utils/commandProcessor');
 const logger = require('../../utils/logger');
-
-// Shared handler functions that work with both message and interaction contexts
-async function handleSetSelfPrefix(context, newPrefix) {
-  const user = context.user || context.author;
-
-  if (!newPrefix) {
-    return embeds.warn(context, "Please provide a prefix to set!", false);
-  }
-
-  if (newPrefix.length > 3) {
-    return embeds.warn(context, "Prefix **can't** be over 3 characters.", false);
-  }
-
-  if (newPrefix.includes(' ')) {
-    return embeds.warn(context, "Prefix **can't** contain spaces.", false);
-  }
-
-  try {
-    const prefixService = getService('prefix');
-    const success = await prefixService.setUserPrefix(user.id, newPrefix);
-    if (success) {
-      return embeds.success(context, `Your self prefix has been **set** to \`${newPrefix}\``, false);
-    } else {
-      return embeds.warn(context, "Failed to set self prefix. Please try again.", false);
-    }
-  } catch (error) {
-    logger.webhook.error(error, context.message || context);
-    return embeds.warn(context, "An error occurred while setting your prefix. Please try again.", false);
-  }
-}
-
-async function handleRemoveSelfPrefix(context) {
-  const user = context.user || context.author;
-
-  try {
-    const prefixService = getService('prefix');
-    const success = await prefixService.clearUserPrefix(user.id);
-    if (success) {
-      return embeds.success(context, "Your self prefix has been **removed**!", false);
-    } else {
-      return embeds.warn(context, "Failed to remove self prefix. Please try again.", false);
-    }
-  } catch (error) {
-    logger.webhook.error(error, context.message || context);
-    return embeds.warn(context, "An error occurred while removing your prefix. Please try again.", false);
-  }
-}
-
-async function handleViewSelfPrefix(context) {
-  const user = context.user || context.author;
-
-  try {
-    const prefixService = getService('prefix');
-    const userPrefix = await prefixService.getUserPrefix(user.id);
-
-    const description = userPrefix
-      ? `**Your self prefix:** \`${userPrefix}\``
-      : `**Your self prefix:** **none**`;
-
-    return embeds.info(context, description, false);
-  } catch (error) {
-    logger.webhook.error(error, context.message || context);
-    return embeds.warn(context, 'Failed to retrieve your self prefix. Please try again.', false);
-  }
-}
 
 module.exports = {
   name: "selfprefix",
   aliases: ['selfp'],
-  description: `Manage your personal prefix`,
+  description: 'Manage your personal prefix',
   syntax: 'selfprefix [subcommand] (prefix)',
   example: 'selfprefix set !',
+  permission: 'premium',
   isGroupCommand: true,
 
-  // PREFIX COMMAND
-  run: async (_, message, args) => {
-    if (!args[0]) {
-      return handleViewSelfPrefix(message);
+  subcommands: {
+    view: {
+      name: 'view',
+      aliases: [],
+      description: 'Shows your current personal prefix',
+      syntax: '{guildprefix}selfprefix view',
+      parameters: [],
+      example: '{guildprefix}selfprefix view',
+
+      handler: async (client, message, args) => {
+        const user = message.user || message.author;
+
+        try {
+          const prefixService = getService('prefix');
+          const userPrefix = await prefixService.getUserPrefix(user.id);
+
+          const description = userPrefix
+            ? `**Your self prefix:** \`${userPrefix}\``
+            : `**Your self prefix:** **none**`;
+
+          return embeds.info(message, description, false);
+        } catch (error) {
+          logger.webhook.error(error, message.message || message);
+          return embeds.warn(message, 'Failed to retrieve your self prefix. Please try again.', false);
+        }
+      }
+    },
+
+    set: {
+      name: 'set',
+      aliases: [],
+      description: 'Set your personal prefix',
+      syntax: '{guildprefix}selfprefix set [prefix]',
+      parameters: ['prefix'],
+      example: '{guildprefix}selfprefix set !',
+
+      handler: async (client, message, args) => {
+        const user = message.user || message.author;
+        const newPrefix = args[0];
+
+        if (!newPrefix) {
+          return embeds.warn(message, "Please provide a prefix to set!", false);
+        }
+
+        if (newPrefix.length > 3) {
+          return embeds.warn(message, "Prefix **can't** be over 3 characters.", false);
+        }
+
+        if (newPrefix.includes(' ')) {
+          return embeds.warn(message, "Prefix **can't** contain spaces.", false);
+        }
+
+        try {
+          const prefixService = getService('prefix');
+          const success = await prefixService.setUserPrefix(user.id, newPrefix);
+          if (success) {
+            return embeds.success(message, `Your self prefix has been **set** to \`${newPrefix}\``, false);
+          } else {
+            return embeds.warn(message, "Failed to set self prefix. Please try again.", false);
+          }
+        } catch (error) {
+          logger.webhook.error(error, message.message || message);
+          return embeds.warn(message, "An error occurred while setting your prefix. Please try again.", false);
+        }
+      }
+    },
+
+    remove: {
+      name: 'remove',
+      aliases: ['clear'],
+      description: 'Remove your personal prefix',
+      syntax: '{guildprefix}selfprefix remove',
+      parameters: [],
+      example: '{guildprefix}selfprefix remove',
+
+      handler: async (client, message, args) => {
+        const user = message.user || message.author;
+
+        try {
+          const prefixService = getService('prefix');
+          const success = await prefixService.clearUserPrefix(user.id);
+          if (success) {
+            return embeds.success(message, "Your self prefix has been **removed**!", false);
+          } else {
+            return embeds.warn(message, "Failed to remove self prefix. Please try again.", false);
+          }
+        } catch (error) {
+          logger.webhook.error(error, message.message || message);
+          return embeds.warn(message, "An error occurred while removing your prefix. Please try again.", false);
+        }
+      }
+    }
+  },
+
+  run: async (client, message, args) => {
+    const sub = args[0]?.toLowerCase();
+    
+    // Default to view if no subcommand
+    if (!sub) {
+      const viewSubcommand = module.exports.subcommands.view;
+      return viewSubcommand.handler(client, message, []);
     }
 
-    // Handle subcommands
-    if (args[0] === 'set') {
-      return handleSetSelfPrefix(message, args[1]);
-    } else if (args[0] === 'remove' || args[0] === 'clear') {
-      return handleRemoveSelfPrefix(message);
-    } else {
-      return false;
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
+
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
+
+    return runHelpCommand(message, 'selfprefix');
   },
 
   // SLASH COMMAND
@@ -122,12 +156,15 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'view') {
-      return handleViewSelfPrefix(interaction);
+      const viewHandler = module.exports.subcommands.view.handler;
+      return viewHandler(interaction.client, interaction, []);
     } else if (subcommand === 'set') {
       const newPrefix = interaction.options.getString('prefix');
-      return handleSetSelfPrefix(interaction, newPrefix);
+      const setHandler = module.exports.subcommands.set.handler;
+      return setHandler(interaction.client, interaction, [newPrefix]);
     } else if (subcommand === 'remove') {
-      return handleRemoveSelfPrefix(interaction);
+      const removeHandler = module.exports.subcommands.remove.handler;
+      return removeHandler(interaction.client, interaction, []);
     }
   }
 };

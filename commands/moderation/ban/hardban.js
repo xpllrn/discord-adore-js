@@ -12,16 +12,32 @@ const logger = require('../../../utils/logger');
 module.exports = {
   name: "hardban",
   aliases: ['hb', 'hackban'],
-  description: 'permanently ban a user from the server',
-  syntax: 'hardban [subcommand] (parameters)',
+  description: 'Permanently ban a user from the server',
+  syntax: 'hardban [user/list] (reason)',
   example: 'hardban @lami racist',
   permission: 'antinuke_admin',
   isGroupCommand: true,
-  run: async(client, message, args) => {
+
+  subcommands: {
+    list: {
+      name: 'list',
+      aliases: [],
+      description: 'List all hardbanned users',
+      syntax: '{guildprefix}hardban list',
+      parameters: [],
+      example: '{guildprefix}hardban list',
+
+      handler: async (client, message, args) => {
+        const guildService = getService('guild');
+        return await showHardbanList(client, message, guildService);
+      }
+    }
+  },
+
+  run: async (client, message, args) => {
     const guildService = getService('guild');
     const antinukeService = getService('antinuke');
 
-    // Check if user is antinuke admin or server owner
     const isOwner = message.author.id === message.guild.ownerId;
     const isAntiNukeAdmin = await antinukeService.isAdmin(message.guild.id, message.author.id);
 
@@ -29,22 +45,17 @@ module.exports = {
       return embeds.deny(message, 'Only **antinuke admins** and the **server owner** can use this command!');
     }
 
-    // Check if user provided input
     if (!args[0]) {
       return runHelpCommand(message, 'hardban');
     }
 
-    // Handle 'hardban list' subcommand
-    if (args[0].toLowerCase() === 'list') {
-      const subcommandInfo = {
-        description: 'List all hardbanned users',
-        syntax: '{guildprefix}hardban list',
-        aliases: [],
-        parameters: [],
-        example: '{guildprefix}hardban list'
-      };
+    // Check for list subcommand
+    const sub = args[0]?.toLowerCase();
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
 
-      return await showHardbanList(client, message, guildService);
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
 
     // Permission check for bot
@@ -71,10 +82,7 @@ module.exports = {
       if (!checkBotAction(message, user)) return;
 
       try {
-        // Add to hardban list first
         await guildService.addHardban(message.guild.id, user.id, message.author.id, reason);
-
-        // Then ban from Discord
         await message.guild.members.ban(user.id, { reason: `[HARDBAN] ${reason} | By: ${message.author.tag}` });
 
         let caseNumber = null;
@@ -93,7 +101,6 @@ module.exports = {
 
         embeds.success(message, `**${user.tag}** has been **hardbanned** for ${reason}`);
 
-        // Send DM to user
         await webhookLogger.sendModeratorDM({
           target: user,
           action: 'hardban',
@@ -102,7 +109,6 @@ module.exports = {
           guild: message.guild
         });
 
-        // Log the hardban action
         await logModerationAction('hardban', message.author, user, reason, message.guild, caseNumber);
       } catch (error) {
         throw error;
@@ -116,10 +122,7 @@ module.exports = {
       if (!checkDiscordActionable(message, user, 'ban')) return;
 
       try {
-        // Add to hardban list first
         await guildService.addHardban(message.guild.id, user.user.id, message.author.id, reason);
-
-        // Then ban from Discord
         await user.ban({ reason: `[HARDBAN] ${reason} | By: ${message.author.tag}` });
 
         let caseNumber = null;
@@ -138,7 +141,6 @@ module.exports = {
 
         embeds.success(message, `**${user.user.username}** has been **hardbanned** for ${reason}`);
 
-        // Send DM to user
         await webhookLogger.sendModeratorDM({
           target: user.user,
           action: 'hardban',
@@ -147,14 +149,13 @@ module.exports = {
           guild: message.guild
         });
 
-        // Log the hardban action
         await logModerationAction('hardban', message.author, user.user, reason, message.guild, caseNumber);
       } catch (error) {
         throw error;
       }
     }
   }
-}
+};
 
 async function showHardbanList(client, message, guildService) {
   try {
@@ -164,14 +165,12 @@ async function showHardbanList(client, message, guildService) {
       return embeds.warn(message, 'No hardbanned users found in this server');
     }
 
-    // Use pagination for all lists
     const formatPage = async (pageItems, currentPage, totalPages) => {
       const startIndex = (currentPage - 1) * 10;
       
       const hardbanList = await Promise.all(pageItems.map(async (hardban, index) => {
         const num = String(startIndex + index + 1).padStart(2, '0');
         
-        // Try to fetch user info
         let userTag = hardban.userId;
         try {
           const user = await client.users.fetch(hardban.userId).catch(() => null);

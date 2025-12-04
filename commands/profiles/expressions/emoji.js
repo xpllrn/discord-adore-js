@@ -40,31 +40,63 @@ module.exports = {
   example: 'emoji steal (reply to message)',
   permission: 'manage_expressions',
   isGroupCommand: true,
-  run: async (client, message, args) => {
 
+  subcommands: {
+    steal: {
+      name: 'steal',
+      aliases: ['add'],
+      description: 'Steal emojis from a message',
+      syntax: '{guildprefix}emoji steal (reply to message)',
+      parameters: [],
+      example: '{guildprefix}emoji steal',
+      handler: async (client, message, args) => handleSteal(client, message, args)
+    },
+
+    remove: {
+      name: 'remove',
+      aliases: ['delete'],
+      description: 'Remove emojis from the server',
+      syntax: '{guildprefix}emoji remove',
+      parameters: [],
+      example: '{guildprefix}emoji remove',
+      handler: async (client, message, args) => handleRemove(client, message, args)
+    },
+
+    list: {
+      name: 'list',
+      aliases: [],
+      description: 'List all server emojis',
+      syntax: '{guildprefix}emoji list',
+      parameters: [],
+      example: '{guildprefix}emoji list',
+      handler: async (client, message, args) => handleList(client, message, args)
+    },
+
+    archive: {
+      name: 'archive',
+      aliases: ['zip'],
+      description: 'Archive all server emojis to a zip file',
+      syntax: '{guildprefix}emoji archive',
+      parameters: [],
+      example: '{guildprefix}emoji archive',
+      handler: async (client, message, args) => handleArchive(client, message, args)
+    }
+  },
+
+  run: async (client, message, args) => {
     if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Emojis and Stickers')) return;
 
-    const subcommand = args[0]?.toLowerCase();
+    const sub = args[0]?.toLowerCase();
+    if (!sub) return runHelpCommand(message, 'emoji');
 
-    if (!subcommand) {
-      return runHelpCommand(message, 'emoji');
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
+
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
 
-    switch (subcommand) {
-      case 'steal':
-      case 'add':
-        return await handleSteal(client, message, args.slice(1));
-      case 'remove':
-      case 'delete':
-        return await handleRemove(client, message, args.slice(1));
-      case 'list':
-        return await handleList(client, message, args.slice(1));
-      case 'archive':
-      case 'zip':
-        return await handleArchive(client, message, args.slice(1));
-      default:
-        return runHelpCommand(message, 'emoji');
-    }
+    return runHelpCommand(message, 'emoji');
   }
 };
 

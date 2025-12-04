@@ -14,39 +14,39 @@ module.exports = {
   syntax: 'timezone (subcommand)',
   example: 'timezone set London',
   isGroupCommand: true,
-  run: async (client, message, args) => {
-    if (!args[0]) {
-      return await showUserTimezone(message, message.author.id);
-    }
 
-    const subcommand = args[0].toLowerCase();
+  subcommands: {
+    set: {
+      name: 'set',
+      aliases: [],
+      description: 'Set your timezone by city name',
+      syntax: '{guildprefix}timezone set [city]',
+      parameters: ['city'],
+      example: '{guildprefix}timezone set London',
 
-    switch (subcommand) {
-      case 'set': {
-        const subcommandInfo = {
-          description: 'Set your timezone by city name',
-          syntax: '{guildprefix}timezone set [city]',
-          aliases: [],
-          example: '{guildprefix}timezone set London'
-        };
-
-        if (!args[1]) {
+      handler: async (client, message, args) => {
+        if (!args[0]) {
           return runHelpCommand(message, 'timezone');
         }
 
-        const cityName = args.slice(1).join(' ');
+        const cityName = args.join(' ');
         return await setUserTimezone(message, cityName);
       }
+    },
 
-      default: {
-        const subcommandInfo = {
-          description: 'View a user\'s timezone',
-          syntax: '{guildprefix}timezone (user)',
-          aliases: [],
-          example: '{guildprefix}timezone @user'
-        };
+    view: {
+      name: 'view',
+      aliases: [],
+      description: 'View a user\'s timezone',
+      syntax: '{guildprefix}timezone (user)',
+      parameters: ['user (optional)'],
+      example: '{guildprefix}timezone @user',
 
-        // Show another user's timezone
+      handler: async (client, message, args) => {
+        if (!args[0]) {
+          return embeds.warn(message, 'Please mention a user. Example: `,timezone @user`');
+        }
+
         const userResult = await findUser(message.guild, args[0], client);
         if (!userResult.found) {
           return embeds.warn(message, userResult.error);
@@ -56,6 +56,23 @@ module.exports = {
         return await showUserTimezone(message, targetUserId, userResult.user);
       }
     }
+  },
+
+  run: async (client, message, args) => {
+    if (!args[0]) {
+      return await showUserTimezone(message, message.author.id);
+    }
+
+    const sub = args[0].toLowerCase();
+
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
+
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
+    }
+
+    return module.exports.subcommands.view.handler(client, message, args);
   }
 };
 

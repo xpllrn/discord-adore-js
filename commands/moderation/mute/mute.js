@@ -13,12 +13,28 @@ const ms = require('ms');
 module.exports = {
   name: "mute",
   aliases: ['shh', 'timeout', 'tu'],
-  description: `timeout a user using Discord's built-in timeout feature`,
+  description: 'Timeout a user using Discord\'s built-in timeout feature',
   syntax: 'mute [user/list] (duration) (reason)',
   example: 'mute @vwsn 10m spam',
   permission: 'moderate_members',
   isGroupCommand: true,
-  run: async(client, message, args) => {
+
+  subcommands: {
+    list: {
+      name: 'list',
+      aliases: [],
+      description: 'List all currently timed out members',
+      syntax: '{guildprefix}mute list',
+      parameters: [],
+      example: '{guildprefix}mute list',
+
+      handler: async (client, message, args) => {
+        return await showMuteList(message);
+      }
+    }
+  },
+
+  run: async (client, message, args) => {
     const guildService = getService('guild');
 
     if (!await hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members')) return;
@@ -31,19 +47,16 @@ module.exports = {
       return runHelpCommand(message, 'mute');
     }
 
-    // Handle 'mute list' subcommand
-    if (args[0].toLowerCase() === 'list') {
-      const subcommandInfo = {
-        description: 'List all currently timed out members',
-        syntax: '{guildprefix}mute list',
-        aliases: [],
-        parameters: [],
-        example: '{guildprefix}mute list'
-      };
+    // Check for list subcommand
+    const sub = args[0]?.toLowerCase();
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
 
-      return await showMuteList(message);
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
 
+    // Handle muting a user
     let userResult;
     try {
       userResult = await findUser(message.guild, args[0], client);
@@ -88,10 +101,8 @@ module.exports = {
 
       embeds.success(message, `**${user.user.username}** has been **muted** for ${ms(duration, { long: true })} for ${reason}`);
 
-      // Calculate expiry time
       const until = new Date(Date.now() + duration);
 
-      // Send DM to user
       await webhookLogger.sendModeratorDM({
         target: user.user,
         action: 'mute',
@@ -102,7 +113,6 @@ module.exports = {
         guild: message.guild
       });
 
-      // Add to moderation history and log action asynchronously (don't wait)
       Promise.allSettled([
         guildService.addModerationCase(
           message.guild.id,
@@ -113,20 +123,18 @@ module.exports = {
           ms(duration, { long: true })
         ),
         logModerationAction('timeout', message.author, user.user, reason, message.guild, ms(duration, { long: true }))
-      ]).catch(() => {}); // Silent fail for background tasks
+      ]).catch(() => {});
 
     } catch (error) {
       return embeds.deny(message, 'Failed to timeout user. Please check my permissions and role hierarchy.');
     }
   }
-}
+};
 
 async function showMuteList(message) {
   try {
-    // Fetch all members if not cached
     await message.guild.members.fetch();
 
-    // Get all timed out members
     const timedOutMembers = message.guild.members.cache.filter(member => {
       return member.communicationDisabledUntil && member.communicationDisabledUntil > new Date();
     });
@@ -135,12 +143,10 @@ async function showMuteList(message) {
       return embeds.warn(message, 'No members are currently timed out');
     }
 
-    // Convert to array and sort by timeout end time
     const timedOutArray = Array.from(timedOutMembers.values()).sort((a, b) => {
       return a.communicationDisabledUntil - b.communicationDisabledUntil;
     });
 
-    // If 10 or fewer members, show without pagination
     if (timedOutArray.length <= 10) {
       const mutedList = timedOutArray.map((member, index) => {
         const num = String(index + 1).padStart(2, '0');
@@ -157,7 +163,6 @@ async function showMuteList(message) {
       return message.channel.send({ embeds: [embed] });
     }
 
-    // Use pagination for more than 10 members
     const formatPage = (pageItems, currentPage, totalPages) => {
       const startIndex = (currentPage - 1) * 10;
       const mutedList = pageItems.map((member, index) => {

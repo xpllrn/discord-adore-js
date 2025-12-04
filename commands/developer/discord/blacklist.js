@@ -5,6 +5,7 @@ const { runHelpCommand } = require('../../../utils/commandProcessor');
 const config = require('../../../config/setup');
 const { findUser } = require('../../../handlers/finder');
 const logger = require('../../../utils/logger');
+const { getService } = require('@services');
 
 module.exports = {
   name: "blacklist",
@@ -14,61 +15,64 @@ module.exports = {
   syntax: 'blacklist [subcommand] (parameters)',
   example: 'blacklist users @user spam',
   isGroupCommand: true,
-  run: async(client, message, args) => {
 
-    if (!args[0]) {
+  subcommands: {
+    users: {
+      name: 'users',
+      aliases: ['user'],
+      description: 'Manage user blacklist - add/remove users or list all blacklisted users',
+      syntax: '{guildprefix}blacklist users [user.id] [reason]',
+      parameters: ['user.id', 'reason'],
+      example: '{guildprefix}blacklist users @jonathan jon pork',
+
+      handler: async (client, message, args) => {
+        if (args[0]) {
+          return handleUserBlacklist(client, message, args);
+        } else {
+          return listBlacklistedUsers(client, message);
+        }
+      }
+    },
+
+    servers: {
+      name: 'servers',
+      aliases: ['server'],
+      description: 'Manage server blacklist - add/remove servers or list all blacklisted servers',
+      syntax: '{guildprefix}blacklist servers [server.id] [reason]',
+      parameters: ['server.id', 'reason'],
+      example: '{guildprefix}blacklist servers 987654321 abuse',
+
+      handler: async (client, message, args) => {
+        if (args[0]) {
+          return handleServerBlacklist(client, message, args);
+        } else {
+          return listBlacklistedServers(client, message);
+        }
+      }
+    }
+  },
+
+  run: async (client, message, args) => {
+    const sub = args[0]?.toLowerCase();
+    if (!sub) {
       return runHelpCommand(message, 'blacklist');
     }
 
-    const subcommand = args[0].toLowerCase();
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
 
-    switch (subcommand) {
-      case 'users':
-      case 'user': {
-        const subcommandInfo = {
-          description: 'Manage user blacklist - add/remove users or list all blacklisted users',
-          syntax: '{guildprefix}blacklist users [user.id] [reason]',
-          aliases: ['user'],
-          parameters: ['user.id', 'reason'],
-          example: '{guildprefix}blacklist users @jonathan jon pork'
-        };
-
-        if (args[1]) {
-          await handleUserBlacklist(client, message, args);
-        } else {
-          await listBlacklistedUsers(client, message);
-        }
-        break;
-      }
-
-      case 'servers':
-      case 'server': {
-        const subcommandInfo = {
-          description: 'Manage server blacklist - add/remove servers or list all blacklisted servers',
-          syntax: '{guildprefix}blacklist servers [server.id] [reason]',
-          aliases: ['server'],
-          parameters: ['server.id', 'reason'],
-          example: '{guildprefix}blacklist servers 987654321 abuse'
-        };
-
-        if (args[1]) {
-          await handleServerBlacklist(client, message, args);
-        } else {
-          await listBlacklistedServers(client, message);
-        }
-        break;
-      }
-
-      default: {
-        return runHelpCommand(message, 'blacklist');
-      }
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
+
+    return runHelpCommand(message, 'blacklist');
   }
 };
 
+
 async function handleUserBlacklist(client, message, args) {
-  const userInput = args[1];
-  const reason = args.slice(2).join(' ') || 'reasons';
+  const userInput = args[0];
+  const reason = args.slice(1).join(' ') || 'reasons';
 
   let targetUser = null;
   let userId = null;
@@ -91,7 +95,7 @@ async function handleUserBlacklist(client, message, args) {
   if (!client.permissions.checkBotAction(message, targetUser)) return;
 
   try {
-    const { getService } = require('@services'); const systemService = getService('system');
+    const systemService = getService('system');
 
     const wasBlacklisted = await systemService.getUserBlacklist(userId);
     const newBlacklistStatus = !wasBlacklisted;
@@ -128,15 +132,15 @@ async function handleUserBlacklist(client, message, args) {
 }
 
 async function handleServerBlacklist(client, message, args) {
-  const serverId = args[1];
-  const reason = args.slice(2).join(' ') || 'reasons';
+  const serverId = args[0];
+  const reason = args.slice(1).join(' ') || 'reasons';
 
   if (!/^\d{17,19}$/.test(serverId)) {
     return embeds.warn(message, 'Please provide a **valid server ID**!');
   }
 
   try {
-    const { getService } = require('@services'); const systemService = getService('system');
+    const systemService = getService('system');
 
     const wasBlacklisted = await systemService.getServerBlacklist(serverId);
     const newBlacklistStatus = !wasBlacklisted;
@@ -161,9 +165,7 @@ async function handleServerBlacklist(client, message, args) {
         try {
           await guild.leave();
           embeds.info(message, `Left the **blacklisted** server: **${guild.name}**`);
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
 
       return embeds.success(message, `${serverInfo} has been **blacklisted** for ${reason}`);
@@ -214,7 +216,7 @@ function createPaginatedList(message, items, title, itemsPerPage = 6) {
 
 async function listBlacklistedUsers(client, message) {
   try {
-    const { getService } = require('@services'); const systemService = getService('system');
+    const systemService = getService('system');
     const blacklistInfo = await systemService.getBlacklistInfo();
     const blacklistedUsers = blacklistInfo.users || [];
 
@@ -251,7 +253,7 @@ async function listBlacklistedUsers(client, message) {
 
 async function listBlacklistedServers(client, message) {
   try {
-    const { getService } = require('@services'); const systemService = getService('system');
+    const systemService = getService('system');
     const blacklistInfo = await systemService.getBlacklistInfo();
     const blacklistedServers = blacklistInfo.servers || [];
 

@@ -41,30 +41,64 @@ module.exports = {
   example: 'sticker add <url> <name>',
   permission: 'manage_expressions',
   isGroupCommand: true,
+
+  subcommands: {
+    add: {
+      name: 'add',
+      aliases: [],
+      description: 'Add a sticker to the server',
+      syntax: '{guildprefix}sticker add <url> <name>',
+      parameters: ['url', 'name'],
+      example: '{guildprefix}sticker add https://example.com/image.png cool_sticker',
+      handler: async (client, message, args) => handleAdd(client, message, args)
+    },
+
+    steal: {
+      name: 'steal',
+      aliases: [],
+      description: 'Steal stickers from a message',
+      syntax: '{guildprefix}sticker steal (reply to message)',
+      parameters: [],
+      example: '{guildprefix}sticker steal',
+      handler: async (client, message, args) => handleSteal(client, message, args)
+    },
+
+    remove: {
+      name: 'remove',
+      aliases: ['delete'],
+      description: 'Remove stickers from a message',
+      syntax: '{guildprefix}sticker remove (reply to message)',
+      parameters: [],
+      example: '{guildprefix}sticker remove',
+      handler: async (client, message, args) => handleRemove(client, message, args)
+    },
+
+    archive: {
+      name: 'archive',
+      aliases: [],
+      description: 'Archive all server stickers to a zip file',
+      syntax: '{guildprefix}sticker archive',
+      parameters: [],
+      example: '{guildprefix}sticker archive',
+      handler: async (client, message, args) => handleArchive(client, message, args)
+    }
+  },
+
   run: async (client, message, args) => {
     try {
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Emojis and Stickers')) return;
 
-    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Emojis and Stickers')) return;
+      const sub = args[0]?.toLowerCase();
+      if (!sub) return runHelpCommand(message, 'sticker');
 
-    const subcommand = args[0]?.toLowerCase();
+      const subcommand = Object.values(module.exports.subcommands)
+        .find(s => s.name === sub || s.aliases.includes(sub));
 
-    if (!subcommand) {
+      if (subcommand) {
+        return subcommand.handler(client, message, args.slice(1));
+      }
+
       return runHelpCommand(message, 'sticker');
-    }
-
-    switch (subcommand) {
-      case 'add':
-        return await handleAdd(client, message, args.slice(1));
-      case 'steal':
-        return await handleSteal(client, message, args.slice(1));
-      case 'remove':
-      case 'delete':
-        return await handleRemove(client, message, args.slice(1));
-      case 'archive':
-        return await handleArchive(client, message, args.slice(1));
-      default:
-        return runHelpCommand(message, 'sticker');
-    }
     } catch (error) {
       throw error;
     }

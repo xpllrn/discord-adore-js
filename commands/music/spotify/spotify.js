@@ -14,176 +14,228 @@ module.exports = {
   syntax: 'spotify [subcommand] (parameters)',
   example: 'spotify play never gonna give you up',
   isGroupCommand: true,
-  run: async (client, message, args) => {
-    try {
-    const spotifyService = getService('spotify');
-    const guildprefix = await getGuildPrefix(message.guild.id);
-    const subcommand = String(args[0] || '').toLowerCase();
 
-    if (!subcommand) {
-      return runHelpCommand(message, 'spotify');
-    }
+  subcommands: {
+    link: {
+      name: 'link',
+      aliases: ['login'],
+      description: 'Link your Spotify account to control playback',
+      syntax: '{guildprefix}spotify link',
+      parameters: [],
+      example: '{guildprefix}spotify link',
 
-    switch (subcommand) {
-      case 'link':
-      case 'login': {
-        const subcommandInfo = {
-          description: 'Link your Spotify account to control playback',
-          syntax: '{guildprefix}spotify link',
-          aliases: ['login'],
-          example: '{guildprefix}spotify link'
-        };
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        const guildprefix = await getGuildPrefix(message.guild.id);
         return await handleLogin(message, spotifyService, guildprefix);
       }
-      
-      case 'unlink':
-      case 'logout': {
-        const subcommandInfo = {
-          description: 'Unlink your Spotify account',
-          syntax: '{guildprefix}spotify unlink',
-          aliases: ['logout'],
-          example: '{guildprefix}spotify unlink'
-        };
+    },
+
+    unlink: {
+      name: 'unlink',
+      aliases: ['logout'],
+      description: 'Unlink your Spotify account',
+      syntax: '{guildprefix}spotify unlink',
+      parameters: [],
+      example: '{guildprefix}spotify unlink',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        const guildprefix = await getGuildPrefix(message.guild.id);
         return await handleLogout(message, spotifyService, guildprefix);
       }
-      
-      case 'play': {
-        const subcommandInfo = {
-          description: 'Play a track, search query, or from another user',
-          syntax: '{guildprefix}spotify play [track link|search query|@user]',
-          aliases: [],
-          example: '{guildprefix}spotify play never gonna give you up'
-        };
-        return await handlePlay(client, message, args.slice(1), spotifyService);
+    },
+
+    play: {
+      name: 'play',
+      aliases: [],
+      description: 'Play a track, search query, or from another user',
+      syntax: '{guildprefix}spotify play [track link|search query|@user]',
+      parameters: ['track link|search query|@user'],
+      example: '{guildprefix}spotify play never gonna give you up',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        return await handlePlay(client, message, args, spotifyService);
       }
-      
-      case 'pause': {
-        const subcommandInfo = {
-          description: 'Pause current playback',
-          syntax: '{guildprefix}spotify pause',
-          aliases: [],
-          example: '{guildprefix}spotify pause'
-        };
+    },
+
+    pause: {
+      name: 'pause',
+      aliases: [],
+      description: 'Pause current playback',
+      syntax: '{guildprefix}spotify pause',
+      parameters: [],
+      example: '{guildprefix}spotify pause',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
         return await handlePause(message, spotifyService);
       }
-      
-      case 'skip':
-      case 'next': {
-        const subcommandInfo = {
-          description: 'Skip to the next track',
-          syntax: '{guildprefix}spotify skip',
-          aliases: ['next'],
-          example: '{guildprefix}spotify skip'
-        };
+    },
+
+    skip: {
+      name: 'skip',
+      aliases: ['next'],
+      description: 'Skip to the next track',
+      syntax: '{guildprefix}spotify skip',
+      parameters: [],
+      example: '{guildprefix}spotify skip',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
         return await handleSkip(message, spotifyService);
       }
-      
-      case 'previous':
-      case 'back': {
-        const subcommandInfo = {
-          description: 'Go back to the previous track',
-          syntax: '{guildprefix}spotify previous',
-          aliases: ['back'],
-          example: '{guildprefix}spotify previous'
-        };
+    },
+
+    previous: {
+      name: 'previous',
+      aliases: ['back'],
+      description: 'Go back to the previous track',
+      syntax: '{guildprefix}spotify previous',
+      parameters: [],
+      example: '{guildprefix}spotify previous',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
         return await handlePrevious(message, spotifyService);
       }
-      
-      case 'volume':
-      case 'vol': {
-        const subcommandInfo = {
-          description: 'Set playback volume (0-100)',
-          syntax: '{guildprefix}spotify volume [0-100]',
-          aliases: ['vol'],
-          example: '{guildprefix}spotify volume 50'
-        };
-        return await handleVolume(message, args.slice(1), spotifyService);
+    },
+
+    volume: {
+      name: 'volume',
+      aliases: ['vol'],
+      description: 'Set playback volume (0-100)',
+      syntax: '{guildprefix}spotify volume [0-100]',
+      parameters: ['0-100'],
+      example: '{guildprefix}spotify volume 50',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        return await handleVolume(message, args, spotifyService);
       }
-      
-      case 'repeat':
-      case 'loop': {
-        const subcommandInfo = {
-          description: 'Set repeat mode (track, context, or off)',
-          syntax: '{guildprefix}spotify repeat [mode]',
-          aliases: ['loop'],
-          example: '{guildprefix}spotify repeat track'
-        };
-        return await handleRepeat(message, args.slice(1), spotifyService);
+    },
+
+    repeat: {
+      name: 'repeat',
+      aliases: ['loop'],
+      description: 'Set repeat mode (track, context, or off)',
+      syntax: '{guildprefix}spotify repeat [mode]',
+      parameters: ['mode'],
+      example: '{guildprefix}spotify repeat track',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        return await handleRepeat(message, args, spotifyService);
       }
-      
-      case 'shuffle': {
-        const subcommandInfo = {
-          description: 'Toggle shuffle mode on or off',
-          syntax: '{guildprefix}spotify shuffle [state]',
-          aliases: [],
-          example: '{guildprefix}spotify shuffle on'
-        };
-        return await handleShuffle(message, args.slice(1), spotifyService);
+    },
+
+    shuffle: {
+      name: 'shuffle',
+      aliases: [],
+      description: 'Toggle shuffle mode on or off',
+      syntax: '{guildprefix}spotify shuffle [state]',
+      parameters: ['state'],
+      example: '{guildprefix}spotify shuffle on',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        return await handleShuffle(message, args, spotifyService);
       }
-      
-      case 'queue':
-      case 'q': {
-        const subcommandInfo = {
-          description: 'Add a track to your queue',
-          syntax: '{guildprefix}spotify queue [track link|search query]',
-          aliases: ['q'],
-          example: '{guildprefix}spotify queue bohemian rhapsody'
-        };
-        return await handleQueue(message, args.slice(1), spotifyService);
+    },
+
+    queue: {
+      name: 'queue',
+      aliases: ['q'],
+      description: 'Add a track to your queue',
+      syntax: '{guildprefix}spotify queue [track link|search query]',
+      parameters: ['track link|search query'],
+      example: '{guildprefix}spotify queue bohemian rhapsody',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        return await handleQueue(message, args, spotifyService);
       }
-      
-      case 'search': {
-        const subcommandInfo = {
-          description: 'Search for a track and get its Spotify link',
-          syntax: '{guildprefix}spotify search [search query|@user]',
-          aliases: [],
-          example: '{guildprefix}spotify search the beatles'
-        };
-        return await handleGetLink(client, message, args.slice(1));
+    },
+
+    search: {
+      name: 'search',
+      aliases: [],
+      description: 'Search for a track and get its Spotify link',
+      syntax: '{guildprefix}spotify search [search query|@user]',
+      parameters: ['search query|@user'],
+      example: '{guildprefix}spotify search the beatles',
+
+      handler: async (client, message, args) => {
+        return await handleGetLink(client, message, args);
       }
-      
-      case 'recents':
-      case 'recent': {
-        const subcommandInfo = {
-          description: 'View your recently played tracks',
-          syntax: '{guildprefix}spotify recents',
-          aliases: ['recent'],
-          example: '{guildprefix}spotify recents'
-        };
+    },
+
+    recents: {
+      name: 'recents',
+      aliases: ['recent'],
+      description: 'View your recently played tracks',
+      syntax: '{guildprefix}spotify recents',
+      parameters: [],
+      example: '{guildprefix}spotify recents',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
         return await handleRecents(message, spotifyService);
       }
-      
-      case 'toptracks':
-      case 'tracks': {
-        const subcommandInfo = {
-          description: 'View your top tracks (short, medium, or long term)',
-          syntax: '{guildprefix}spotify toptracks [short|medium|long]',
-          aliases: ['tracks'],
-          example: '{guildprefix}spotify toptracks short'
-        };
-        return await handleTopTracks(message, args.slice(1), spotifyService);
+    },
+
+    toptracks: {
+      name: 'toptracks',
+      aliases: ['tracks'],
+      description: 'View your top tracks (short, medium, or long term)',
+      syntax: '{guildprefix}spotify toptracks [short|medium|long]',
+      parameters: ['short|medium|long'],
+      example: '{guildprefix}spotify toptracks short',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        return await handleTopTracks(message, args, spotifyService);
       }
-      
-      case 'topartists':
-      case 'artists': {
-        const subcommandInfo = {
-          description: 'View your top artists (short, medium, or long term)',
-          syntax: '{guildprefix}spotify topartists [short|medium|long]',
-          aliases: ['artists'],
-          example: '{guildprefix}spotify topartists long'
-        };
-        return await handleTopArtists(message, args.slice(1), spotifyService);
+    },
+
+    topartists: {
+      name: 'topartists',
+      aliases: ['artists'],
+      description: 'View your top artists (short, medium, or long term)',
+      syntax: '{guildprefix}spotify topartists [short|medium|long]',
+      parameters: ['short|medium|long'],
+      example: '{guildprefix}spotify topartists long',
+
+      handler: async (client, message, args) => {
+        const spotifyService = getService('spotify');
+        return await handleTopArtists(message, args, spotifyService);
       }
-      
-      default:
-        return runHelpCommand(message, 'spotify');
     }
+  },
+
+  run: async (client, message, args) => {
+    try {
+      const sub = args[0]?.toLowerCase();
+      if (!sub) {
+        return runHelpCommand(message, 'spotify');
+      }
+
+      const subcommand = Object.values(module.exports.subcommands)
+        .find(s => s.name === sub || s.aliases.includes(sub));
+
+      if (subcommand) {
+        return subcommand.handler(client, message, args.slice(1));
+      }
+
+      return runHelpCommand(message, 'spotify');
     } catch (error) {
       logger.webhook.error(error, message);
       return embeds.deny(message, 'An error occurred while executing this command');
     }
   }
 };
+
 
 // ===== LOGIN/LOGOUT =====
 
@@ -242,9 +294,7 @@ async function handleLogin(message, spotifyService, guildprefix) {
           );
 
         await sentMessage.edit({ components: [disabledRow] });
-      } catch (err) {
-        // Message might be deleted, ignore
-      }
+      } catch (err) {}
     }, 5 * 60 * 1000);
 
   } catch (error) {
@@ -412,10 +462,7 @@ async function playFromUser(client, message, args, spotifyService, accessToken) 
           artistName = track.artists.map(a => a.name).join(', ');
           trackUrl = track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`;
         }
-      } catch (error) {
-        // Silently fail if target user doesn't have API access (not in beta list)
-        // Will fall back to Discord presence check
-      }
+      } catch (error) {}
     }
   }
 
@@ -833,8 +880,7 @@ async function handleTopTracks(message, args, spotifyService) {
     const { accessToken } = await checkSpotifyAccess(message);
     if (!accessToken) return;
 
-    // Parse time range from args
-    let timeRange = 'medium_term'; // default: 6 months
+    let timeRange = 'medium_term';
     let timeLabel = 'Last 6 Months';
     
     const timeArg = args[0] ? args[0].toLowerCase() : '';
@@ -883,8 +929,7 @@ async function handleTopArtists(message, args, spotifyService) {
     const { accessToken } = await checkSpotifyAccess(message);
     if (!accessToken) return;
 
-    // Parse time range from args
-    let timeRange = 'medium_term'; // default: 6 months
+    let timeRange = 'medium_term';
     let timeLabel = 'Last 6 Months';
     
     const timeArg = args[0] ? args[0].toLowerCase() : '';

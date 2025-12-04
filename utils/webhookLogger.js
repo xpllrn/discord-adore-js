@@ -272,16 +272,8 @@ class WebhookLogger {
 
     // Add expiry info for temporary actions
     if (until) {
-      const formattedDate = new Date(until).toLocaleString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric', 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: true 
-      });
-      containerSyntax += `$v{separator}$v{text: -# **Expires at** \`${formattedDate}\` }`;
+      const unixTimestamp = Math.floor(new Date(until).getTime() / 1000);
+      containerSyntax += `$v{separator}$v{text: -# **Expires at** <t:${unixTimestamp}:F> }`;
     } else if (duration && duration !== '0m' && duration !== '0s' && duration !== '') {
       containerSyntax += `$v{separator}$v{text: -# **Duration:** ${duration} }`;
     }

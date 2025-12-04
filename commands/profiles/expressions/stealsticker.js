@@ -116,58 +116,59 @@ module.exports = {
   permission: "manage_expressions",
   isGroupCommand: true,
 
+  subcommands: {
+    add: {
+      name: 'add',
+      aliases: [],
+      description: 'Add a sticker to the server',
+      syntax: '{guildprefix}sticker add [name] [image/url]',
+      parameters: ['name', 'image'],
+      example: '{guildprefix}sticker add cool_sticker [attach image]',
+      handler: async (client, message, args) => handleAdd(client, message, args)
+    },
+
+    remove: {
+      name: 'remove',
+      aliases: ['delete'],
+      description: 'Remove a sticker from the server',
+      syntax: '{guildprefix}sticker remove [message_link]',
+      parameters: ['message_link'],
+      example: '{guildprefix}sticker remove https://discord.com/channels/...',
+      handler: async (client, message, args) => handleRemove(client, message, args)
+    },
+
+    tag: {
+      name: 'tag',
+      aliases: [],
+      description: 'Tag all stickers with server vanity',
+      syntax: '{guildprefix}sticker tag',
+      parameters: [],
+      example: '{guildprefix}sticker tag',
+      handler: async (client, message, args) => handleTag(client, message, args)
+    }
+  },
+
   run: async (client, message, args) => {
     try {
-    await ensureGuildData(message.guild.id);
+      await ensureGuildData(message.guild.id);
 
-    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions')) return;
+      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuildExpressions, 'Manage Expressions')) return;
 
-    if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageGuildExpressions)) {
-      return embeds.deny(message, 'I need **Manage Expressions** permission to use this command');
-    }
+      if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageGuildExpressions)) {
+        return embeds.deny(message, 'I need **Manage Expressions** permission to use this command');
+      }
 
-    const subcommand = args[0]?.toLowerCase();
+      const sub = args[0]?.toLowerCase();
+      if (!sub) return runHelpCommand(message, 'sticker');
 
-    if (!subcommand) {
+      const subcommand = Object.values(module.exports.subcommands)
+        .find(s => s.name === sub || s.aliases.includes(sub));
+
+      if (subcommand) {
+        return subcommand.handler(client, message, args.slice(1));
+      }
+
       return runHelpCommand(message, 'sticker');
-    }
-
-    // Handle different subcommands
-    switch (subcommand) {
-      case 'add': {
-        const subcommandInfo = {
-          description: 'Add a sticker to the server',
-          syntax: '{guildprefix}sticker add [name] [image/url]',
-          aliases: [],
-          parameters: ['name', 'image'],
-          example: '{guildprefix}sticker add cool_sticker [attach image]'
-        };
-        return await handleAdd(client, message, args.slice(1));
-      }
-      case 'remove':
-      case 'delete': {
-        const subcommandInfo = {
-          description: 'Remove a sticker from the server',
-          syntax: '{guildprefix}sticker remove [message_link]',
-          aliases: ['delete'],
-          parameters: ['message_link'],
-          example: '{guildprefix}sticker remove https://discord.com/channels/...'
-        };
-        return await handleRemove(client, message, args.slice(1));
-      }
-      case 'tag': {
-        const subcommandInfo = {
-          description: 'Tag all stickers with server vanity',
-          syntax: '{guildprefix}sticker tag',
-          aliases: [],
-          parameters: [],
-          example: '{guildprefix}sticker tag'
-        };
-        return await handleTag(client, message, args.slice(1));
-      }
-      default:
-        return runHelpCommand(message, 'sticker');
-    }
     } catch (error) {
       throw error;
     }

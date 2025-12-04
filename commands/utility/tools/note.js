@@ -98,32 +98,89 @@ async function handleNoteShared(context, subcommand, content, noteId) {
 module.exports = {
   name: "note",
   aliases: ['notes', 'todo'],
-  description: `manage your personal notes`,
+  description: 'Manage your personal notes',
+  syntax: 'note [subcommand] (parameters)',
+  example: 'note add buy milk',
   isGroupCommand: true,
-  run: async (client, message, args) => {
-    if (args[0] === 'add' || args[0] === 'create') {
-      if (!args[1]) {
-        return runHelpCommand(message, 'note');
+
+  subcommands: {
+    add: {
+      name: 'add',
+      aliases: ['create'],
+      description: 'Add a new note',
+      syntax: '{guildprefix}note add [content]',
+      parameters: ['content'],
+      example: '{guildprefix}note add buy milk',
+
+      handler: async (client, message, args) => {
+        if (!args[0]) {
+          return runHelpCommand(message, 'note');
+        }
+        const content = args.join(' ');
+        return await handleNoteShared(message, 'add', content, null);
       }
-      const content = args.slice(1).join(' ');
-      return await handleNoteShared(message, 'add', content, null);
+    },
 
-    } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
-      const noteId = parseInt(args[1]);
-      if (!noteId || isNaN(noteId)) {
-        return runHelpCommand(message, 'note');
+    remove: {
+      name: 'remove',
+      aliases: ['delete', 'rm', 'del'],
+      description: 'Remove a note by ID',
+      syntax: '{guildprefix}note remove [id]',
+      parameters: ['id'],
+      example: '{guildprefix}note remove 1',
+
+      handler: async (client, message, args) => {
+        const noteId = parseInt(args[0]);
+        if (!noteId || isNaN(noteId)) {
+          return runHelpCommand(message, 'note');
+        }
+        return await handleNoteShared(message, 'remove', null, noteId);
       }
-      return await handleNoteShared(message, 'remove', null, noteId);
+    },
 
-    } else if (args[0] === 'list' || !args[0]) {
-      return await handleNoteShared(message, 'list', null, null);
+    list: {
+      name: 'list',
+      aliases: [],
+      description: 'List all your notes',
+      syntax: '{guildprefix}note list',
+      parameters: [],
+      example: '{guildprefix}note list',
 
-    } else if (args[0] === 'reset' || args[0] === 'clear') {
-      return await handleNoteShared(message, 'clear', null, null);
+      handler: async (client, message, args) => {
+        return await handleNoteShared(message, 'list', null, null);
+      }
+    },
 
-    } else {
-      return runHelpCommand(message, 'note');
+    clear: {
+      name: 'clear',
+      aliases: ['reset'],
+      description: 'Clear all your notes',
+      syntax: '{guildprefix}note clear',
+      parameters: [],
+      example: '{guildprefix}note clear',
+
+      handler: async (client, message, args) => {
+        return await handleNoteShared(message, 'clear', null, null);
+      }
     }
+  },
+
+  run: async (client, message, args) => {
+    const sub = args[0]?.toLowerCase();
+    
+    // Default to list if no subcommand
+    if (!sub) {
+      return module.exports.subcommands.list.handler(client, message, []);
+    }
+
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
+
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
+    }
+
+    return runHelpCommand(message, 'note');
   },
 
   // SLASH COMMAND

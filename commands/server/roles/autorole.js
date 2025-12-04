@@ -16,113 +16,95 @@ module.exports = {
   example: 'autorole add @Member',
   permission: 'manage_guild_&_manage_roles',
   isGroupCommand: true,
-  run: async (client, message, args) => {
-    const guildService = getService('guild');
 
-    await ensureGuildData(message.guild.id);
+  subcommands: {
+    add: {
+      name: 'add',
+      aliases: ['create'],
+      description: 'Adds a autorole and assigns on join to member',
+      syntax: '{guildprefix}autorole add [role]',
+      parameters: ['role'],
+      example: '{guildprefix}autorole add Member',
 
-    if (args[0] === 'add') {
-      const subcommandInfo = {
-        name: 'add',
-        description: 'Adds a autorole and assigns on join to member',
-        syntax: '{guildprefix}autorole add [role]',
-        aliases: ['create'],
-        parameters: ['role'],
-        example: '{guildprefix}autorole add Member'
-      };
+      handler: async (client, message, args, guildService) => {
+        const roleName = args.join(' ');
+        if (!roleName) return runHelpCommand(message, 'autorole');
 
-      const roleName = args.slice(1).join(' ');
+        const roleResult = findRole(message.guild, roleName);
+        if (!roleResult.found) return embeds.deny(message, roleResult.error);
 
-      if (!roleName) {
-        return runHelpCommand(message, 'autorole');
+        const role = roleResult.role;
+
+        if (!checkUserRoleHierarchy(message, role)) return;
+        if (!checkBotRoleHierarchy(message, role)) return;
+
+        const currentAutoRoles = await guildService.getAutoRoles(message.guild.id) || [];
+
+        if (currentAutoRoles.includes(role.id)) {
+          return embeds.warn(message, `**${role.name}** is already an auto role`);
+        }
+
+        if (currentAutoRoles.length >= 10) {
+          return embeds.deny(message, 'You have added **max autoroles (10)**. Please remove some first.');
+        }
+
+        await guildService.addAutoRole(message.guild.id, role.id);
+        return embeds.success(message, `**${role.name}** has been added to auto roles`);
       }
+    },
 
-      const roleResult = findRole(message.guild, roleName);
+    remove: {
+      name: 'remove',
+      aliases: ['delete', 'del', 'rm'],
+      description: 'Removes a autorole and stops assigning on join',
+      syntax: '{guildprefix}autorole remove [role]',
+      parameters: ['role'],
+      example: '{guildprefix}autorole remove Member',
 
-      if (!roleResult.found) {
-        return embeds.deny(message, roleResult.error);
+      handler: async (client, message, args, guildService) => {
+        const roleName = args.join(' ');
+        if (!roleName) return runHelpCommand(message, 'autorole');
+
+        const roleResult = findRole(message.guild, roleName);
+        if (!roleResult.found) return embeds.deny(message, roleResult.error);
+
+        const role = roleResult.role;
+        const autoRoles = await guildService.getAutoRoles(message.guild.id);
+
+        if (!autoRoles || autoRoles.length === 0) {
+          return embeds.deny(message, `No auto roles found`);
+        }
+
+        if (!autoRoles.includes(role.id)) {
+          return embeds.deny(message, `**${role.name}** is not an auto role`);
+        }
+
+        await guildService.removeAutoRole(message.guild.id, role.id);
+        return embeds.success(message, `Removed **${role.name}** from auto roles`);
       }
+    },
 
-      const role = roleResult.role;
+    list: {
+      name: 'list',
+      aliases: [],
+      description: 'Lists all autoroles configured for the guild',
+      syntax: '{guildprefix}autorole list',
+      parameters: [],
+      example: '{guildprefix}autorole list',
 
-      // Hierarchy checks
-      if (!checkUserRoleHierarchy(message, role)) return;
-      if (!checkBotRoleHierarchy(message, role)) return;
+      handler: async (client, message, args, guildService) => {
+        const autoRoles = await guildService.getAutoRoles(message.guild.id);
 
-      // Get current auto roles using cache system
-      const currentAutoRoles = await guildService.getAutoRoles(message.guild.id) || [];
+        if (!autoRoles || autoRoles.length === 0) {
+          return embeds.warn(message, 'No auto roles found');
+        }
 
-      // Check if role is already in autoroles
-      if (currentAutoRoles.includes(role.id)) {
-        return embeds.warn(message, `**${role.name}** is already an auto role`);
-      }
-
-      // Check if we've reached the 10 role limit
-      if (currentAutoRoles.length >= 10) {
-        return embeds.deny(message, 'You have added **max autoroles (10)**. Please remove some first.');
-      }
-
-      // Add the new role using cache system
-      await guildService.addAutoRole(message.guild.id, role.id);
-
-      return embeds.success(message, `**${role.name}** has been added to auto roles`);
-
-
-
-    } else if (args[0] === 'reset') {
-      const subcommandInfo = {
-        name: 'reset',
-        description: 'Clears every autorole for guild',
-        syntax: '{guildprefix}autorole reset',
-        aliases: ['clear'],
-        parameters: [],
-        example: '{guildprefix}autorole reset'
-      };
-
-      const autoRoles = await guildService.getAutoRoles(message.guild.id);
-
-      if (autoRoles && autoRoles.length > 0) {
-        // Show confirmation dialog
-        await createConfirmation(
-          message,
-          'Are you sure you want to **remove all auto roles**?',
-          async (interaction) => {
-            // On approve: delete all auto roles using cache system
-            await guildService.clearAllAutoRoles(message.guild.id);
-
-            // Edit the confirmation embed to show success message
-            const successEmbed = embeds.createSuccess(message, 'Removed all auto roles');
-
-            await interaction.update({ embeds: [successEmbed], components: [] });
-          }
-        );
-      } else {
-        return embeds.warn(message, 'No auto roles found');
-      }
-
-
-
-    } else if (args[0] === 'list') {
-      const subcommandInfo = {
-        name: 'list',
-        description: 'Lists all autoroles configured for the guild',
-        syntax: '{guildprefix}autorole list',
-        aliases: [],
-        parameters: [],
-        example: '{guildprefix}autorole list'
-      };
-
-      const autoRoles = await guildService.getAutoRoles(message.guild.id);
-
-      if (autoRoles && autoRoles.length > 0) {
-        // Clean up invalid roles before displaying
         const validRoles = [];
         for (const roleId of autoRoles) {
           const role = message.guild.roles.cache.get(roleId);
           if (role) {
             validRoles.push(roleId);
           } else {
-            // Remove invalid role using cache system
             await guildService.removeAutoRole(message.guild.id, roleId);
           }
         }
@@ -144,54 +126,51 @@ module.exports = {
           .setFooter({ text: `${validRoles.length}/10 auto roles` });
 
         return message.channel.send({ embeds: [embed] });
-
-      } else {
-        return embeds.warn(message, 'No auto roles found');
       }
+    },
 
+    reset: {
+      name: 'reset',
+      aliases: ['clear'],
+      description: 'Clears every autorole for guild',
+      syntax: '{guildprefix}autorole reset',
+      parameters: [],
+      example: '{guildprefix}autorole reset',
 
+      handler: async (client, message, args, guildService) => {
+        const autoRoles = await guildService.getAutoRoles(message.guild.id);
 
-    } else if (args[0] === 'remove' || args[0] === 'rm' || args[0] === 'delete' || args[0] === 'del') {
-      const subcommandInfo = {
-        name: 'remove',
-        description: 'Removes a autorole and stops assigning on join',
-        syntax: '{guildprefix}autorole remove [role]',
-        aliases: ['delete', 'del', 'rm'],
-        parameters: ['role'],
-        example: '{guildprefix}autorole remove Member'
-      };
-
-      const roleName = args.slice(1).join(' ');
-
-      if (!roleName) {
-        return runHelpCommand(message, 'autorole');
-      }
-
-      const roleResult = findRole(message.guild, roleName);
-
-      if (!roleResult.found) {
-        return embeds.deny(message, roleResult.error);
-      }
-
-      const role = roleResult.role;
-      const autoRoles = await guildService.getAutoRoles(message.guild.id);
-
-      if (autoRoles && autoRoles.length > 0) {
-        if (!autoRoles.includes(role.id)) {
-          return embeds.deny(message, `**${role.name}** is not an auto role`);
+        if (!autoRoles || autoRoles.length === 0) {
+          return embeds.warn(message, 'No auto roles found');
         }
 
-        // Remove the role using cache system
-        await guildService.removeAutoRole(message.guild.id, role.id);
-
-        return embeds.success(message, `Removed **${role.name}** from auto roles`);
-      } else {
-        return embeds.deny(message, `No auto roles found`);
+        await createConfirmation(
+          message,
+          'Are you sure you want to **remove all auto roles**?',
+          async (interaction) => {
+            await guildService.clearAllAutoRoles(message.guild.id);
+            const successEmbed = embeds.createSuccess(message, 'Removed all auto roles');
+            await interaction.update({ embeds: [successEmbed], components: [] });
+          }
+        );
       }
+    }
+  },
 
-    } else {
-      return runHelpCommand(message, 'autorole');
+  run: async (client, message, args) => {
+    const guildService = getService('guild');
+    await ensureGuildData(message.guild.id);
+
+    const sub = args[0]?.toLowerCase();
+    if (!sub) return runHelpCommand(message, 'autorole');
+
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
+
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1), guildService);
     }
 
+    return runHelpCommand(message, 'autorole');
   }
-}
+};

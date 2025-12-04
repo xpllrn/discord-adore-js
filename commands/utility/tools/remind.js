@@ -138,61 +138,113 @@ async function handleReminderShared(context, subcommand, content, duration, isDa
 module.exports = {
   name: "remind",
   aliases: ['reminder', 'remindme'],
-  description: `set personal reminders with optional daily repeating`,
+  description: 'Set personal reminders with optional daily repeating',
+  syntax: 'remind [subcommand|duration] (content)',
+  example: 'remind 1h buy milk',
   isGroupCommand: true,
+
+  subcommands: {
+    add: {
+      name: 'add',
+      aliases: [],
+      description: 'Create a new reminder',
+      syntax: '{guildprefix}remind add [duration] [content] [--daily]',
+      parameters: ['duration', 'content'],
+      example: '{guildprefix}remind add 1h buy milk --daily',
+
+      handler: async (client, message, args) => {
+        let duration = null;
+        let content = '';
+        let isDaily = false;
+
+        // Check for --daily flag
+        const dailyFlagIndex = args.findIndex(arg => arg.toLowerCase() === '--daily');
+        if (dailyFlagIndex !== -1) {
+          isDaily = true;
+          args.splice(dailyFlagIndex, 1);
+        }
+
+        // Try to parse first argument as duration
+        const firstArgDuration = ms(args[0]);
+
+        if (firstArgDuration && firstArgDuration > 0) {
+          duration = firstArgDuration;
+          content = args.slice(1).join(' ');
+        } else {
+          duration = ms('1h');
+          content = args.join(' ');
+        }
+
+        if (!content || content.trim().length === 0) {
+          return runHelpCommand(message, 'remind');
+        }
+
+        return await handleReminderShared(message, 'add', content, duration, isDaily, null);
+      }
+    },
+
+    remove: {
+      name: 'remove',
+      aliases: ['delete', 'rm', 'del'],
+      description: 'Remove a reminder by ID',
+      syntax: '{guildprefix}remind remove [id]',
+      parameters: ['id'],
+      example: '{guildprefix}remind remove 1',
+
+      handler: async (client, message, args) => {
+        const reminderId = parseInt(args[0]);
+        if (!reminderId || isNaN(reminderId)) {
+          return runHelpCommand(message, 'remind');
+        }
+        return await handleReminderShared(message, 'remove', null, null, false, reminderId);
+      }
+    },
+
+    list: {
+      name: 'list',
+      aliases: [],
+      description: 'List all your reminders',
+      syntax: '{guildprefix}remind list',
+      parameters: [],
+      example: '{guildprefix}remind list',
+
+      handler: async (client, message, args) => {
+        return await handleReminderShared(message, 'list', null, null, false, null);
+      }
+    },
+
+    clear: {
+      name: 'clear',
+      aliases: ['reset'],
+      description: 'Clear all your reminders',
+      syntax: '{guildprefix}remind clear',
+      parameters: [],
+      example: '{guildprefix}remind clear',
+
+      handler: async (client, message, args) => {
+        return await handleReminderShared(message, 'clear', null, null, false, null);
+      }
+    }
+  },
+
   run: async (client, message, args) => {
-
-    if (args[0] === 'add') {
-      args.shift(); // Remove "add" from args
-      // Fall through to the reminder creation logic below
-
-    } else if (args[0] === 'remove' || args[0] === 'delete' || args[0] === 'rm' || args[0] === 'del') {
-      const reminderId = parseInt(args[1]);
-      if (!reminderId || isNaN(reminderId)) {
-        return runHelpCommand(message, 'remind');
-      }
-      return await handleReminderShared(message, 'remove', null, null, false, reminderId);
-
-    } else if (args[0] === 'list' || !args[0]) {
-      return await handleReminderShared(message, 'list', null, null, false, null);
-
-    } else if (args[0] === 'reset' || args[0] === 'clear') {
-      return await handleReminderShared(message, 'clear', null, null, false, null);
+    const sub = args[0]?.toLowerCase();
+    
+    // Default to list if no subcommand
+    if (!sub) {
+      return module.exports.subcommands.list.handler(client, message, []);
     }
 
-    // Create a new reminder (handles both direct usage and "add" subcommand)
-    if (args[0] !== 'list' && args[0] !== 'remove' && args[0] !== 'delete' && args[0] !== 'rm' && args[0] !== 'del' && args[0] !== 'reset' && args[0] !== 'clear') {
-      let duration = null;
-      let content = '';
-      let isDaily = false;
+    // Check if it's a known subcommand
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
 
-      // Check for --daily flag
-      const dailyFlagIndex = args.findIndex(arg => arg.toLowerCase() === '--daily');
-      if (dailyFlagIndex !== -1) {
-        isDaily = true;
-        args.splice(dailyFlagIndex, 1); // Remove the flag from args
-      }
-
-      // Try to parse first argument as duration
-      const firstArgDuration = ms(args[0]);
-
-      if (firstArgDuration && firstArgDuration > 0) {
-        // First argument is a duration
-        duration = firstArgDuration;
-        content = args.slice(1).join(' ');
-      } else {
-        // No duration specified, use default 1 hour
-        duration = ms('1h');
-        content = args.join(' ');
-      }
-
-      // Validate content
-      if (!content || content.trim().length === 0) {
-        return runHelpCommand(message, 'remind');
-      }
-
-      return await handleReminderShared(message, 'add', content, duration, isDaily, null);
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
+
+    // If not a subcommand, treat as direct reminder creation (backward compatibility)
+    return module.exports.subcommands.add.handler(client, message, args);
   },
 
   // SLASH COMMAND

@@ -12,30 +12,17 @@ module.exports = {
   syntax: 'nsr [subcommand] (user)',
   example: 'nsr on',
   isGroupCommand: true,
-  run: async (client, message, args) => {
 
-    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) return;
+  subcommands: {
+    on: {
+      name: 'on',
+      aliases: ['enable'],
+      description: 'Enable no self-react',
+      syntax: '{guildprefix}nsr on',
+      parameters: [],
+      example: '{guildprefix}nsr on',
 
-    if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageMessages)) {
-      return embeds.deny(message, 'I need **Manage Messages** permission to remove self-reactions');
-    }
-
-    const guildService = getService('guild');
-
-    if (!args[0]) {
-      return runHelpCommand(message, 'nsr');
-    }
-
-    const subcommand = args[0].toLowerCase();
-
-    switch (subcommand) {
-      case 'on': {
-        const subcommandInfo = {
-          description: 'Enable no self-react',
-          syntax: '{guildprefix}nsr on',
-          aliases: [],
-          example: '{guildprefix}nsr on'
-        };
+      handler: async (client, message, args, guildService) => {
         const guildData = await guildService.ensureGuildData(message.guild.id);
         
         if (guildData.NoSelfReact?.enabled) {
@@ -48,14 +35,17 @@ module.exports = {
 
         return embeds.success(message, '**No selfreact** has been **enabled**');
       }
+    },
 
-      case 'off': {
-        const subcommandInfo = {
-          description: 'Disable no self-react',
-          syntax: '{guildprefix}nsr off',
-          aliases: [],
-          example: '{guildprefix}nsr off'
-        };
+    off: {
+      name: 'off',
+      aliases: ['disable'],
+      description: 'Disable no self-react',
+      syntax: '{guildprefix}nsr off',
+      parameters: [],
+      example: '{guildprefix}nsr off',
+
+      handler: async (client, message, args, guildService) => {
         const guildData = await guildService.ensureGuildData(message.guild.id);
         
         if (!guildData.NoSelfReact?.enabled) {
@@ -68,14 +58,17 @@ module.exports = {
 
         return embeds.success(message, '**No selfreact** has been **disabled**');
       }
+    },
 
-      case 'bypass': {
-        const subcommandInfo = {
-          description: 'Toggle bypass for a user',
-          syntax: '{guildprefix}nsr bypass [user]',
-          aliases: [],
-          example: '{guildprefix}nsr bypass @user'
-        };
+    bypass: {
+      name: 'bypass',
+      aliases: [],
+      description: 'Toggle bypass for a user',
+      syntax: '{guildprefix}nsr bypass [user]',
+      parameters: ['user'],
+      example: '{guildprefix}nsr bypass @user',
+
+      handler: async (client, message, args, guildService) => {
         const targetUser = message.mentions.users.first();
         
         if (!targetUser) {
@@ -102,10 +95,30 @@ module.exports = {
           return embeds.success(message, `Added ${targetUser} to **bypass list**`);
         }
       }
-
-      default: {
-        return runHelpCommand(message, 'nsr');
-      }
     }
+  },
+
+  run: async (client, message, args) => {
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) return;
+
+    if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageMessages)) {
+      return embeds.deny(message, 'I need **Manage Messages** permission to remove self-reactions');
+    }
+
+    const guildService = getService('guild');
+
+    const sub = args[0]?.toLowerCase();
+    if (!sub) {
+      return runHelpCommand(message, 'nsr');
+    }
+
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
+
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1), guildService);
+    }
+
+    return runHelpCommand(message, 'nsr');
   }
 };

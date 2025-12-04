@@ -106,7 +106,6 @@ async function viewConfigShared(context, guildService) {
 // SHARED LOGIC: Set/view base role
 async function handleBaseRoleShared(context, role, guildService) {
   const guild = context.guild;
-  const isInteraction = !!context.user;
 
   // If no role provided, show current
   if (!role) {
@@ -164,6 +163,60 @@ module.exports = {
   example: 'settings config',
   permission: 'manage_guild',
   isGroupCommand: true,
+
+  subcommands: {
+    config: {
+      name: 'config',
+      aliases: [],
+      description: 'View all server configuration settings',
+      syntax: '{guildprefix}settings config',
+      parameters: [],
+      example: '{guildprefix}settings config',
+
+      handler: async (client, message, args, guildService) => {
+        return await viewConfigShared(message, guildService);
+      }
+    },
+
+    baserole: {
+      name: 'baserole',
+      aliases: [],
+      description: 'Set base role for booster role positioning',
+      syntax: '{guildprefix}settings baserole [@role]',
+      parameters: ['role'],
+      example: '{guildprefix}settings baserole @Booster',
+
+      handler: async (client, message, args, guildService) => {
+        let role = null;
+        if (args[0]) {
+          const roleResult = findRole(message.guild, args.join(' '));
+          if (!roleResult.found) {
+            return embeds.deny(message, roleResult.error, false);
+          }
+          role = roleResult.role;
+        }
+        return await handleBaseRoleShared(message, role, guildService);
+      }
+    },
+
+    bypass: {
+      name: 'bypass',
+      aliases: [],
+      description: 'Toggle NSFW bypass to allow NSFW commands in non-NSFW channels',
+      syntax: '{guildprefix}settings bypass nsfw',
+      parameters: ['nsfw'],
+      example: '{guildprefix}settings bypass nsfw',
+
+      handler: async (client, message, args, guildService) => {
+        if (args[0] === 'nsfw') {
+          return await handleNSFWBypassShared(message, guildService);
+        } else {
+          return embeds.deny(message, 'Invalid bypass option. Use: `settings bypass nsfw`', false);
+        }
+      }
+    }
+  },
+
   run: async (client, message, args) => {
     try {
       const guildService = getService('guild');
@@ -172,60 +225,17 @@ module.exports = {
         return runHelpCommand(message, 'settings');
       }
 
-      const subcommand = args[0].toLowerCase();
+      const sub = args[0].toLowerCase();
 
-      if (subcommand === 'config') {
-        const subcommandInfo = {
-          description: 'View all server configuration settings',
-          syntax: '{guildprefix}settings config',
-          aliases: [],
-          parameters: [],
-          example: '{guildprefix}settings config'
-        };
+      // Find matching subcommand
+      const subcommand = Object.values(module.exports.subcommands)
+        .find(s => s.name === sub || s.aliases.includes(sub));
 
-        return await viewConfigShared(message, guildService);
-
-      } else if (subcommand === 'baserole') {
-        const subcommandInfo = {
-          description: 'set base role for booster role positioning',
-          syntax: '{guildprefix}settings baserole [@role]',
-          aliases: [],
-          parameters: ['role'],
-          example: '{guildprefix}settings baserole @Booster'
-        };
-
-        let role = null;
-        if (args[1]) {
-          // Find the role
-          const roleResult = findRole(message.guild, args.slice(1).join(' '));
-
-          if (!roleResult.found) {
-            return embeds.deny(message, roleResult.error, false);
-          }
-
-          role = roleResult.role;
-        }
-
-        return await handleBaseRoleShared(message, role, guildService);
-
-      } else if (subcommand === 'bypass') {
-        const subcommandInfo = {
-          description: 'Toggle NSFW bypass to allow NSFW commands in non-NSFW channels',
-          syntax: '{guildprefix}settings bypass nsfw',
-          aliases: [],
-          parameters: ['nsfw'],
-          example: '{guildprefix}settings bypass nsfw'
-        };
-
-        if (args[1] === 'nsfw') {
-          return await handleNSFWBypassShared(message, guildService);
-        } else {
-          return embeds.deny(message, 'Invalid bypass option. Use: `settings bypass nsfw`', false);
-        }
-
-      } else {
-        return runHelpCommand(message, 'settings');
+      if (subcommand) {
+        return subcommand.handler(client, message, args.slice(1), guildService);
       }
+
+      return runHelpCommand(message, 'settings');
     } catch (error) {
       logger.webhook.error(error, message);
 
@@ -326,4 +336,3 @@ module.exports = {
     }
   }
 };
-

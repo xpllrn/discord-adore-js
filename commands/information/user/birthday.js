@@ -14,58 +14,28 @@ module.exports = {
   syntax: 'bday (subcommand)',
   example: 'bday set 15 March',
   isGroupCommand: true,
-  run: async (client, message, args) => {
-    const userService = getService('user');
 
-    // Show user's own birthday if no args provided
-    if (!args[0]) {
-      try {
-        const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
+  subcommands: {
+    set: {
+      name: 'set',
+      aliases: [],
+      description: 'Set your birthday (can only be set once)',
+      syntax: '{guildprefix}bday set [day] [month]',
+      parameters: ['day', 'month'],
+      example: '{guildprefix}bday set 15 March',
 
-        if (!formattedBirthday) {
-          return embeds.info(message, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`);
-        }
-
-        const isBirthdayToday = await userService.isBirthday(message.author.id);
-
-        if (isBirthdayToday) {
-          const birthdayText = `🎂 Your birthday is today! Happy birthday!`;
-          return embeds.info(message, birthdayText);
-        } else {
-          const nextBirthdayTimestamp = await getNextBirthdayTimestamp(message.author.id);
-          const birthdayText = `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
-          return embeds.info(message, birthdayText);
-        }
-      } catch (error) {
-        throw error;
-      }
-    }
-
-    const subcommand = args[0].toLowerCase();
-
-    switch (subcommand) {
-      case 'set': {
-        const subcommandInfo = {
-          description: 'Set your birthday (can only be set once)',
-          syntax: '{guildprefix}bday set [day] [month]',
-          aliases: [],
-          example: '{guildprefix}bday set 15 March'
-        };
-        // Set birthday (universal)
-        if (!args[1] || !args[2]) {
+      handler: async (client, message, args, userService) => {
+        if (!args[0] || !args[1]) {
           return embeds.warn(message, 'Please provide both day and month. Example: `,bday set 15 March`');
         }
 
-        const day = parseInt(args[1]);
-        const monthInput = args[2].toLowerCase();
+        const day = parseInt(args[0]);
+        const monthInput = args[1].toLowerCase();
 
-        // Validate day
         if (isNaN(day) || day < 1 || day > 31) {
           return embeds.warn(message, 'Day must be a number between **1** and **31**');
         }
 
-        // Parse month (accept both numbers and names)
-        let month;
         const monthNames = [
           'january', 'february', 'march', 'april', 'may', 'june',
           'july', 'august', 'september', 'october', 'november', 'december'
@@ -75,6 +45,7 @@ module.exports = {
           'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
         ];
 
+        let month;
         if (!isNaN(monthInput)) {
           month = parseInt(monthInput);
           if (month < 1 || month > 12) {
@@ -91,17 +62,14 @@ module.exports = {
           month = monthIndex + 1;
         }
 
-        // Validate day for specific month (basic validation)
         if ((month === 2 && day > 29) ||
           ([4, 6, 9, 11].includes(month) && day > 30)) {
           return embeds.warn(message, 'Invalid day for the specified month');
         }
 
-        // Ensure user data exists
         await ensureUserData(message.author.id);
 
         try {
-          // Check if user already has a birthday set using service layer
           const existingBirthday = await userService.getBirthday(message.author.id);
 
           if (existingBirthday && existingBirthday.day && existingBirthday.month) {
@@ -115,22 +83,22 @@ module.exports = {
         } catch (error) {
           throw error;
         }
-        break;
       }
+    },
 
-      case 'list': {
-        const subcommandInfo = {
-          description: 'List all birthdays in the server',
-          syntax: '{guildprefix}bday list',
-          aliases: [],
-          example: '{guildprefix}bday list'
-        };
-        // List all birthdays in the server
+    list: {
+      name: 'list',
+      aliases: [],
+      description: 'List all birthdays in the server',
+      syntax: '{guildprefix}bday list',
+      parameters: [],
+      example: '{guildprefix}bday list',
+
+      handler: async (client, message, args, userService) => {
         try {
           const guildMembers = await message.guild.members.fetch();
           const birthdayData = [];
 
-          // Get birthday data for all guild members
           for (const [userId, member] of guildMembers) {
             try {
               const birthday = await userService.getBirthday(userId);
@@ -149,7 +117,6 @@ module.exports = {
                 });
               }
             } catch (error) {
-              // Skip users with birthday fetch errors
               continue;
             }
           }
@@ -158,30 +125,25 @@ module.exports = {
             return embeds.warn(message, 'No birthdays found in this server');
           }
 
-          // Sort by month and day (upcoming birthdays first)
           const today = new Date();
           const currentMonth = today.getMonth() + 1;
           const currentDay = today.getDate();
           const currentSortKey = `${currentMonth.toString().padStart(2, '0')}-${currentDay.toString().padStart(2, '0')}`;
 
           birthdayData.sort((a, b) => {
-            // Put today's birthdays first
             if (a.isBirthdayToday && !b.isBirthdayToday) return -1;
             if (!a.isBirthdayToday && b.isBirthdayToday) return 1;
             if (a.isBirthdayToday && b.isBirthdayToday) return 0;
 
-            // Then sort by upcoming birthdays
             const aIsUpcoming = a.sortKey >= currentSortKey;
             const bIsUpcoming = b.sortKey >= currentSortKey;
 
             if (aIsUpcoming && !bIsUpcoming) return -1;
             if (!aIsUpcoming && bIsUpcoming) return 1;
 
-            // Within the same category, sort by date
             return a.sortKey.localeCompare(b.sortKey);
           });
 
-          // Format page function for pagination
           const formatPage = (pageBirthdays, currentPage, totalPages) => {
             const startIndex = (currentPage - 1) * 10;
 
@@ -205,30 +167,28 @@ module.exports = {
               .setFooter({ text: `${birthdayData.length} ${entryText} || page ${currentPage}/${totalPages}` });
           };
 
-          // Use pagination system with 10 items per page
           await createPagination(message, birthdayData, formatPage, 10, 'Server Birthdays');
 
         } catch (error) {
           throw error;
         }
-        break;
       }
+    },
 
-      case 'view':
-      default: {
-        const subcommandInfo = {
-          description: 'View a user\'s birthday',
-          syntax: '{guildprefix}bday (user)',
-          aliases: [],
-          example: '{guildprefix}bday @user'
-        };
-        // Show specific user's birthday
-        const userArg = args[0] === 'view' ? args[1] : args[0];
-        
-        if (!userArg) {
+    view: {
+      name: 'view',
+      aliases: [],
+      description: 'View a user\'s birthday',
+      syntax: '{guildprefix}bday (user)',
+      parameters: ['user (optional)'],
+      example: '{guildprefix}bday @user',
+
+      handler: async (client, message, args, userService) => {
+        if (!args[0]) {
           return embeds.warn(message, 'Please mention a user. Example: `,bday @user`');
         }
-        const userResult = await findUser(message.guild, userArg, client);
+
+        const userResult = await findUser(message.guild, args[0], client);
 
         if (!userResult.found) {
           return embeds.warn(message, userResult.error);
@@ -264,9 +224,46 @@ module.exports = {
         } catch (error) {
           throw error;
         }
-        break;
       }
     }
+  },
+
+  run: async (client, message, args) => {
+    const userService = getService('user');
+
+    if (!args[0]) {
+      try {
+        const formattedBirthday = await userService.getFormattedBirthday(message.author.id);
+
+        if (!formattedBirthday) {
+          return embeds.info(message, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`);
+        }
+
+        const isBirthdayToday = await userService.isBirthday(message.author.id);
+
+        if (isBirthdayToday) {
+          const birthdayText = `🎂 Your birthday is today! Happy birthday!`;
+          return embeds.info(message, birthdayText);
+        } else {
+          const nextBirthdayTimestamp = await getNextBirthdayTimestamp(message.author.id);
+          const birthdayText = `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`;
+          return embeds.info(message, birthdayText);
+        }
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    const sub = args[0].toLowerCase();
+
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
+
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1), userService);
+    }
+
+    return module.exports.subcommands.view.handler(client, message, args, userService);
   }
 }
 

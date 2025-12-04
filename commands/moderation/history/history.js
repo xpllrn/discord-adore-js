@@ -10,155 +10,179 @@ const logger = require('../../../utils/logger');
 
 module.exports = {
   name: "history",
-  description: `view and manage moderation history`,
+  description: 'View and manage moderation history',
+  syntax: 'history [user/subcommand] (parameters)',
+  example: 'history @user',
   permission: 'manage_messages',
   isGroupCommand: true,
-  run: async(client, message, args) => {
+
+  subcommands: {
+    view: {
+      name: 'view',
+      aliases: [],
+      description: 'View a specific case',
+      syntax: '{guildprefix}history view [caseid]',
+      parameters: ['caseid'],
+      example: '{guildprefix}history view 12',
+
+      handler: async (client, message, args) => {
+        const guildService = getService('guild');
+
+        if (!args[0]) {
+          return runHelpCommand(message, 'history');
+        }
+
+        const caseId = parseInt(args[0]);
+        if (isNaN(caseId)) {
+          return embeds.deny(message, 'Please provide a **valid case ID** number');
+        }
+
+        try {
+          const moderationCase = await guildService.getModerationCase(message.guild.id, caseId);
+
+          if (!moderationCase) {
+            return embeds.deny(message, `Case #${caseId} not found`);
+          }
+
+          const targetUser = await client.users.fetch(moderationCase.userId).catch(() => null);
+          const moderator = await client.users.fetch(moderationCase.moderatorId).catch(() => null);
+
+          const timestamp = Math.floor(moderationCase.timestamp.getTime() / 1000);
+
+          const embed = new EmbedBuilder()
+            .setColor(colors.embed)
+            .setTitle(`Case #${moderationCase.caseId} | ${moderationCase.action}`)
+            .addFields(
+              { name: 'User', value: targetUser ? `${targetUser.username} (\`${targetUser.id}\`)` : `Unknown User (\`${moderationCase.userId}\`)`, inline: true },
+              { name: 'Moderator', value: moderator ? `${moderator.username} (\`${moderator.id}\`)` : `Unknown User (\`${moderationCase.moderatorId}\`)`, inline: true },
+              { name: 'Timestamp', value: `<t:${timestamp}:F>`, inline: true },
+              { name: 'Reason', value: moderationCase.reason, inline: false }
+            );
+
+          if (moderationCase.duration) {
+            embed.addFields({ name: 'Duration', value: moderationCase.duration, inline: true });
+          }
+
+          return message.channel.send({ embeds: [embed] });
+
+        } catch (error) {
+          throw error;
+        }
+      }
+    },
+
+    remove: {
+      name: 'remove',
+      aliases: ['delete'],
+      description: 'Remove a specific case from user history',
+      syntax: '{guildprefix}history remove [user] [caseid]',
+      parameters: ['user', 'caseid'],
+      example: '{guildprefix}history remove @user 123',
+
+      handler: async (client, message, args) => {
+        const guildService = getService('guild');
+
+        if (!args[0] || !args[1]) {
+          return runHelpCommand(message, 'history');
+        }
+
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
+
+        const userResult = await findUser(message.guild, args[0], client);
+        if (!userResult.found) {
+          return embeds.deny(message, userResult.error);
+        }
+        if (userResult.isGlobal) {
+          return embeds.deny(message, 'User is not in this server');
+        }
+
+        const caseId = parseInt(args[1]);
+        if (isNaN(caseId)) {
+          return embeds.deny(message, 'Please provide a valid case ID number');
+        }
+
+        try {
+          const moderationCase = await guildService.getModerationCase(message.guild.id, caseId);
+
+          if (!moderationCase) {
+            return embeds.deny(message, `Case #${caseId} not found`);
+          }
+
+          if (moderationCase.userId !== userResult.user.user.id) {
+            return embeds.deny(message, `Case #${caseId} does not belong to **${userResult.user.user.username}**`);
+          }
+
+          await guildService.removeModerationCase(message.guild.id, caseId);
+          return embeds.success(message, `Removed case #${caseId} for **${userResult.user.user.username}**`);
+
+        } catch (error) {
+          throw error;
+        }
+      }
+    },
+
+    removeall: {
+      name: 'removeall',
+      aliases: ['clear'],
+      description: 'Remove all cases from user history',
+      syntax: '{guildprefix}history removeall [user]',
+      parameters: ['user'],
+      example: '{guildprefix}history removeall @user',
+
+      handler: async (client, message, args) => {
+        const guildService = getService('guild');
+
+        if (!args[0]) {
+          return runHelpCommand(message, 'history');
+        }
+
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
+
+        const userResult = await findUser(message.guild, args[0], client);
+        if (!userResult.found) {
+          return embeds.deny(message, userResult.error);
+        }
+        if (userResult.isGlobal) {
+          return embeds.deny(message, 'User is not in this server');
+        }
+
+        try {
+          const result = await guildService.removeAllModerationCases(message.guild.id, userResult.user.user.id);
+
+          if (result.deletedCount === 0) {
+            return embeds.warn(message, `**${userResult.user.user.username}** has no moderation history to remove`);
+          }
+
+          return embeds.success(message, `Removed **${result.deletedCount}** case${result.deletedCount === 1 ? '' : 's'} for **${userResult.user.user.username}**`);
+
+        } catch (error) {
+          throw error;
+        }
+      }
+    }
+  },
+
+  run: async (client, message, args) => {
     const guildService = getService('guild');
 
     if (!args[0]) {
       return runHelpCommand(message, 'history');
     }
 
-    if (args[0] === 'view') {
-      const subcommandInfo = {
-        description: 'View a specific case',
-        syntax: '{guildprefix}history view [caseid]',
-        aliases: [],
-        parameters: ['caseid'],
-        example: '{guildprefix}history view 12'
-      };
+    const sub = args[0]?.toLowerCase();
 
-      if (!args[1]) {
-        return runHelpCommand(message, 'history');
-      }
+    // Check for subcommands first
+    const subcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === sub || s.aliases.includes(sub));
 
-      const caseId = parseInt(args[1]);
-      if (isNaN(caseId)) {
-        return embeds.deny(message, 'Please provide a **valid case ID** number');
-      }
-
-      try {
-        const moderationCase = await guildService.getModerationCase(message.guild.id, caseId);
-
-        if (!moderationCase) {
-          return embeds.deny(message, `Case #${caseId} not found`);
-        }
-
-        const targetUser = await client.users.fetch(moderationCase.userId).catch(() => null);
-        const moderator = await client.users.fetch(moderationCase.moderatorId).catch(() => null);
-
-        const timestamp = Math.floor(moderationCase.timestamp.getTime() / 1000);
-
-        const embed = new EmbedBuilder()
-          .setColor(colors.embed)
-          .setTitle(`Case #${moderationCase.caseId} | ${moderationCase.action}`)
-          .addFields(
-            { name: 'User', value: targetUser ? `${targetUser.username} (\`${targetUser.id}\`)` : `Unknown User (\`${moderationCase.userId}\`)`, inline: true },
-            { name: 'Moderator', value: moderator ? `${moderator.username} (\`${moderator.id}\`)` : `Unknown User (\`${moderationCase.moderatorId}\`)`, inline: true },
-            { name: 'Timestamp', value: `<t:${timestamp}:F>`, inline: true },
-            { name: 'Reason', value: moderationCase.reason, inline: false }
-          );
-
-        if (moderationCase.duration) {
-          embed.addFields({ name: 'Duration', value: moderationCase.duration, inline: true });
-        }
-
-        return message.channel.send({ embeds: [embed] });
-
-      } catch (error) {
-        throw error;
-      }
+    if (subcommand) {
+      return subcommand.handler(client, message, args.slice(1));
     }
 
-    if (args[0] === 'remove') {
-      const subcommandInfo = {
-        description: 'Remove a specific case from user history',
-        syntax: '{guildprefix}history remove [user] [caseid]',
-        aliases: [],
-        parameters: ['user', 'caseid'],
-        example: '{guildprefix}history remove @user 123'
-      };
-
-      if (!args[1] || !args[2]) {
-        return runHelpCommand(message, 'history');
-      }
-
-      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
-
-      const userResult = await findUser(message.guild, args[1], client);
-      if (!userResult.found) {
-        return embeds.deny(message, userResult.error);
-      }
-      if (userResult.isGlobal) {
-        return embeds.deny(message, 'User is not in this server');
-      }
-
-      const caseId = parseInt(args[2]);
-      if (isNaN(caseId)) {
-        return embeds.deny(message, 'Please provide a valid case ID number');
-      }
-
-      try {
-        const moderationCase = await guildService.getModerationCase(message.guild.id, caseId);
-
-        if (!moderationCase) {
-          return embeds.deny(message, `Case #${caseId} not found`);
-        }
-
-        if (moderationCase.userId !== userResult.user.user.id) {
-          return embeds.deny(message, `Case #${caseId} does not belong to **${userResult.user.user.username}**`);
-        }
-
-        await guildService.removeModerationCase(message.guild.id, caseId);
-        return embeds.success(message, `Removed case #${caseId} for **${userResult.user.user.username}**`);
-
-      } catch (error) {
-        throw error;
-      }
-    }
-
-    if (args[0] === 'removeall') {
-      const subcommandInfo = {
-        description: 'Remove all cases from user history',
-        syntax: '{guildprefix}history removeall [user]',
-        aliases: [],
-        parameters: ['user'],
-        example: '{guildprefix}history removeall @user'
-      };
-
-      if (!args[1]) {
-        return runHelpCommand(message, 'history');
-      }
-
-      if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
-
-      const userResult = await findUser(message.guild, args[1], client);
-      if (!userResult.found) {
-        return embeds.deny(message, userResult.error);
-      }
-      if (userResult.isGlobal) {
-        return embeds.deny(message, 'User is not in this server');
-      }
-
-      try {
-        const result = await guildService.removeAllModerationCases(message.guild.id, userResult.user.user.id);
-
-        if (result.deletedCount === 0) {
-          return embeds.warn(message, `**${userResult.user.user.username}** has no moderation history to remove`);
-        }
-
-        return embeds.success(message, `Removed **${result.deletedCount}** case${result.deletedCount === 1 ? '' : 's'} for **${userResult.user.user.username}**`);
-
-      } catch (error) {
-        throw error;
-      }
-    }
-
+    // Check if first argument is an action type filter
     const actionTypes = ['warn', 'mute', 'kick', 'ban', 'jail', 'unmute', 'unban', 'unjail', 'warns', 'kicks', 'bans', 'mutes', 'jails'];
     
-    // Check if first argument is an action type - if so, we need a user as second argument
-    if (actionTypes.includes(args[0].toLowerCase())) {
+    if (actionTypes.includes(sub)) {
       if (!args[1]) {
         return runHelpCommand(message, 'history');
       }
@@ -172,7 +196,7 @@ module.exports = {
       }
 
       const user = userResult.user;
-      const actionFilter = args[0].toLowerCase();
+      const actionFilter = sub;
 
       try {
         const moderationHistory = await guildService.getModerationHistory(message.guild.id, user.user.id, actionFilter);
@@ -210,6 +234,7 @@ module.exports = {
       }
     }
 
+    // Default: treat first arg as user
     const userResult = await findUser(message.guild, args[0], client);
     if (!userResult.found) {
       return embeds.deny(message, userResult.error);
