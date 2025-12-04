@@ -383,21 +383,6 @@ class GuildService extends BaseService {
         // ISSUE: Missing fields were added to memory but never saved to database
         // This caused fields to "randomly" disappear when cache expired or bot restarted
         if (hasChanges) {
-          // Only log if not in setup grace period
-          if (!this.isInSetupGracePeriod()) {
-            console.log(`⚠️  [GuildService] Adding missing fields to guild ${guildId}: ${addedFields.join(', ')}`);
-          }
-
-          // Only send webhook alert for unexpected missing fields (not during grace period and not for known legacy fields)
-          const knownLegacyFields = ['Hardbans']; // Fields added after initial schema
-          const unexpectedFields = addedFields.filter(f => !knownLegacyFields.includes(f));
-          
-          if (!this.isInSetupGracePeriod() && unexpectedFields.length > 0) {
-            // Send webhook alert only for truly unexpected missing fields
-            const stackTrace = new Error().stack;
-            this.sendGuildAlert('MISSING_FIELDS_ADDED', guildId, stackTrace, unexpectedFields);
-          }
-
           await this.set(guildId, guildData);
         }
       }
