@@ -1264,6 +1264,31 @@ const guildSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
+  }],
+
+  // Sticky Messages system - messages that stay at the bottom of a channel
+  StickyMessages: [{
+    channelId: {
+      type: String,
+      required: true
+    },
+    message: {
+      type: String,
+      required: true,
+      maxlength: 2000
+    },
+    currentMessageId: {
+      type: String,
+      default: null
+    },
+    createdBy: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
   }]
 }, {
   timestamps: true
@@ -1444,6 +1469,9 @@ guildSchema.index({ 'FakePermissions': 1 });
 // Tags indexes
 guildSchema.index({ 'Tags.trigger': 1 });
 guildSchema.index({ 'Tags.authorId': 1 });
+
+// Sticky Messages indexes
+guildSchema.index({ 'StickyMessages.channelId': 1 });
 
 module.exports = {
   schema: guildSchema,

@@ -39,11 +39,6 @@ module.exports = {
         try {
           const verifyUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${encodeURIComponent(username)}&api_key=${config.apis.lastfm}&format=json`;
           const verifyResponse = await fetch(verifyUrl);
-
-          if (!verifyResponse.ok) {
-            throw new Error(`Last.fm API returned ${verifyResponse.status}`);
-          }
-
           const verifyData = await verifyResponse.json();
 
           if (verifyData.error) {
@@ -51,6 +46,10 @@ module.exports = {
               return embeds.warn(message, `The **Last.fm** user **${username}** **doesn't exist**. Please check the spelling and try again.`);
             }
             throw new Error(`Last.fm API error: ${verifyData.message}`);
+          }
+
+          if (!verifyResponse.ok) {
+            throw new Error(`Last.fm API returned ${verifyResponse.status}`);
           }
 
           await userService.setLastFMUsername(message.author.id, username);
@@ -175,11 +174,6 @@ module.exports = {
       try {
         const verifyUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${encodeURIComponent(username)}&api_key=${config.apis.lastfm}&format=json`;
         const verifyResponse = await fetch(verifyUrl);
-
-        if (!verifyResponse.ok) {
-          throw new Error(`Last.fm API returned ${verifyResponse.status}`);
-        }
-
         const verifyData = await verifyResponse.json();
 
         if (verifyData.error) {
@@ -187,6 +181,10 @@ module.exports = {
             return embeds.warn(interaction, `The **Last.fm** user **${username}** **doesn't exist**. Please check the spelling and try again.`, false);
           }
           throw new Error(`Last.fm API error: ${verifyData.message}`);
+        }
+
+        if (!verifyResponse.ok) {
+          throw new Error(`Last.fm API returned ${verifyResponse.status}`);
         }
 
         await userService.setLastFMUsername(interaction.user.id, username);
@@ -241,18 +239,17 @@ async function handleFMShared(context, targetUser) {
     const recentTracksUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(fmuser)}&api_key=${config.apis.lastfm}&format=json&limit=1&extended=1`;
 
     const recentResponse = await fetch(recentTracksUrl);
-
-    if (!recentResponse.ok) {
-      throw new Error(`Last.fm API returned ${recentResponse.status}`);
-    }
-
     const recentData = await recentResponse.json();
 
     if (recentData.error) {
       if (recentData.error === 6) {
-        return embeds.warn(context, `The **Last.fm** user **${fmuser}** **doesn't exist**`, false);
+        return embeds.warn(context, `The **Last.fm** user **${fmuser}** **doesn't exist**. Please update your username with \`,fm set [username]\``, false);
       }
       throw new Error(`Last.fm API error: ${recentData.message}`);
+    }
+
+    if (!recentResponse.ok) {
+      throw new Error(`Last.fm API returned ${recentResponse.status}`);
     }
 
     if (!recentData.recenttracks || !recentData.recenttracks.track || recentData.recenttracks.track.length === 0) {

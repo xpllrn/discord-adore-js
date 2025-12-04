@@ -252,7 +252,8 @@ class GuildService extends BaseService {
         action: 'delete', // delete, mute
         duration: null // for mute action (e.g., '10m')
       },
-      Tags: []
+      Tags: [],
+      StickyMessages: []
     };
   }
 
@@ -8951,6 +8952,180 @@ class GuildService extends BaseService {
       return true;
     } catch (error) {
       throw new DatabaseWriteError(`Failed to clear tags for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== STICKY MESSAGES SYSTEM =====
+
+  /**
+   * Get all sticky messages for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of sticky message objects
+   */
+  async getStickyMessages(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.StickyMessages || [];
+    } catch (error) {
+      console.error(`Error getting sticky messages for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get sticky message for a specific channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<Object|null>} Sticky message or null
+   */
+  async getStickyMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const stickyMessages = guildData.StickyMessages || [];
+      return stickyMessages.find(sm => sm.channelId === channelId) || null;
+    } catch (error) {
+      console.error(`Error getting sticky message for channel ${channelId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Add or update a sticky message
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {string} message - Message content
+   * @param {string} createdBy - User ID who created it
+   * @returns {Promise<boolean>} Success status
+   */
+  async addStickyMessage(guildId, channelId, message, createdBy) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!message || message.trim().length === 0) {
+      throw new ValidationError('Message is required', 'message', message);
+    }
+
+    if (message.length > 2000) {
+      throw new ValidationError('Message cannot exceed 2000 characters', 'message', message);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const stickyMessages = guildData.StickyMessages || [];
+
+      const existingIndex = stickyMessages.findIndex(sm => sm.channelId === channelId);
+
+      if (existingIndex !== -1) {
+        // Update existing
+        stickyMessages[existingIndex].message = message.trim();
+        stickyMessages[existingIndex].createdBy = createdBy;
+        stickyMessages[existingIndex].createdAt = new Date();
+        stickyMessages[existingIndex].currentMessageId = null;
+      } else {
+        // Add new
+        stickyMessages.push({
+          channelId,
+          message: message.trim(),
+          currentMessageId: null,
+          createdBy,
+          createdAt: new Date()
+        });
+      }
+
+      guildData.StickyMessages = stickyMessages;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add sticky message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove a sticky message
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeStickyMessage(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const stickyMessages = guildData.StickyMessages || [];
+      const initialLength = stickyMessages.length;
+
+      guildData.StickyMessages = stickyMessages.filter(sm => sm.channelId !== channelId);
+
+      if (guildData.StickyMessages.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove sticky message for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Update the current message ID for a sticky message
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {string} messageId - New message ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateStickyMessageId(guildId, channelId, messageId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const stickyMessages = guildData.StickyMessages || [];
+
+      const stickyIndex = stickyMessages.findIndex(sm => sm.channelId === channelId);
+      if (stickyIndex === -1) return false;
+
+      stickyMessages[stickyIndex].currentMessageId = messageId;
+      guildData.StickyMessages = stickyMessages;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      console.error(`Error updating sticky message ID for channel ${channelId}:`, error.message);
+      return false;
     }
   }
 }

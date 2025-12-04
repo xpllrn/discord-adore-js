@@ -46,6 +46,9 @@ module.exports = {
     // Process counting game
     await processCounting(message);
 
+    // Process sticky messages
+    await processStickyMessage(message);
+
     // Process commands last
     await processCommand(message, false);
   },
@@ -688,6 +691,80 @@ async function handleLevelUp(message, newLevel, userData) {
 
   } catch (error) {
     // Silent fail for level up message
+  }
+}
+
+// Cooldown map for sticky messages (channelId -> timeout)
+const stickyMessageCooldowns = new Map();
+const STICKY_COOLDOWN = 5000; // 5 seconds cooldown to prevent spam
+
+// Process sticky messages - repost sticky message when new messages are sent
+async function processStickyMessage(message) {
+  try {
+    // Skip if message is from bot
+    if (message.author.bot) return;
+
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+
+    // Get sticky message for this channel
+    const stickyData = await guildService.getStickyMessage(message.guild.id, message.channel.id);
+    if (!stickyData) return;
+
+    // Check if we're on cooldown for this channel (debounce)
+    const cooldownKey = `${message.guild.id}-${message.channel.id}`;
+    if (stickyMessageCooldowns.has(cooldownKey)) {
+      // Clear existing timeout and set a new one (debounce pattern)
+      clearTimeout(stickyMessageCooldowns.get(cooldownKey));
+    }
+
+    // Set a timeout to repost the sticky message after cooldown
+    const timeout = setTimeout(async () => {
+      try {
+        stickyMessageCooldowns.delete(cooldownKey);
+
+        // Re-fetch sticky data in case it was removed during cooldown
+        const currentStickyData = await guildService.getStickyMessage(message.guild.id, message.channel.id);
+        if (!currentStickyData) return;
+
+        // Delete the old sticky message if it exists
+        if (currentStickyData.currentMessageId) {
+          try {
+            const oldMessage = await message.channel.messages.fetch(currentStickyData.currentMessageId);
+            await oldMessage.delete();
+          } catch (e) {
+            // Message might already be deleted
+          }
+        }
+
+        // Send the new sticky message
+        const trimmedContent = currentStickyData.message.trim();
+        let sentMessage;
+
+        if (trimmedContent.startsWith('{embed}') || trimmedContent.startsWith('{v2}') || trimmedContent.startsWith('{container}')) {
+          const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
+          const variables = {
+            guild: message.guild,
+            channel: message.channel
+          };
+          sentMessage = await EmbedVariableProcessor.process(message.channel, currentStickyData.message, variables, null);
+        } else {
+          sentMessage = await message.channel.send(currentStickyData.message);
+        }
+
+        // Update the message ID in database
+        if (sentMessage && sentMessage.id) {
+          await guildService.updateStickyMessageId(message.guild.id, message.channel.id, sentMessage.id);
+        }
+      } catch (error) {
+        // Silent fail
+      }
+    }, STICKY_COOLDOWN);
+
+    stickyMessageCooldowns.set(cooldownKey, timeout);
+
+  } catch (error) {
+    // Silent fail for sticky message system
   }
 }
 

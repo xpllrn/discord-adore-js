@@ -13,7 +13,6 @@ module.exports = {
   description: `create custom tag triggers with responses`,
   syntax: 'tag [subcommand] (parameters)',
   example: 'tag add hello, Hey there! How are you?',
-  permission: 'manage_messages',
   isGroupCommand: true,
 
   subcommands: {
@@ -183,49 +182,6 @@ module.exports = {
       }
     },
 
-    info: {
-      name: 'info',
-      aliases: ['view', 'show'],
-      description: 'View a specific tag',
-      syntax: '{guildprefix}tag info [trigger]',
-      parameters: ['trigger'],
-      example: '{guildprefix}tag info hello',
-
-      handler: async (client, message, args, guildService) => {
-        const trigger = args.join(' ').trim().toLowerCase();
-
-        if (!trigger) {
-          return runHelpCommand(message, 'tag');
-        }
-
-        const tag = await guildService.findTag(message.guild.id, trigger);
-
-        if (!tag) {
-          return embeds.deny(message, `No tag found for **${trigger}**`);
-        }
-
-        let authorName = 'Unknown';
-        try {
-          const author = await client.users.fetch(tag.authorId);
-          authorName = author.tag;
-        } catch (e) {
-          // User not found
-        }
-
-        const embed = new EmbedBuilder()
-          .setColor(config.colors.embed)
-          .setTitle(`Tag: ${tag.trigger}`)
-          .addFields(
-            { name: 'Response', value: tag.response.length > 1024 ? tag.response.substring(0, 1021) + '...' : tag.response },
-            { name: 'Author', value: authorName, inline: true },
-            { name: 'Uses', value: `${tag.uses || 0}`, inline: true },
-            { name: 'Created', value: tag.createdAt ? `<t:${Math.floor(new Date(tag.createdAt).getTime() / 1000)}:R>` : 'Unknown', inline: true }
-          );
-
-        return message.channel.send({ embeds: [embed] });
-      }
-    },
-
     list: {
       name: 'list',
       aliases: ['all'],
@@ -356,8 +312,6 @@ module.exports = {
 
   run: async (client, message, args) => {
     const guildService = getService('guild');
-
-    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
     await ensureGuildData(message.guild.id);
 
     const sub = args[0]?.toLowerCase();
@@ -365,18 +319,34 @@ module.exports = {
       return runHelpCommand(message, 'tag');
     }
 
+    // Public subcommands (no permission required)
+    const publicCommands = ['list', 'all', 'random', 'rand'];
+    
+    // Management subcommands (require Manage Messages)
+    const managementCommands = ['add', 'create', 'remove', 'delete', 'rm', 'del', 'edit', 'update', 'rename', 'reset', 'clear'];
+
     // Find matching subcommand
     const subcommand = Object.values(module.exports.subcommands)
       .find(s => s.name === sub || s.aliases.includes(sub));
 
     if (subcommand) {
+      // Check if it's a management command that requires permissions
+      if (managementCommands.includes(sub)) {
+        // Reset requires Manage Guild (handled in its own handler)
+        if (sub === 'reset' || sub === 'clear') {
+          return subcommand.handler(client, message, args.slice(1), guildService);
+        }
+        // Other management commands require Manage Messages
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageMessages, 'Manage Messages')) return;
+      }
       return subcommand.handler(client, message, args.slice(1), guildService);
     }
 
     // If no subcommand matched, check if it's a tag trigger (send the response)
+    // This is public - anyone can use ,tag <tagname>
     const tag = await guildService.findTag(message.guild.id, sub);
     if (tag) {
-      // Send the tag response (same as autoresponder behavior)
+      // Send the tag response
       const trimmedResponse = tag.response.trim();
       if (trimmedResponse.startsWith('{embed}') || trimmedResponse.startsWith('{v2}') || trimmedResponse.startsWith('{container}')) {
         const { EmbedVariableProcessor } = require('../../../utils/embeds/embedbuilder');
@@ -394,7 +364,7 @@ module.exports = {
       return;
     }
 
-    // No tag found for this trigger
-    return embeds.warn(message, `No existing **tag** found for **${sub}**`);
+    // No tag found - show help
+    return runHelpCommand(message, 'tag');
   }
 };
