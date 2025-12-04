@@ -8,7 +8,7 @@ const logger = require('../../../utils/logger');
 
 module.exports = {
   name: 'enablecommand',
-  aliases: ['enablecmd', 'ec'],
+  aliases: ['enablecmd', 'ecmd'],
   description: 'Enable previously disabled commands',
   syntax: 'enablecommand [subcommand] [parameters]',
   example: 'enablecommand #general ban',

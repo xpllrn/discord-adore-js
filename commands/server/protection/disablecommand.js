@@ -8,7 +8,7 @@ const logger = require('../../../utils/logger');
 
 module.exports = {
   name: 'disablecommand',
-  aliases: ['disablecmd', 'dc'],
+  aliases: ['disablecmd', 'dcmd'],
   description: 'Disable commands in specific channels or for specific roles',
   syntax: 'disablecommand [subcommand] [parameters]',
   example: 'disablecommand #general ban',
