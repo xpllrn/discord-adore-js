@@ -12,13 +12,13 @@ module.exports = {
   description: `unjails the specified member`,
   syntax: 'unjail [user] (reason)',
   example: 'unjail @vwsn appeal',
-  permission: 'manage_roles',
+  permission: 'moderate_members',
   run: async(client, message, args) => {
 
     const guildService = getService('guild');
 
     // Permission checks first
-    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
       return embeds.deny(message, 'I need **Manage Roles** permission to use this command');

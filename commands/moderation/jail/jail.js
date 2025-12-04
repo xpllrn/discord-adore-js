@@ -15,13 +15,13 @@ module.exports = {
   description: `jails the specified member or lists jailed users`,
   syntax: 'jail [user/list] (reason)',
   example: 'jail @vwsn spam',
-  permission: 'manage_roles',
+  permission: 'moderate_members',
   run: async(client, message, args) => {
 
     const guildService = getService('guild');
 
     // Permission checks first
-    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageRoles, 'Manage Roles')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ModerateMembers, 'Moderate Members')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
       return embeds.deny(message, 'I need **Manage Roles** permission to use this command');
@@ -38,7 +38,7 @@ module.exports = {
       const jailRoleResult = findRole(message.guild, 'jailed');
 
       if (!jailRoleResult.found) {
-        return embeds.deny(message, `Jail role not found! Please run \`,setup\` first to set up the jail system.`);
+        return embeds.deny(message, `Jail role **not found**! Please run \`,setup\` first to **set up** the jail system.`);
       }
 
       const jailRole = jailRoleResult.role;
@@ -198,6 +198,15 @@ module.exports = {
 
       // Send success message
       embeds.success(message, `**${user.user.username}** has been **jailed** for ${reason}`);
+
+      // Send DM to user
+      await webhookLogger.sendModeratorDM({
+        target: user.user,
+        action: 'jail',
+        executor: message.author,
+        reason,
+        guild: message.guild
+      });
 
       // Log the jail action
       await logModerationAction('jail', message.author, user.user, reason, message.guild);

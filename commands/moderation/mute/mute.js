@@ -1,7 +1,9 @@
-const { PermissionFlagsBits } = require("discord.js");
+const { PermissionFlagsBits, EmbedBuilder } = require("discord.js");
 const { hasDiscordPermission, checkSelfAction, checkBotAction, checkDiscordActionable } = require('../../../utils/permissions');
 const { embeds } = require('../../../core/embeds');
+const { createPagination } = require('../../../core/buttons');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
+const { colors } = require('../../../config/setup');
 const { getService } = require('../../../database/services');
 const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
@@ -12,9 +14,10 @@ module.exports = {
   name: "mute",
   aliases: ['shh', 'timeout', 'tu'],
   description: `timeout a user using Discord's built-in timeout feature`,
-  syntax: 'mute [user] (duration) (reason)',
+  syntax: 'mute [user/list] (duration) (reason)',
   example: 'mute @vwsn 10m spam',
   permission: 'moderate_members',
+  isGroupCommand: true,
   run: async(client, message, args) => {
     const guildService = getService('guild');
 
@@ -26,6 +29,19 @@ module.exports = {
 
     if (!args[0]) {
       return runHelpCommand(message, 'mute');
+    }
+
+    // Handle 'mute list' subcommand
+    if (args[0].toLowerCase() === 'list') {
+      const subcommandInfo = {
+        description: 'List all currently timed out members',
+        syntax: '{guildprefix}mute list',
+        aliases: [],
+        parameters: [],
+        example: '{guildprefix}mute list'
+      };
+
+      return await showMuteList(message);
     }
 
     let userResult;
@@ -40,7 +56,7 @@ module.exports = {
     }
 
     if (userResult.isGlobal) {
-      return embeds.deny(message, 'User is not in this server');
+      return embeds.deny(message, `I was unable to find a **user** in this server with the name: **${args[0]}**`);
     }
 
     const user = userResult.user;
@@ -72,6 +88,20 @@ module.exports = {
 
       embeds.success(message, `**${user.user.username}** has been **muted** for ${ms(duration, { long: true })} for ${reason}`);
 
+      // Calculate expiry time
+      const until = new Date(Date.now() + duration);
+
+      // Send DM to user
+      await webhookLogger.sendModeratorDM({
+        target: user.user,
+        action: 'mute',
+        executor: message.author,
+        reason,
+        duration: ms(duration, { long: true }),
+        until,
+        guild: message.guild
+      });
+
       // Add to moderation history and log action asynchronously (don't wait)
       Promise.allSettled([
         guildService.addModerationCase(
@@ -88,6 +118,65 @@ module.exports = {
     } catch (error) {
       return embeds.deny(message, 'Failed to timeout user. Please check my permissions and role hierarchy.');
     }
+  }
+}
+
+async function showMuteList(message) {
+  try {
+    // Fetch all members if not cached
+    await message.guild.members.fetch();
+
+    // Get all timed out members
+    const timedOutMembers = message.guild.members.cache.filter(member => {
+      return member.communicationDisabledUntil && member.communicationDisabledUntil > new Date();
+    });
+
+    if (timedOutMembers.size === 0) {
+      return embeds.warn(message, 'No members are currently timed out');
+    }
+
+    // Convert to array and sort by timeout end time
+    const timedOutArray = Array.from(timedOutMembers.values()).sort((a, b) => {
+      return a.communicationDisabledUntil - b.communicationDisabledUntil;
+    });
+
+    // If 10 or fewer members, show without pagination
+    if (timedOutArray.length <= 10) {
+      const mutedList = timedOutArray.map((member, index) => {
+        const num = String(index + 1).padStart(2, '0');
+        const timeoutEnd = Math.floor(member.communicationDisabledUntil.getTime() / 1000);
+        return `\`${num}\` **${member.user.username}** - Ends <t:${timeoutEnd}:R>`;
+      }).join('\n');
+
+      const embed = new EmbedBuilder()
+        .setColor(colors.embed)
+        .setTitle(`${message.guild.name}'s Timed Out Members`)
+        .setDescription(mutedList)
+        .setFooter({ text: `${timedOutArray.length} member${timedOutArray.length === 1 ? '' : 's'} timed out` });
+
+      return message.channel.send({ embeds: [embed] });
+    }
+
+    // Use pagination for more than 10 members
+    const formatPage = (pageItems, currentPage, totalPages) => {
+      const startIndex = (currentPage - 1) * 10;
+      const mutedList = pageItems.map((member, index) => {
+        const num = String(startIndex + index + 1).padStart(2, '0');
+        const timeoutEnd = Math.floor(member.communicationDisabledUntil.getTime() / 1000);
+        return `\`${num}\` **${member.user.username}** - Ends <t:${timeoutEnd}:R>`;
+      }).join('\n');
+
+      return new EmbedBuilder()
+        .setColor(colors.embed)
+        .setTitle(`${message.guild.name}'s Timed Out Members`)
+        .setDescription(mutedList)
+        .setFooter({ text: `Page ${currentPage}/${totalPages} • ${timedOutArray.length} member${timedOutArray.length === 1 ? '' : 's'} timed out` });
+    };
+
+    return await createPagination(message, timedOutArray, formatPage, 10, `${message.guild.name}'s Timed Out Members`);
+
+  } catch (error) {
+    throw error;
   }
 }
 

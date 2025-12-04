@@ -103,6 +103,27 @@ module.exports = {
           };
           return await handleWordsExempt(message, subcommand, args.slice(2));
         }
+        case 'massmention':
+        case 'mentions': {
+          const subcommandInfo = {
+            description: 'Manage mass mention filtering',
+            syntax: '{guildprefix}filter massmention [on/off]',
+            aliases: ['mentions'],
+            parameters: ['on/off'],
+            example: '{guildprefix}filter massmention on'
+          };
+          return await handleMassMentionCategory(message, subcommand, args.slice(2));
+        }
+        case 'spam': {
+          const subcommandInfo = {
+            description: 'Manage spam filtering',
+            syntax: '{guildprefix}filter spam [channel/all] [on/off] OR {guildprefix}filter spam exempt [role]',
+            aliases: [],
+            parameters: ['channel/all', 'on/off', 'exempt', 'role'],
+            example: '{guildprefix}filter spam all on'
+          };
+          return await handleSpamCategory(message, subcommand, args.slice(2));
+        }
         default:
           return runHelpCommand(message, 'filter');
       }
@@ -143,6 +164,8 @@ async function handleLinksCategory(message, subcommand, args) {
       return await handleLinksToggle(message, false);
     case 'exempt':
       return await handleLinksExempt(message, args);
+    case 'whitelist':
+      return await handleLinksWhitelist(message, args);
     default:
       return runHelpCommand(message, 'filter');
   }
@@ -883,6 +906,16 @@ async function getLinksAutoModRule(guild) {
   }
 }
 
+// Helper function to get existing mass mention AutoMod rule
+async function getMassMentionAutoModRule(guild) {
+  try {
+    const rules = await guild.autoModerationRules.fetch();
+    return rules.find(rule => rule.name === 'adore Mentions') || null;
+  } catch (error) {
+    return null;
+  }
+}
+
 // Helper function to get or create AutoMod rule
 async function getOrCreateAutoModRule(guild) {
   try {
@@ -1022,5 +1055,641 @@ async function createLinksAutoModRule(guild) {
       error: 'UNKNOWN_ERROR',
       message: 'Failed to create links filter rule. Please try again later.'
     };
+  }
+}
+
+// Helper function to create mass mention AutoMod rule
+async function createMassMentionAutoModRule(guild, threshold = 5) {
+  try {
+    const ruleData = {
+      name: 'adore Mentions',
+      eventType: 1, // MESSAGE_SEND
+      triggerType: AutoModerationRuleTriggerType.MentionSpam,
+      triggerMetadata: {
+        mentionTotalLimit: threshold // Block messages with more than X mentions
+      },
+      actions: [
+        {
+          type: AutoModerationActionType.BlockMessage,
+          metadata: {
+            customMessage: 'The message is blocked by adore automod'
+          }
+        }
+      ],
+      enabled: true,
+      exemptRoles: [],
+      exemptUsers: [],
+      exemptChannels: []
+    };
+
+    await guild.autoModerationRules.create(ruleData);
+    return { success: true };
+  } catch (error) {
+    logger.webhook.error(error);
+
+    // Check for specific AutoMod rule limit error
+    if (error.code === 50035 && error.rawError?.errors?._errors?.some(e =>
+      e.code === 'AUTO_MODERATION_MAX_RULES_OF_TYPE_EXCEEDED'
+    )) {
+      return {
+        success: false,
+        error: 'RULE_LIMIT_EXCEEDED',
+        message: 'Cannot create mass mention filter - Discord\'s AutoMod rule limit (6 rules) has been reached. Please delete some existing AutoMod rules first.'
+      };
+    }
+
+    return {
+      success: false,
+      error: 'UNKNOWN_ERROR',
+      message: 'Failed to create mass mention filter rule. Please try again later.'
+    };
+  }
+}
+
+// ===== MASS MENTION FILTER =====
+
+async function handleMassMentionCategory(message, subcommand, args) {
+  if (!subcommand) {
+    return runHelpCommand(message, 'filter');
+  }
+
+  switch (subcommand) {
+    case 'on':
+      return await handleMassMentionToggle(message, true, args);
+    case 'off':
+      return await handleMassMentionToggle(message, false, args);
+    case 'exempt':
+      return await handleMassMentionExempt(message, args);
+    default:
+      return runHelpCommand(message, 'filter');
+  }
+}
+
+async function handleMassMentionToggle(message, enable, args = []) {
+  const rule = await getMassMentionAutoModRule(message.guild);
+
+  if (enable) {
+    // Parse optional --threshold parameter
+    let threshold = 5; // Default threshold
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--threshold' && args[i + 1]) {
+        const parsedThreshold = parseInt(args[i + 1]);
+        if (parsedThreshold && parsedThreshold > 0 && parsedThreshold <= 50) {
+          threshold = parsedThreshold;
+        } else {
+          return embeds.warn(message, 'Threshold must be between 1 and 50');
+        }
+        break;
+      }
+    }
+
+    if (rule) {
+      // Update existing rule with new threshold
+      try {
+        await rule.edit({
+          triggerMetadata: {
+            mentionTotalLimit: threshold
+          }
+        });
+        return embeds.success(message, `**Mass mention filter** threshold updated to **${threshold} mentions**`);
+      } catch (error) {
+        return embeds.deny(message, 'Failed to update **mass mention filter** threshold');
+      }
+    }
+
+    // Create mass mention filter rule
+    const result = await createMassMentionAutoModRule(message.guild, threshold);
+    if (result.success) {
+      return embeds.success(message, `**Mass mention filter** has been **enabled** (threshold: **${threshold} mentions**)`);
+    } else {
+      return embeds.deny(message, result.message);
+    }
+  } else {
+    if (!rule) {
+      return embeds.warn(message, '**Mass mention filter** is already **disabled**');
+    }
+
+    try {
+      await rule.delete('Mass mention filter disabled by user');
+      return embeds.success(message, '**Mass mention filter** has been **disabled**');
+    } catch (error) {
+      return embeds.deny(message, 'Failed to disable **mass mention filter**');
+    }
+  }
+}
+
+async function handleMassMentionExempt(message, args) {
+  if (!args[0]) {
+    return runHelpCommand(message, 'filter');
+  }
+
+  if (args[0] === 'list') {
+    return await handleMassMentionExemptList(message);
+  }
+
+  return await handleMassMentionToggleExempt(message, args);
+}
+
+async function handleMassMentionExemptList(message) {
+  const rule = await getMassMentionAutoModRule(message.guild);
+
+  if (!rule) {
+    return embeds.warn(message, 'No **mass mention filter** found');
+  }
+
+  const exemptRoles = rule.exemptRoles || [];
+  const exemptUsers = rule.exemptUsers || [];
+  const exemptChannels = rule.exemptChannels || [];
+
+  if (exemptRoles.length === 0 && exemptUsers.length === 0 && exemptChannels.length === 0) {
+    return embeds.warn(message, 'No exempted roles, users, or channels found for **mass mention filter**');
+  }
+
+  let description = '';
+  let totalCount = 0;
+
+  if (exemptRoles.length > 0) {
+    description += '**Roles:**\n';
+    const roleList = exemptRoles.map((roleId, index) => {
+      const role = message.guild.roles.cache.get(roleId);
+      const roleNumber = (index + 1).toString().padStart(2, '0');
+      return role ? `\`${roleNumber}\` **${role.name}**` : `\`${roleNumber}\` \`Deleted Role\``;
+    }).join('\n');
+    description += roleList;
+    totalCount += exemptRoles.length;
+  }
+
+  if (exemptUsers.length > 0) {
+    if (description) description += '\n\n';
+    description += '**Users:**\n';
+    const userList = exemptUsers.map((userId, index) => {
+      const member = message.guild.members.cache.get(userId);
+      const userNumber = (index + 1).toString().padStart(2, '0');
+      return member ? `\`${userNumber}\` **${member.displayName}**` : `\`${userNumber}\` \`Unknown User\``;
+    }).join('\n');
+    description += userList;
+    totalCount += exemptUsers.length;
+  }
+
+  if (exemptChannels.length > 0) {
+    if (description) description += '\n\n';
+    description += '**Channels:**\n';
+    const channelList = exemptChannels.map((channelId, index) => {
+      const channel = message.guild.channels.cache.get(channelId);
+      const channelNumber = (index + 1).toString().padStart(2, '0');
+      return channel ? `\`${channelNumber}\` **${channel.name}**` : `\`${channelNumber}\` \`Deleted Channel\``;
+    }).join('\n');
+    description += channelList;
+    totalCount += exemptChannels.length;
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(colors.embed)
+    .setTitle('Mass Mention Filter - Exempted List')
+    .setDescription(description)
+    .setFooter({ text: `${totalCount} total exempted entr${totalCount === 1 ? 'y' : 'ies'}` });
+
+  return message.channel.send({ embeds: [embed] });
+}
+
+async function handleMassMentionToggleExempt(message, args) {
+  if (!args[0]) {
+    return embeds.warn(message, 'Please provide a role, user, or channel to toggle exempt for');
+  }
+
+  const input = args.join(' ');
+  const target = await findRoleUserOrChannel(message, input);
+
+  if (!target.found) {
+    return embeds.warn(message, target.error);
+  }
+
+  const rule = await getMassMentionAutoModRule(message.guild);
+  if (!rule) {
+    return embeds.warn(message, 'No **mass mention filter** found. Enable **mass mention filtering** first.');
+  }
+
+  const currentExemptRoles = Array.isArray(rule.exemptRoles) ? rule.exemptRoles : (rule.exemptRoles?.map(r => r) || []);
+  const currentExemptUsers = Array.isArray(rule.exemptUsers) ? rule.exemptUsers : (rule.exemptUsers?.map(u => u) || []);
+  const currentExemptChannels = Array.isArray(rule.exemptChannels) ? rule.exemptChannels : (rule.exemptChannels?.map(c => c) || []);
+
+  let newExemptRoles = currentExemptRoles;
+  let newExemptUsers = currentExemptUsers;
+  let newExemptChannels = currentExemptChannels;
+  let action;
+
+  if (target.type === 'role') {
+    const isCurrentlyExempt = currentExemptRoles.includes(target.id);
+    if (isCurrentlyExempt) {
+      newExemptRoles = currentExemptRoles.filter(roleId => roleId !== target.id);
+      action = 'removed from';
+    } else {
+      newExemptRoles = [...currentExemptRoles, target.id];
+      action = 'added to';
+    }
+  } else if (target.type === 'user') {
+    const isCurrentlyExempt = currentExemptUsers.includes(target.id);
+    if (isCurrentlyExempt) {
+      newExemptUsers = currentExemptUsers.filter(userId => userId !== target.id);
+      action = 'removed from';
+    } else {
+      newExemptUsers = [...currentExemptUsers, target.id];
+      action = 'added to';
+    }
+  } else if (target.type === 'channel') {
+    const isCurrentlyExempt = currentExemptChannels.includes(target.id);
+    if (isCurrentlyExempt) {
+      newExemptChannels = currentExemptChannels.filter(channelId => channelId !== target.id);
+      action = 'removed from';
+    } else {
+      newExemptChannels = [...currentExemptChannels, target.id];
+      action = 'added to';
+    }
+  }
+
+  try {
+    await rule.edit({
+      exemptRoles: newExemptRoles,
+      exemptUsers: newExemptUsers,
+      exemptChannels: newExemptChannels
+    });
+
+    return embeds.success(message, `**${target.name}** has been ${action} the **mass mention filter** exempt list`);
+  } catch (error) {
+    return embeds.deny(message, 'Failed to update **mass mention filter** rule');
+  }
+}
+
+// ===== SPAM FILTER =====
+
+async function handleSpamCategory(message, subcommand, args) {
+  if (!subcommand) {
+    return runHelpCommand(message, 'filter');
+  }
+
+  if (subcommand === 'exempt') {
+    return await handleSpamExempt(message, args);
+  }
+
+  // Handle channel/all toggle
+  const target = subcommand.toLowerCase();
+  const toggle = args[0]?.toLowerCase();
+
+  if ((target === 'channel' || target === 'all') && (toggle === 'on' || toggle === 'off')) {
+    return await handleSpamToggle(message, target, toggle === 'on', args.slice(1));
+  }
+
+  return runHelpCommand(message, 'filter');
+}
+
+async function handleSpamToggle(message, target, enable, args) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
+  const { findChannel } = require('../../../handlers/finder');
+  const ms = require('ms');
+
+  try {
+    const guildData = await guildService.ensureGuildData(message.guild.id);
+    
+    if (!guildData.SpamFilter) {
+      guildData.SpamFilter = {
+        enabled: false,
+        channels: [],
+        exemptRoles: [],
+        threshold: 5,
+        action: 'delete',
+        duration: null
+      };
+    }
+
+    // Parse optional parameters (--threshold, --do)
+    let threshold = guildData.SpamFilter.threshold || 5;
+    let action = guildData.SpamFilter.action || 'delete';
+    let duration = guildData.SpamFilter.duration || null;
+
+    // Parse args for flags
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--threshold' && args[i + 1]) {
+        const parsedThreshold = parseInt(args[i + 1]);
+        if (parsedThreshold && parsedThreshold > 0 && parsedThreshold <= 20) {
+          threshold = parsedThreshold;
+          i++; // Skip next arg
+        }
+      } else if (args[i] === '--do' && args[i + 1]) {
+        const actionArg = args[i + 1].toLowerCase();
+        if (actionArg === 'delete' || actionArg === 'jail') {
+          action = actionArg;
+          i++; // Skip next arg
+        } else if (actionArg === 'mute' && args[i + 2]) {
+          action = 'mute';
+          const parsedDuration = ms(args[i + 2]);
+          if (parsedDuration && parsedDuration > 0) {
+            duration = args[i + 2];
+            i += 2; // Skip next 2 args
+          } else {
+            return embeds.warn(message, 'Invalid duration format. Example: `10m`, `1h`, `30s`');
+          }
+        }
+      }
+    }
+
+    if (target === 'all') {
+      guildData.SpamFilter.enabled = enable;
+      guildData.SpamFilter.channels = [];
+      
+      if (enable) {
+        guildData.SpamFilter.threshold = threshold;
+        guildData.SpamFilter.action = action;
+        guildData.SpamFilter.duration = duration;
+      }
+      
+      await guildService.set(message.guild.id, guildData);
+      
+      let statusMsg = `Spam filter has been **${enable ? 'enabled' : 'disabled'}** for **all channels**`;
+      if (enable) {
+        statusMsg += `\n**Threshold:** ${threshold} messages in 5 seconds\n**Action:** ${action}`;
+        if (action === 'mute' && duration) {
+          statusMsg += ` for ${duration}`;
+        }
+      }
+      
+      return embeds.success(message, statusMsg);
+    } else if (target === 'channel') {
+      if (!args[0]) {
+        return embeds.warn(message, 'Please specify a channel');
+      }
+
+      const channelResult = findChannel(message.guild, args[0]);
+      if (!channelResult.found) {
+        return embeds.warn(message, channelResult.error);
+      }
+
+      const channel = channelResult.channel;
+      const channels = guildData.SpamFilter.channels || [];
+
+      if (enable) {
+        if (channels.includes(channel.id)) {
+          return embeds.warn(message, `Spam filter is already enabled for ${channel}`);
+        }
+        channels.push(channel.id);
+        guildData.SpamFilter.channels = channels;
+        guildData.SpamFilter.enabled = true;
+        guildData.SpamFilter.threshold = threshold;
+        guildData.SpamFilter.action = action;
+        guildData.SpamFilter.duration = duration;
+        
+        await guildService.set(message.guild.id, guildData);
+        
+        let statusMsg = `Spam filter has been **enabled** for ${channel}`;
+        statusMsg += `\n**Threshold:** ${threshold} messages in 5 seconds\n**Action:** ${action}`;
+        if (action === 'mute' && duration) {
+          statusMsg += ` for ${duration}`;
+        }
+        
+        return embeds.success(message, statusMsg);
+      } else {
+        if (!channels.includes(channel.id)) {
+          return embeds.warn(message, `Spam filter is not enabled for ${channel}`);
+        }
+        guildData.SpamFilter.channels = channels.filter(id => id !== channel.id);
+        
+        await guildService.set(message.guild.id, guildData);
+        
+        return embeds.success(message, `Spam filter has been **disabled** for ${channel}`);
+      }
+    }
+  } catch (error) {
+    logger.webhook.error(error, 'Spam Filter Toggle', {
+      user: message.author,
+      guild: message.guild,
+      command: 'filter spam'
+    });
+    return embeds.deny(message, 'Failed to update spam filter settings');
+  }
+}
+
+async function handleSpamExempt(message, args) {
+  if (!args[0]) {
+    return runHelpCommand(message, 'filter');
+  }
+
+  if (args[0] === 'list') {
+    return await handleSpamExemptList(message);
+  }
+
+  return await handleSpamToggleExempt(message, args);
+}
+
+async function handleSpamExemptList(message) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
+
+  try {
+    const guildData = await guildService.ensureGuildData(message.guild.id);
+    const exemptRoles = guildData.SpamFilter?.exemptRoles || [];
+
+    if (exemptRoles.length === 0) {
+      return embeds.warn(message, 'No exempted roles found for **spam filter**');
+    }
+
+    const roleList = exemptRoles.map((roleId, index) => {
+      const role = message.guild.roles.cache.get(roleId);
+      const roleNumber = (index + 1).toString().padStart(2, '0');
+      return role ? `\`${roleNumber}\` **${role.name}**` : `\`${roleNumber}\` \`Deleted Role\``;
+    }).join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setTitle('Spam Filter - Exempted Roles')
+      .setDescription(roleList)
+      .setFooter({ text: `${exemptRoles.length} exempted role${exemptRoles.length === 1 ? '' : 's'}` });
+
+    return message.channel.send({ embeds: [embed] });
+  } catch (error) {
+    logger.webhook.error(error, 'Spam Exempt List', {
+      user: message.author,
+      guild: message.guild
+    });
+    return embeds.deny(message, 'Failed to retrieve exempt list');
+  }
+}
+
+async function handleSpamToggleExempt(message, args) {
+  const { getService } = require('@services');
+  const guildService = getService('guild');
+
+  if (!args[0]) {
+    return embeds.warn(message, 'Please provide a role to toggle exempt for');
+  }
+
+  const input = args.join(' ');
+  const roleResult = findRole(message.guild, input);
+
+  if (!roleResult.found) {
+    return embeds.warn(message, roleResult.error);
+  }
+
+  const role = roleResult.role;
+
+  try {
+    const guildData = await guildService.ensureGuildData(message.guild.id);
+    
+    if (!guildData.SpamFilter) {
+      guildData.SpamFilter = {
+        enabled: false,
+        channels: [],
+        exemptRoles: []
+      };
+    }
+
+    const exemptRoles = guildData.SpamFilter.exemptRoles || [];
+    const isCurrentlyExempt = exemptRoles.includes(role.id);
+    let action;
+
+    if (isCurrentlyExempt) {
+      guildData.SpamFilter.exemptRoles = exemptRoles.filter(roleId => roleId !== role.id);
+      action = 'removed from';
+    } else {
+      guildData.SpamFilter.exemptRoles = [...exemptRoles, role.id];
+      action = 'added to';
+    }
+
+    await guildService.set(message.guild.id, guildData);
+
+    return embeds.success(message, `**${role.name}** has been ${action} the **spam filter** exempt list`);
+  } catch (error) {
+    logger.webhook.error(error, 'Spam Toggle Exempt', {
+      user: message.author,
+      guild: message.guild,
+      role: role.name
+    });
+    return embeds.deny(message, 'Failed to update exempt list');
+  }
+}
+
+// ===== LINKS WHITELIST =====
+
+async function handleLinksWhitelist(message, args) {
+  const { findChannel } = require('../../../handlers/finder');
+
+  if (!args[0]) {
+    return runHelpCommand(message, 'filter');
+  }
+
+  if (args[0] === 'list') {
+    return await handleLinksWhitelistList(message);
+  }
+
+  if (!args[1]) {
+    return embeds.warn(message, 'Please provide a channel and URL to whitelist');
+  }
+
+  const channelResult = findChannel(message.guild, args[0]);
+  if (!channelResult.found) {
+    return embeds.warn(message, channelResult.error);
+  }
+
+  const channel = channelResult.channel;
+  const url = args.slice(1).join(' ').trim();
+
+  // Basic URL validation - extract domain/keyword for allowList
+  let allowKeyword;
+  try {
+    const urlObj = new URL(url);
+    // Use hostname as the keyword (e.g., "example.com" from "https://example.com/page")
+    allowKeyword = urlObj.hostname;
+  } catch (error) {
+    // If not a full URL, treat as domain/keyword directly
+    allowKeyword = url;
+  }
+
+  // Validate keyword length (Discord AutoMod limit)
+  if (allowKeyword.length > 60) {
+    return embeds.warn(message, 'URL/domain cannot be longer than 60 characters');
+  }
+
+  try {
+    // Get the links AutoMod rule
+    const rule = await getLinksAutoModRule(message.guild);
+    
+    if (!rule) {
+      return embeds.warn(message, 'No **links filter** found. Enable **links filtering** first with `,filter links on`');
+    }
+
+    // Get current allowList and exemptChannels
+    const currentAllowList = rule.triggerMetadata.allowList || [];
+    const currentExemptChannels = Array.isArray(rule.exemptChannels) ? rule.exemptChannels : [];
+
+    // Check if URL is already whitelisted
+    const isWhitelisted = currentAllowList.includes(allowKeyword);
+
+    if (isWhitelisted) {
+      // Remove from allowList
+      const newAllowList = currentAllowList.filter(keyword => keyword !== allowKeyword);
+      
+      await rule.edit({
+        triggerMetadata: {
+          ...rule.triggerMetadata,
+          allowList: newAllowList
+        }
+      });
+
+      return embeds.success(message, `Removed **${allowKeyword}** from links whitelist`);
+    } else {
+      // Add to allowList
+      const newAllowList = [...currentAllowList, allowKeyword];
+      
+      await rule.edit({
+        triggerMetadata: {
+          ...rule.triggerMetadata,
+          allowList: newAllowList
+        }
+      });
+
+      return embeds.success(message, `Added **${allowKeyword}** to links whitelist (will be allowed in all channels)`);
+    }
+  } catch (error) {
+    logger.webhook.error(error, 'Links Whitelist', {
+      user: message.author,
+      guild: message.guild,
+      channel: channel.name,
+      url: url
+    });
+    return embeds.deny(message, 'Failed to update links whitelist');
+  }
+}
+
+async function handleLinksWhitelistList(message) {
+  try {
+    const rule = await getLinksAutoModRule(message.guild);
+    
+    if (!rule) {
+      return embeds.warn(message, 'No **links filter** found');
+    }
+
+    const allowList = rule.triggerMetadata.allowList || [];
+
+    if (allowList.length === 0) {
+      return embeds.warn(message, 'No whitelisted URLs/domains found');
+    }
+
+    const urlList = allowList.map((keyword, index) => {
+      const urlNumber = (index + 1).toString().padStart(2, '0');
+      return `\`${urlNumber}\` **${keyword}**`;
+    }).join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(colors.embed)
+      .setTitle('Links Filter - Whitelisted URLs/Domains')
+      .setDescription(urlList)
+      .setFooter({ text: `${allowList.length} whitelisted URL${allowList.length === 1 ? '' : 's'}` });
+
+    return message.channel.send({ embeds: [embed] });
+  } catch (error) {
+    logger.webhook.error(error, 'Links Whitelist List', {
+      user: message.author,
+      guild: message.guild
+    });
+    return embeds.deny(message, 'Failed to retrieve whitelist');
   }
 }

@@ -16,6 +16,10 @@ module.exports = {
       return; // Don't process any messages during startup
     }
 
+    // Check spam filter first (before any other processing)
+    const spamDetected = await processSpamFilter(message);
+    if (spamDetected) return; // Stop processing if spam detected
+
     // Process adore mentions first (highest priority)
     await processVleedMention(message);
 
@@ -45,6 +49,129 @@ module.exports = {
     await processCommand(message, false);
   },
 };
+
+async function processSpamFilter(message) {
+  try {
+    const { checkSpamFilter, clearUserHistory, SPAM_WINDOW } = require('../../utils/filter');
+    const webhookLogger = require('../../utils/webhookLogger');
+    const { findRole } = require('../../handlers/finder');
+    const ms = require('ms');
+
+    // Check if message triggers spam filter
+    const filterData = await checkSpamFilter(message);
+
+    if (filterData) {
+      const { action, threshold, messageCount, duration } = filterData;
+
+      // Delete the spam message
+      try {
+        await message.delete();
+      } catch (deleteError) {
+        // Message might already be deleted or bot lacks permissions
+      }
+
+      // Clear their spam history
+      clearUserHistory(message.guild.id, message.author.id);
+
+      // Perform action based on filter settings
+      let actionTaken = 'deleted';
+      let actionDuration = null;
+
+      if (action === 'mute') {
+        try {
+          const muteDuration = duration ? ms(duration) : 5 * 60 * 1000; // Default 5 minutes
+          await message.member.timeout(muteDuration, `Spam detected: ${messageCount} messages in ${SPAM_WINDOW / 1000} seconds`);
+          actionTaken = 'muted';
+          actionDuration = duration || '5m';
+        } catch (muteError) {
+          // User might have higher role or bot lacks permissions
+          actionTaken = 'deleted (mute failed)';
+        }
+      } else if (action === 'jail') {
+        try {
+          // Find jail role
+          const jailRoleResult = findRole(message.guild, 'jailed');
+          if (jailRoleResult.found) {
+            const jailRole = jailRoleResult.role;
+            
+            // Save user's current roles
+            const { saveUserRoles } = require('../../database');
+            const rolesToSave = message.member.roles.cache
+              .filter(role => {
+                if (role.id === message.guild.roles.everyone.id) return false;
+                if (role.id === jailRole.id) return false;
+                if (role.tags?.premiumSubscriberRole) return false;
+                return true;
+              })
+              .map(role => role.id);
+
+            await saveUserRoles(message.guild.id, message.author.id, rolesToSave);
+
+            // Get roles to keep (booster role if they have it)
+            const rolesToKeep = [jailRole.id];
+            const boosterRole = message.member.roles.cache.find(role => role.tags?.premiumSubscriberRole);
+            if (boosterRole) {
+              rolesToKeep.push(boosterRole.id);
+            }
+
+            // Set roles
+            await message.member.roles.set(rolesToKeep, `Spam detected: ${messageCount} messages in ${SPAM_WINDOW / 1000} seconds`);
+            actionTaken = 'jailed';
+          } else {
+            actionTaken = 'deleted (jail role not found)';
+          }
+        } catch (jailError) {
+          // User might have higher role or bot lacks permissions
+          actionTaken = 'deleted (jail failed)';
+        }
+      }
+
+      // Log the action
+      try {
+        const embed = webhookLogger.createModeratorLog({
+          action: `spam_${action}`,
+          executor: message.client.user,
+          target: message.author,
+          reason: `Automatic spam detection: ${messageCount} messages in ${SPAM_WINDOW / 1000} seconds (threshold: ${threshold})`,
+          guild: message.guild,
+          duration: actionDuration
+        });
+
+        await webhookLogger.sendLog(message.guild.id, 'moderator', embed);
+      } catch (logError) {
+        // Silent fail on logging
+      }
+
+      // Send a warning message (auto-delete after 10 seconds)
+      try {
+        let warningText = `${message.author}, your message was ${actionTaken} due to spam.`;
+        if (actionDuration) {
+          warningText += ` (Duration: **${actionDuration}**)`;
+        }
+
+        const warningMsg = await message.channel.send({ content: warningText });
+
+        setTimeout(() => {
+          warningMsg.delete().catch(() => {});
+        }, 10000);
+      } catch (sendError) {
+        // Silent fail on warning message
+      }
+
+      return true; // Spam detected
+    }
+
+    return false; // Not spam
+  } catch (error) {
+    const logger = require('../../utils/logger');
+    logger.webhook.error(error, 'Spam Filter Processing', {
+      guild: message.guild?.name,
+      user: message.author?.tag,
+      channel: message.channel?.name
+    });
+    return false;
+  }
+}
 
 async function processCounting(message) {
     try {

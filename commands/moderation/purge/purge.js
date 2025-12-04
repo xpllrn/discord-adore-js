@@ -197,6 +197,316 @@ module.exports = {
           embeds.deny(message, 'Invalid message IDs provided or messages not found.');
         }
 
+      } else if (args[0] === 'after') {
+        const subcommandInfo = {
+          description: 'Delete messages after a message link',
+          syntax: '{guildprefix}purge after [message link]',
+          aliases: [],
+          parameters: ['message link'],
+          example: '{guildprefix}purge after https://discord.com/channels/...'
+        };
+
+        if (!args[1]) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messageLink = args[1];
+        const messageLinkRegex = /https:\/\/discord\.com\/channels\/(\d+)\/(\d+)\/(\d+)/;
+        const match = messageLink.match(messageLinkRegex);
+
+        if (!match) {
+          return embeds.deny(message, 'Invalid message link provided');
+        }
+
+        const [, guildId, channelId, messageId] = match;
+
+        if (guildId !== message.guild.id || channelId !== message.channel.id) {
+          return embeds.deny(message, 'Message link must be from this channel');
+        }
+
+        try {
+          const messages = await message.channel.messages.fetch({ after: messageId, limit: 100 });
+          messages.set(message.id, message);
+          await performBulkDelete(messages);
+        } catch (error) {
+          embeds.deny(message, 'Failed to fetch messages after the provided link');
+        }
+
+      } else if (args[0] === 'before') {
+        const subcommandInfo = {
+          description: 'Delete messages before a message link',
+          syntax: '{guildprefix}purge before [message link]',
+          aliases: [],
+          parameters: ['message link'],
+          example: '{guildprefix}purge before https://discord.com/channels/...'
+        };
+
+        if (!args[1]) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messageLink = args[1];
+        const messageLinkRegex = /https:\/\/discord\.com\/channels\/(\d+)\/(\d+)\/(\d+)/;
+        const match = messageLink.match(messageLinkRegex);
+
+        if (!match) {
+          return embeds.deny(message, 'Invalid message link provided');
+        }
+
+        const [, guildId, channelId, messageId] = match;
+
+        if (guildId !== message.guild.id || channelId !== message.channel.id) {
+          return embeds.deny(message, 'Message link must be from this channel');
+        }
+
+        try {
+          const messages = await message.channel.messages.fetch({ before: messageId, limit: 100 });
+          messages.set(message.id, message);
+          await performBulkDelete(messages);
+        } catch (error) {
+          embeds.deny(message, 'Failed to fetch messages before the provided link');
+        }
+
+      } else if (args[0] === 'webhooks') {
+        const subcommandInfo = {
+          description: 'Delete messages from webhooks',
+          syntax: '{guildprefix}purge webhooks [amount]',
+          aliases: [],
+          parameters: ['amount'],
+          example: '{guildprefix}purge webhooks 50'
+        };
+
+        const number = validateNumber(args[1]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.webhookId !== null);
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'links') {
+        const subcommandInfo = {
+          description: 'Delete messages containing links',
+          syntax: '{guildprefix}purge links [amount]',
+          aliases: [],
+          parameters: ['amount'],
+          example: '{guildprefix}purge links 50'
+        };
+
+        const number = validateNumber(args[1]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const urlRegex = /(https?:\/\/[^\s]+)/gi;
+        const messages = await fetchMessagesInBatches(number, msg => urlRegex.test(msg.content));
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'startswith') {
+        const subcommandInfo = {
+          description: 'Delete messages starting with a substring',
+          syntax: '{guildprefix}purge startswith [substring] [search]',
+          aliases: [],
+          parameters: ['substring', 'search'],
+          example: '{guildprefix}purge startswith hello 100'
+        };
+
+        if (!args[1] || !args[2]) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const substring = args[1].toLowerCase();
+        const number = validateNumber(args[2]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.content.toLowerCase().startsWith(substring));
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'endswith') {
+        const subcommandInfo = {
+          description: 'Delete messages ending with a substring',
+          syntax: '{guildprefix}purge endswith [substring] [search]',
+          aliases: [],
+          parameters: ['substring', 'search'],
+          example: '{guildprefix}purge endswith hello 100'
+        };
+
+        if (!args[1] || !args[2]) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const substring = args[1].toLowerCase();
+        const number = validateNumber(args[2]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.content.toLowerCase().endsWith(substring));
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'contains') {
+        const subcommandInfo = {
+          description: 'Delete messages containing a substring',
+          syntax: '{guildprefix}purge contains [substring] [search]',
+          aliases: [],
+          parameters: ['substring', 'search'],
+          example: '{guildprefix}purge contains hello 100'
+        };
+
+        if (!args[1] || !args[2]) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const substring = args[1].toLowerCase();
+        const number = validateNumber(args[2]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.content.toLowerCase().includes(substring));
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'reactions') {
+        const subcommandInfo = {
+          description: 'Delete messages with reactions',
+          syntax: '{guildprefix}purge reactions [amount]',
+          aliases: [],
+          parameters: ['amount'],
+          example: '{guildprefix}purge reactions 50'
+        };
+
+        const number = validateNumber(args[1]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.reactions.cache.size > 0);
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'stickers') {
+        const subcommandInfo = {
+          description: 'Delete messages with stickers',
+          syntax: '{guildprefix}purge stickers [amount]',
+          aliases: [],
+          parameters: ['amount'],
+          example: '{guildprefix}purge stickers 50'
+        };
+
+        const number = validateNumber(args[1]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.stickers.size > 0);
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'emoji' || args[0] === 'emote') {
+        const subcommandInfo = {
+          description: 'Delete messages containing emojis',
+          syntax: '{guildprefix}purge emoji [amount]',
+          aliases: [],
+          parameters: ['amount'],
+          example: '{guildprefix}purge emoji 50'
+        };
+
+        const number = validateNumber(args[1]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const emojiRegex = /<a?:\w+:\d+>|[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+        const messages = await fetchMessagesInBatches(number, msg => emojiRegex.test(msg.content));
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'mentions') {
+        const subcommandInfo = {
+          description: 'Delete messages mentioning a specific member',
+          syntax: '{guildprefix}purge mentions [member] [search]',
+          aliases: [],
+          parameters: ['member', 'search'],
+          example: '{guildprefix}purge mentions @user 100'
+        };
+
+        if (!args[1] || !args[2]) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const { findUser } = require('../../../handlers/finder');
+        const userResult = await findUser(message.guild, args[1], client);
+
+        if (!userResult.found) {
+          return embeds.deny(message, userResult.error);
+        }
+
+        if (userResult.isGlobal) {
+          return embeds.deny(message, `I was unable to find a **user** in this server with the name: **${args[1]}**`);
+        }
+
+        const targetUserId = userResult.user.user.id;
+        const number = validateNumber(args[2]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.mentions.users.has(targetUserId));
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'embeds') {
+        const subcommandInfo = {
+          description: 'Delete messages with embeds',
+          syntax: '{guildprefix}purge embeds [amount]',
+          aliases: [],
+          parameters: ['amount'],
+          example: '{guildprefix}purge embeds 50'
+        };
+
+        const number = validateNumber(args[1]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.embeds.length > 0);
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'files') {
+        const subcommandInfo = {
+          description: 'Delete messages with file attachments',
+          syntax: '{guildprefix}purge files [amount]',
+          aliases: [],
+          parameters: ['amount'],
+          example: '{guildprefix}purge files 50'
+        };
+
+        const number = validateNumber(args[1]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const messages = await fetchMessagesInBatches(number, msg => msg.attachments.size > 0);
+        await performBulkDelete(messages);
+
+      } else if (args[0] === 'images') {
+        const subcommandInfo = {
+          description: 'Delete messages with image attachments',
+          syntax: '{guildprefix}purge images [amount]',
+          aliases: [],
+          parameters: ['amount'],
+          example: '{guildprefix}purge images 50'
+        };
+
+        const number = validateNumber(args[1]);
+        if (number === null) {
+          return runHelpCommand(message, 'purge');
+        }
+
+        const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'];
+        const messages = await fetchMessagesInBatches(number, msg => {
+          return msg.attachments.some(att => imageExtensions.some(ext => att.name.toLowerCase().endsWith(ext)));
+        });
+        await performBulkDelete(messages);
+
       } else if (message.mentions.users.size > 0) {
         // Purge messages from mentioned user
         const targetUser = message.mentions.users.first();

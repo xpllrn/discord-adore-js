@@ -63,6 +63,15 @@ module.exports = {
 
         embeds.success(message, `**${user.tag}** has been **hard banned** for ${reason}`);
 
+        // Send DM to user
+        await webhookLogger.sendModeratorDM({
+          target: user,
+          action: 'hardban',
+          executor: message.author,
+          reason,
+          guild: message.guild
+        });
+
         // Log the ban action
         await logModerationAction('ban', message.author, user, reason, message.guild, caseNumber);
       } catch (error) {
@@ -101,6 +110,15 @@ module.exports = {
         }
 
         embeds.success(message, `**${user.user.tag}** has been **banned** for ${reason}`);
+
+        // Send DM to user
+        await webhookLogger.sendModeratorDM({
+          target: user.user,
+          action: 'ban',
+          executor: message.author,
+          reason,
+          guild: message.guild
+        });
 
         // Log the ban action
         await logModerationAction('ban', message.author, user.user, reason, message.guild, caseNumber);

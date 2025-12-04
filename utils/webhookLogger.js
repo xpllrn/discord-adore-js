@@ -156,46 +156,179 @@ class WebhookLogger {
     const { action, executor, target, reason, duration, until, caseNumber, guild } = options;
 
     const embed = new EmbedBuilder()
-      .setColor(this.getActionColor(action))
-      .setAuthor({
-        name: this.getActionTitle(action),
-        iconURL: executor?.displayAvatarURL({ dynamic: true })
-      })
+      .setColor(config.colors.embed)
       .setTimestamp();
 
-    // Information section with bold formatting
+    // Title section
+    let titleText = '## Moderation action';
+    embed.setDescription(titleText);
+
+    // Case and action info
     let infoText = '';
-
-    // Only show case number if it exists and is not null/undefined
     if (caseNumber && caseNumber !== 'Unknown') {
-      infoText += `Case #${caseNumber}\n\n`;
+      infoText += `**Case #${caseNumber}** || `;
     }
-
+    
+    // Action name (capitalize first letter)
+    const actionName = this.getActionDisplayName(action);
+    infoText += `**${actionName}**\n`;
+    
     infoText += `**User:** ${target?.username || 'Unknown'} (\`${target?.id || 'Unknown'}\`)\n`;
-    infoText += `**Moderator:** ${executor?.username || 'Unknown'} (\`${executor?.id || 'Unknown'}\`)\n`;
-
-    // Add until/duration for temporary actions - handle both cases properly
-    if (until) {
-      const untilTimestamp = Math.floor(until.getTime() / 1000);
-      infoText += `**Until:** <t:${untilTimestamp}:F> (<t:${untilTimestamp}:R>)\n`;
-    }
-
-    // Only show duration if it exists and is not empty/zero
-    if (duration && duration !== '0m' && duration !== '0s' && duration !== '') {
-      infoText += `**Duration:** ${duration}\n`;
-    }
-
+    infoText += `**Moderator**: ${executor?.username || 'Unknown'} (\`${executor?.id || 'Unknown'}\`)\n`;
     infoText += `**Reason:** ${reason || 'No reason provided'}`;
 
-    embed.setDescription(infoText);
-
-    // Footer with user ID
-    embed.setFooter({
-      text: `User ID: ${target?.id || 'Unknown'}`,
-      iconURL: null
+    embed.addFields({
+      name: '\u200b',
+      value: infoText,
+      inline: false
     });
 
+    // Add duration/expiry info if applicable
+    if (duration && duration !== '0m' && duration !== '0s' && duration !== '') {
+      let durationText = `-# ${duration}`;
+      embed.addFields({
+        name: '\u200b',
+        value: durationText,
+        inline: false
+      });
+    }
+
+    if (until) {
+      const untilTimestamp = Math.floor(until.getTime() / 1000);
+      let expiryText = `-# **Expires at** <t:${untilTimestamp}:F>`;
+      embed.addFields({
+        name: '\u200b',
+        value: expiryText,
+        inline: false
+      });
+    }
+
     return embed;
+  }
+
+  /**
+   * Get display name for action (for embeds)
+   * @param {string} action - The action type
+   * @returns {string} - Display name
+   */
+  getActionDisplayName(action) {
+    const names = {
+      ban: 'Banned',
+      hardban: 'Hardbanned',
+      unban: 'Unbanned',
+      unhardban: 'Unhardbanned',
+      kick: 'Kicked',
+      timeout: 'Muted',
+      untimeout: 'Unmuted',
+      mute: 'Muted',
+      unmute: 'Unmuted',
+      warn: 'Warned',
+      unwarn: 'Unwarned',
+      jail: 'Jailed',
+      unjail: 'Unjailed',
+      imute: 'Image Muted',
+      iunmute: 'Image Unmuted',
+      rmute: 'Reaction Muted',
+      runmute: 'Reaction Unmuted'
+    };
+    return names[action] || action.charAt(0).toUpperCase() + action.slice(1);
+  }
+
+  /**
+   * Create a DM notification embed for moderation actions
+   * @param {Object} options - DM options
+   * @returns {EmbedBuilder} - The DM embed
+   */
+  createModeratorDM(options) {
+    const { action, executor, reason, duration, until, guild } = options;
+
+    const embed = new EmbedBuilder()
+      .setColor(config.colors.embed)
+      .setTimestamp();
+
+    // Title with action and guild info
+    const actionName = this.getActionDisplayName(action);
+    let titleText = `## __${actionName.toLowerCase()}__\n**You have been ${actionName.toLowerCase()} in**\n${guild?.name || 'Unknown Server'} (\`${guild?.id || 'Unknown'}\`)`;
+    
+    embed.setDescription(titleText);
+
+    // Set guild icon as thumbnail if available
+    if (guild?.iconURL) {
+      embed.setThumbnail(guild.iconURL({ dynamic: true }));
+    }
+
+    // Moderator and reason info
+    let infoText = `**Moderator**\n${executor?.username || 'Unknown'} (\`${executor?.id || 'Unknown'}\`)\n\n`;
+    infoText += `**Reason**\n${reason || 'No reason provided'}`;
+
+    embed.addFields({
+      name: '\u200b',
+      value: infoText,
+      inline: false
+    });
+
+    // Add expiry info for temporary actions
+    if (until) {
+      const untilTimestamp = Math.floor(until.getTime() / 1000);
+      let expiryText = `-# **Expires at** \`${new Date(until).toLocaleString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric', 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      })}\``;
+      
+      embed.addFields({
+        name: '\u200b',
+        value: expiryText,
+        inline: false
+      });
+    } else if (duration && duration !== '0m' && duration !== '0s' && duration !== '') {
+      let durationText = `-# **Duration:** ${duration}`;
+      embed.addFields({
+        name: '\u200b',
+        value: durationText,
+        inline: false
+      });
+    }
+
+    return embed;
+  }
+
+  /**
+   * Send DM notification to user about moderation action
+   * @param {Object} options - DM options
+   * @returns {Promise<boolean>} - Success status
+   */
+  async sendModeratorDM(options) {
+    const { target, action, executor, reason, duration, until, guild } = options;
+
+    // Don't DM for certain actions
+    const noDMActions = ['unwarn', 'unjail', 'untimeout', 'unmute', 'iunmute', 'runmute', 'unban', 'unhardban'];
+    if (noDMActions.includes(action)) {
+      return false;
+    }
+
+    try {
+      // Create DM embed
+      const embed = this.createModeratorDM({
+        action,
+        executor,
+        reason,
+        duration,
+        until,
+        guild
+      });
+
+      // Try to send DM
+      await target.send({ embeds: [embed] });
+      return true;
+    } catch (error) {
+      // Silent fail - user might have DMs disabled
+      return false;
+    }
   }
 
   /**

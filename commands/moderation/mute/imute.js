@@ -37,7 +37,7 @@ module.exports = {
     }
 
     if (userResult.isGlobal) {
-      return embeds.deny(message, 'User is not in this server');
+      return embeds.deny(message, `I was unable to find a **user** in this server with the name: **${args[0]}**`);
     }
 
     const user = userResult.user;
@@ -68,6 +68,15 @@ module.exports = {
       }, { reason: `Image muted by ${message.author.tag}: ${reason}` });
 
       embeds.success(message, `**${user.user.tag}** has been **image muted** in this channel for ${reason}`);
+
+      // Send DM to user
+      await webhookLogger.sendModeratorDM({
+        target: user.user,
+        action: 'imute',
+        executor: message.author,
+        reason,
+        guild: message.guild
+      });
 
       // Add to moderation history and log action asynchronously (don't wait)
       Promise.allSettled([

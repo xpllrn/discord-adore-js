@@ -233,7 +233,15 @@ class GuildService extends BaseService {
       },
       Aliases: [],
       RoleRestore: [],
-      Hardbans: []
+      Hardbans: [],
+      SpamFilter: {
+        enabled: false,
+        channels: [],
+        exemptRoles: [],
+        threshold: 5,
+        action: 'delete', // delete, mute, jail
+        duration: null // for mute action (e.g., '10m')
+      }
     };
   }
 
@@ -7927,6 +7935,82 @@ class GuildService extends BaseService {
 
   async getModerationHistoryByModerator(guildId, moderatorId, action = null) {
     return this.getModeratorCases(guildId, moderatorId, action);
+  }
+
+  /**
+   * Get all moderation cases for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of all moderation cases
+   */
+  async getAllModerationCases(guildId) {
+    return this.getAllCases(guildId);
+  }
+
+  /**
+   * Update the reason for a moderation case
+   * @param {string} guildId - Guild ID
+   * @param {number} caseId - Case ID
+   * @param {string} newReason - New reason
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateModerationCaseReason(guildId, caseId, newReason) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!newReason || newReason.trim().length === 0) {
+      throw new ValidationError('New reason is required', 'newReason', newReason);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return false;
+      }
+
+      const caseToUpdate = guildData.Moderation.find(c => c.caseId === caseId);
+
+      if (!caseToUpdate) {
+        return false;
+      }
+
+      caseToUpdate.reason = newReason.trim();
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      console.error(`Error updating case reason for guild ${guildId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get the last moderation case created by a specific moderator
+   * @param {string} guildId - Guild ID
+   * @param {string} moderatorId - Moderator ID
+   * @returns {Promise<Object|null>} Last case or null
+   */
+  async getLastModerationCaseByModerator(guildId, moderatorId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.get(guildId);
+
+      if (!guildData || !guildData.Moderation) {
+        return null;
+      }
+
+      const moderatorCases = guildData.Moderation
+        .filter(c => c.moderatorId === moderatorId)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      return moderatorCases.length > 0 ? moderatorCases[0] : null;
+    } catch (error) {
+      console.error(`Error getting last case by moderator for guild ${guildId}:`, error.message);
+      return null;
+    }
   }
 
   // ===== HARDBAN SYSTEM =====

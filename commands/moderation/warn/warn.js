@@ -72,6 +72,15 @@ module.exports = {
       // Send success message
       embeds.success(message, `**${warnedMember.user.username}** has been **warned** for ${reason}`);
 
+      // Send DM to user
+      await webhookLogger.sendModeratorDM({
+        target: warnedMember.user,
+        action: 'warn',
+        executor: message.author,
+        reason,
+        guild: message.guild
+      });
+
       // Log the warn action
       await logModerationAction('warn', message.author, warnedMember.user, reason, message.guild, moderationCase.caseId);
 

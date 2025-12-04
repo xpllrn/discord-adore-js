@@ -74,6 +74,15 @@ module.exports = {
 
       embeds.success(message, `**${user.user.tag}** has been **kicked** for ${reason}`);
 
+      // Send DM to user
+      await webhookLogger.sendModeratorDM({
+        target: user.user,
+        action: 'kick',
+        executor: message.author,
+        reason,
+        guild: message.guild
+      });
+
       // Log the kick action
       await logModerationAction('kick', message.author, user.user, reason, message.guild, caseNumber);
     } catch (error) {

@@ -36,9 +36,10 @@ module.exports = {
       let roleCreated = false;
 
       if (!jailRole) {
-        // Create jail role with no color
+        // Create jail role with no permissions
         jailRole = await message.guild.roles.create({
           name: 'jailed',
+          permissions: [],
           reason: `Jail setup by ${message.author.tag}`
         });
         roleCreated = true;
