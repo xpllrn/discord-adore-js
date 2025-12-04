@@ -150,11 +150,6 @@ class CustomContainerBuilder {
                         );
                     }
                 }
-            } else if (paramName === 'separator.line') {
-                // Separator with divider line
-                Container.addSeparatorComponents((separator) => 
-                    separator.setDivider(true).setSpacing(SeparatorSpacingSize.Large)
-                );
             } else if (paramName === 'section') {
                 // Section with text and optional thumbnail
                 // Format: text content&&thumbnail_url

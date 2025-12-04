@@ -197,11 +197,7 @@ module.exports = {
               }
               // Separator
               else if (innerComponent.type === 14) {
-                if (innerComponent.divider) {
-                  parts.push(`{separator.line}`);
-                } else {
-                  parts.push(`{separator}`);
-                }
+                parts.push(`{separator}`);
               }
               // Media Gallery
               else if (innerComponent.type === 12) {
