@@ -151,10 +151,12 @@ async function showHelpShared(context, client, commandQuery) {
         };
 
         // Display paginated help with buttons inside containers
+        // formatPage receives (pageItems, currentPage, totalPages, disabled)
+        // pageItems is an array slice, currentPage/totalPages are numbers
         return createPagination(
           isInteraction ? context : message,
           pages,
-          (currentPage, totalPages) => buildPage(currentPage - 1, currentPage, totalPages),
+          (pageItems, currentPage, totalPagesArg, disabled) => buildPage(currentPage - 1, currentPage, totalPagesArg, disabled),
           1, // 1 item per page (each item is already a full container)
           command.name,
           MessageFlags.IsComponentsV2 // Pass V2 flag for containers
