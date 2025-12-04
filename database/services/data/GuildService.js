@@ -238,8 +238,18 @@ class GuildService extends BaseService {
         enabled: false,
         channels: [],
         exemptRoles: [],
+        exemptChannels: [],
         threshold: 5,
         action: 'delete', // delete, mute, jail
+        duration: null // for mute action (e.g., '10m')
+      },
+      MassMentionFilter: {
+        enabled: false,
+        channels: [],
+        exemptRoles: [],
+        exemptChannels: [],
+        threshold: 5,
+        action: 'delete', // delete, mute
         duration: null // for mute action (e.g., '10m')
       }
     };

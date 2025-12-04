@@ -52,16 +52,21 @@ module.exports = {
 
 async function processSpamFilter(message) {
   try {
-    const { checkSpamFilter, clearUserHistory, SPAM_WINDOW } = require('../../utils/filter');
+    const { checkSpamFilter, checkMassMentionFilter, clearUserHistory, SPAM_WINDOW } = require('../../utils/filter');
     const webhookLogger = require('../../utils/webhookLogger');
     const { findRole } = require('../../handlers/finder');
     const ms = require('ms');
 
-    // Check if message triggers spam filter
-    const filterData = await checkSpamFilter(message);
+    // Check spam filter first
+    let filterData = await checkSpamFilter(message);
+    
+    // If no spam, check mass mention filter
+    if (!filterData) {
+      filterData = await checkMassMentionFilter(message);
+    }
 
     if (filterData) {
-      const { action, threshold, messageCount, duration } = filterData;
+      const { type, action, threshold, messageCount, mentionCount, duration } = filterData;
 
       // Delete the spam message
       try {
@@ -76,11 +81,15 @@ async function processSpamFilter(message) {
       // Perform action based on filter settings
       let actionTaken = 'deleted';
       let actionDuration = null;
+      const filterType = type === 'massmention' ? 'mass mention' : 'spam';
+      const detectionReason = type === 'massmention' 
+        ? `${mentionCount} mentions (threshold: ${threshold})`
+        : `${messageCount} messages in ${SPAM_WINDOW / 1000} seconds`;
 
       if (action === 'mute') {
         try {
           const muteDuration = duration ? ms(duration) : 5 * 60 * 1000; // Default 5 minutes
-          await message.member.timeout(muteDuration, `Spam detected: ${messageCount} messages in ${SPAM_WINDOW / 1000} seconds`);
+          await message.member.timeout(muteDuration, `${filterType} detected: ${detectionReason}`);
           actionTaken = 'muted';
           actionDuration = duration || '5m';
         } catch (muteError) {
@@ -91,7 +100,9 @@ async function processSpamFilter(message) {
         try {
           // Find jail role
           const jailRoleResult = findRole(message.guild, 'jailed');
-          if (jailRoleResult.found) {
+          if (!jailRoleResult.found) {
+            actionTaken = 'deleted (jail role not found - run ,setup)';
+          } else {
             const jailRole = jailRoleResult.role;
             
             // Save user's current roles
@@ -115,10 +126,8 @@ async function processSpamFilter(message) {
             }
 
             // Set roles
-            await message.member.roles.set(rolesToKeep, `Spam detected: ${messageCount} messages in ${SPAM_WINDOW / 1000} seconds`);
+            await message.member.roles.set(rolesToKeep, `${filterType} detected: ${detectionReason}`);
             actionTaken = 'jailed';
-          } else {
-            actionTaken = 'deleted (jail role not found)';
           }
         } catch (jailError) {
           // User might have higher role or bot lacks permissions
@@ -129,10 +138,10 @@ async function processSpamFilter(message) {
       // Log the action
       try {
         const embed = webhookLogger.createModeratorLog({
-          action: `spam_${action}`,
+          action: `${type}_${action}`,
           executor: message.client.user,
           target: message.author,
-          reason: `Automatic spam detection: ${messageCount} messages in ${SPAM_WINDOW / 1000} seconds (threshold: ${threshold})`,
+          reason: `Automatic ${filterType} detection: ${detectionReason}`,
           guild: message.guild,
           duration: actionDuration
         });
@@ -144,7 +153,7 @@ async function processSpamFilter(message) {
 
       // Send a warning message (auto-delete after 10 seconds)
       try {
-        let warningText = `${message.author}, your message was ${actionTaken} due to spam.`;
+        let warningText = `${message.author}, your message was ${actionTaken} due to ${filterType}.`;
         if (actionDuration) {
           warningText += ` (Duration: **${actionDuration}**)`;
         }
