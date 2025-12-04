@@ -1289,7 +1289,21 @@ const guildSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+
+  // Disabled Commands system - disable commands per channel, role, or server-wide
+  // Structure: { channels: { channelId: [commandNames] }, roles: { roleId: [commandNames] }, global: [commandNames] }
+  DisabledCommands: {
+    type: mongoose.Schema.Types.Mixed,
+    default: { channels: {}, roles: {}, global: [] }
+  },
+
+  // Restricted Commands system - restrict commands to specific roles only
+  // Structure: { commandName: [roleIds] }
+  RestrictedCommands: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  }
 }, {
   timestamps: true
 });

@@ -48,7 +48,6 @@ module.exports = {
   description: `Manage booster roles`,
   syntax: 'boostrole [subcommand] (parameters)',
   example: 'boostrole create My Cool Role',
-  permission: 'manage_roles',
   isGroupCommand: true,
 
   subcommands: {

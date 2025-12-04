@@ -92,7 +92,14 @@ async function processCommand(message, isEdit = false) {
 
   if (!command) return;
 
-
+  // Check if command is disabled or restricted
+  const commandAccessResult = await checkCommandAccess(message, command, guildData);
+  if (!commandAccessResult.allowed) {
+    if (commandAccessResult.message) {
+      return embeds.deny(message, commandAccessResult.message);
+    }
+    return; // Silently ignore
+  }
 
   try {
     // Check if user is blacklisted (skip for blacklist command itself)
@@ -380,6 +387,64 @@ async function checkUserBlacklist(userId) {
     console.error('Error checking user blacklist:', error.message);
     return false; // Default to not blacklisted on error
   }
+}
+
+/**
+ * Check if a command is disabled or restricted for the user
+ * @param {Message} message - Discord message object
+ * @param {Object} command - Command object
+ * @param {Object} guildData - Guild data from database
+ * @returns {Object} { allowed: boolean, message: string|null }
+ */
+async function checkCommandAccess(message, command, guildData) {
+  // Server owner bypasses all restrictions
+  if (message.guild.ownerId === message.author.id) {
+    return { allowed: true };
+  }
+
+  // Protected commands that can't be disabled/restricted
+  const protectedCommands = ['disablecommand', 'enablecommand', 'restrictcommand', 'help'];
+  if (protectedCommands.includes(command.name)) {
+    return { allowed: true };
+  }
+
+  // Check disabled commands
+  if (guildData?.DisabledCommands) {
+    const { channels = {}, roles = {}, global = [] } = guildData.DisabledCommands;
+
+    // Check global disabled
+    if (global.includes(command.name)) {
+      return { allowed: false, message: `The \`${command.name}\` command is disabled server-wide` };
+    }
+
+    // Check channel disabled
+    if (channels[message.channel.id]?.includes(command.name)) {
+      return { allowed: false, message: `The \`${command.name}\` command is disabled in this channel` };
+    }
+
+    // Check role disabled (if user has any role that has this command disabled)
+    const memberRoles = message.member?.roles?.cache?.map(r => r.id) || [];
+    for (const roleId of memberRoles) {
+      if (roles[roleId]?.includes(command.name)) {
+        return { allowed: false, message: `The \`${command.name}\` command is disabled for your role` };
+      }
+    }
+  }
+
+  // Check restricted commands (only specific roles can use)
+  if (guildData?.RestrictedCommands?.[command.name]) {
+    const allowedRoles = guildData.RestrictedCommands[command.name];
+    if (allowedRoles.length > 0) {
+      const memberRoles = message.member?.roles?.cache?.map(r => r.id) || [];
+      const hasAllowedRole = allowedRoles.some(roleId => memberRoles.includes(roleId));
+      
+      if (!hasAllowedRole) {
+        return { allowed: false, message: `You don't have the required role to use \`${command.name}\`` };
+      }
+    }
+  }
+
+  return { allowed: true };
 }
 
 /**

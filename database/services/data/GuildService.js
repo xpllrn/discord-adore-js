@@ -253,7 +253,9 @@ class GuildService extends BaseService {
         duration: null // for mute action (e.g., '10m')
       },
       Tags: [],
-      StickyMessages: []
+      StickyMessages: [],
+      DisabledCommands: { channels: {}, roles: {}, global: [] },
+      RestrictedCommands: {}
     };
   }
 
