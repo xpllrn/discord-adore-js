@@ -533,14 +533,26 @@ module.exports = {
                             section.addTextDisplayComponents(...textDisplays);
                           }
                         }
-                        if (comp.accessory && comp.accessory.type === 11) {
-                          const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
-                          if (thumbnailUrl) {
-                            section.setThumbnailAccessory((thumbnail) => {
-                              thumbnail.setURL(thumbnailUrl);
-                              if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
-                              if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
-                              return thumbnail;
+                        if (comp.accessory) {
+                          if (comp.accessory.type === 11) { // Thumbnail
+                            const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                            if (thumbnailUrl) {
+                              section.setThumbnailAccessory((thumbnail) => {
+                                thumbnail.setURL(thumbnailUrl);
+                                if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                                if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                                return thumbnail;
+                              });
+                            }
+                          } else if (comp.accessory.type === 2) { // Button accessory
+                            section.setButtonAccessory((btn) => {
+                              if (comp.accessory.custom_id) btn.setCustomId(comp.accessory.custom_id);
+                              if (comp.accessory.label) btn.setLabel(comp.accessory.label);
+                              if (comp.accessory.style) btn.setStyle(comp.accessory.style);
+                              if (comp.accessory.emoji) btn.setEmoji(comp.accessory.emoji);
+                              if (comp.accessory.url) btn.setURL(comp.accessory.url);
+                              if (comp.accessory.disabled) btn.setDisabled(comp.accessory.disabled);
+                              return btn;
                             });
                           }
                         }
@@ -782,14 +794,26 @@ module.exports = {
                                     section.addTextDisplayComponents(...textDisplays);
                                   }
                                 }
-                                if (comp.accessory && comp.accessory.type === 11) {
-                                  const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
-                                  if (thumbnailUrl) {
-                                    section.setThumbnailAccessory((thumbnail) => {
-                                      thumbnail.setURL(thumbnailUrl);
-                                      if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
-                                      if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
-                                      return thumbnail;
+                                if (comp.accessory) {
+                                  if (comp.accessory.type === 11) { // Thumbnail
+                                    const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                                    if (thumbnailUrl) {
+                                      section.setThumbnailAccessory((thumbnail) => {
+                                        thumbnail.setURL(thumbnailUrl);
+                                        if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                                        if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                                        return thumbnail;
+                                      });
+                                    }
+                                  } else if (comp.accessory.type === 2) { // Button accessory
+                                    section.setButtonAccessory((btn) => {
+                                      if (comp.accessory.custom_id) btn.setCustomId(comp.accessory.custom_id);
+                                      if (comp.accessory.label) btn.setLabel(comp.accessory.label);
+                                      if (comp.accessory.style) btn.setStyle(comp.accessory.style);
+                                      if (comp.accessory.emoji) btn.setEmoji(comp.accessory.emoji);
+                                      if (comp.accessory.url) btn.setURL(comp.accessory.url);
+                                      if (comp.accessory.disabled) btn.setDisabled(comp.accessory.disabled);
+                                      return btn;
                                     });
                                   }
                                 }
@@ -799,7 +823,8 @@ module.exports = {
                               newContainer.addMediaGalleryComponents((gallery) => {
                                 if (comp.items && Array.isArray(comp.items)) {
                                   const items = comp.items.map(item => (mediaItem) => {
-                                    if (item.url) mediaItem.setURL(item.url);
+                                    const url = item.media?.url || item.url;
+                                    if (url) mediaItem.setURL(url);
                                     if (item.description) mediaItem.setDescription(item.description);
                                     if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
                                     return mediaItem;
@@ -959,14 +984,26 @@ module.exports = {
                                 section.addTextDisplayComponents(...textDisplays);
                               }
                             }
-                            if (comp.accessory && comp.accessory.type === 11) {
-                              const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
-                              if (thumbnailUrl) {
-                                section.setThumbnailAccessory((thumbnail) => {
-                                  thumbnail.setURL(thumbnailUrl);
-                                  if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
-                                  if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
-                                  return thumbnail;
+                            if (comp.accessory) {
+                              if (comp.accessory.type === 11) { // Thumbnail
+                                const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                                if (thumbnailUrl) {
+                                  section.setThumbnailAccessory((thumbnail) => {
+                                    thumbnail.setURL(thumbnailUrl);
+                                    if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                                    if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                                    return thumbnail;
+                                  });
+                                }
+                              } else if (comp.accessory.type === 2) { // Button accessory
+                                section.setButtonAccessory((btn) => {
+                                  if (comp.accessory.custom_id) btn.setCustomId(comp.accessory.custom_id);
+                                  if (comp.accessory.label) btn.setLabel(comp.accessory.label);
+                                  if (comp.accessory.style) btn.setStyle(comp.accessory.style);
+                                  if (comp.accessory.emoji) btn.setEmoji(comp.accessory.emoji);
+                                  if (comp.accessory.url) btn.setURL(comp.accessory.url);
+                                  if (comp.accessory.disabled) btn.setDisabled(comp.accessory.disabled);
+                                  return btn;
                                 });
                               }
                             }
