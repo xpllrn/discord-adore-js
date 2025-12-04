@@ -162,37 +162,24 @@ client.once('ready', async () => {
 
         for (const msg of mediaMessages) {
           try {
-            await msg.forward(targetChannel);
-            forwarded++;
-            totalMediaForwarded++;
+            const urls = msg.attachments
+              .filter(att => isMediaAttachment(att))
+              .map(att => att.url);
             
-            if (forwarded % 10 === 0) {
-              console.log(`      ✓ Progress: ${forwarded}/${mediaMessages.length} (${Math.round(forwarded/mediaMessages.length*100)}%)`);
+            if (urls.length > 0) {
+              await targetChannel.send({ content: urls.join('\n') });
+              forwarded++;
+              totalMediaForwarded++;
+            }
+            
+            if (forwarded % 25 === 0) {
+              console.log(`      ✓ ${forwarded}/${mediaMessages.length}`);
             }
           } catch (err) {
-            // Fallback: just send the attachment URLs directly
-            try {
-              const urls = msg.attachments
-                .filter(att => isMediaAttachment(att))
-                .map(att => att.url);
-              
-              if (urls.length > 0) {
-                await targetChannel.send({ content: urls.join('\n') });
-                forwarded++;
-                totalMediaForwarded++;
-                console.log(`      ↪ Fallback sent for msg ${msg.id}`);
-              } else {
-                failed++;
-                console.log(`      ⚠️  Failed msg ${msg.id}: ${err.message}`);
-              }
-            } catch (fallbackErr) {
-              failed++;
-              console.log(`      ⚠️  Failed msg ${msg.id}: ${err.message}`);
-            }
+            failed++;
           }
 
-          // Rate limit - 1 second between forwards
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 500));
         }
 
         console.log(`   ✅ Done: ${forwarded} forwarded, ${failed} failed`);
