@@ -23,8 +23,11 @@ module.exports = {
     const input = args.join(' ');
 
     try {
+      // Fetch full user object to get banner data
+      const fullUser = await client.users.fetch(message.author.id, { force: true });
+      
       const variables = {
-        user: message.author,
+        user: fullUser,
         guild: message.guild,
         channel: message.channel
       };

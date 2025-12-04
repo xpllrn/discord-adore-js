@@ -441,6 +441,7 @@ class EmbedVariableProcessor {
             processed = processed.replace(/{user\.avatar}/g, variables.user.displayAvatarURL ? variables.user.displayAvatarURL({ dynamic: true }) : 'N/A');
             processed = processed.replace(/{user\.guild_avatar}/g, variables.user.avatarURL ? (variables.user.avatarURL({ dynamic: true }) || 'N/A') : 'N/A');
             processed = processed.replace(/{user\.display_avatar}/g, variables.user.displayAvatarURL ? variables.user.displayAvatarURL({ dynamic: true }) : 'N/A');
+            processed = processed.replace(/{user\.banner}/g, variables.user.bannerURL ? (variables.user.bannerURL({ size: 1024, extension: 'png' }) || 'N/A') : 'N/A');
 
             // User timestamps
             if (variables.guild && variables.guild.members) {
