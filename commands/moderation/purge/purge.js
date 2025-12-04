@@ -30,25 +30,34 @@ module.exports = {
       const fetchMessagesInBatches = async (amount, filter = null) => {
         let allMessages = new Map();
         let lastId = null;
-        let remaining = amount;
+        let totalFetched = 0;
+        const maxFetch = 1000; // Safety limit
 
-        while (remaining > 0 && allMessages.size < amount) {
-          const fetchAmount = Math.min(remaining, 100);
+        while (allMessages.size < amount && totalFetched < maxFetch) {
+          const fetchAmount = Math.min(100, maxFetch - totalFetched);
           const options = { limit: fetchAmount };
           if (lastId) options.before = lastId;
 
           const fetched = await message.channel.messages.fetch(options);
           if (fetched.size === 0) break;
 
+          totalFetched += fetched.size;
+
           // Apply filter if provided
           const filtered = filter ? fetched.filter(filter) : fetched;
-          filtered.forEach((msg, id) => allMessages.set(id, msg));
+          filtered.forEach((msg, id) => {
+            if (allMessages.size < amount) {
+              allMessages.set(id, msg);
+            }
+          });
 
           lastId = fetched.last().id;
-          remaining -= fetched.size;
 
           // If we didn't get a full batch, we've reached the end
           if (fetched.size < fetchAmount) break;
+          
+          // If no filter and we have enough, stop
+          if (!filter && allMessages.size >= amount) break;
         }
 
         return allMessages;
@@ -125,6 +134,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.author.bot);
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'humans') {
@@ -142,6 +152,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => !msg.author.bot);
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'media') {
@@ -159,6 +170,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.attachments.size > 0 || msg.embeds.length > 0);
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'between') {
@@ -282,6 +294,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.webhookId !== null);
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'links') {
@@ -300,6 +313,7 @@ module.exports = {
 
         const urlRegex = /(https?:\/\/[^\s]+)/gi;
         const messages = await fetchMessagesInBatches(number, msg => urlRegex.test(msg.content));
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'startswith') {
@@ -322,6 +336,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.content.toLowerCase().startsWith(substring));
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'endswith') {
@@ -344,6 +359,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.content.toLowerCase().endsWith(substring));
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'contains') {
@@ -366,6 +382,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.content.toLowerCase().includes(substring));
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'reactions') {
@@ -383,6 +400,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.reactions.cache.size > 0);
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'stickers') {
@@ -400,6 +418,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.stickers.size > 0);
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'emoji' || args[0] === 'emote') {
@@ -416,41 +435,56 @@ module.exports = {
           return runHelpCommand(message, 'purge');
         }
 
-        const emojiRegex = /<a?:\w+:\d+>|[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+        const emojiRegex = /<a?:\w+:\d+>|[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu;
         const messages = await fetchMessagesInBatches(number, msg => emojiRegex.test(msg.content));
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'mentions') {
         const subcommandInfo = {
           description: 'Delete messages mentioning a specific member',
-          syntax: '{guildprefix}purge mentions [member] [search]',
+          syntax: '{guildprefix}purge mentions [member] [search] OR {guildprefix}purge mentions @user [search]',
           aliases: [],
           parameters: ['member', 'search'],
           example: '{guildprefix}purge mentions @user 100'
         };
 
-        if (!args[1] || !args[2]) {
-          return runHelpCommand(message, 'purge');
+        // Support both: purge mentions @user 100 and purge mentions user 100
+        let targetUserId;
+        let numberArg;
+
+        if (message.mentions.users.size > 0) {
+          // Format: purge mentions @user 100
+          targetUserId = message.mentions.users.first().id;
+          numberArg = args[2];
+        } else {
+          // Format: purge mentions user 100
+          if (!args[1] || !args[2]) {
+            return runHelpCommand(message, 'purge');
+          }
+
+          const { findUser } = require('../../../handlers/finder');
+          const userResult = await findUser(message.guild, args[1], client);
+
+          if (!userResult.found) {
+            return embeds.deny(message, userResult.error);
+          }
+
+          if (userResult.isGlobal) {
+            return embeds.deny(message, `I was unable to find a **user** in this server with the name: **${args[1]}**`);
+          }
+
+          targetUserId = userResult.user.user.id;
+          numberArg = args[2];
         }
 
-        const { findUser } = require('../../../handlers/finder');
-        const userResult = await findUser(message.guild, args[1], client);
-
-        if (!userResult.found) {
-          return embeds.deny(message, userResult.error);
-        }
-
-        if (userResult.isGlobal) {
-          return embeds.deny(message, `I was unable to find a **user** in this server with the name: **${args[1]}**`);
-        }
-
-        const targetUserId = userResult.user.user.id;
-        const number = validateNumber(args[2]);
+        const number = validateNumber(numberArg);
         if (number === null) {
           return runHelpCommand(message, 'purge');
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.mentions.users.has(targetUserId));
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'embeds') {
@@ -468,11 +502,12 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.embeds.length > 0);
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'files') {
         const subcommandInfo = {
-          description: 'Delete messages with file attachments',
+          description: 'Delete messages with file attachments (excluding images)',
           syntax: '{guildprefix}purge files [amount]',
           aliases: [],
           parameters: ['amount'],
@@ -484,7 +519,13 @@ module.exports = {
           return runHelpCommand(message, 'purge');
         }
 
-        const messages = await fetchMessagesInBatches(number, msg => msg.attachments.size > 0);
+        const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'];
+        const messages = await fetchMessagesInBatches(number, msg => {
+          if (msg.attachments.size === 0) return false;
+          // Only include if has non-image attachments
+          return msg.attachments.some(att => !imageExtensions.some(ext => att.name.toLowerCase().endsWith(ext)));
+        });
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (args[0] === 'images') {
@@ -505,6 +546,7 @@ module.exports = {
         const messages = await fetchMessagesInBatches(number, msg => {
           return msg.attachments.some(att => imageExtensions.some(ext => att.name.toLowerCase().endsWith(ext)));
         });
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else if (message.mentions.users.size > 0) {
@@ -517,6 +559,7 @@ module.exports = {
         }
 
         const messages = await fetchMessagesInBatches(number, msg => msg.author.id === targetUser.id);
+        messages.set(message.id, message); // Include command message
         await performBulkDelete(messages);
 
       } else {

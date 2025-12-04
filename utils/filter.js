@@ -37,6 +37,11 @@ async function checkSpamFilter(message) {
       }
     }
 
+    // Check if channel is exempted
+    if (spamFilter.exemptChannels && spamFilter.exemptChannels.includes(message.channel.id)) {
+      return null;
+    }
+
     // Check if user has exempt role
     if (spamFilter.exemptRoles && spamFilter.exemptRoles.length > 0) {
       const member = message.member;

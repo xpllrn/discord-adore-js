@@ -316,7 +316,7 @@ module.exports = {
         example: '{guildprefix}autoresponder remove hello'
       };
 
-      const trigger = args[1];
+      const trigger = args.slice(1).join(' ').trim();
 
       if (!trigger) {
         return runHelpCommand(message, 'autoresponder');
