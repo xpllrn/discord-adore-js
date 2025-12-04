@@ -237,13 +237,11 @@ async function sendStickyMessage(client, channel, content, guildService, guildId
         channel: channel
       };
       
-      // Process the embed (this sends the message internally)
+      // Process the embed (sends internally)
       EmbedVariableProcessor.process(channel, content, variables, null);
       
-      // Wait a bit for the message to be sent, then fetch the latest bot message
+      // Wait for message to be sent, then fetch the latest bot message
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Fetch recent messages and find the one sent by the bot
       const recentMessages = await channel.messages.fetch({ limit: 5 });
       sentMessage = recentMessages.find(m => m.author.id === client.user.id);
     } else {
