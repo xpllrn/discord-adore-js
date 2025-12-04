@@ -94,7 +94,7 @@ module.exports = {
           await guildService.removeTag(message.guild.id, trigger);
           return embeds.success(message, `Removed tag **${trigger}**`);
         } else {
-          return embeds.deny(message, `No tag found for **${trigger}**`);
+          return embeds.deny(message, `No **tag** were found for **${trigger}**`);
         }
       }
     },
@@ -128,7 +128,7 @@ module.exports = {
 
         const existingTag = await guildService.findTag(message.guild.id, trigger);
         if (!existingTag) {
-          return embeds.deny(message, `No tag found for **${trigger}**`);
+          return embeds.deny(message, `No **tag** found for **${trigger}**`);
         }
 
         const success = await guildService.updateTagResponse(message.guild.id, trigger, newResponse);
@@ -171,7 +171,7 @@ module.exports = {
 
         const existingTag = await guildService.findTag(message.guild.id, oldTrigger);
         if (!existingTag) {
-          return embeds.deny(message, `No tag found for **${oldTrigger}**`);
+          return embeds.deny(message, `No **tag** found for **${oldTrigger}**`);
         }
 
         const success = await guildService.renameTag(message.guild.id, oldTrigger, newTrigger);
@@ -380,6 +380,7 @@ module.exports = {
       return module.exports.subcommands.info.handler(client, message, [sub], guildService);
     }
 
-    return runHelpCommand(message, 'tag');
+    // No tag found for this trigger
+    return embeds.deny(message, `No existing **tag** found for **${sub}**`);
   }
 };
