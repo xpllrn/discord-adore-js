@@ -4,7 +4,7 @@ const { embeds } = require('../../../core/embeds');
 const { createPagination } = require('../../../core/buttons');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { colors } = require('../../../config/setup');
-const { findUser, findRole, findChannel } = require('../../../handlers/finder');
+const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
 const logger = require('../../../utils/logger');
 const { getService } = require('@services');
@@ -34,14 +34,17 @@ module.exports = {
 
     // Handle 'jail list' subcommand
     if (args[0].toLowerCase() === 'list') {
-      // Check if jail role exists using universal finder
-      const jailRoleResult = findRole(message.guild, 'jailed');
+      // Get jail settings from database
+      const jailSettings = await guildService.getJailSettings(message.guild.id);
 
-      if (!jailRoleResult.found) {
+      if (!jailSettings.roleId) {
         return embeds.deny(message, `Jail role **not found**! Please run \`,setup\` first to **set up** the jail system.`);
       }
 
-      const jailRole = jailRoleResult.role;
+      const jailRole = message.guild.roles.cache.get(jailSettings.roleId);
+      if (!jailRole) {
+        return embeds.deny(message, `Jail role **not found**! The configured role may have been deleted. Please run \`,setup\` again.`);
+      }
 
       // Get all jailed members
       const jailedMembers = message.guild.members.cache.filter(member => {
@@ -121,26 +124,30 @@ module.exports = {
     // Check if Discord allows role management on this member
     if (!checkDiscordActionable(message, user, 'manage roles')) return;
 
-    // Check if jail role exists using universal finder
-    const jailRoleResult = findRole(message.guild, 'jailed');
+    // Get jail settings from database
+    const jailSettings = await guildService.getJailSettings(message.guild.id);
 
-    if (!jailRoleResult.found) {
+    if (!jailSettings.roleId) {
       return embeds.deny(message, `Jail role not found! Please run \`,setup\` first to set up the jail system.`);
     }
 
-    const jailRole = jailRoleResult.role;
+    const jailRole = message.guild.roles.cache.get(jailSettings.roleId);
+    if (!jailRole) {
+      return embeds.deny(message, `Jail role not found! The configured role may have been deleted. Please run \`,setup\` again.`);
+    }
 
     // Check if bot can manage the jail role
     if (!checkBotRoleHierarchy(message, jailRole)) return;
 
-    // Check if jail channel exists using universal finder
-    const jailChannelResult = findChannel(message.guild, 'jail');
-
-    if (!jailChannelResult.found) {
+    // Get jail channel from database
+    if (!jailSettings.channelId) {
       return embeds.deny(message, `Jail channel not found! Please run \`,setup\` first to set up the jail system.`);
     }
 
-    const jailChannel = jailChannelResult.channel;
+    const jailChannel = message.guild.channels.cache.get(jailSettings.channelId);
+    if (!jailChannel) {
+      return embeds.deny(message, `Jail channel not found! The configured channel may have been deleted. Please run \`,setup\` again.`);
+    }
 
     // Check if user is already jailed
     if (user.roles.cache.has(jailRole.id)) {

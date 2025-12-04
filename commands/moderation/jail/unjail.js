@@ -2,7 +2,7 @@ const { PermissionFlagsBits } = require("discord.js");
 const { hasDiscordPermission, checkSelfAction, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy, checkDiscordActionable, checkBotRoleHierarchy } = require('../../../utils/permissions');
 const { embeds } = require('../../../core/embeds');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
-const { findUser, findRole } = require('../../../handlers/finder');
+const { findUser } = require('../../../handlers/finder');
 const webhookLogger = require('../../../utils/webhookLogger');
 const logger = require('../../../utils/logger');
 const { getService } = require('@services');
@@ -57,14 +57,17 @@ module.exports = {
     // Check if Discord allows role management on this member
     if (!checkDiscordActionable(message, user, 'manage roles')) return;
 
-    // Check if jail role exists using universal finder
-    const jailRoleResult = findRole(message.guild, 'jailed');
+    // Get jail settings from database
+    const jailSettings = await guildService.getJailSettings(message.guild.id);
 
-    if (!jailRoleResult.found) {
+    if (!jailSettings.roleId) {
       return embeds.deny(message, `Jail role not found! Please run \`,setup\` first to set up the jail system.`);
     }
 
-    const jailRole = jailRoleResult.role;
+    const jailRole = message.guild.roles.cache.get(jailSettings.roleId);
+    if (!jailRole) {
+      return embeds.deny(message, `Jail role not found! The configured role may have been deleted. Please run \`,setup\` again.`);
+    }
 
     // Check if bot can manage the jail role
     if (!checkBotRoleHierarchy(message, jailRole)) return;
