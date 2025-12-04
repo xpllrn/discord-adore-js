@@ -105,12 +105,6 @@ module.exports = {
           return embeds.warn(message, 'Message does not contain any display components');
         }
 
-        // Debug: Log the full message structure
-        console.log('Full message structure:', JSON.stringify({
-          components: copyembed.components,
-          flags: copyembed.flags.bitfield
-        }, null, 2));
-
         const customSyntax = toContainerSyntax(copyembed.components);
 
         const copiedembed = new EmbedBuilder()
@@ -158,8 +152,8 @@ module.exports = {
 
         // Handle ContainerBuilder
         if (component.type === 17) { // CONTAINER
-          // Add accent color if present
-          if (component.accent_color !== undefined && component.accent_color !== null) {
+          // Add accent color if present (skip if 0 or null)
+          if (component.accent_color !== undefined && component.accent_color !== null && component.accent_color !== 0) {
             const hexColor = '#' + component.accent_color.toString(16).padStart(6, '0');
             parts.push(`{color: ${hexColor}}`);
           }
@@ -174,7 +168,7 @@ module.exports = {
                 }
               }
               // Section
-              else if (innerComponent.type === 11) {
+              else if (innerComponent.type === 9) {
                 let sectionText = '';
                 let thumbnailUrl = null;
 
@@ -186,8 +180,9 @@ module.exports = {
 
                 // Extract thumbnail from accessory
                 if (innerComponent.accessory) {
-                  if (innerComponent.accessory.type === 13) { // THUMBNAIL
-                    thumbnailUrl = innerComponent.accessory.url;
+                  if (innerComponent.accessory.type === 11) { // THUMBNAIL
+                    // URL is in media.url
+                    thumbnailUrl = innerComponent.accessory.media?.url || innerComponent.accessory.url;
                   }
                 }
 
@@ -211,9 +206,15 @@ module.exports = {
               // Media Gallery
               else if (innerComponent.type === 12) {
                 if (innerComponent.items && innerComponent.items.length > 0) {
-                  const urls = innerComponent.items.map(item => item.url).filter(url => url);
+                  // Extract URLs from media.url
+                  const urls = innerComponent.items.map(item => item.media?.url || item.url).filter(url => url);
                   if (urls.length > 0) {
-                    parts.push(`{gallery: ${urls.join('&&')}}`);
+                    // If only 1 image, treat as single image, otherwise as gallery
+                    if (urls.length === 1) {
+                      parts.push(`{image: ${urls[0]}}`);
+                    } else {
+                      parts.push(`{gallery: ${urls.join('&&')}}`);
+                    }
                   }
                 }
               }
