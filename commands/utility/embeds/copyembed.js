@@ -152,9 +152,13 @@ module.exports = {
 
         // Handle ContainerBuilder
         if (component.type === 17) { // CONTAINER
+          // Debug: log the accent color value
+          console.log('Accent color value:', component.accent_color, 'Type:', typeof component.accent_color);
+          
           // Add accent color if present
           if (component.accent_color !== undefined && component.accent_color !== null) {
             const hexColor = '#' + component.accent_color.toString(16).padStart(6, '0');
+            console.log('Converted hex color:', hexColor);
             parts.push(`{color: ${hexColor}}`);
           }
 
