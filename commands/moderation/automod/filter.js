@@ -1516,6 +1516,13 @@ async function handleSpamExempt(message, args) {
   }
 
   if (args[0] === 'list') {
+    const subcommandInfo = {
+      description: 'List all exempted roles and channels for spam filter',
+      syntax: '{guildprefix}filter spam exempt list',
+      aliases: [],
+      parameters: [],
+      example: '{guildprefix}filter spam exempt list'
+    };
     return await handleSpamExemptList(message);
   }
 
