@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits, ChannelType, EmbedBuilder } = require('discord.js');
-require('dotenv').config();
+const config = require('./config/setup');
 
 const client = new Client({
   intents: [
@@ -124,4 +124,4 @@ client.once('ready', async () => {
   }
 });
 
-client.login(process.env.TOKEN);
+client.login(config.bot.token);
