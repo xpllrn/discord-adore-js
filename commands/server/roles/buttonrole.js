@@ -321,7 +321,8 @@ module.exports = {
                   newContainer.addMediaGalleryComponents((gallery) => {
                     if (comp.items && Array.isArray(comp.items)) {
                       const items = comp.items.map(item => (mediaItem) => {
-                        if (item.url) mediaItem.setURL(item.url);
+                        const url = item.media?.url || item.url;
+                        if (url) mediaItem.setURL(url);
                         if (item.description) mediaItem.setDescription(item.description);
                         if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
                         return mediaItem;
@@ -453,9 +454,133 @@ module.exports = {
           const isV2Message = targetMessage.flags?.has('IsComponentsV2');
           
           if (isV2Message) {
-            // V2 message - removing buttons from containers is complex
-            // For now, we'll just skip the message edit and only update the database
-            // The button will remain visible but won't function after database removal
+            // V2 message - rebuild container without the specific button
+            const { 
+              ContainerBuilder, 
+              MessageFlags,
+              ButtonBuilder: V2ButtonBuilder
+            } = require('discord.js');
+            
+            let components = [...targetMessage.components];
+            let containerIndex = -1;
+            
+            // Find the container
+            for (let i = components.length - 1; i >= 0; i--) {
+              if (components[i].components && Array.isArray(components[i].components)) {
+                containerIndex = i;
+                break;
+              }
+            }
+            
+            if (containerIndex !== -1) {
+              const existingContainer = components[containerIndex];
+              const newContainer = new ContainerBuilder();
+              
+              // Copy accent color
+              if (existingContainer.data?.accent_color) {
+                newContainer.setAccentColor(existingContainer.data.accent_color);
+              }
+              
+              // Collect all buttons except the one to remove
+              const allButtons = [];
+              
+              // Copy all components
+              if (existingContainer.components && Array.isArray(existingContainer.components)) {
+                for (const comp of existingContainer.components) {
+                  // Handle action rows (buttons)
+                  if (comp.type === 1) {
+                    if (comp.components && Array.isArray(comp.components)) {
+                      for (const btnData of comp.components) {
+                        if (btnData.type === 2) {
+                          const customId = btnData['custom_id'] || btnData.customId;
+                          // Skip the button we want to remove
+                          if (customId === buttonRole.buttonId) continue;
+                          
+                          const btn = new V2ButtonBuilder();
+                          if (customId) btn.setCustomId(customId);
+                          else if (btnData.url) btn.setURL(btnData.url);
+                          if (btnData.style) btn.setStyle(btnData.style);
+                          if (btnData.label) btn.setLabel(btnData.label);
+                          if (btnData.emoji) {
+                            const emojiValue = typeof btnData.emoji === 'object' ? btnData.emoji.name : btnData.emoji;
+                            if (emojiValue) btn.setEmoji(emojiValue);
+                          }
+                          if (btnData.disabled) btn.setDisabled(btnData.disabled);
+                          allButtons.push(btn);
+                        }
+                      }
+                    }
+                    continue;
+                  }
+                  
+                  // Copy other component types
+                  try {
+                    if (comp.type === 14) { // Separator
+                      newContainer.addSeparatorComponents((separator) => {
+                        if (comp.divider !== undefined) separator.setDivider(comp.divider);
+                        if (comp.spacing !== undefined) separator.setSpacing(comp.spacing);
+                        return separator;
+                      });
+                    } else if (comp.type === 10) { // Text display
+                      newContainer.addTextDisplayComponents((text) => text.setContent(comp.content || ''));
+                    } else if (comp.type === 9) { // Section
+                      newContainer.addSectionComponents((section) => {
+                        if (comp.components && Array.isArray(comp.components)) {
+                          const textDisplays = comp.components
+                            .filter(c => c.type === 10)
+                            .map(c => (text) => text.setContent(c.content || ''));
+                          if (textDisplays.length > 0) {
+                            section.addTextDisplayComponents(...textDisplays);
+                          }
+                        }
+                        if (comp.accessory && comp.accessory.type === 11) {
+                          const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                          if (thumbnailUrl) {
+                            section.setThumbnailAccessory((thumbnail) => {
+                              thumbnail.setURL(thumbnailUrl);
+                              if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                              if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                              return thumbnail;
+                            });
+                          }
+                        }
+                        return section;
+                      });
+                    } else if (comp.type === 12) { // Media gallery
+                      newContainer.addMediaGalleryComponents((gallery) => {
+                        if (comp.items && Array.isArray(comp.items)) {
+                          const items = comp.items.map(item => (mediaItem) => {
+                            const url = item.media?.url || item.url;
+                            if (url) mediaItem.setURL(url);
+                            if (item.description) mediaItem.setDescription(item.description);
+                            if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
+                            return mediaItem;
+                          });
+                          gallery.addItems(...items);
+                        }
+                        return gallery;
+                      });
+                    }
+                  } catch (err) {
+                    console.error('Error copying component:', err);
+                  }
+                }
+              }
+              
+              // Add remaining buttons back
+              for (let i = 0; i < allButtons.length; i += 5) {
+                const buttonSlice = allButtons.slice(i, i + 5);
+                newContainer.addActionRowComponents((actionRow) =>
+                  actionRow.setComponents(...buttonSlice)
+                );
+              }
+              
+              components[containerIndex] = newContainer;
+              await targetMessage.edit({ 
+                components: components,
+                flags: MessageFlags.IsComponentsV2
+              });
+            }
           } else {
             // Regular message
             let components = targetMessage.components || [];
@@ -775,8 +900,105 @@ module.exports = {
               const isV2Message = targetMessage.flags?.has('IsComponentsV2');
               
               if (isV2Message) {
-                // V2 message - removing all buttons from containers
-                // For now, skip message edit - buttons removed from database only
+                // V2 message - rebuild container without any buttonrole buttons
+                const { 
+                  ContainerBuilder, 
+                  MessageFlags
+                } = require('discord.js');
+                
+                let components = [...targetMessage.components];
+                let containerIndex = -1;
+                
+                // Find the container
+                for (let i = components.length - 1; i >= 0; i--) {
+                  if (components[i].components && Array.isArray(components[i].components)) {
+                    containerIndex = i;
+                    break;
+                  }
+                }
+                
+                if (containerIndex !== -1) {
+                  const existingContainer = components[containerIndex];
+                  const newContainer = new ContainerBuilder();
+                  
+                  // Copy accent color
+                  if (existingContainer.data?.accent_color) {
+                    newContainer.setAccentColor(existingContainer.data.accent_color);
+                  }
+                  
+                  const buttonIdsToRemove = messageButtonRoles.map(br => br.buttonId);
+                  
+                  // Copy all components except buttonrole buttons
+                  if (existingContainer.components && Array.isArray(existingContainer.components)) {
+                    for (const comp of existingContainer.components) {
+                      // Skip action rows that contain buttonrole buttons
+                      if (comp.type === 1) {
+                        const hasButtonRole = comp.components?.some(btn => 
+                          buttonIdsToRemove.includes(btn.custom_id || btn.customId)
+                        );
+                        if (hasButtonRole) continue;
+                      }
+                      
+                      // Copy other component types
+                      try {
+                        if (comp.type === 14) { // Separator
+                          newContainer.addSeparatorComponents((separator) => {
+                            if (comp.divider !== undefined) separator.setDivider(comp.divider);
+                            if (comp.spacing !== undefined) separator.setSpacing(comp.spacing);
+                            return separator;
+                          });
+                        } else if (comp.type === 10) { // Text display
+                          newContainer.addTextDisplayComponents((text) => text.setContent(comp.content || ''));
+                        } else if (comp.type === 9) { // Section
+                          newContainer.addSectionComponents((section) => {
+                            if (comp.components && Array.isArray(comp.components)) {
+                              const textDisplays = comp.components
+                                .filter(c => c.type === 10)
+                                .map(c => (text) => text.setContent(c.content || ''));
+                              if (textDisplays.length > 0) {
+                                section.addTextDisplayComponents(...textDisplays);
+                              }
+                            }
+                            if (comp.accessory && comp.accessory.type === 11) {
+                              const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                              if (thumbnailUrl) {
+                                section.setThumbnailAccessory((thumbnail) => {
+                                  thumbnail.setURL(thumbnailUrl);
+                                  if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                                  if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                                  return thumbnail;
+                                });
+                              }
+                            }
+                            return section;
+                          });
+                        } else if (comp.type === 12) { // Media gallery
+                          newContainer.addMediaGalleryComponents((gallery) => {
+                            if (comp.items && Array.isArray(comp.items)) {
+                              const items = comp.items.map(item => (mediaItem) => {
+                                const url = item.media?.url || item.url;
+                                if (url) mediaItem.setURL(url);
+                                if (item.description) mediaItem.setDescription(item.description);
+                                if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
+                                return mediaItem;
+                              });
+                              gallery.addItems(...items);
+                            }
+                            return gallery;
+                          });
+                        }
+                      } catch (err) {
+                        console.error('Error copying component:', err);
+                      }
+                    }
+                  }
+                  
+                  components[containerIndex] = newContainer;
+                  await targetMessage.edit({ 
+                    components: components,
+                    flags: MessageFlags.IsComponentsV2
+                  });
+                }
               } else {
                 // Regular message - just clear components
                 await targetMessage.edit({ components: [] });
