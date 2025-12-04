@@ -141,61 +141,47 @@ module.exports = {
       // Start with {container} or {v2} prefix
       parts.push('{container}');
 
-      // Debug: log the raw component structure
-      console.log('Raw components:', JSON.stringify(components, null, 2));
-
       for (const component of components) {
         // Handle TextDisplayBuilder (standalone content)
-        if (component.type === 14) { // TEXT_DISPLAY
+        if (component.type === 10) { // TEXT_DISPLAY
           if (component.content) {
             parts.push(`{text: ${component.content}}`);
           }
           continue;
         }
 
-        // Handle ContainerBuilder - check both type values
-        if (component.type === 13 || component.data?.type === 13) { // CONTAINER
-          const containerData = component.data || component;
-          
+        // Handle ContainerBuilder
+        if (component.type === 17) { // CONTAINER
           // Add accent color if present
-          const accentColor = containerData.accent_color || containerData.accentColor;
-          if (accentColor !== undefined && accentColor !== null) {
-            const hexColor = '#' + accentColor.toString(16).padStart(6, '0');
+          if (component.accent_color !== undefined && component.accent_color !== null) {
+            const hexColor = '#' + component.accent_color.toString(16).padStart(6, '0');
             parts.push(`{color: ${hexColor}}`);
           }
 
-          // Process container components - check both locations
-          const innerComponents = containerData.components || component.components || [];
-          if (innerComponents.length > 0) {
-            for (const innerComponent of innerComponents) {
-              const innerData = innerComponent.data || innerComponent;
-              const innerType = innerData.type || innerComponent.type;
-              
+          // Process container components
+          if (component.components && component.components.length > 0) {
+            for (const innerComponent of component.components) {
               // Text Display
-              if (innerType === 14) {
-                const content = innerData.content || innerComponent.content;
-                if (content) {
-                  parts.push(`{text: ${content}}`);
+              if (innerComponent.type === 10) {
+                if (innerComponent.content) {
+                  parts.push(`{text: ${innerComponent.content}}`);
                 }
               }
               // Section
-              else if (innerType === 15) {
+              else if (innerComponent.type === 11) {
                 let sectionText = '';
                 let thumbnailUrl = null;
 
                 // Extract text from section
-                const sectionComponents = innerData.components || innerComponent.components || [];
-                if (sectionComponents.length > 0) {
-                  const textDisplays = sectionComponents.filter(c => (c.type === 14 || c.data?.type === 14));
-                  sectionText = textDisplays.map(t => (t.data?.content || t.content)).filter(c => c).join('\n');
+                if (innerComponent.components) {
+                  const textDisplays = innerComponent.components.filter(c => c.type === 10);
+                  sectionText = textDisplays.map(t => t.content).filter(c => c).join('\n');
                 }
 
                 // Extract thumbnail from accessory
-                const accessory = innerData.accessory || innerComponent.accessory;
-                if (accessory) {
-                  const accessoryType = accessory.type || accessory.data?.type;
-                  if (accessoryType === 17) { // THUMBNAIL
-                    thumbnailUrl = accessory.url || accessory.data?.url;
+                if (innerComponent.accessory) {
+                  if (innerComponent.accessory.type === 13) { // THUMBNAIL
+                    thumbnailUrl = innerComponent.accessory.url;
                   }
                 }
 
@@ -209,61 +195,50 @@ module.exports = {
                 }
               }
               // Separator
-              else if (innerType === 16) {
-                const divider = innerData.divider !== undefined ? innerData.divider : innerComponent.divider;
-                if (divider) {
+              else if (innerComponent.type === 14) {
+                if (innerComponent.divider) {
                   parts.push(`{separator.line}`);
                 } else {
                   parts.push(`{separator}`);
                 }
               }
               // Media Gallery
-              else if (innerType === 18) {
-                const items = innerData.items || innerComponent.items || [];
-                if (items.length > 0) {
-                  const urls = items.map(item => item.url || item.data?.url).filter(url => url);
+              else if (innerComponent.type === 12) {
+                if (innerComponent.items && innerComponent.items.length > 0) {
+                  const urls = innerComponent.items.map(item => item.url).filter(url => url);
                   if (urls.length > 0) {
                     parts.push(`{gallery: ${urls.join('&&')}}`);
                   }
                 }
               }
               // Action Row (buttons)
-              else if (innerType === 1) {
-                const actionRowComponents = innerData.components || innerComponent.components || [];
-                if (actionRowComponents.length > 0) {
-                  for (const button of actionRowComponents) {
-                    const buttonData = button.data || button;
-                    const buttonType = buttonData.type || button.type;
-                    
-                    if (buttonType === 2) { // BUTTON
+              else if (innerComponent.type === 1) {
+                if (innerComponent.components) {
+                  for (const button of innerComponent.components) {
+                    if (button.type === 2) { // BUTTON
                       let buttonParts = [];
-                      const style = buttonData.style || button.style;
-                      const label = buttonData.label || button.label;
-                      const url = buttonData.url || button.url;
-                      const emoji = buttonData.emoji || button.emoji;
-                      const disabled = buttonData.disabled || button.disabled;
 
-                      if (style === 5) { // Link button
-                        buttonParts.push(url || '');
-                        buttonParts.push(label || '');
+                      if (button.style === 5) { // Link button
+                        buttonParts.push(button.url || '');
+                        buttonParts.push(button.label || '');
                         
-                        if (emoji) {
-                          if (emoji.id) {
-                            buttonParts.push(`<${emoji.animated ? 'a' : ''}:${emoji.name}:${emoji.id}>`);
+                        if (button.emoji) {
+                          if (button.emoji.id) {
+                            buttonParts.push(`<${button.emoji.animated ? 'a' : ''}:${button.emoji.name}:${button.emoji.id}>`);
                           } else {
-                            buttonParts.push(emoji.name || '');
+                            buttonParts.push(button.emoji.name || '');
                           }
                         } else {
                           buttonParts.push('');
                         }
 
-                        if (disabled) {
+                        if (button.disabled) {
                           buttonParts.push('disabled');
                         }
                       } else {
                         // Colored button
                         let buttonStyle = 'secondary';
-                        switch (style) {
+                        switch (button.style) {
                           case 1: buttonStyle = 'primary'; break;
                           case 2: buttonStyle = 'secondary'; break;
                           case 3: buttonStyle = 'success'; break;
@@ -271,19 +246,19 @@ module.exports = {
                         }
 
                         buttonParts.push(buttonStyle);
-                        buttonParts.push(label || '');
+                        buttonParts.push(button.label || '');
                         
-                        if (emoji) {
-                          if (emoji.id) {
-                            buttonParts.push(`<${emoji.animated ? 'a' : ''}:${emoji.name}:${emoji.id}>`);
+                        if (button.emoji) {
+                          if (button.emoji.id) {
+                            buttonParts.push(`<${button.emoji.animated ? 'a' : ''}:${button.emoji.name}:${button.emoji.id}>`);
                           } else {
-                            buttonParts.push(emoji.name || '');
+                            buttonParts.push(button.emoji.name || '');
                           }
                         } else {
                           buttonParts.push('');
                         }
 
-                        if (disabled) {
+                        if (button.disabled) {
                           buttonParts.push('disabled');
                         }
                       }

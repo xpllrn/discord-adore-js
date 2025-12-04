@@ -174,23 +174,24 @@ class CustomContainerBuilder {
                 }
 
                 if (textContent.trim().length > 0) {
-                    Container.addSectionComponents((section) => {
-                        const sectionBuilder = section;
-                        
-                        // Add single text display with the content
-                        sectionBuilder.addTextDisplayComponents(
+                    // SectionBuilder requires an accessory (button or thumbnail)
+                    // If no thumbnail, use TextDisplayBuilder instead
+                    if (thumbnailUrl) {
+                        Container.addSectionComponents((section) =>
+                            section
+                                .addTextDisplayComponents(
+                                    (text) => text.setContent(textContent.trim())
+                                )
+                                .setThumbnailAccessory((thumbnail) =>
+                                    thumbnail.setURL(thumbnailUrl).setDescription('Image')
+                                )
+                        );
+                    } else {
+                        // No accessory, use TextDisplayBuilder
+                        Container.addTextDisplayComponents(
                             (text) => text.setContent(textContent.trim())
                         );
-
-                        // Add thumbnail if provided
-                        if (thumbnailUrl) {
-                            sectionBuilder.setThumbnailAccessory((thumbnail) =>
-                                thumbnail.setURL(thumbnailUrl).setDescription('Image')
-                            );
-                        }
-
-                        return sectionBuilder;
-                    });
+                    }
                 }
             } else if (paramName === 'gallery') {
                 // Media gallery with multiple images
