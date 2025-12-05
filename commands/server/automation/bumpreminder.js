@@ -24,31 +24,11 @@ module.exports = {
   subcommands: {
     lock: {
       name: 'lock',
-      aliases: ['enable', 'on'],
-      description: 'Enable the bump reminder system',
+      aliases: ['disable', 'off'],
+      description: 'Disable the bump reminder system',
       syntax: '{guildprefix}bumpreminder lock',
       parameters: [],
       example: '{guildprefix}bumpreminder lock',
-
-      handler: async (client, message, args, guildService) => {
-        const bumpReminder = await guildService.getBumpReminder(message.guild.id);
-        
-        if (bumpReminder.enabled) {
-          return embeds.warn(message, 'Bump reminder system is already **enabled**');
-        }
-
-        await guildService.updateBumpReminder(message.guild.id, { enabled: true });
-        return embeds.success(message, 'Enabled bumpreminder system - use `;bumpreminder unlock` to disable');
-      }
-    },
-
-    unlock: {
-      name: 'unlock',
-      aliases: ['disable', 'off'],
-      description: 'Disable the bump reminder system',
-      syntax: '{guildprefix}bumpreminder unlock',
-      parameters: [],
-      example: '{guildprefix}bumpreminder unlock',
 
       handler: async (client, message, args, guildService) => {
         const bumpReminder = await guildService.getBumpReminder(message.guild.id);
@@ -58,7 +38,27 @@ module.exports = {
         }
 
         await guildService.updateBumpReminder(message.guild.id, { enabled: false });
-        return embeds.success(message, 'Disabled bumpreminder system - use `;bumpreminder lock` to enable');
+        return embeds.success(message, 'Disabled bumpreminder system - use `;bumpreminder unlock` to enable');
+      }
+    },
+
+    unlock: {
+      name: 'unlock',
+      aliases: ['enable', 'on'],
+      description: 'Enable the bump reminder system',
+      syntax: '{guildprefix}bumpreminder unlock',
+      parameters: [],
+      example: '{guildprefix}bumpreminder unlock',
+
+      handler: async (client, message, args, guildService) => {
+        const bumpReminder = await guildService.getBumpReminder(message.guild.id);
+        
+        if (bumpReminder.enabled) {
+          return embeds.warn(message, 'Bump reminder system is already **enabled**');
+        }
+
+        await guildService.updateBumpReminder(message.guild.id, { enabled: true });
+        return embeds.success(message, 'Enabled bumpreminder system - use `;bumpreminder lock` to disable');
       }
     },
 
