@@ -334,7 +334,16 @@ module.exports.execute = async function(interaction) {
   const userService = getService('user');
 
   try {
-    const subcommand = interaction.options.getSubcommand();
+    // Defer the reply to prevent interaction timeout during database operations
+    await interaction.deferReply();
+
+    let subcommand;
+    try {
+      subcommand = interaction.options.getSubcommand();
+    } catch {
+      // No subcommand provided, default to viewing own birthday
+      subcommand = 'view';
+    }
 
     if (subcommand === 'view') {
       const targetUser = interaction.options.getUser('user') || interaction.user;
@@ -343,9 +352,9 @@ module.exports.execute = async function(interaction) {
 
       if (!formattedBirthday) {
         if (isOwnBirthday) {
-          return embeds.info(interaction, `🎂 No birthday set. Use \`,bday set [day] [month]\` to set it`, false);
+          return embeds.info(interaction, `🎂 No birthday set. Use \`/birthday set\` to set it`);
         } else {
-          return embeds.info(interaction, `🎂 **${targetUser.username}** has no birthday set`, false);
+          return embeds.info(interaction, `🎂 **${targetUser.username}** has no birthday set`);
         }
       }
 
@@ -353,16 +362,16 @@ module.exports.execute = async function(interaction) {
 
       if (isBirthdayToday) {
         if (isOwnBirthday) {
-          return embeds.info(interaction, `🎂 Your birthday is today! Happy birthday!`, false);
+          return embeds.info(interaction, `🎂 Your birthday is today! Happy birthday!`);
         } else {
-          return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}** (Today!)`, false);
+          return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}** (Today!)`);
         }
       } else {
         const nextBirthdayTimestamp = await getNextBirthdayTimestamp(targetUser.id);
         if (isOwnBirthday) {
-          return embeds.info(interaction, `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`, false);
+          return embeds.info(interaction, `🎂 Your birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`);
         } else {
-          return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`, false);
+          return embeds.info(interaction, `🎂 **${targetUser.username}**'s birthday is **${formattedBirthday}**. That's <t:${nextBirthdayTimestamp}:R>!`);
         }
       }
     } else if (subcommand === 'set') {
@@ -383,7 +392,7 @@ module.exports.execute = async function(interaction) {
       if (!isNaN(monthInput)) {
         month = parseInt(monthInput);
         if (month < 1 || month > 12) {
-          return embeds.warn(interaction, 'Month must be a number between **1** and **12**', false);
+          return embeds.warn(interaction, 'Month must be a number between **1** and **12**');
         }
       } else {
         const monthIndex = monthNames.indexOf(monthInput) !== -1 ?
@@ -391,7 +400,7 @@ module.exports.execute = async function(interaction) {
           monthShort.indexOf(monthInput);
 
         if (monthIndex === -1) {
-          return embeds.warn(interaction, 'Invalid month. Use month name (e.g., March) or number (1-12)', false);
+          return embeds.warn(interaction, 'Invalid month. Use month name (e.g., March) or number (1-12)');
         }
         month = monthIndex + 1;
       }
@@ -399,30 +408,26 @@ module.exports.execute = async function(interaction) {
       // Validate day for specific month (basic validation)
       if ((month === 2 && day > 29) ||
         ([4, 6, 9, 11].includes(month) && day > 30)) {
-        return embeds.warn(interaction, 'Invalid day for the specified month', false);
+        return embeds.warn(interaction, 'Invalid day for the specified month');
       }
 
       // Ensure user data exists
       await ensureUserData(interaction.user.id);
 
-      try {
-        // Check if user already has a birthday set
-        const existingBirthday = await userService.getBirthday(interaction.user.id);
+      // Check if user already has a birthday set
+      const existingBirthday = await userService.getBirthday(interaction.user.id);
 
-        if (existingBirthday && existingBirthday.day && existingBirthday.month) {
-          const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
-          return embeds.warn(interaction, `You already have a birthday set to **${formattedBirthday}**. Birthdays cannot be changed once set.`, false);
-        }
-
-        await userService.setBirthday(interaction.user.id, day, month);
+      if (existingBirthday && existingBirthday.day && existingBirthday.month) {
         const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
-        return embeds.success(interaction, `Set your birthday to **${formattedBirthday}**`, false);
-      } catch (error) {
-        throw error;
+        return embeds.warn(interaction, `You already have a birthday set to **${formattedBirthday}**. Birthdays cannot be changed once set.`);
       }
+
+      await userService.setBirthday(interaction.user.id, day, month);
+      const formattedBirthday = await userService.getFormattedBirthday(interaction.user.id);
+      return embeds.success(interaction, `Set your birthday to **${formattedBirthday}**`);
     }
   } catch (error) {
     logger.webhook.error(error, { author: interaction.user, guild: interaction.guild, channel: interaction.channel });
-    return embeds.deny(interaction, 'An error occurred while processing your request', false);
+    return embeds.deny(interaction, 'An error occurred while processing your request');
   }
 };

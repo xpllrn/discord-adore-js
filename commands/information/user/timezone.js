@@ -250,7 +250,16 @@ module.exports.data = new SlashCommandBuilder()
 // Add slash command execute
 module.exports.execute = async function(interaction) {
   try {
-    const subcommand = interaction.options.getSubcommand();
+    // Defer the reply to prevent interaction timeout during database operations
+    await interaction.deferReply();
+
+    let subcommand;
+    try {
+      subcommand = interaction.options.getSubcommand();
+    } catch {
+      // No subcommand provided, default to viewing own timezone
+      subcommand = 'view';
+    }
 
     if (subcommand === 'view') {
       const targetUser = interaction.options.getUser('user') || interaction.user;
@@ -261,7 +270,7 @@ module.exports.execute = async function(interaction) {
     }
   } catch (error) {
     logger.webhook.error(error, { author: interaction.user, guild: interaction.guild, channel: interaction.channel });
-    return embeds.deny(interaction, 'An error occurred while processing your request', false);
+    return embeds.deny(interaction, 'An error occurred while processing your request');
   }
 };
 
@@ -274,9 +283,9 @@ async function showUserTimezoneSlash(interaction, userId, targetUser) {
 
     if (!userTimezone) {
       if (isOwnTimezone) {
-        return embeds.warn(interaction, `You have not set a **timezone** yet. Use \`,tz set [city]\` to set one.`, false);
+        return embeds.warn(interaction, `You have not set a **timezone** yet. Use \`/timezone set\` to set one.`);
       } else {
-        return embeds.warn(interaction, `**${targetUser.username}** has not set a **timezone** yet.`, false);
+        return embeds.warn(interaction, `**${targetUser.username}** has not set a **timezone** yet.`);
       }
     }
 
@@ -284,18 +293,18 @@ async function showUserTimezoneSlash(interaction, userId, targetUser) {
     const now = DateTime.now().setZone(tz);
 
     if (!now.isValid) {
-      return embeds.deny(interaction, `**Invalid** timezone data stored. Please set your **timezone** again.`, false);
+      return embeds.deny(interaction, `**Invalid** timezone data stored. Please set your **timezone** again.`);
     }
 
     const displayName = isOwnTimezone ? 'Your' : `**${targetUser.username}**'s`;
     const timeString = now.toFormat('LLLL dd, hh:mm a');
     const text = `${displayName} current time is **${timeString}**`;
 
-    return embeds.info(interaction, text, false);
+    return embeds.info(interaction, text);
 
   } catch (error) {
     logger.webhook.error(error, interaction);
-    return embeds.deny(interaction, 'An error occurred while fetching timezone information', false);
+    return embeds.deny(interaction, 'An error occurred while fetching timezone information');
   }
 }
 
@@ -382,13 +391,13 @@ async function setUserTimezoneSlash(interaction, cityName) {
     }
 
     if (!timezoneId) {
-      return embeds.warn(interaction, `**${cityName}** was not found. Please try a major city name like **Madrid**, **London**, **New York**, **Tokyo**, etc.`, false);
+      return embeds.warn(interaction, `**${cityName}** was not found. Please try a major city name like **Madrid**, **London**, **New York**, **Tokyo**, etc.`);
     }
 
     // Validate the timezone with Luxon
     const testTime = DateTime.now().setZone(timezoneId);
     if (!testTime.isValid) {
-      return embeds.deny(interaction, `Invalid timezone data for **${cityName}**. Please try a **different** city.`, false);
+      return embeds.deny(interaction, `Invalid timezone data for **${cityName}**. Please try a **different** city.`);
     }
 
     // Update user timezone using service layer
@@ -397,10 +406,10 @@ async function setUserTimezoneSlash(interaction, cityName) {
     const timeString = testTime.toFormat('LLLL dd, hh:mm a');
     const text = `Timezone set to **${locationName}**. Your current time is **${timeString}**`;
 
-    return embeds.success(interaction, text, false);
+    return embeds.success(interaction, text);
 
   } catch (error) {
     logger.webhook.error(error, interaction);
-    return embeds.deny(interaction, 'An error occurred while **setting** your timezone', false);
+    return embeds.deny(interaction, 'An error occurred while **setting** your timezone');
   }
 }
