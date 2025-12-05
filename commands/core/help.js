@@ -217,6 +217,11 @@ module.exports = {
 
   // PREFIX COMMAND
   run: async (client, message, args) => {
+    // Ignore vanity commands - handled by separate vanity bot
+    if (args[0]?.toLowerCase() === 'vanity') {
+      return;
+    }
+
     // Check if user is asking for a specific subcommand (e.g., "h ar add")
     if (args.length >= 2) {
       const commandName = args[0];
