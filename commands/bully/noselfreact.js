@@ -99,7 +99,7 @@ module.exports = {
   },
 
   run: async (client, message, args) => {
-    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
     if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageMessages)) {
       return embeds.deny(message, 'I need **Manage Messages** permission to remove self-reactions');

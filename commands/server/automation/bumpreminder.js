@@ -10,7 +10,7 @@ const config = require('../../../config/setup');
 
 // Default messages using container system
 const DEFAULT_THANKYOU_MESSAGE = `{container}$v{message: {user.mention}}$v{text: thank you for bumping **{guild.name}**:nextline: please bump again {bumpreminder.next_bump} }`;
-const DEFAULT_REMINDER_MESSAGE = `{container}$v{message: {bumpreminder.last_user_bump}}$v{text: it's been **2 hours** since the last bump, could you /bump the server?}`;
+const DEFAULT_REMINDER_MESSAGE = `{container}$v{message: {bumpreminder.last_user_bump}}$v{text: it's been **2 hours** since the last bump, could you </bump:947088344167366698> the server?}`;
 
 module.exports = {
   name: 'bumpreminder',
@@ -263,7 +263,7 @@ module.exports = {
   run: async (client, message, args) => {
     const guildService = getService('guild');
 
-    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) return;
+    if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
     await ensureGuildData(message.guild.id);
 
     const sub = args[0]?.toLowerCase();

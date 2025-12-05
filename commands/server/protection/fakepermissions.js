@@ -19,8 +19,6 @@ const permissionMap = {
   'moderatemembers': 'moderate_members',
   'timeout': 'moderate_members',
   'manage_guild': 'manage_guild',
-  'manageguild': 'manage_guild',
-  'manageserver': 'manage_guild',
   'manage_channels': 'manage_channels',
   'managechannels': 'manage_channels',
   'channels': 'manage_channels',

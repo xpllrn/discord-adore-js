@@ -115,7 +115,7 @@ module.exports = {
       example: '{guildprefix}blacktea time 15',
 
       handler: async (client, message, args) => {
-        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Server')) {
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) {
           return;
         }
 
