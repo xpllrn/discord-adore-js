@@ -19,11 +19,16 @@ module.exports = {
     setupGiveawayCheck(client);
     setupRoleRestoreCleanup(client);
     setupScheduledNukeCheck(client);
+    setupSprintCheck(client);
     
     // Start cache warming with client
     setupCacheWarming(client);
   }
 };
+
+// Export sprint functions for use in sprint command
+module.exports.autoEndSprint = autoEndSprint;
+module.exports.sendSprintReminder = sendSprintReminder;
 
 // ===== REMINDER CHECKING =====
 
@@ -495,6 +500,219 @@ async function executeScheduledNuke(client, guildId, scheduledNuke) {
   } catch (error) {
     logger.console.error(`Error executing scheduled nuke for guild ${guildId}:`, error);
   }
+}
+
+// ===== SPRINT CHECKING =====
+
+let sprintLastErrorTime = 0;
+
+function setupSprintCheck(client) {
+  // Run every minute
+  setInterval(async () => {
+    await checkSprints(client);
+  }, 60000);
+
+  // Initial check after 35 seconds
+  setTimeout(() => checkSprints(client), 35000);
+}
+
+async function checkSprints(client) {
+  try {
+    const { getModels, isDatabaseReady } = require('../../database');
+
+    const dbStatus = isDatabaseReady();
+    if (!dbStatus.global && !dbStatus.local && !dbStatus.legacy) return;
+
+    const models = getModels();
+    if (!models?.Guild) return;
+
+    const guildsWithSprints = await models.Guild.find({
+      'Sprints': { $elemMatch: { isActive: true } }
+    }).select('GuildID Sprints').maxTimeMS(5000);
+
+    if (!guildsWithSprints?.length) return;
+
+    const now = new Date();
+
+    for (const guildData of guildsWithSprints) {
+      try {
+        if (!guildData?.GuildID) continue;
+
+        const guildId = guildData.GuildID;
+        const sprints = guildData.Sprints || [];
+
+        for (const sprint of sprints) {
+          if (!sprint?.isActive || !sprint.endTime) continue;
+
+          if (new Date(sprint.endTime) <= now) {
+            await autoEndSprint(client, guildId, sprint.messageId);
+          }
+        }
+      } catch (guildError) {
+        logger.console.error(`Error processing sprints for guild ${guildData.GuildID}:`, guildError);
+      }
+    }
+  } catch (error) {
+    const now = Date.now();
+    if (now - sprintLastErrorTime > ERROR_COOLDOWN) {
+      client?.errorLogger?.log(error, 'Sprint Check System', {
+        command: 'Sprint Check',
+        args: 'System Check'
+      });
+      sprintLastErrorTime = now;
+    }
+  }
+}
+
+async function autoEndSprint(client, guildId, messageId) {
+  try {
+    const { getModels } = require('../../database');
+    const models = getModels();
+    if (!models?.Guild) return;
+
+    const guildData = await models.Guild.findOne({ GuildID: guildId });
+    if (!guildData) return;
+
+    const sprint = guildData.Sprints.find(s => s.messageId === messageId && s.isActive);
+    if (!sprint) return;
+
+    // Mark as ended
+    sprint.isActive = false;
+    await guildData.save({ validateBeforeSave: false });
+
+    // Save to user history
+    await saveSprintHistoryFromBackground(sprint, models);
+
+    // Update the sprint message
+    try {
+      const channel = await client.channels.fetch(sprint.channelId);
+      const sprintMessage = await channel.messages.fetch(sprint.messageId);
+
+      const endedEmbed = createSprintEndedEmbed(sprint);
+      await sprintMessage.edit({ embeds: [endedEmbed], components: [] });
+
+      // Announce winners
+      if (sprint.participants.length > 0) {
+        const results = sprint.participants.map(p => {
+          const participant = p.toObject ? p.toObject() : p;
+          return {
+            username: participant.username,
+            progress: participant.currentTab - participant.startTab
+          };
+        }).sort((a, b) => b.progress - a.progress);
+
+        const winner = results[0];
+        if (winner.progress > 0) {
+          await channel.send(`🎉 Sprint ended! **${winner.username}** wins with **${winner.progress}** tabs read!`);
+        }
+      }
+    } catch (channelError) {
+      // Channel/message deleted, sprint already ended
+    }
+  } catch (error) {
+    logger.console.error(`Error auto-ending sprint for guild ${guildId}:`, error);
+  }
+}
+
+async function sendSprintReminder(client, guildId, messageId, minutesLeft) {
+  try {
+    const { getModels } = require('../../database');
+    const models = getModels();
+    if (!models?.Guild) return;
+
+    const guildData = await models.Guild.findOne({ GuildID: guildId });
+    if (!guildData) return;
+
+    const sprint = guildData.Sprints.find(s => s.messageId === messageId && s.isActive);
+    if (!sprint) return;
+
+    try {
+      const channel = await client.channels.fetch(sprint.channelId);
+      
+      const reminderText = minutesLeft === 1 
+        ? '⏰ **1 minute** remaining in the sprint!'
+        : `⏰ **${minutesLeft} minutes** remaining in the sprint!`;
+      
+      await channel.send(reminderText);
+    } catch (channelError) {
+      // Channel deleted
+    }
+  } catch (error) {
+    logger.console.error(`Error sending sprint reminder for guild ${guildId}:`, error);
+  }
+}
+
+async function saveSprintHistoryFromBackground(sprint, models) {
+  try {
+    if (!models?.User) return;
+
+    for (const participant of sprint.participants) {
+      const p = participant.toObject ? participant.toObject() : participant;
+      const tabsRead = p.currentTab - p.startTab;
+
+      if (tabsRead > 0) {
+        await models.User.updateOne(
+          { UserID: p.userId },
+          {
+            $push: {
+              SprintHistory: {
+                bookName: p.bookName,
+                tabsRead: tabsRead,
+                completedAt: new Date(),
+                sprintId: sprint._id?.toString() || null
+              }
+            }
+          },
+          { upsert: true }
+        );
+      }
+    }
+  } catch (error) {
+    logger.console.error('Error saving sprint history:', error);
+  }
+}
+
+function createSprintEndedEmbed(sprint) {
+  const title = 'READING SPRINT ENDED!';
+
+  let description = `**Start Time:** <t:${Math.floor(new Date(sprint.startTime).getTime() / 1000)}:F>\n`;
+  description += `**End Time:** <t:${Math.floor(new Date(sprint.endTime).getTime() / 1000)}:F>\n\n`;
+
+  if (sprint.participants.length === 0) {
+    description += '**Final Results**\nNo participants.';
+  } else {
+    const results = sprint.participants.map(p => {
+      const participant = p.toObject ? p.toObject() : p;
+      const joinTime = new Date(participant.joinedAt).getTime();
+      const endTime = new Date(sprint.endTime).getTime();
+      let activeTime = endTime - joinTime - (participant.totalPausedTime || 0);
+      if (participant.isPaused && participant.lastPauseTime) {
+        activeTime -= (endTime - new Date(participant.lastPauseTime).getTime());
+      }
+      activeTime = Math.max(0, activeTime);
+      
+      return {
+        username: participant.username,
+        bookName: participant.bookName,
+        progress: participant.currentTab - participant.startTab,
+        activeTime: activeTime
+      };
+    }).sort((a, b) => b.progress - a.progress);
+
+    description += '**Final Leaderboard**\n';
+    results.forEach((p, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `\`${String(index + 1).padStart(2, '0')}\``;
+      const hours = Math.floor(p.activeTime / 3600000);
+      const minutes = Math.floor((p.activeTime % 3600000) / 60000);
+      const timeStr = hours > 0 ? `${hours} hr${hours !== 1 ? 's' : ''}, ${minutes} min` : `${minutes} min`;
+      description += `${medal} **${p.username}**: ${p.progress} tabs of **${p.bookName}** in \`${timeStr}\`\n`;
+    });
+  }
+
+  return new EmbedBuilder()
+    .setColor(config.colors.success)
+    .setTitle(title)
+    .setDescription(description);
 }
 
 // ===== CACHE WARMING =====

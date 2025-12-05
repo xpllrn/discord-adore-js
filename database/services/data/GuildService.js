@@ -283,7 +283,8 @@ class GuildService extends BaseService {
         massjoin: { enabled: false, threshold: 5, punishment: 'ban', timeWindow: 30 },
         whitelist: []
       },
-      ScheduledNukes: []
+      ScheduledNukes: [],
+      Sprints: []
     };
   }
 

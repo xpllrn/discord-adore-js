@@ -352,7 +352,27 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     }
-  }
+  },
+
+  // Sprint History - tracks completed reading sprints
+  SprintHistory: [{
+    bookName: {
+      type: String,
+      required: true
+    },
+    tabsRead: {
+      type: Number,
+      required: true
+    },
+    completedAt: {
+      type: Date,
+      default: Date.now
+    },
+    sprintId: {
+      type: String,
+      default: null
+    }
+  }]
 
 }, {
   timestamps: true

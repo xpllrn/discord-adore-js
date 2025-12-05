@@ -158,19 +158,42 @@ async function startGame(client, message) {
   const responseTime = settings.responseTime;
 
   try {
+    const approveEmojiId = '1441260467514511461';
+    
     const joinEmbed = new EmbedBuilder()
       .setColor(colors.embed)
       .setTitle('The Black Teaword will start!')
-      .setDescription(`To participate, **react** on \`✅\` \n\n\`Goal:\` You have **${responseTime} seconds** to write a word containing the group of **2-3 letters** indicated. You lose **1 HP** when the time is up.\n\n`)
+      .setDescription(`To participate, **react** on ${emojis.success} \n\n\`Goal:\` You have **${responseTime} seconds** to write a word containing the group of **2-3 letters** indicated. You lose **1 HP** when the time is up.\n\n`)
       .setFooter({ text: 'Use ,blacktea quit to abandon' });
 
     const joinMessage = await message.channel.send({ embeds: [joinEmbed] });
-    await joinMessage.react('✅');
+    await joinMessage.react(approveEmojiId);
 
     await new Promise(resolve => setTimeout(resolve, 30000));
 
-    const reaction = joinMessage.reactions.cache.get('✅');
-    const users = await reaction.users.fetch();
+    // Check if message still exists before fetching reactions
+    let fetchedMessage;
+    try {
+      fetchedMessage = await message.channel.messages.fetch(joinMessage.id);
+    } catch (err) {
+      activeGames.delete(message.channel.id);
+      return embeds.warn(message, 'The game message was **deleted**. Game cancelled.');
+    }
+
+    const reaction = fetchedMessage.reactions.cache.get(approveEmojiId);
+    if (!reaction) {
+      activeGames.delete(message.channel.id);
+      return embeds.warn(message, 'No reactions found. Game cancelled.');
+    }
+
+    let users;
+    try {
+      users = await reaction.users.fetch();
+    } catch (err) {
+      activeGames.delete(message.channel.id);
+      return embeds.warn(message, 'Could not fetch reactions. Game cancelled.');
+    }
+
     const players = users.filter(user => !user.bot);
 
     if (players.size === 0) {
@@ -300,7 +323,7 @@ async function startGame(client, message) {
 
         if (containsLetters && validWord && isNotUsed && isLongEnough) {
           gameWords.add(userAnswer);
-          await collected.first().react('✅');
+          await collected.first().react(approveEmojiId);
           
           const points = userAnswer.length;
           playerPoints.set(currentPlayer.id, playerPoints.get(currentPlayer.id) + points);

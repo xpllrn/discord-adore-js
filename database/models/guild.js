@@ -1457,7 +1457,113 @@ const guildSchema = new mongoose.Schema({
       type: String,
       default: null // For mute action
     }
-  }
+  },
+
+  // Scheduled Nukes system
+  ScheduledNukes: [{
+    channelId: {
+      type: String,
+      required: true
+    },
+    interval: {
+      type: Number,
+      required: true
+    },
+    message: {
+      type: String,
+      default: null
+    },
+    addedBy: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    lastNuke: {
+      type: Date,
+      default: null
+    }
+  }],
+
+  // Reading Sprint system
+  Sprints: [{
+    messageId: {
+      type: String,
+      required: true
+    },
+    channelId: {
+      type: String,
+      required: true
+    },
+    roleId: {
+      type: String,
+      default: null
+    },
+    name: {
+      type: String,
+      default: null
+    },
+    startTime: {
+      type: Date,
+      required: true
+    },
+    endTime: {
+      type: Date,
+      required: true
+    },
+    participants: [{
+      userId: {
+        type: String,
+        required: true
+      },
+      username: {
+        type: String,
+        required: true
+      },
+      bookName: {
+        type: String,
+        required: true
+      },
+      startTab: {
+        type: Number,
+        required: true
+      },
+      currentTab: {
+        type: Number,
+        required: true
+      },
+      joinedAt: {
+        type: Date,
+        default: Date.now
+      },
+      isPaused: {
+        type: Boolean,
+        default: false
+      },
+      totalPausedTime: {
+        type: Number,
+        default: 0
+      },
+      lastPauseTime: {
+        type: Date,
+        default: null
+      }
+    }],
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    reminderSent: {
+      type: Boolean,
+      default: false
+    },
+    createdBy: {
+      type: String,
+      required: true
+    }
+  }]
 }, {
   timestamps: true
 });
