@@ -103,6 +103,10 @@ const userSchema = new mongoose.Schema({
     lastPrayed: {
       type: Date,
       default: null
+    },
+    padlockProtection: {
+      type: Number,
+      default: 0 // Number of padlock protections active
     }
   },
   // Roleplay interaction tracking
@@ -337,7 +341,18 @@ const userSchema = new mongoose.Schema({
     }
   }],
 
-
+  // AFK system (global across all servers)
+  AFK: {
+    message: {
+      type: String,
+      default: null,
+      maxlength: 500
+    },
+    since: {
+      type: Date,
+      default: null
+    }
+  }
 
 }, {
   timestamps: true
@@ -357,24 +372,17 @@ userSchema.index({ SpotifyLinkedAt: -1 }); // Recent Spotify links
 userSchema.index({ 'Gambling.wallet': -1 }); // Richest users by wallet
 userSchema.index({ 'Gambling.bank': -1 }); // Richest users by bank
 userSchema.index({ 'Gambling.wallet': -1, 'Gambling.bank': -1 }); // Total wealth compound
-userSchema.index({ 'Gambling.lastDaily': 1 }); // Daily cooldown tracking
-userSchema.index({ 'Gambling.lastWeekly': 1 }); // Weekly cooldown tracking
-userSchema.index({ 'Gambling.lastWork': 1 }); // Work cooldown tracking
+userSchema.index({ 'Gambling.dailyClaim.lastClaimed': 1 }); // Daily cooldown tracking
+userSchema.index({ 'Gambling.lastWorked': 1 }); // Work cooldown tracking
+userSchema.index({ 'Gambling.robCooldown': 1 }); // Rob cooldown tracking
 
 // Birthday system indexes
 userSchema.index({ 'Birthday.month': 1, 'Birthday.day': 1 }); // Birthday lookups
-userSchema.index({ 'Birthday.timezone': 1 }); // Timezone-based birthday checks
 
 // Tic-tac-toe game indexes
 userSchema.index({ 'TicTacToe.wins': -1 }); // Leaderboard by wins
 userSchema.index({ 'TicTacToe.losses': -1 }); // Leaderboard by losses
 userSchema.index({ 'TicTacToe.draws': -1 }); // Leaderboard by draws
-
-
-
-// Afk system indexes
-userSchema.index({ 'Afk.isAfk': 1 }); // Find AFK users
-userSchema.index({ 'Afk.since': -1 }); // Recent AFK users
 
 // Timezone and prefix indexes
 userSchema.index({ Timezone: 1 }); // Timezone-based queries
@@ -387,7 +395,8 @@ userSchema.index({ 'Marriage.marriedAt': -1 }); // Recent marriages
 // Inventory system indexes
 userSchema.index({ 'Inventory.id': 1 }); // Item lookups
 
-
+// AFK system indexes
+userSchema.index({ 'AFK.since': -1 }); // Recent AFK users
 
 module.exports = {
   schema: userSchema,

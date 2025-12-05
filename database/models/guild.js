@@ -1333,6 +1333,130 @@ const guildSchema = new mongoose.Schema({
       default: null,
       maxlength: 2000
     }
+  },
+
+  // Antiraid protection system
+  Antiraid: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    avatar: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      punishment: {
+        type: String,
+        enum: ['kick', 'ban'],
+        default: 'kick'
+      }
+    },
+    newaccount: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      threshold: {
+        type: Number,
+        default: 7,
+        min: 1,
+        max: 365
+      },
+      punishment: {
+        type: String,
+        enum: ['kick', 'ban'],
+        default: 'kick'
+      }
+    },
+    massjoin: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      threshold: {
+        type: Number,
+        default: 5,
+        min: 1,
+        max: 50
+      },
+      punishment: {
+        type: String,
+        enum: ['kick', 'ban'],
+        default: 'ban'
+      },
+      timeWindow: {
+        type: Number,
+        default: 30
+      }
+    },
+    whitelist: [{
+      type: String // User IDs
+    }]
+  },
+
+  // Spam Filter system
+  SpamFilter: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    channels: [{
+      type: String // Channel IDs (empty = all channels)
+    }],
+    exemptRoles: [{
+      type: String // Role IDs exempt from spam filter
+    }],
+    exemptChannels: [{
+      type: String // Channel IDs exempt from spam filter
+    }],
+    threshold: {
+      type: Number,
+      default: 5,
+      min: 2,
+      max: 20
+    },
+    action: {
+      type: String,
+      enum: ['delete', 'mute', 'jail'],
+      default: 'delete'
+    },
+    duration: {
+      type: String,
+      default: null // For mute action (e.g., '10m')
+    }
+  },
+
+  // Mass Mention Filter system
+  MassMentionFilter: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    channels: [{
+      type: String // Channel IDs (empty = all channels)
+    }],
+    exemptRoles: [{
+      type: String // Role IDs exempt from filter
+    }],
+    exemptChannels: [{
+      type: String // Channel IDs exempt from filter
+    }],
+    threshold: {
+      type: Number,
+      default: 5,
+      min: 2,
+      max: 50
+    },
+    action: {
+      type: String,
+      enum: ['delete', 'mute'],
+      default: 'delete'
+    },
+    duration: {
+      type: String,
+      default: null // For mute action
+    }
   }
 }, {
   timestamps: true

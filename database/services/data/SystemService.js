@@ -101,7 +101,6 @@ class SystemService extends BaseService {
             users: [],
             servers: []
           },
-          InstanceConfig: [],
           GlobalSettings: {},
           BotStatus: {
             version: '1.0.0',
@@ -806,121 +805,6 @@ class SystemService extends BaseService {
         results.set(serverId, false);
       }
       return results;
-    }
-  }
-
-  // ===== INSTANCE CONFIGURATION =====
-
-  /**
-   * Get instance configuration by instance ID
-   * @param {string} instanceId - Instance ID
-   * @returns {Promise<Object|null>} Instance configuration or null
-   */
-  async getInstanceConfig(instanceId) {
-    if (!instanceId) {
-      throw new ValidationError('Instance ID is required', 'instanceId', instanceId);
-    }
-
-    try {
-      const systemData = await this.ensureSystemData();
-      const instanceConfigs = systemData.InstanceConfig || [];
-
-      return instanceConfigs.find(config => config.instanceId === instanceId) || null;
-    } catch (error) {
-      console.error(`Error getting instance config for ${instanceId}:`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Set or update instance configuration
-   * @param {string} instanceId - Instance ID
-   * @param {Object} config - Instance configuration
-   * @returns {Promise<boolean>} Success status
-   */
-  async setInstanceConfig(instanceId, config) {
-    if (!instanceId) {
-      throw new ValidationError('Instance ID is required', 'instanceId', instanceId);
-    }
-
-    if (!config || typeof config !== 'object') {
-      throw new ValidationError('Config object is required', 'config', config);
-    }
-
-    try {
-      const systemData = await this.ensureSystemData();
-      const instanceConfigs = systemData.InstanceConfig || [];
-
-      const existingIndex = instanceConfigs.findIndex(c => c.instanceId === instanceId);
-
-      if (existingIndex !== -1) {
-        // Update existing config
-        instanceConfigs[existingIndex] = {
-          ...instanceConfigs[existingIndex],
-          ...config,
-          instanceId,
-          lastUpdated: new Date()
-        };
-      } else {
-        // Add new config
-        instanceConfigs.push({
-          instanceId,
-          ...config,
-          createdAt: new Date(),
-          lastUpdated: new Date()
-        });
-      }
-
-      systemData.InstanceConfig = instanceConfigs;
-      await this.set(this.systemKey, systemData);
-      return true;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw error;
-      }
-      throw new DatabaseWriteError(`Failed to set instance config for ${instanceId}`, error);
-    }
-  }
-
-  /**
-   * Remove instance configuration
-   * @param {string} instanceId - Instance ID
-   * @returns {Promise<boolean>} Success status
-   */
-  async removeInstanceConfig(instanceId) {
-    if (!instanceId) {
-      throw new ValidationError('Instance ID is required', 'instanceId', instanceId);
-    }
-
-    try {
-      const systemData = await this.ensureSystemData();
-      const instanceConfigs = systemData.InstanceConfig || [];
-
-      const initialLength = instanceConfigs.length;
-      systemData.InstanceConfig = instanceConfigs.filter(c => c.instanceId !== instanceId);
-
-      if (systemData.InstanceConfig.length < initialLength) {
-        await this.set(this.systemKey, systemData);
-        return true;
-      }
-
-      return false; // Instance config didn't exist
-    } catch (error) {
-      throw new DatabaseWriteError(`Failed to remove instance config for ${instanceId}`, error);
-    }
-  }
-
-  /**
-   * Get all instance configurations
-   * @returns {Promise<Array>} Array of instance configurations
-   */
-  async getAllInstanceConfigs() {
-    try {
-      const systemData = await this.ensureSystemData();
-      return systemData.InstanceConfig || [];
-    } catch (error) {
-      console.error('Error getting all instance configs:', error.message);
-      return [];
     }
   }
 }

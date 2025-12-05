@@ -42,39 +42,7 @@ const systemSchema = new mongoose.Schema({
         default: Date.now
       }
     }]
-  },
-
-  // Instance-specific bot configuration
-  InstanceConfig: [{
-    instanceId: {
-      type: String,
-      required: true // Bot instance ID (user ID of bot owner)
-    },
-    botName: {
-      type: String,
-      default: null // Custom bot name
-    },
-    bio: {
-      type: String,
-      default: null // Custom bot bio/description
-    },
-    permissions: {
-      type: [String],
-      default: [] // Array of permission strings for this instance owner
-    },
-    settings: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {}
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }]
+  }
 }, {
   timestamps: true
 });
@@ -89,11 +57,6 @@ systemSchema.index({ 'Blacklist.users.blacklistedBy': 1 });
 systemSchema.index({ 'Blacklist.servers.blacklistedBy': 1 });
 systemSchema.index({ 'Blacklist.users.timestamp': -1 }); // Recent blacklists first
 systemSchema.index({ 'Blacklist.servers.timestamp': -1 }); // Recent blacklists first
-
-// Instance configuration indexes
-systemSchema.index({ 'InstanceConfig.instanceId': 1 });
-systemSchema.index({ 'InstanceConfig.botName': 1 });
-systemSchema.index({ 'InstanceConfig.createdAt': -1 }); // Recent instances first
 
 module.exports = {
   schema: systemSchema,

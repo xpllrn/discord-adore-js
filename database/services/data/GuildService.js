@@ -263,7 +263,27 @@ class GuildService extends BaseService {
         lastBumpTime: null,
         thankYouMessage: null,
         reminderMessage: null
-      }
+      },
+      AutoModFilter: {
+        enabled: false,
+        ruleId: null,
+        action: 'delete',
+        timeoutDuration: 300
+      },
+      NSFWBypass: false,
+      NoSelfReact: {
+        enabled: false,
+        bypassUsers: []
+      },
+      FakePermissions: {},
+      Antiraid: {
+        enabled: false,
+        avatar: { enabled: false, punishment: 'kick' },
+        newaccount: { enabled: false, threshold: 7, punishment: 'kick' },
+        massjoin: { enabled: false, threshold: 5, punishment: 'ban', timeWindow: 30 },
+        whitelist: []
+      },
+      ScheduledNukes: []
     };
   }
 
@@ -9289,6 +9309,176 @@ class GuildService extends BaseService {
       return true;
     } catch (error) {
       throw new DatabaseWriteError(`Failed to reset bump reminder for guild ${guildId}`, error);
+    }
+  }
+
+  // ===== SCHEDULED NUKE OPERATIONS =====
+
+  /**
+   * Get all scheduled nukes for a guild
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Array>} Array of scheduled nukes
+   */
+  async getScheduledNukes(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.ScheduledNukes || [];
+    } catch (error) {
+      console.error(`Error getting scheduled nukes for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get scheduled nuke for a specific channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<Object|null>} Scheduled nuke or null
+   */
+  async getScheduledNuke(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const scheduledNukes = guildData.ScheduledNukes || [];
+      return scheduledNukes.find(n => n.channelId === channelId) || null;
+    } catch (error) {
+      console.error(`Error getting scheduled nuke for channel ${channelId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Add scheduled nuke for a channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {number} interval - Interval in milliseconds
+   * @param {string|null} message - Custom message after nuke
+   * @param {string} addedBy - User ID who added the schedule
+   * @returns {Promise<boolean>} Success status
+   */
+  async addScheduledNuke(guildId, channelId, interval, message, addedBy) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    if (!interval || interval < 3600000) {
+      throw new ValidationError('Interval must be at least 1 hour', 'interval', interval);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const scheduledNukes = guildData.ScheduledNukes || [];
+
+      // Check if already exists
+      const existingIndex = scheduledNukes.findIndex(n => n.channelId === channelId);
+      if (existingIndex !== -1) {
+        return false;
+      }
+
+      scheduledNukes.push({
+        channelId,
+        interval,
+        message: message || null,
+        addedBy,
+        createdAt: new Date(),
+        lastNuke: null
+      });
+
+      guildData.ScheduledNukes = scheduledNukes;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add scheduled nuke for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove scheduled nuke for a channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeScheduledNuke(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const scheduledNukes = guildData.ScheduledNukes || [];
+      const initialLength = scheduledNukes.length;
+
+      guildData.ScheduledNukes = scheduledNukes.filter(n => n.channelId !== channelId);
+
+      if (guildData.ScheduledNukes.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove scheduled nuke for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Update last nuke time for a channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateScheduledNukeLastRun(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const scheduledNukes = guildData.ScheduledNukes || [];
+      
+      const nukeIndex = scheduledNukes.findIndex(n => n.channelId === channelId);
+      if (nukeIndex === -1) {
+        return false;
+      }
+
+      scheduledNukes[nukeIndex].lastNuke = new Date();
+      guildData.ScheduledNukes = scheduledNukes;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update scheduled nuke last run for guild ${guildId}`, error);
     }
   }
 }

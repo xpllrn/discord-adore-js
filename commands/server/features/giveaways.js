@@ -19,10 +19,61 @@ function parseMessageLink(link) {
   return null;
 }
 
+// Helper function to resolve giveaway from reply, message ID, or message link
+async function resolveGiveaway(message, args, guildService) {
+  // Check if user replied to a message
+  if (message.reference?.messageId) {
+    const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, message.reference.messageId);
+    if (giveaway) {
+      return {
+        giveaway,
+        linkData: { 
+          guildId: message.guild.id, 
+          channelId: message.reference.channelId || message.channel.id, 
+          messageId: message.reference.messageId 
+        },
+        remainingArgs: args
+      };
+    }
+  }
+
+  // Check if first arg is a message ID (17-19 digit number)
+  if (args[0] && /^\d{17,19}$/.test(args[0])) {
+    const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, args[0]);
+    if (giveaway) {
+      return {
+        giveaway,
+        linkData: { 
+          guildId: message.guild.id, 
+          channelId: giveaway.channelId, 
+          messageId: args[0] 
+        },
+        remainingArgs: args.slice(1)
+      };
+    }
+  }
+
+  // Check if first arg is a message link
+  if (args[0]) {
+    const linkData = parseMessageLink(args[0]);
+    if (linkData) {
+      if (linkData.guildId !== message.guild.id) {
+        return { error: 'I can only manage giveaways from this server' };
+      }
+      const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
+      if (giveaway) {
+        return { giveaway, linkData, remainingArgs: args.slice(1) };
+      }
+    }
+  }
+
+  return { error: 'No giveaway found. Reply to a giveaway message, provide a message ID, or message link' };
+}
+
 // Helper function to create giveaway embed
 function createGiveawayEmbed(giveaway, guild) {
   const embed = new EmbedBuilder()
-    .setColor(config.colors.embed)
+    .setColor(giveaway.color || config.colors.embed)
     .setTitle(giveaway.title)
     .setDescription(giveaway.description)
     .addFields(
@@ -39,12 +90,26 @@ function createGiveawayEmbed(giveaway, guild) {
   if (giveaway.image) {
     embed.setImage(giveaway.image);
   }
+  if (giveaway.thumbnail) {
+    embed.setThumbnail(giveaway.thumbnail);
+  }
 
   const requirements = [];
+  if (giveaway.requirements.minLevel) requirements.push(`> Min level: **${giveaway.requirements.minLevel}**`);
+  if (giveaway.requirements.maxLevel) requirements.push(`> Max level: **${giveaway.requirements.maxLevel}**`);
   if (giveaway.requirements.level) requirements.push(`> Must have **level ${giveaway.requirements.level}**`);
   if (giveaway.requirements.roleId) requirements.push(`> Must have <@&${giveaway.requirements.roleId}>`);
+  if (giveaway.requirements.requiredRoles?.length > 0) {
+    requirements.push(`> Required roles: ${giveaway.requirements.requiredRoles.map(r => `<@&${r}>`).join(', ')}`);
+  }
+  if (giveaway.requirements.accountAge) requirements.push(`> Account age: **${giveaway.requirements.accountAge}+ days**`);
+  if (giveaway.requirements.serverStay) requirements.push(`> Server member for: **${giveaway.requirements.serverStay}+ days**`);
   if (requirements.length > 0) {
     embed.addFields({ name: '**Requirements**', value: requirements.join('\n'), inline: false });
+  }
+
+  if (giveaway.winnerRoles?.length > 0) {
+    embed.addFields({ name: '**Winner Rewards**', value: `Roles: ${giveaway.winnerRoles.map(r => `<@&${r}>`).join(', ')}`, inline: false });
   }
 
   return embed;
@@ -127,8 +192,13 @@ module.exports = {
           const giveawayData = {
             title, description: 'React with 🎉 to enter the giveaway.',
             channelId: channel.id, messageId: null, hostId: message.author.id,
-            winners, endTime, requirements: { level: null, roleId: null },
-            participants: [], winnerIds: [], image: null, isActive: true
+            winners, endTime, 
+            requirements: { 
+              level: null, roleId: null, minLevel: null, maxLevel: null,
+              requiredRoles: [], accountAge: null, serverStay: null 
+            },
+            participants: [], winnerIds: [], image: null, thumbnail: null, 
+            color: null, winnerRoles: [], isActive: true
           };
 
           const embed = createGiveawayEmbed(giveawayData, message.guild);
@@ -150,19 +220,15 @@ module.exports = {
       name: 'end',
       aliases: [],
       description: 'End a giveaway early',
-      syntax: '{guildprefix}giveaways end [message_link]',
-      parameters: ['message_link'],
-      example: '{guildprefix}giveaways end https://discord.com/channels/...',
+      syntax: '{guildprefix}giveaways end (message_id/link or reply)',
+      parameters: ['message_id/link (optional if replying)'],
+      example: '{guildprefix}giveaways end 1234567890123456789',
 
       handler: async (client, message, args, guildService) => {
-        if (!args[0]) return embeds.warn(message, 'Please provide a **message link** to the giveaway you want to end');
-
-        const linkData = parseMessageLink(args[0]);
-        if (!linkData) return embeds.warn(message, 'Invalid message link format');
-        if (linkData.guildId !== message.guild.id) return embeds.warn(message, 'I can only end giveaways from this server');
-
-        const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
-        if (!giveaway) return embeds.warn(message, 'No giveaway found with that message link');
+        const resolved = await resolveGiveaway(message, args, guildService);
+        if (resolved.error) return embeds.warn(message, resolved.error);
+        
+        const { giveaway, linkData } = resolved;
         if (!giveaway.isActive) return embeds.warn(message, 'This giveaway has already ended');
 
         try {
@@ -240,19 +306,15 @@ module.exports = {
       name: 'cancel',
       aliases: [],
       description: 'Cancel a giveaway',
-      syntax: '{guildprefix}giveaways cancel [message_link]',
-      parameters: ['message_link'],
-      example: '{guildprefix}giveaways cancel https://discord.com/channels/...',
+      syntax: '{guildprefix}giveaways cancel (message_id/link or reply)',
+      parameters: ['message_id/link (optional if replying)'],
+      example: '{guildprefix}giveaways cancel 1234567890123456789',
 
       handler: async (client, message, args, guildService) => {
-        if (!args[0]) return embeds.warn(message, 'Please provide a **message link** to the giveaway you want to cancel');
-
-        const linkData = parseMessageLink(args[0]);
-        if (!linkData) return embeds.warn(message, 'Invalid message link format');
-        if (linkData.guildId !== message.guild.id) return embeds.warn(message, 'I can only cancel giveaways from this server');
-
-        const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
-        if (!giveaway) return embeds.warn(message, 'No giveaway found with that message link');
+        const resolved = await resolveGiveaway(message, args, guildService);
+        if (resolved.error) return embeds.warn(message, resolved.error);
+        
+        const { giveaway, linkData } = resolved;
         if (!giveaway.isActive) return embeds.warn(message, 'This giveaway has already ended');
 
         try {
@@ -283,24 +345,20 @@ module.exports = {
       name: 'reroll',
       aliases: [],
       description: 'Reroll giveaway winners',
-      syntax: '{guildprefix}giveaways reroll [message_link] [winners]',
-      parameters: ['message_link', 'winners (optional)'],
-      example: '{guildprefix}giveaways reroll https://discord.com/channels/... 2',
+      syntax: '{guildprefix}giveaways reroll (message_id/link or reply) [winners]',
+      parameters: ['message_id/link (optional if replying)', 'winners (optional)'],
+      example: '{guildprefix}giveaways reroll 1234567890123456789 2',
 
       handler: async (client, message, args, guildService) => {
-        if (!args[0]) return embeds.warn(message, 'Please provide a **message link** to the giveaway you want to reroll');
-
-        const linkData = parseMessageLink(args[0]);
-        if (!linkData) return embeds.warn(message, 'Invalid message link format');
-        if (linkData.guildId !== message.guild.id) return embeds.warn(message, 'I can only reroll giveaways from this server');
-
-        const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
-        if (!giveaway) return embeds.warn(message, 'No giveaway found with that message link');
+        const resolved = await resolveGiveaway(message, args, guildService);
+        if (resolved.error) return embeds.warn(message, resolved.error);
+        
+        const { giveaway, linkData, remainingArgs } = resolved;
         if (giveaway.isActive) return embeds.warn(message, 'Cannot reroll an active giveaway. End it first.');
 
         let winnersToReroll = giveaway.winners;
-        if (args[1]) {
-          const parsed = parseInt(args[1]);
+        if (remainingArgs[0]) {
+          const parsed = parseInt(remainingArgs[0]);
           if (parsed && parsed > 0 && parsed <= 20) winnersToReroll = parsed;
           else if (!isNaN(parsed)) return embeds.warn(message, 'Number of winners must be between **1** and **20**');
         }
@@ -344,37 +402,196 @@ module.exports = {
     edit: {
       name: 'edit',
       aliases: [],
-      description: 'Edit giveaway settings (level/role/host/description/image)',
-      syntax: '{guildprefix}giveaways edit [type] [message_link] [value]',
-      parameters: ['type', 'message_link', 'value'],
-      example: '{guildprefix}giveaways edit level https://discord.com/channels/... 10',
+      description: 'Edit giveaway settings',
+      syntax: '{guildprefix}giveaways edit [type] (message_id/link or reply) [value]',
+      parameters: ['type', 'message_id/link (optional if replying)', 'value'],
+      example: '{guildprefix}giveaways edit prize 1234567890123456789 Nitro Classic',
 
       handler: async (client, message, args, guildService) => {
         if (!args[0]) return runHelpCommand(message, 'giveaways');
 
         const editType = args[0].toLowerCase();
-        const validEditTypes = ['level', 'role', 'host', 'description', 'image'];
+        const validEditTypes = [
+          'prize', 'winners', 'duration', 'color', 'minlevel', 'maxlevel',
+          'requiredroles', 'roles', 'thumbnail', 'age', 'stay',
+          'level', 'role', 'host', 'description', 'image'
+        ];
         if (!validEditTypes.includes(editType)) {
           return embeds.warn(message, `Invalid edit type. Valid options: ${validEditTypes.join(', ')}`);
         }
 
-        if (!args[1]) return embeds.warn(message, 'Please provide a **message link** to the giveaway you want to edit');
-
-        const linkData = parseMessageLink(args[1]);
-        if (!linkData) return embeds.warn(message, 'Invalid message link format');
-        if (linkData.guildId !== message.guild.id) return embeds.warn(message, 'I can only edit giveaways from this server');
-
-        const giveaway = await guildService.getGiveawayByMessageId(message.guild.id, linkData.messageId);
-        if (!giveaway) return embeds.warn(message, 'No giveaway found with that message link');
+        const resolved = await resolveGiveaway(message, args.slice(1), guildService);
+        if (resolved.error) return embeds.warn(message, resolved.error);
+        
+        const { giveaway, linkData, remainingArgs } = resolved;
         if (!giveaway.isActive) return embeds.warn(message, 'Cannot edit an ended giveaway');
 
-        const editArgs = args.slice(2);
+        const editArgs = remainingArgs;
 
         try {
           let updateData = {};
           let successMsg = '';
 
           switch (editType) {
+            case 'prize': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide a **prize/title** for the giveaway');
+              const newTitle = editArgs.join(' ');
+              if (newTitle.length > 256) return embeds.warn(message, 'Prize must be **256 characters or less**');
+              updateData = { title: newTitle };
+              successMsg = `Prize changed to: **${newTitle}**`;
+              break;
+            }
+            case 'winners': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide the **number of winners**');
+              const winnerCount = parseInt(editArgs[0]);
+              if (isNaN(winnerCount) || winnerCount < 1 || winnerCount > 20) {
+                return embeds.warn(message, 'Number of winners must be between **1** and **20**');
+              }
+              updateData = { winners: winnerCount };
+              successMsg = `Winner count changed to: **${winnerCount}**`;
+              break;
+            }
+            case 'duration': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide a **duration** (e.g., 1d, 12h, 30m)');
+              const newDuration = ms(editArgs[0]);
+              if (!newDuration || newDuration < ms('1m')) {
+                return embeds.warn(message, 'Duration must be at least **1 minute**');
+              }
+              if (newDuration > ms('30d')) {
+                return embeds.warn(message, 'Duration cannot exceed **30 days**');
+              }
+              const newEndTime = new Date(Date.now() + newDuration);
+              updateData = { endTime: newEndTime };
+              successMsg = `End time changed to: <t:${Math.floor(newEndTime.getTime() / 1000)}:R>`;
+              break;
+            }
+            case 'color': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide a **hex color** (e.g., #FF5733) or "none" to reset');
+              let colorValue = null;
+              if (editArgs[0].toLowerCase() !== 'none') {
+                const colorInput = editArgs[0].replace('#', '');
+                if (!/^[0-9A-Fa-f]{6}$/.test(colorInput)) {
+                  return embeds.warn(message, 'Please provide a valid **hex color** (e.g., #FF5733)');
+                }
+                colorValue = parseInt(colorInput, 16);
+              }
+              updateData = { color: colorValue };
+              successMsg = colorValue ? `Color changed to: #${colorValue.toString(16).toUpperCase().padStart(6, '0')}` : 'Color reset to default';
+              break;
+            }
+            case 'minlevel': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide a **minimum level** (or "none" to remove)');
+              let minLevel = null;
+              if (editArgs[0].toLowerCase() !== 'none') {
+                minLevel = parseInt(editArgs[0]);
+                if (isNaN(minLevel) || minLevel < 1 || minLevel > 1000) {
+                  return embeds.warn(message, 'Minimum level must be between **1** and **1000**');
+                }
+              }
+              updateData = { 'requirements.minLevel': minLevel };
+              successMsg = minLevel ? `Minimum level set to: **${minLevel}**` : 'Minimum level requirement removed';
+              break;
+            }
+            case 'maxlevel': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide a **maximum level** (or "none" to remove)');
+              let maxLevel = null;
+              if (editArgs[0].toLowerCase() !== 'none') {
+                maxLevel = parseInt(editArgs[0]);
+                if (isNaN(maxLevel) || maxLevel < 1 || maxLevel > 1000) {
+                  return embeds.warn(message, 'Maximum level must be between **1** and **1000**');
+                }
+              }
+              updateData = { 'requirements.maxLevel': maxLevel };
+              successMsg = maxLevel ? `Maximum level set to: **${maxLevel}**` : 'Maximum level requirement removed';
+              break;
+            }
+            case 'requiredroles': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide **roles** (or "none" to remove all)');
+              if (editArgs[0].toLowerCase() === 'none') {
+                updateData = { 'requirements.requiredRoles': [] };
+                successMsg = 'Required roles cleared';
+              } else {
+                const roleIds = [];
+                for (const arg of editArgs) {
+                  const roleResult = await findRole(message.guild, arg, client);
+                  if (roleResult.found) {
+                    roleIds.push(roleResult.role.id);
+                  }
+                }
+                if (roleIds.length === 0) {
+                  return embeds.warn(message, 'No valid roles found');
+                }
+                updateData = { 'requirements.requiredRoles': roleIds };
+                successMsg = `Required roles set to: ${roleIds.map(r => `<@&${r}>`).join(', ')}`;
+              }
+              break;
+            }
+            case 'roles': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide **roles** to award winners (or "none" to remove)');
+              if (editArgs[0].toLowerCase() === 'none') {
+                updateData = { winnerRoles: [] };
+                successMsg = 'Winner roles cleared';
+              } else {
+                const roleIds = [];
+                for (const arg of editArgs) {
+                  const roleResult = await findRole(message.guild, arg, client);
+                  if (roleResult.found) {
+                    roleIds.push(roleResult.role.id);
+                  }
+                }
+                if (roleIds.length === 0) {
+                  return embeds.warn(message, 'No valid roles found');
+                }
+                updateData = { winnerRoles: roleIds };
+                successMsg = `Winner roles set to: ${roleIds.map(r => `<@&${r}>`).join(', ')}`;
+              }
+              break;
+            }
+            case 'thumbnail': {
+              let thumbnailUrl = null;
+              if (message.attachments.size > 0) {
+                const attachment = message.attachments.first();
+                if (attachment.contentType?.startsWith('image/')) thumbnailUrl = attachment.url;
+                else return embeds.warn(message, 'Attachment must be an **image**');
+              } else if (editArgs[0]) {
+                if (editArgs[0].toLowerCase() === 'none') thumbnailUrl = null;
+                else {
+                  try { new URL(editArgs[0]); thumbnailUrl = editArgs[0]; }
+                  catch { return embeds.warn(message, 'Please provide a valid **image URL** or attach an image'); }
+                }
+              } else {
+                return embeds.warn(message, 'Please provide an **image URL**, attach an image, or use "none" to remove');
+              }
+              updateData = { thumbnail: thumbnailUrl };
+              successMsg = thumbnailUrl ? 'Thumbnail updated!' : 'Thumbnail removed';
+              break;
+            }
+            case 'age': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide **account age in days** (or "none" to remove)');
+              let accountAge = null;
+              if (editArgs[0].toLowerCase() !== 'none') {
+                accountAge = parseInt(editArgs[0]);
+                if (isNaN(accountAge) || accountAge < 1 || accountAge > 365) {
+                  return embeds.warn(message, 'Account age must be between **1** and **365** days');
+                }
+              }
+              updateData = { 'requirements.accountAge': accountAge };
+              successMsg = accountAge ? `Account age requirement set to: **${accountAge}+ days**` : 'Account age requirement removed';
+              break;
+            }
+            case 'stay': {
+              if (!editArgs[0]) return embeds.warn(message, 'Please provide **server stay in days** (or "none" to remove)');
+              let serverStay = null;
+              if (editArgs[0].toLowerCase() !== 'none') {
+                serverStay = parseInt(editArgs[0]);
+                if (isNaN(serverStay) || serverStay < 1 || serverStay > 365) {
+                  return embeds.warn(message, 'Server stay must be between **1** and **365** days');
+                }
+              }
+              updateData = { 'requirements.serverStay': serverStay };
+              successMsg = serverStay ? `Server stay requirement set to: **${serverStay}+ days**` : 'Server stay requirement removed';
+              break;
+            }
             case 'level': {
               if (!editArgs[0]) return embeds.warn(message, 'Please provide a **level requirement** (or "none" to remove)');
               let levelReq = null;
