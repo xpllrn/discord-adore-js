@@ -21,9 +21,9 @@ module.exports = {
       name: 'add',
       aliases: ['set', 'create'],
       description: 'Add a sticky message to a channel',
-      syntax: '{guildprefix}stickymessage add [channel] [message]',
-      parameters: ['channel', 'message'],
-      example: '{guildprefix}stickymessage add #general Welcome to the channel!',
+      syntax: '{guildprefix}stickymessage add [channel] [message] (--ping)',
+      parameters: ['channel', 'message', '--ping (optional)'],
+      example: '{guildprefix}stickymessage add #general Welcome! @everyone --ping',
 
       handler: async (client, message, args, guildService) => {
         if (args.length < 2) return runHelpCommand(message, 'stickymessage');
@@ -43,7 +43,13 @@ module.exports = {
           return embeds.warn(message, `I need **Send Messages** and **Manage Messages** permissions in ${targetChannel}`);
         }
 
-        const stickyContent = args.slice(1).join(' ');
+        let stickyContent = args.slice(1).join(' ');
+        
+        // Check for --ping flag at the end
+        const pingEnabled = stickyContent.endsWith('--ping');
+        if (pingEnabled) {
+          stickyContent = stickyContent.slice(0, -6).trim(); // Remove --ping from content
+        }
 
         if (!stickyContent || stickyContent.trim().length === 0) {
           return runHelpCommand(message, 'stickymessage');
@@ -61,14 +67,15 @@ module.exports = {
           return embeds.deny(message, 'You have reached the **maximum sticky messages (10)**. Please remove some first.');
         }
 
-        // Add the sticky message
-        await guildService.addStickyMessage(message.guild.id, targetChannel.id, stickyContent, message.author.id);
+        // Add the sticky message with ping option
+        await guildService.addStickyMessage(message.guild.id, targetChannel.id, stickyContent, message.author.id, pingEnabled);
 
         // Send the initial sticky message
-        await sendStickyMessage(client, targetChannel, stickyContent, guildService, message.guild.id);
+        await sendStickyMessage(client, targetChannel, stickyContent, guildService, message.guild.id, pingEnabled);
 
         const action = existingForChannel ? 'Updated' : 'Added';
-        return embeds.success(message, `${action} **sticky message** for ${targetChannel}`);
+        const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
+        return embeds.success(message, `${action} **sticky message** for ${targetChannel}${pingStatus}`);
       }
     },
 
@@ -150,7 +157,8 @@ module.exports = {
           .setTitle(`Sticky Message for #${targetChannel.name}`)
           .addFields(
             { name: 'Type', value: isEmbed ? 'Embed/Container' : 'Text', inline: true },
-            { name: 'Created By', value: `<@${stickyData.createdBy}>`, inline: true }
+            { name: 'Created By', value: `<@${stickyData.createdBy}>`, inline: true },
+            { name: 'Ping', value: stickyData.pingEnabled ? 'Enabled' : 'Disabled', inline: true }
           )
           .setFooter({ text: `Created at ${new Date(stickyData.createdAt).toLocaleString()}` });
 
@@ -224,10 +232,22 @@ module.exports = {
 };
 
 // Helper function to send sticky message
-async function sendStickyMessage(client, channel, content, guildService, guildId) {
+async function sendStickyMessage(client, channel, content, guildService, guildId, pingEnabled = false) {
   try {
     const trimmedContent = content.trim();
     let sentMessage;
+
+    // Extract mentions from content for ping functionality
+    const extractMentions = (text) => {
+      const mentions = [];
+      // Match role mentions <@&ID>, user mentions <@ID> or <@!ID>, and @everyone/@here
+      const mentionRegex = /<@&?\!?\d+>|@everyone|@here/g;
+      let match;
+      while ((match = mentionRegex.exec(text)) !== null) {
+        mentions.push(match[0]);
+      }
+      return mentions;
+    };
 
     // Check if it's an embed message
     if (trimmedContent.startsWith('{embed}') || trimmedContent.startsWith('{v2}') || trimmedContent.startsWith('{container}')) {
@@ -244,8 +264,22 @@ async function sendStickyMessage(client, channel, content, guildService, guildId
       await new Promise(resolve => setTimeout(resolve, 500));
       const recentMessages = await channel.messages.fetch({ limit: 5 });
       sentMessage = recentMessages.find(m => m.author.id === client.user.id);
+
+      // If ping is enabled, send a separate ping message then delete it
+      if (pingEnabled && sentMessage) {
+        const mentions = extractMentions(content);
+        if (mentions.length > 0) {
+          const pingMsg = await channel.send({ content: mentions.join(' '), allowedMentions: { parse: ['users', 'roles', 'everyone'] } });
+          await pingMsg.delete().catch(() => {});
+        }
+      }
     } else {
-      sentMessage = await channel.send(content);
+      // For regular text messages, send with or without allowed mentions
+      if (pingEnabled) {
+        sentMessage = await channel.send({ content, allowedMentions: { parse: ['users', 'roles', 'everyone'] } });
+      } else {
+        sentMessage = await channel.send(content);
+      }
     }
 
     // Update the message ID in database
