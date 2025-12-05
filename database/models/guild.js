@@ -1303,6 +1303,36 @@ const guildSchema = new mongoose.Schema({
   RestrictedCommands: {
     type: mongoose.Schema.Types.Mixed,
     default: {}
+  },
+
+  // Bump Reminder system - automatic reminders for Disboard bumps
+  BumpReminder: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    channelId: {
+      type: String,
+      default: null
+    },
+    lastBumperId: {
+      type: String,
+      default: null
+    },
+    lastBumpTime: {
+      type: Number,
+      default: null
+    },
+    thankYouMessage: {
+      type: String,
+      default: null,
+      maxlength: 2000
+    },
+    reminderMessage: {
+      type: String,
+      default: null,
+      maxlength: 2000
+    }
   }
 }, {
   timestamps: true
