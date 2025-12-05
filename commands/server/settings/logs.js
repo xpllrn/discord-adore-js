@@ -7,6 +7,7 @@ const { getService } = require('@services');
 const { hasDiscordPermission } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { createPagination } = require('../../../core/buttons');
+const { getBotAvatarURL } = require('../../../utils/helpers');
 
 function isValidWebhookUrl(url) {
   try {
@@ -91,7 +92,7 @@ module.exports = {
           if (!finalWebhookUrl) {
             const webhook = await channel.createWebhook({
               name: `adore Audits`,
-              avatar: client.user.displayAvatarURL({ format: 'png' }),
+              avatar: getBotAvatarURL(client, message.guild, { format: 'png' }),
               reason: `Logging setup by ${message.author.tag}`
             });
             finalWebhookUrl = webhook.url;

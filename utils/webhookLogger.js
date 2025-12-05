@@ -1,6 +1,7 @@
   const { WebhookClient, EmbedBuilder, AuditLogEvent } = require('discord.js');
 const config = require('../config/setup');
 const { getService } = require('@services');
+const { getBotAvatarURL } = require('./helpers');
 
 class WebhookLogger {
   constructor() {
@@ -149,7 +150,7 @@ class WebhookLogger {
       // Create new webhook
       const newWebhook = await channel.createWebhook({
         name: 'adore Audits',
-        avatar: client.user.displayAvatarURL({ format: 'png' }),
+        avatar: getBotAvatarURL(client, guild, { format: 'png' }),
         reason: 'Recreating deleted webhook for logging'
       });
 

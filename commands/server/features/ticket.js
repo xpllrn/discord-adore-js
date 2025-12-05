@@ -7,6 +7,7 @@ const { hasDiscordPermission } = require('../../../utils/permissions');
 const { findChannel } = require('../../../handlers/finder');
 const { getService } = require('@services');
 const logger = require('../../../utils/logger');
+const { getBotAvatarURL } = require('../../../utils/helpers');
 
 // Cooldown map for ticket message command (1 minute)
 const ticketMessageCooldowns = new Map();
@@ -98,7 +99,7 @@ async function updateTicketSetupMessage(client, guild, ticketSystem, customMessa
         .setTitle('Create a ticket')
         .setDescription('Please select your inquiry below.\nDo **not** create a ticket and suddenly go offline.\n> Refer to [nohello.net](https://nohello.net/)')
         .setColor(colors.info)
-        .setThumbnail(client.user.displayAvatarURL());
+        .setThumbnail(getBotAvatarURL(client, guild));
     }
 
     const row = new ActionRowBuilder()
@@ -167,7 +168,7 @@ module.exports = {
             .setTitle('Create a ticket')
             .setDescription('Please select your inquiry below.\nDo **not** create a ticket and suddenly go offline.\n> Refer to [nohello.net](https://nohello.net/)')
             .setColor(colors.info)
-            .setThumbnail(client.user.displayAvatarURL());
+            .setThumbnail(getBotAvatarURL(client, message.guild));
         }
 
         const row = new ActionRowBuilder()

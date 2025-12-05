@@ -1,4 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
+const { getBotAvatarURL } = require('../../utils/helpers');
 
 module.exports = {
   name: 'guildCreate',
@@ -21,7 +22,7 @@ module.exports = {
         .setTitle('Getting Started with Adore')
         .setDescription('Hey! Thanks for choosing **Adore Bot**. Here are a few quick tips to help you set everything up in your server.')
         .setColor('#7985cd')
-        .setThumbnail(client.user.displayAvatarURL({ dynamic: true, size: 256 }))
+        .setThumbnail(getBotAvatarURL(client, guild, { dynamic: true, size: 256 }))
         .addFields(
           {
             name: '**Prefix**',

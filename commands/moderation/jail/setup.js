@@ -4,6 +4,7 @@ const { embeds } = require('../../../core/embeds');
 const { colors, emojis } = require('../../../config/setup');
 const { findRole, findChannel } = require('../../../handlers/finder');
 const logger = require('../../../utils/logger');
+const { getBotAvatarURL } = require('../../../utils/helpers');
 
 module.exports = {
   name: "setup",
@@ -178,7 +179,7 @@ module.exports = {
             // Create webhook for logging
             const webhook = await logsChannel.createWebhook({
               name: `adore Audits`,
-              avatar: client.user.displayAvatarURL({ format: 'png' }),
+              avatar: getBotAvatarURL(client, message.guild, { format: 'png' }),
               reason: `Jail logging setup by ${message.author.tag}`
             });
 

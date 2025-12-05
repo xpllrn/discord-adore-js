@@ -500,9 +500,32 @@ function handleSpotifyError(context, error) {
   return embeds.warn(context, error.message || 'An error occurred with **Spotify**.');
 }
 
+/**
+ * Get the bot's avatar URL for a specific guild
+ * Uses the server-specific avatar if set, otherwise falls back to global avatar
+ * @param {Client} client - Discord client
+ * @param {Guild} guild - Discord guild
+ * @param {Object} options - Avatar URL options (size, format, dynamic)
+ * @returns {string} The bot's avatar URL for the guild
+ */
+function getBotAvatarURL(client, guild, options = { dynamic: true, size: 256 }) {
+  if (!guild) {
+    return client.user.displayAvatarURL(options);
+  }
+  
+  const botMember = guild.members.cache.get(client.user.id);
+  if (botMember) {
+    // displayAvatarURL returns guild avatar if set, otherwise global avatar
+    return botMember.displayAvatarURL(options);
+  }
+  
+  return client.user.displayAvatarURL(options);
+}
+
 module.exports = {
   // Shared
   getOrdinal,
+  getBotAvatarURL,
 
   // Roleplay
   fetchWaifuGif,
