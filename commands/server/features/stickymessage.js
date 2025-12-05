@@ -237,24 +237,13 @@ async function sendStickyMessage(client, channel, content, guildService, guildId
     const trimmedContent = content.trim();
     let sentMessage;
 
-    // Extract mentions from content for ping functionality
-    const extractMentions = (text) => {
-      const mentions = [];
-      // Match role mentions <@&ID>, user mentions <@ID> or <@!ID>, and @everyone/@here
-      const mentionRegex = /<@&?\!?\d+>|@everyone|@here/g;
-      let match;
-      while ((match = mentionRegex.exec(text)) !== null) {
-        mentions.push(match[0]);
-      }
-      return mentions;
-    };
-
     // Check if it's an embed message
     if (trimmedContent.startsWith('{embed}') || trimmedContent.startsWith('{v2}') || trimmedContent.startsWith('{container}')) {
       const { EmbedVariableProcessor } = require('../../../utils/embeds/embedbuilder');
       const variables = {
         guild: channel.guild,
-        channel: channel
+        channel: channel,
+        pingEnabled: pingEnabled // Pass ping flag to enable allowedMentions
       };
       
       // Process the embed (sends internally)
@@ -264,19 +253,10 @@ async function sendStickyMessage(client, channel, content, guildService, guildId
       await new Promise(resolve => setTimeout(resolve, 500));
       const recentMessages = await channel.messages.fetch({ limit: 5 });
       sentMessage = recentMessages.find(m => m.author.id === client.user.id);
-
-      // If ping is enabled, send a separate ping message then delete it
-      if (pingEnabled && sentMessage) {
-        const mentions = extractMentions(content);
-        if (mentions.length > 0) {
-          const pingMsg = await channel.send({ content: mentions.join(' '), allowedMentions: { parse: ['users', 'roles', 'everyone'] } });
-          await pingMsg.delete().catch(() => {});
-        }
-      }
     } else {
       // For regular text messages, send with or without allowed mentions
       if (pingEnabled) {
-        sentMessage = await channel.send({ content, allowedMentions: { parse: ['users', 'roles', 'everyone'] } });
+        sentMessage = await channel.send({ content, allowedMentions: { parse: ['users', 'roles'] } });
       } else {
         sentMessage = await channel.send(content);
       }

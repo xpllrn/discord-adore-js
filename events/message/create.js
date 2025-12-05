@@ -442,7 +442,8 @@ async function processTags(message) {
         const variables = {
           user: message.author,
           guild: message.guild,
-          channel: message.channel
+          channel: message.channel,
+          disablePing: true // Tags should NOT allow --ping to prevent abuse
         };
         await EmbedVariableProcessor.process(message.channel, tag.response, variables, message);
       } else {
@@ -698,17 +699,6 @@ async function handleLevelUp(message, newLevel, userData) {
 const stickyMessageCooldowns = new Map();
 const STICKY_COOLDOWN = 2000; // 2 seconds cooldown to prevent spam
 
-// Helper to extract mentions from content
-function extractMentions(text) {
-  const mentions = [];
-  const mentionRegex = /<@&?\!?\d+>|@everyone|@here/g;
-  let match;
-  while ((match = mentionRegex.exec(text)) !== null) {
-    mentions.push(match[0]);
-  }
-  return mentions;
-}
-
 // Process sticky messages - repost sticky message when new messages are sent
 async function processStickyMessage(message) {
   try {
@@ -758,7 +748,8 @@ async function processStickyMessage(message) {
           const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
           const variables = {
             guild: message.guild,
-            channel: message.channel
+            channel: message.channel,
+            pingEnabled: pingEnabled // Pass ping flag to enable role mentions
           };
           
           // Process the embed (sends internally)
@@ -768,19 +759,10 @@ async function processStickyMessage(message) {
           await new Promise(resolve => setTimeout(resolve, 500));
           const recentMessages = await message.channel.messages.fetch({ limit: 5 });
           sentMessage = recentMessages.find(m => m.author.id === message.client.user.id);
-
-          // If ping is enabled, send a separate ping message then delete it
-          if (pingEnabled && sentMessage) {
-            const mentions = extractMentions(currentStickyData.message);
-            if (mentions.length > 0) {
-              const pingMsg = await message.channel.send({ content: mentions.join(' '), allowedMentions: { parse: ['users', 'roles', 'everyone'] } });
-              await pingMsg.delete().catch(() => {});
-            }
-          }
         } else {
           // For regular text messages
           if (pingEnabled) {
-            sentMessage = await message.channel.send({ content: currentStickyData.message, allowedMentions: { parse: ['users', 'roles', 'everyone'] } });
+            sentMessage = await message.channel.send({ content: currentStickyData.message, allowedMentions: { parse: ['users', 'roles'] } });
           } else {
             sentMessage = await message.channel.send(currentStickyData.message);
           }

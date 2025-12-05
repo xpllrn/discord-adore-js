@@ -287,6 +287,11 @@ class CustomEmbedBuilder {
             messageOptions.components = components
         }
 
+        // If pingEnabled is set in variables, allow role mentions to ping (users already work by default)
+        if (variables.pingEnabled) {
+            messageOptions.allowedMentions = { parse: ['users', 'roles'] };
+        }
+
         channel.send(messageOptions).then((sentMessage) => {
             // Check if there are any welcome buttons to set up timeout for
             const hasWelcomeButtons = Buttons.some(button =>
@@ -360,19 +365,27 @@ class CustomEmbedBuilder {
 // Unified embed/text processor with variable replacement
 class EmbedVariableProcessor {
     static process(channel, input, variables = {}, message = null) {
+        // Check for --ping flag at the end of input (enables role/user mentions)
+        // Skip if disablePing is set (e.g., for tags where --ping should not work)
+        let processedInput = input;
+        if (!variables.disablePing && input.trim().endsWith('--ping')) {
+            processedInput = input.trim().slice(0, -6).trim(); // Remove --ping
+            variables.pingEnabled = true;
+        }
+
         // Check if input starts with {v2} or {container} - Components V2 mode
-        if (input.trim().startsWith('{v2}') || input.trim().startsWith('{container}')) {
+        if (processedInput.trim().startsWith('{v2}') || processedInput.trim().startsWith('{container}')) {
             // Components V2 mode - remove prefix and process as container
-            const containerContent = input.replace(/^\s*{v2}\s*\$v\s*/, '').replace(/^\s*{container}\s*\$v\s*/, '');
+            const containerContent = processedInput.replace(/^\s*{v2}\s*\$v\s*/, '').replace(/^\s*{container}\s*\$v\s*/, '');
             const { CustomContainerBuilder } = require('./containerbuilder');
             return new CustomContainerBuilder(channel, containerContent, variables, message);
-        } else if (input.trim().startsWith('{embed}')) {
+        } else if (processedInput.trim().startsWith('{embed}')) {
             // Embed mode - remove {embed} prefix and process as embed
-            const embedContent = input.replace(/^\s*{embed}\s*\$v\s*/, '');
+            const embedContent = processedInput.replace(/^\s*{embed}\s*\$v\s*/, '');
             return this.processAsEmbed(channel, embedContent, variables, message);
         } else {
             // Text mode - process variables and send as regular message
-            return this.processAsText(channel, input, variables);
+            return this.processAsText(channel, processedInput, variables);
         }
     }
 
@@ -413,7 +426,14 @@ class EmbedVariableProcessor {
     static processAsText(channel, textContent, variables = {}) {
         // Apply variable replacements to text
         const processedText = this.replaceVariables(textContent, variables);
-        return channel.send({ content: processedText });
+        const messageOptions = { content: processedText };
+        
+        // If pingEnabled, allow role and user mentions to ping
+        if (variables.pingEnabled) {
+            messageOptions.allowedMentions = { parse: ['users', 'roles'] };
+        }
+        
+        return channel.send(messageOptions);
     }
 
     static replaceVariables(content, variables = {}) {

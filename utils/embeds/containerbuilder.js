@@ -307,6 +307,11 @@ class CustomContainerBuilder {
             messageOptions.files = Files;
         }
 
+        // If pingEnabled is set in variables, allow role and user mentions to ping
+        if (variables.pingEnabled) {
+            messageOptions.allowedMentions = { parse: ['users', 'roles'] };
+        }
+
         channel.send(messageOptions).catch((error) => {
             console.error('Container send error:', error);
             
