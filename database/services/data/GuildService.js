@@ -4084,6 +4084,50 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Remove giveaway participant
+   * @param {string} guildId - Guild ID
+   * @param {number} giveawayId - Giveaway ID
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removeGiveawayParticipant(guildId, giveawayId, userId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (typeof giveawayId !== 'number') {
+      throw new ValidationError('Giveaway ID must be a number', 'giveawayId', giveawayId);
+    }
+
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const giveaways = guildData.Giveaways || [];
+
+      const giveaway = giveaways.find(g => g.id === giveawayId);
+      if (giveaway && giveaway.participants) {
+        const index = giveaway.participants.indexOf(userId);
+        if (index !== -1) {
+          giveaway.participants.splice(index, 1);
+          guildData.Giveaways = giveaways;
+          await this.set(guildId, guildData);
+        }
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove giveaway participant for guild ${guildId}`, error);
+    }
+  }
+
+  /**
    * Get all active giveaways
    * @param {string} guildId - Guild ID
    * @returns {Promise<Array>} Array of active giveaways
