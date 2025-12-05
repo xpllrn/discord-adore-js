@@ -127,6 +127,64 @@ module.exports = {
           return embeds.deny(message, 'Failed to clear guild name history');
         }
       }
+    },
+
+    gw: {
+      name: 'gw',
+      aliases: ['giveaways', 'giveaway'],
+      description: 'Clear all giveaways for a server',
+      syntax: '{guildprefix}clear gw [server id]',
+      parameters: ['server id (optional)'],
+      example: '{guildprefix}clear gw',
+
+      handler: async (client, message, args) => {
+        const guildService = getService('guild');
+
+        let targetGuildId = message.guild.id;
+        let targetGuildName = message.guild.name;
+
+        if (args[0]) {
+          targetGuildId = args[0];
+          
+          try {
+            const fetchedGuild = client.guilds.cache.get(targetGuildId);
+            if (fetchedGuild) {
+              targetGuildName = fetchedGuild.name;
+            } else {
+              targetGuildName = `Server ${targetGuildId}`;
+            }
+          } catch (error) {
+            targetGuildName = `Server ${targetGuildId}`;
+          }
+        }
+
+        await ensureGuildData(targetGuildId);
+
+        try {
+          const guildData = await guildService.get(targetGuildId);
+          const giveaways = guildData?.Giveaways || [];
+
+          if (giveaways.length === 0) {
+            return embeds.warn(message, `No giveaways to clear for **${targetGuildName}**`);
+          }
+
+          const activeCount = giveaways.filter(g => g.isActive && !g.ended).length;
+          const endedCount = giveaways.length - activeCount;
+
+          await createConfirmation(
+            message,
+            `Are you sure you want to **clear** all giveaways for **${targetGuildName}**?\n\n> Active: **${activeCount}**\n> Ended: **${endedCount}**\n> Total: **${giveaways.length}**`,
+            async (interaction) => {
+              await guildService.setGuildField(targetGuildId, 'Giveaways', []);
+              const successEmbed = embeds.createSuccess(message, `**Cleared** all **${giveaways.length}** giveaways for **${targetGuildName}**`);
+              await interaction.editReply({ embeds: [successEmbed], components: [] });
+            }
+          );
+        } catch (error) {
+          logger.webhook.error(error, message);
+          return embeds.deny(message, 'Failed to clear giveaways');
+        }
+      }
     }
   },
 

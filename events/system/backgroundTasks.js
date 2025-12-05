@@ -164,7 +164,8 @@ async function checkGiveaways(client) {
         const giveaways = guildData.Giveaways || [];
 
         for (const giveaway of giveaways) {
-          if (!giveaway?.endTime || giveaway.ended) continue;
+          // Skip if no end time, already ended, or not active
+          if (!giveaway?.endTime || giveaway.ended || giveaway.isActive === false) continue;
 
           if (new Date(giveaway.endTime) <= now) {
             await endGiveaway(client, guildId, giveaway);
@@ -195,7 +196,7 @@ async function endGiveaway(client, guildId, giveaway) {
     // Mark as ended first to prevent duplicate processing
     const result = await models.Guild.updateOne(
       { GuildID: guildId, 'Giveaways.messageId': giveaway.messageId, 'Giveaways.ended': { $ne: true } },
-      { $set: { 'Giveaways.$.ended': true } }
+      { $set: { 'Giveaways.$.ended': true, 'Giveaways.$.isActive': false } }
     );
 
     // If no document was modified, giveaway was already ended
