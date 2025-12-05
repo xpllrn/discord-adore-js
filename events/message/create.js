@@ -5,9 +5,6 @@ module.exports = {
   name: 'messageCreate',
   async execute(message) {
 
-    // Skip bots
-    if (message.author.bot) return;
-
     // Skip if no guild
     if (!message.guild) return;
 
@@ -15,6 +12,15 @@ module.exports = {
     if (!message.client.cacheReady) {
       return; // Don't process any messages during startup
     }
+
+    // Process sticky messages for ALL messages (including bots, but not this bot)
+    // This needs to run before the bot check so other bots trigger sticky reposts
+    if (!message.author.bot || message.author.id !== message.client.user.id) {
+      await processStickyMessage(message);
+    }
+
+    // Skip bots for everything else
+    if (message.author.bot) return;
 
     // Check spam filter first (before any other processing)
     const spamDetected = await processSpamFilter(message);
@@ -45,9 +51,6 @@ module.exports = {
 
     // Process counting game
     await processCounting(message);
-
-    // Process sticky messages
-    await processStickyMessage(message);
 
     // Process commands last
     await processCommand(message, false);
