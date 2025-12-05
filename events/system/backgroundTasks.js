@@ -18,6 +18,7 @@ module.exports = {
     setupReminderCheck(client);
     setupGiveawayCheck(client);
     setupRoleRestoreCleanup(client);
+    setupScheduledNukeCheck(client);
     
     // Start cache warming with client
     setupCacheWarming(client);
@@ -299,6 +300,200 @@ async function cleanupExpiredRoleRestore(client) {
       });
       roleRestoreLastErrorTime = now;
     }
+  }
+}
+
+// ===== SCHEDULED NUKE CHECKING =====
+
+let scheduledNukeLastErrorTime = 0;
+
+function setupScheduledNukeCheck(client) {
+  // Run every minute
+  setInterval(async () => {
+    await checkScheduledNukes(client);
+  }, 60000);
+
+  // Initial check after 45 seconds
+  setTimeout(() => checkScheduledNukes(client), 45000);
+}
+
+async function checkScheduledNukes(client) {
+  try {
+    const { getModels, isDatabaseReady } = require('../../database');
+
+    const dbStatus = isDatabaseReady();
+    if (!dbStatus.global && !dbStatus.local && !dbStatus.legacy) return;
+
+    const models = getModels();
+    if (!models?.Guild) return;
+
+    const guildsWithScheduledNukes = await models.Guild.find({
+      'ScheduledNukes.0': { $exists: true }
+    }).select('GuildID ScheduledNukes').maxTimeMS(5000);
+
+    if (!guildsWithScheduledNukes?.length) return;
+
+    const now = new Date();
+
+    for (const guildData of guildsWithScheduledNukes) {
+      try {
+        if (!guildData?.GuildID) continue;
+
+        const guildId = guildData.GuildID;
+        const scheduledNukes = guildData.ScheduledNukes || [];
+
+        for (const scheduledNuke of scheduledNukes) {
+          if (!scheduledNuke?.channelId || !scheduledNuke.interval) continue;
+
+          // Calculate next nuke time
+          const baseTime = scheduledNuke.lastNuke 
+            ? new Date(scheduledNuke.lastNuke) 
+            : new Date(scheduledNuke.createdAt);
+          const nextNukeTime = new Date(baseTime.getTime() + scheduledNuke.interval);
+
+          if (nextNukeTime <= now) {
+            await executeScheduledNuke(client, guildId, scheduledNuke);
+          }
+        }
+      } catch (guildError) {
+        logger.console.error(`Error processing scheduled nukes for guild ${guildData.GuildID}:`, guildError);
+      }
+    }
+  } catch (error) {
+    const now = Date.now();
+    if (now - scheduledNukeLastErrorTime > ERROR_COOLDOWN) {
+      client?.errorLogger?.log(error, 'Scheduled Nuke Check System', {
+        command: 'Scheduled Nuke Check',
+        args: 'System Check'
+      });
+      scheduledNukeLastErrorTime = now;
+    }
+  }
+}
+
+async function executeScheduledNuke(client, guildId, scheduledNuke) {
+  try {
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+
+    const guild = await client.guilds.fetch(guildId).catch(() => null);
+    if (!guild) return;
+
+    const channel = await guild.channels.fetch(scheduledNuke.channelId).catch(() => null);
+    if (!channel || !channel.isTextBased()) {
+      // Channel no longer exists, remove the scheduled nuke
+      await guildService.removeScheduledNuke(guildId, scheduledNuke.channelId);
+      return;
+    }
+
+    // Check bot permissions
+    const botMember = guild.members.me;
+    if (!botMember?.permissions.has('ManageChannels')) return;
+
+    // Store channel data before deletion
+    const channelData = {
+      name: channel.name,
+      type: channel.type,
+      topic: channel.topic,
+      nsfw: channel.nsfw,
+      rateLimitPerUser: channel.rateLimitPerUser,
+      rawPosition: channel.rawPosition,
+      parent: channel.parent,
+      permissionOverwrites: channel.permissionOverwrites.cache.map(overwrite => ({
+        id: overwrite.id,
+        type: overwrite.type,
+        allow: overwrite.allow.bitfield,
+        deny: overwrite.deny.bitfield
+      }))
+    };
+
+    const oldChannelId = channel.id;
+
+    // Get channel-specific settings to preserve
+    const welcomeMsg = await guildService.getWelcomeMessageForChannel(guildId, oldChannelId);
+    const leaveMsg = await guildService.getLeaveMessageForChannel(guildId, oldChannelId);
+    const boostMsg = await guildService.getBoostMessage(guildId, oldChannelId);
+    const loggingConfig = await guildService.getLoggingConfigForChannel(guildId, oldChannelId);
+    const starboardChannel = await guildService.getStarboardChannel(guildId);
+    const levelUpChannel = await guildService.getLevelUpChannel(guildId);
+    const countingData = await guildService.getCounting(guildId);
+
+    // Delete the channel
+    await channel.delete('Scheduled Nuke');
+
+    // Create new channel with same settings
+    const newChannel = await guild.channels.create({
+      name: channelData.name,
+      type: channelData.type,
+      topic: channelData.topic,
+      nsfw: channelData.nsfw,
+      rateLimitPerUser: channelData.rateLimitPerUser,
+      parent: channelData.parent,
+      permissionOverwrites: channelData.permissionOverwrites
+    });
+
+    // Set the exact position
+    await newChannel.setPosition(channelData.rawPosition).catch(() => {});
+
+    // Restore database settings with new channel ID
+    if (welcomeMsg) {
+      await guildService.removeWelcomeMessage(guildId, oldChannelId);
+      await guildService.addWelcomeMessage(guildId, newChannel.id, welcomeMsg.message);
+    }
+
+    if (leaveMsg) {
+      await guildService.removeLeaveMessage(guildId, oldChannelId);
+      await guildService.addLeaveMessage(guildId, newChannel.id, leaveMsg.message);
+    }
+
+    if (boostMsg) {
+      await guildService.removeBoostMessage(guildId, oldChannelId);
+      await guildService.addBoostMessage(guildId, newChannel.id, boostMsg.message);
+    }
+
+    if (loggingConfig) {
+      await guildService.removeLoggingChannel(guildId, oldChannelId);
+      await guildService.setLoggingChannel(
+        guildId,
+        newChannel.id,
+        loggingConfig.webhookUrl,
+        loggingConfig.logTypes,
+        loggingConfig.createdBy
+      );
+    }
+
+    if (starboardChannel === oldChannelId) {
+      await guildService.setStarboardChannel(guildId, newChannel.id);
+    }
+
+    if (levelUpChannel === oldChannelId) {
+      await guildService.setLevelUpChannel(guildId, newChannel.id);
+    }
+
+    if (countingData && countingData.channelId === oldChannelId) {
+      await guildService.setCounting(guildId, {
+        ...countingData,
+        channelId: newChannel.id
+      });
+    }
+
+    // Update scheduled nuke with new channel ID and last nuke time
+    await guildService.removeScheduledNuke(guildId, oldChannelId);
+    await guildService.addScheduledNuke(
+      guildId, 
+      newChannel.id, 
+      scheduledNuke.interval, 
+      scheduledNuke.message, 
+      scheduledNuke.addedBy
+    );
+    await guildService.updateScheduledNukeLastRun(guildId, newChannel.id);
+
+    // Send message in the new channel
+    const nukeMessage = scheduledNuke.message || 'Channel has been automatically reset.';
+    await newChannel.send(nukeMessage);
+
+  } catch (error) {
+    logger.console.error(`Error executing scheduled nuke for guild ${guildId}:`, error);
   }
 }
 

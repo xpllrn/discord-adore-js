@@ -170,11 +170,11 @@ module.exports = {
         const channel = channelResult.channel;
         if (!channel.isTextBased()) return embeds.warn(message, 'I can only schedule nukes for text channels');
 
-        if (!args[1]) return embeds.warn(message, 'Please provide an **interval** (e.g., 1h, 6h, 12h, 24h, 7d)');
+        if (!args[1]) return embeds.warn(message, 'Please provide an **interval** (e.g., 30m, 1h, 6h, 12h, 24h, 7d)');
         
         const interval = ms(args[1]);
-        if (!interval || interval < ms('1h')) {
-          return embeds.warn(message, 'Interval must be at least **1 hour**');
+        if (!interval || interval < ms('30m')) {
+          return embeds.warn(message, 'Your timer\'s interval must be longer than **30 minutes** (`1800 seconds`)');
         }
         if (interval > ms('30d')) {
           return embeds.warn(message, 'Interval cannot exceed **30 days**');
@@ -190,8 +190,7 @@ module.exports = {
 
         await guildService.addScheduledNuke(message.guild.id, channel.id, interval, customMessage, message.author.id);
 
-        const intervalText = ms(interval, { long: true });
-        return embeds.success(message, `Scheduled nuke for ${channel} every **${intervalText}**${customMessage ? `\nMessage: ${customMessage}` : ''}`);
+        return embeds.success(message, `A **scheduled nuke** is now set up for ${channel}`);
       }
     },
 

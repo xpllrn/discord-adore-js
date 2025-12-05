@@ -9376,8 +9376,8 @@ class GuildService extends BaseService {
       throw new ValidationError('Channel ID is required', 'channelId', channelId);
     }
 
-    if (!interval || interval < 3600000) {
-      throw new ValidationError('Interval must be at least 1 hour', 'interval', interval);
+    if (!interval || interval < 1800000) {
+      throw new ValidationError('Interval must be at least 30 minutes', 'interval', interval);
     }
 
     try {
