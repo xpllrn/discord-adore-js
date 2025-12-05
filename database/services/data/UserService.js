@@ -2224,8 +2224,13 @@ class UserService extends BaseService {
     try {
       const userData = await this.ensureUserData(userId);
       
-      if (userData.AFK) {
-        delete userData.AFK;
+      // Check if user actually has valid AFK status
+      if (userData.AFK && userData.AFK.message && userData.AFK.since) {
+        // Set AFK fields to null instead of deleting - ensures MongoDB properly clears the data
+        userData.AFK = {
+          message: null,
+          since: null
+        };
         await this.set(userId, userData);
         return true;
       }
