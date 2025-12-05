@@ -698,6 +698,17 @@ async function handleLevelUp(message, newLevel, userData) {
 const stickyMessageCooldowns = new Map();
 const STICKY_COOLDOWN = 2000; // 2 seconds cooldown to prevent spam
 
+// Helper to extract mentions from content
+function extractMentions(text) {
+  const mentions = [];
+  const mentionRegex = /<@&?\!?\d+>|@everyone|@here/g;
+  let match;
+  while ((match = mentionRegex.exec(text)) !== null) {
+    mentions.push(match[0]);
+  }
+  return mentions;
+}
+
 // Process sticky messages - repost sticky message when new messages are sent
 async function processStickyMessage(message) {
   try {
@@ -739,6 +750,7 @@ async function processStickyMessage(message) {
 
         // Send the new sticky message
         const trimmedContent = currentStickyData.message.trim();
+        const pingEnabled = currentStickyData.pingEnabled || false;
         let sentMessage;
 
         if (trimmedContent.startsWith('{embed}') || trimmedContent.startsWith('{v2}') || trimmedContent.startsWith('{container}')) {
@@ -756,8 +768,22 @@ async function processStickyMessage(message) {
           await new Promise(resolve => setTimeout(resolve, 500));
           const recentMessages = await message.channel.messages.fetch({ limit: 5 });
           sentMessage = recentMessages.find(m => m.author.id === message.client.user.id);
+
+          // If ping is enabled, send a separate ping message then delete it
+          if (pingEnabled && sentMessage) {
+            const mentions = extractMentions(currentStickyData.message);
+            if (mentions.length > 0) {
+              const pingMsg = await message.channel.send({ content: mentions.join(' '), allowedMentions: { parse: ['users', 'roles', 'everyone'] } });
+              await pingMsg.delete().catch(() => {});
+            }
+          }
         } else {
-          sentMessage = await message.channel.send(currentStickyData.message);
+          // For regular text messages
+          if (pingEnabled) {
+            sentMessage = await message.channel.send({ content: currentStickyData.message, allowedMentions: { parse: ['users', 'roles', 'everyone'] } });
+          } else {
+            sentMessage = await message.channel.send(currentStickyData.message);
+          }
         }
 
         // Update the message ID in database

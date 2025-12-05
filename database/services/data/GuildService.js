@@ -9009,9 +9009,10 @@ class GuildService extends BaseService {
    * @param {string} channelId - Channel ID
    * @param {string} message - Message content
    * @param {string} createdBy - User ID who created it
+   * @param {boolean} pingEnabled - Whether to ping mentions when sticky is sent
    * @returns {Promise<boolean>} Success status
    */
-  async addStickyMessage(guildId, channelId, message, createdBy) {
+  async addStickyMessage(guildId, channelId, message, createdBy, pingEnabled = false) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -9040,6 +9041,7 @@ class GuildService extends BaseService {
         stickyMessages[existingIndex].createdBy = createdBy;
         stickyMessages[existingIndex].createdAt = new Date();
         stickyMessages[existingIndex].currentMessageId = null;
+        stickyMessages[existingIndex].pingEnabled = pingEnabled;
       } else {
         // Add new
         stickyMessages.push({
@@ -9047,7 +9049,8 @@ class GuildService extends BaseService {
           message: message.trim(),
           currentMessageId: null,
           createdBy,
-          createdAt: new Date()
+          createdAt: new Date(),
+          pingEnabled
         });
       }
 
