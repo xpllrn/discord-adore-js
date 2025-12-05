@@ -2162,7 +2162,12 @@ class UserService extends BaseService {
 
     try {
       const userData = await this.ensureUserData(userId);
-      return userData.AFK || null;
+      // Check if AFK data is actually valid (has message and since date)
+      // MongoDB may return empty AFK object { message: null, since: null } from schema defaults
+      if (userData.AFK && userData.AFK.message && userData.AFK.since) {
+        return userData.AFK;
+      }
+      return null;
     } catch (error) {
       console.error(`Error getting AFK status for user ${userId}:`, error.message);
       return null;
