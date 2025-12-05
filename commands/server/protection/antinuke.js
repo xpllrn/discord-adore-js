@@ -169,7 +169,7 @@ module.exports = {
             iconURL: message.guild.iconURL({ dynamic: true })
           })
           .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-          .setDescription(`**Status:** ${settings.enabled ? `${emojis.success} Enabled` : `${emojis.error} Disabled`}`)
+          .setDescription(`**Status:** ${settings.enabled ? `**__Enabled__**` : `**__Disabled__**`}`)
           .addFields([
             {
               name: '**Protection Modules**',
