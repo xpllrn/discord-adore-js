@@ -49,7 +49,10 @@ class CustomContainerBuilder {
         const Files = [];
 
         // Apply variable replacements first
-        const processedString = EmbedVariableProcessor.replaceVariables(string, variables);
+        let processedString = EmbedVariableProcessor.replaceVariables(string, variables);
+        
+        // Replace :nextline: with actual newline
+        processedString = processedString.replace(/:nextline:/g, '\n');
 
         // Parse parameters by finding complete blocks between { and }$v or end
         const parseParameters = (input) => {

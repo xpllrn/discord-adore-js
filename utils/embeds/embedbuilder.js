@@ -548,13 +548,20 @@ class EmbedVariableProcessor {
             processed = processed.replace(/{level\.rank}/g, variables.level.new_rank?.toString() || 'N/A'); // Alias
         }
 
-
+        // Replace bump reminder variables if provided
+        if (variables.bumpreminder) {
+            processed = processed.replace(/{bumpreminder\.last_user_bump}/g, variables.bumpreminder.last_user_bump || 'N/A');
+            processed = processed.replace(/{bumpreminder\.next_bump}/g, variables.bumpreminder.next_bump || 'N/A');
+        }
 
         // Replace time variables
         const now = new Date();
         processed = processed.replace(/{time\.now}/g, now.toLocaleTimeString('en-US', { timeZone: 'UTC', hour12: true }));
         processed = processed.replace(/{time\.now_millitary}/g, now.toLocaleTimeString('en-US', { timeZone: 'UTC', hour12: false }));
         processed = processed.replace(/{time\.now_timestamp}/g, Math.floor(now.getTime() / 1000).toString());
+
+        // Replace :nextline: with actual newline
+        processed = processed.replace(/:nextline:/g, '\n');
 
         return processed;
     }

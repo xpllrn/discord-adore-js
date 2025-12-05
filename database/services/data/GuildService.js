@@ -255,7 +255,15 @@ class GuildService extends BaseService {
       Tags: [],
       StickyMessages: [],
       DisabledCommands: { channels: {}, roles: {}, global: [] },
-      RestrictedCommands: {}
+      RestrictedCommands: {},
+      BumpReminder: {
+        enabled: false,
+        channelId: null,
+        lastBumperId: null,
+        lastBumpTime: null,
+        thankYouMessage: null,
+        reminderMessage: null
+      }
     };
   }
 
@@ -9131,6 +9139,112 @@ class GuildService extends BaseService {
     } catch (error) {
       console.error(`Error updating sticky message ID for channel ${channelId}:`, error.message);
       return false;
+    }
+  }
+
+  // ===== BUMP REMINDER SYSTEM =====
+
+  /**
+   * Get bump reminder settings
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object>} Bump reminder settings
+   */
+  async getBumpReminder(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.BumpReminder || {
+        enabled: false,
+        channelId: null,
+        lastBumperId: null,
+        lastBumpTime: null,
+        thankYouMessage: null,
+        reminderMessage: null
+      };
+    } catch (error) {
+      console.error(`Error getting bump reminder for guild ${guildId}:`, error.message);
+      return {
+        enabled: false,
+        channelId: null,
+        lastBumperId: null,
+        lastBumpTime: null,
+        thankYouMessage: null,
+        reminderMessage: null
+      };
+    }
+  }
+
+  /**
+   * Update bump reminder settings
+   * @param {string} guildId - Guild ID
+   * @param {Object} updates - Settings to update
+   * @returns {Promise<boolean>} Success status
+   */
+  async updateBumpReminder(guildId, updates) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      throw new ValidationError('Updates object is required', 'updates', updates);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      if (!guildData.BumpReminder) {
+        guildData.BumpReminder = {
+          enabled: false,
+          channelId: null,
+          lastBumperId: null,
+          lastBumpTime: null,
+          thankYouMessage: null,
+          reminderMessage: null
+        };
+      }
+
+      // Apply updates
+      Object.assign(guildData.BumpReminder, updates);
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to update bump reminder for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Reset bump reminder to defaults
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async resetBumpReminder(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      
+      guildData.BumpReminder = {
+        enabled: false,
+        channelId: null,
+        lastBumperId: null,
+        lastBumpTime: null,
+        thankYouMessage: null,
+        reminderMessage: null
+      };
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to reset bump reminder for guild ${guildId}`, error);
     }
   }
 }
