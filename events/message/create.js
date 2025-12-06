@@ -371,6 +371,8 @@ async function processAutoresponder(message) {
 
           // Check if response contains embed or v2 container syntax
           const trimmedResponse = autoresponder.response.trim();
+          const pingEnabled = autoresponder.pingEnabled || false;
+          
           if (trimmedResponse.startsWith('{embed}') || trimmedResponse.startsWith('{v2}') || trimmedResponse.startsWith('{container}')) {
             // Use EmbedVariableProcessor for embed/container responses
             const { EmbedVariableProcessor } = require('../../utils/embeds/embedbuilder');
@@ -378,17 +380,23 @@ async function processAutoresponder(message) {
             const variables = {
               user: message.author,
               guild: message.guild,
-              channel: message.channel
+              channel: message.channel,
+              pingEnabled: pingEnabled
             };
 
             // Process the embed/container and send it
             responseMessage = await EmbedVariableProcessor.process(message.channel, autoresponder.response, variables, message);
           } else {
             // Regular text response
+            const messageOptions = { content: autoresponder.response };
+            if (pingEnabled) {
+              messageOptions.allowedMentions = { parse: ['users', 'roles'] };
+            }
+            
             if (autoresponder.reply) {
-              responseMessage = await message.reply(autoresponder.response);
+              responseMessage = await message.reply(messageOptions);
             } else {
-              responseMessage = await message.channel.send(autoresponder.response);
+              responseMessage = await message.channel.send(messageOptions);
             }
           }
 

@@ -7,6 +7,33 @@ const { getService } = require('@services');
 const cooldowns = new Collection();
 
 /**
+ * Map permission string to user-friendly display name
+ * @param {string} permission - Permission string from command
+ * @returns {string|null} Display name or null
+ */
+function getPermissionDisplayName(permission) {
+  if (!permission) return null;
+  
+  const permissionMap = {
+    'administrator': 'Administrator',
+    'manage_messages': 'Manage Messages',
+    'manage_guild': 'Manage Server',
+    'manage_expressions': 'Manage Expressions',
+    'moderate_members': 'Moderate Members',
+    'manage_roles': 'Manage Roles',
+    'manage_channels': 'Manage Channels',
+    'manage_nicknames': 'Manage Nicknames',
+    'ban_members': 'Ban Members',
+    'kick_members': 'Kick Members',
+    'attach_files': 'Attach Files',
+    'manage_guild_&_manage_roles': 'Manage Server & Manage Roles',
+    'manage_guild_&_manage_nicknames': 'Manage Server & Manage Nicknames'
+  };
+  
+  return permissionMap[permission.toLowerCase()] || null;
+}
+
+/**
  * Process command with prefix detection and cooldown handling
  * @param {Message} message - Discord message object
  * @param {boolean} isEdit - Whether this is an edited message
@@ -149,7 +176,11 @@ async function processCommand(message, isEdit = false) {
 
     // Handle permission errors with fallback chain
     if (error.code === 50013) {
-      return await handlePermissionError(message, 'There was an error executing that command due to missing permissions.');
+      const permissionName = getPermissionDisplayName(command.permission);
+      const errorMsg = permissionName 
+        ? `Please **check** if I have the \`${permissionName}\` permission and is my **role above** all`
+        : 'Please **check** if I have the required permissions and is my **role above** all';
+      return embeds.warn(message, errorMsg);
     }
 
     // Log error to console and webhook

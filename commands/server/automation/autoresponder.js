@@ -22,8 +22,8 @@ module.exports = {
       aliases: ['create'],
       description: 'Add a new autoresponder trigger',
       syntax: '{guildprefix}autoresponder add [trigger], [response] [--options]',
-      parameters: ['trigger', 'response', 'options (optional)'],
-      example: '{guildprefix}autoresponder add hello, Hi there! --reply',
+      parameters: ['trigger', 'response', 'options (--reply, --strict, --not_strict, --delete, --self_destruct, --ping)'],
+      example: '{guildprefix}autoresponder add hello, Hi there! <@&role_id> --reply --ping',
 
       handler: async (client, message, args, guildService) => {
         const fullInput = args.join(' ');
@@ -42,9 +42,9 @@ module.exports = {
         const trigger = fullInput.substring(0, commaIndex).trim();
         const responseAndOptions = fullInput.substring(commaIndex + 1).trim();
 
-        const optionRegex = /--(reply|strict|not_strict|delete|self_destruct)\s*(\d+)?/g;
+        const optionRegex = /--(reply|strict|not_strict|delete|self_destruct|ping)\s*(\d+)?/g;
         let response = responseAndOptions;
-        let options = { reply: false, strict: true, delete: false, selfDestruct: 0 };
+        let options = { reply: false, strict: true, delete: false, selfDestruct: 0, pingEnabled: false };
 
         let match;
         while ((match = optionRegex.exec(responseAndOptions)) !== null) {
@@ -55,6 +55,7 @@ module.exports = {
             case 'not_strict': options.strict = false; break;
             case 'delete': options.delete = true; break;
             case 'self_destruct': options.selfDestruct = parseInt(match[2]) || 5; break;
+            case 'ping': options.pingEnabled = true; break;
           }
         }
 
@@ -90,6 +91,7 @@ module.exports = {
         if (!options.strict) optionsDisplay.push('not_strict');
         if (options.delete) optionsDisplay.push('delete');
         if (options.selfDestruct > 0) optionsDisplay.push(`self_destruct ${options.selfDestruct}s`);
+        if (options.pingEnabled) optionsDisplay.push('ping');
 
         const optionsText = optionsDisplay.length > 0 ? ` with options: ${optionsDisplay.join(', ')}` : '';
         return embeds.success(message, `Created autoresponder for **${trigger}**${optionsText}`);
@@ -147,9 +149,9 @@ module.exports = {
         const trigger = fullInput.substring(0, commaIndex).trim();
         const responseAndOptions = fullInput.substring(commaIndex + 1).trim();
 
-        const optionRegex = /--(reply|strict|not_strict|delete|self_destruct)\s*(\d+)?/g;
+        const optionRegex = /--(reply|strict|not_strict|delete|self_destruct|ping)\s*(\d+)?/g;
         let response = responseAndOptions;
-        let options = { reply: false, strict: true, delete: false, selfDestruct: 0 };
+        let options = { reply: false, strict: true, delete: false, selfDestruct: 0, pingEnabled: false };
 
         let match;
         while ((match = optionRegex.exec(responseAndOptions)) !== null) {
@@ -160,6 +162,7 @@ module.exports = {
             case 'not_strict': options.strict = false; break;
             case 'delete': options.delete = true; break;
             case 'self_destruct': options.selfDestruct = parseInt(match[2]) || 5; break;
+            case 'ping': options.pingEnabled = true; break;
           }
         }
 
@@ -179,6 +182,7 @@ module.exports = {
         if (!options.strict) optionsDisplay.push('not_strict');
         if (options.delete) optionsDisplay.push('delete');
         if (options.selfDestruct > 0) optionsDisplay.push(`self_destruct ${options.selfDestruct}s`);
+        if (options.pingEnabled) optionsDisplay.push('ping');
 
         const optionsText = optionsDisplay.length > 0 ? ` with options: ${optionsDisplay.join(', ')}` : '';
         return embeds.success(message, `Updated autoresponder for **${trigger}**${optionsText}`);

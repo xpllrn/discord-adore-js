@@ -3,7 +3,7 @@ const { embeds } = require('../../../core/embeds');
 const { hasDiscordPermission, checkBotAction, checkUserMemberHierarchy, checkBotMemberHierarchy } = require('../../../utils/permissions');
 const { runHelpCommand } = require('../../../utils/commandProcessor');
 const { findUser } = require('../../../handlers/finder');
-const logger = require('../../../utils/logger');
+
 
 module.exports = {
   name: "rename",
@@ -59,18 +59,12 @@ module.exports = {
       if (!checkBotMemberHierarchy(message, member)) return;
     }
 
-    try {
-      await member.setNickname(nickname, `Renamed by ${message.author.tag}`);
+    await member.setNickname(nickname, `Renamed by ${message.author.tag}`);
 
-      if (nickname) {
-        embeds.success(message, `**${member.user.tag}** has been renamed to **${nickname}**`);
-      } else {
-        embeds.success(message, `**${member.user.tag}**'s nickname has been reset`);
-      }
-
-    } catch (error) {
-      logger.both.error(error, message);
-      return embeds.warn(message, 'An error occurred while trying to rename this user.');
+    if (nickname) {
+      embeds.success(message, `**${member.user.tag}** has been renamed to **${nickname}**`);
+    } else {
+      embeds.success(message, `**${member.user.tag}**'s nickname has been reset`);
     }
   }
 }
