@@ -89,12 +89,12 @@ module.exports = {
       name: 'thankyou',
       aliases: ['thanks', 'ty'],
       description: 'Set or view the thank you message sent after a bump',
-      syntax: '{guildprefix}bumpreminder thankyou [message/view]',
-      parameters: ['message or view'],
-      example: '{guildprefix}bumpreminder thankyou view',
+      syntax: '{guildprefix}bumpreminder thankyou [message/view] (--ping)',
+      parameters: ['message or view', '--ping (optional)'],
+      example: '{guildprefix}bumpreminder thankyou Thanks {user.mention}! --ping',
 
       handler: async (client, message, args, guildService) => {
-        const input = args.join(' ').trim();
+        let input = args.join(' ').trim();
         
         if (!input) return runHelpCommand(message, 'bumpreminder');
 
@@ -111,6 +111,7 @@ module.exports = {
             user: message.author,
             guild: message.guild,
             channel: message.channel,
+            pingEnabled: bumpReminder.thankYouPingEnabled || false,
             bumpreminder: {
               last_user_bump: `<@${message.author.id}>`,
               next_bump: `<t:${nextBumpTimestamp}:R>`
@@ -119,9 +120,19 @@ module.exports = {
           return;
         }
 
+        // Check for --ping flag
+        const pingEnabled = input.trim().endsWith('--ping');
+        if (pingEnabled) {
+          input = input.slice(0, -6).trim();
+        }
+
         // Setting new message
-        await guildService.updateBumpReminder(message.guild.id, { thankYouMessage: input });
-        return embeds.success(message, 'Updated the **thank you** message for bump reminders');
+        await guildService.updateBumpReminder(message.guild.id, { 
+          thankYouMessage: input,
+          thankYouPingEnabled: pingEnabled
+        });
+        const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
+        return embeds.success(message, `Updated the **thank you** message for bump reminders${pingStatus}`);
       }
     },
 
@@ -129,12 +140,12 @@ module.exports = {
       name: 'message',
       aliases: ['msg', 'reminder'],
       description: 'Set or view the reminder message sent after 2 hours',
-      syntax: '{guildprefix}bumpreminder message [message/view]',
-      parameters: ['message or view'],
-      example: '{guildprefix}bumpreminder message view',
+      syntax: '{guildprefix}bumpreminder message [message/view] (--ping)',
+      parameters: ['message or view', '--ping (optional)'],
+      example: '{guildprefix}bumpreminder message Time to bump! @Bumpers --ping',
 
       handler: async (client, message, args, guildService) => {
-        const input = args.join(' ').trim();
+        let input = args.join(' ').trim();
         
         if (!input) return runHelpCommand(message, 'bumpreminder');
 
@@ -148,6 +159,7 @@ module.exports = {
             user: message.author,
             guild: message.guild,
             channel: message.channel,
+            pingEnabled: bumpReminder.reminderPingEnabled || false,
             bumpreminder: {
               last_user_bump: `<@${message.author.id}>`,
               next_bump: `<t:${Math.floor(Date.now() / 1000)}:R>`
@@ -156,9 +168,19 @@ module.exports = {
           return;
         }
 
+        // Check for --ping flag
+        const pingEnabled = input.trim().endsWith('--ping');
+        if (pingEnabled) {
+          input = input.slice(0, -6).trim();
+        }
+
         // Setting new message
-        await guildService.updateBumpReminder(message.guild.id, { reminderMessage: input });
-        return embeds.success(message, 'Updated the **reminder** message for bump reminders');
+        await guildService.updateBumpReminder(message.guild.id, { 
+          reminderMessage: input,
+          reminderPingEnabled: pingEnabled
+        });
+        const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
+        return embeds.success(message, `Updated the **reminder** message for bump reminders${pingStatus}`);
       }
     },
 

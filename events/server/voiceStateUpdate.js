@@ -350,6 +350,7 @@ async function handleVoiceLevelUp(guild, member, newLevel) {
 
     // Check for custom level message
     const customLevelMessage = await guildService.getLevelCustomMessage(guild.id);
+    const levelSystem = await guildService.getLevelSystem(guild.id);
 
     if (customLevelMessage) {
       // Use custom level message with variable processing
@@ -357,6 +358,7 @@ async function handleVoiceLevelUp(guild, member, newLevel) {
         user: member.user,
         guild: guild,
         channel: targetChannel,
+        pingEnabled: levelSystem?.customMessagePingEnabled || false,
         level: { new_rank: newLevel }
       });
     } else {

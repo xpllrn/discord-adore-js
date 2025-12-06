@@ -944,9 +944,10 @@ class GuildService extends BaseService {
    * Set custom level message
    * @param {string} guildId - Guild ID
    * @param {string} message - Custom level message
+   * @param {boolean} pingEnabled - Whether to ping mentions
    * @returns {Promise<boolean>} Success status
    */
-  async setLevelCustomMessage(guildId, message) {
+  async setLevelCustomMessage(guildId, message, pingEnabled = false) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -968,12 +969,14 @@ class GuildService extends BaseService {
           messageMode: 'context',
           levelUpChannel: null,
           customMessage: null,
+          customMessagePingEnabled: false,
           levelRoles: [],
           lastSyncTime: null
         };
       }
 
       guildData.LevelSystem.customMessage = message.trim();
+      guildData.LevelSystem.customMessagePingEnabled = pingEnabled;
 
       await this.set(guildId, guildData);
       return true;

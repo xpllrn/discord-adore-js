@@ -548,6 +548,10 @@ const guildSchema = new mongoose.Schema({
       type: String,
       default: null
     },
+    customMessagePingEnabled: {
+      type: Boolean,
+      default: false
+    },
     levelRoles: [{
       level: {
         type: Number,
@@ -1347,10 +1351,18 @@ const guildSchema = new mongoose.Schema({
       default: null,
       maxlength: 2000
     },
+    thankYouPingEnabled: {
+      type: Boolean,
+      default: false
+    },
     reminderMessage: {
       type: String,
       default: null,
       maxlength: 2000
+    },
+    reminderPingEnabled: {
+      type: Boolean,
+      default: false
     }
   },
 

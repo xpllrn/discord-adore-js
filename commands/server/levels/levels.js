@@ -609,15 +609,16 @@ module.exports = {
       name: 'message',
       aliases: [],
       description: 'Manage custom level up messages',
-      syntax: '{guildprefix}levels message [message/remove/none/view/variables]',
-      parameters: ['action'],
-      example: '{guildprefix}levels message {user.mention} leveled up to {level.new_rank}!',
+      syntax: '{guildprefix}levels message [message/remove/none/view/variables] (--ping)',
+      parameters: ['action', '--ping (optional)'],
+      example: '{guildprefix}levels message {user.mention} leveled up to {level.new_rank}! --ping',
 
       handler: async (client, message, args, guildService) => {
         if (!args[0]) return false;
 
         if (args[0] === 'view') {
           const customMessage = await guildService.getLevelCustomMessage(message.guild.id);
+          const levelSystem = await guildService.getLevelSystem(message.guild.id);
 
           if (customMessage) {
             try {
@@ -627,6 +628,7 @@ module.exports = {
                 user: message.author,
                 guild: message.guild,
                 channel: message.channel,
+                pingEnabled: levelSystem?.customMessagePingEnabled || false,
                 level: { new_rank: 25 }
               });
 
@@ -665,20 +667,27 @@ module.exports = {
         if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageGuild, 'Manage Guild')) return;
 
         try {
-          const levelMessage = args.join(' ');
+          let levelMessage = args.join(' ');
 
           if (levelMessage.toLowerCase() === 'remove' || levelMessage.toLowerCase() === 'none') {
             await guildService.removeLevelCustomMessage(message.guild.id);
             return embeds.success(message, "Custom level message has been removed. The default message will now be used.");
           }
 
+          // Check for --ping flag
+          const pingEnabled = levelMessage.trim().endsWith('--ping');
+          if (pingEnabled) {
+            levelMessage = levelMessage.slice(0, -6).trim();
+          }
+
           if (!levelMessage.includes('{level.new_rank}')) {
             return embeds.deny(message, 'Level up messages **must** include the `{level.new_rank}` variable to show the user\'s new level.');
           }
 
-          await guildService.setLevelCustomMessage(message.guild.id, levelMessage);
+          await guildService.setLevelCustomMessage(message.guild.id, levelMessage, pingEnabled);
 
-          return embeds.success(message, "Custom level message has been set successfully!");
+          const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
+          return embeds.success(message, `Custom level message has been set successfully${pingStatus}!`);
         } catch (error) {
           logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to set level message: ${error.message}`);

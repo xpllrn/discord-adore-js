@@ -94,6 +94,7 @@ module.exports = {
           user: bumper,
           guild: message.guild,
           channel: channel,
+          pingEnabled: bumpReminder.thankYouPingEnabled || false,
           bumpreminder: {
             last_user_bump: `<@${bumperId}>`,
             next_bump: `<t:${nextBumpTimestamp}:R>`
@@ -125,6 +126,7 @@ module.exports = {
             user: { id: currentBumpReminder.lastBumperId, mention: `<@${currentBumpReminder.lastBumperId}>` },
             guild: message.guild,
             channel: reminderChannel,
+            pingEnabled: currentBumpReminder.reminderPingEnabled || false,
             bumpreminder: {
               last_user_bump: `<@${currentBumpReminder.lastBumperId}>`,
               next_bump: `<t:${Math.floor(Date.now() / 1000)}:R>`
