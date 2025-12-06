@@ -1594,7 +1594,20 @@ const guildSchema = new mongoose.Schema({
       type: String,
       required: true
     }
-  }]
+  }],
+
+  // Custom Embed Color (Premium feature)
+  EmbedColor: {
+    type: String,
+    default: null, // Hex color code (e.g., '#5865F2')
+    validate: {
+      validator: function(v) {
+        if (v === null) return true;
+        return /^#[0-9A-Fa-f]{6}$/.test(v);
+      },
+      message: 'EmbedColor must be a valid hex color code (e.g., #5865F2)'
+    }
+  }
 }, {
   timestamps: true
 });

@@ -101,6 +101,10 @@ class SystemService extends BaseService {
             users: [],
             servers: []
           },
+          Premium: {
+            users: [],
+            servers: []
+          },
           GlobalSettings: {},
           BotStatus: {
             version: '1.0.0',
@@ -388,6 +392,225 @@ class SystemService extends BaseService {
       };
     } catch (error) {
       console.error('Error getting blacklist info:', error.message);
+      return { users: [], servers: [], totalUsers: 0, totalServers: 0 };
+    }
+  }
+
+  // ===== PREMIUM SYSTEM =====
+
+  /**
+   * Check if user has premium
+   * @param {string} userId - User ID to check
+   * @returns {Promise<boolean>} True if user has premium
+   */
+  async isPremiumUser(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const premium = systemData.Premium || { users: [], servers: [] };
+
+      return premium.users.some(entry =>
+        (typeof entry === 'string' ? entry : entry.userId) === userId
+      );
+    } catch (error) {
+      console.error(`Error checking premium user ${userId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Check if server has premium
+   * @param {string} serverId - Server ID to check
+   * @returns {Promise<boolean>} True if server has premium
+   */
+  async isPremiumServer(serverId) {
+    if (!serverId) {
+      throw new ValidationError('Server ID is required', 'serverId', serverId);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const premium = systemData.Premium || { users: [], servers: [] };
+
+      return premium.servers.some(entry =>
+        (typeof entry === 'string' ? entry : entry.serverId) === serverId
+      );
+    } catch (error) {
+      console.error(`Error checking premium server ${serverId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Add user to premium
+   * @param {string} userId - User ID to add
+   * @param {string} addedBy - ID of who added the premium
+   * @returns {Promise<boolean>} Success status
+   */
+  async addPremiumUser(userId, addedBy) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    if (!addedBy) {
+      throw new ValidationError('Added by ID is required', 'addedBy', addedBy);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const premium = systemData.Premium || { users: [], servers: [] };
+
+      const existingIndex = premium.users.findIndex(entry =>
+        (typeof entry === 'string' ? entry : entry.userId) === userId
+      );
+
+      if (existingIndex !== -1) {
+        return false; // User already has premium
+      }
+
+      premium.users.push({
+        userId,
+        addedBy,
+        addedAt: new Date()
+      });
+
+      systemData.Premium = premium;
+      await this.set(this.systemKey, systemData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add premium user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Add server to premium
+   * @param {string} serverId - Server ID to add
+   * @param {string} addedBy - ID of who added the premium
+   * @returns {Promise<boolean>} Success status
+   */
+  async addPremiumServer(serverId, addedBy) {
+    if (!serverId) {
+      throw new ValidationError('Server ID is required', 'serverId', serverId);
+    }
+
+    if (!addedBy) {
+      throw new ValidationError('Added by ID is required', 'addedBy', addedBy);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const premium = systemData.Premium || { users: [], servers: [] };
+
+      const existingIndex = premium.servers.findIndex(entry =>
+        (typeof entry === 'string' ? entry : entry.serverId) === serverId
+      );
+
+      if (existingIndex !== -1) {
+        return false; // Server already has premium
+      }
+
+      premium.servers.push({
+        serverId,
+        addedBy,
+        addedAt: new Date()
+      });
+
+      systemData.Premium = premium;
+      await this.set(this.systemKey, systemData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add premium server ${serverId}`, error);
+    }
+  }
+
+  /**
+   * Remove user from premium
+   * @param {string} userId - User ID to remove
+   * @returns {Promise<boolean>} Success status
+   */
+  async removePremiumUser(userId) {
+    if (!userId) {
+      throw new ValidationError('User ID is required', 'userId', userId);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const premium = systemData.Premium || { users: [], servers: [] };
+
+      const initialLength = premium.users.length;
+      premium.users = premium.users.filter(entry =>
+        (typeof entry === 'string' ? entry : entry.userId) !== userId
+      );
+
+      if (premium.users.length < initialLength) {
+        systemData.Premium = premium;
+        await this.set(this.systemKey, systemData);
+        return true;
+      }
+
+      return false; // User didn't have premium
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to remove premium user ${userId}`, error);
+    }
+  }
+
+  /**
+   * Remove server from premium
+   * @param {string} serverId - Server ID to remove
+   * @returns {Promise<boolean>} Success status
+   */
+  async removePremiumServer(serverId) {
+    if (!serverId) {
+      throw new ValidationError('Server ID is required', 'serverId', serverId);
+    }
+
+    try {
+      const systemData = await this.ensureSystemData();
+      const premium = systemData.Premium || { users: [], servers: [] };
+
+      const initialLength = premium.servers.length;
+      premium.servers = premium.servers.filter(entry =>
+        (typeof entry === 'string' ? entry : entry.serverId) !== serverId
+      );
+
+      if (premium.servers.length < initialLength) {
+        systemData.Premium = premium;
+        await this.set(this.systemKey, systemData);
+        return true;
+      }
+
+      return false; // Server didn't have premium
+    } catch (error) {
+      throw new DatabaseWriteError(`Failed to remove premium server ${serverId}`, error);
+    }
+  }
+
+  /**
+   * Get premium information
+   * @returns {Promise<Object>} Premium data
+   */
+  async getPremiumInfo() {
+    try {
+      const systemData = await this.ensureSystemData();
+      const premium = systemData.Premium || { users: [], servers: [] };
+
+      return {
+        users: premium.users,
+        servers: premium.servers,
+        totalUsers: premium.users.length,
+        totalServers: premium.servers.length
+      };
+    } catch (error) {
+      console.error('Error getting premium info:', error.message);
       return { users: [], servers: [], totalUsers: 0, totalServers: 0 };
     }
   }

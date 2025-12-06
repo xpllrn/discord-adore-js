@@ -1,5 +1,7 @@
 const { PermissionFlagsBits, Routes } = require('discord.js');
-const { embeds } = require('../../../core/embeds');
+const { embeds, clearColorCache } = require('../../../core/embeds');
+const { checkPermissionLevel } = require('../../../utils/permissions');
+const { getService } = require('@services');
 const axios = require('axios');
 const logger = require('../../../utils/logger');
 
@@ -358,6 +360,59 @@ module.exports = {
           }
 
           return embeds.deny(message, `Failed to set bio: ${error.message || 'Unknown error'}`);
+        }
+      }
+    },
+
+    color: {
+      name: 'color',
+      aliases: ['colour', 'embedcolor'],
+      description: 'Customize the bot\'s embed color for this server (Premium)',
+      syntax: '{guildprefix}customize color [hex color]',
+      parameters: ['color (optional)'],
+      example: '{guildprefix}customize color #5865F2',
+      permission: 'premium_server',
+
+      handler: async (client, message, args) => {
+        // Check premium_server permission
+        const hasPremium = await checkPermissionLevel(message, 'premium_server');
+        if (!hasPremium) {
+          return; // checkPermissionLevel already sends the error message
+        }
+
+        const guildService = getService('guild');
+        const colorInput = args[0];
+
+        // If no color provided, reset to default (like other customize subcommands)
+        if (!colorInput) {
+          try {
+            await guildService.setEmbedColor(message.guild.id, null);
+            clearColorCache(message.guild.id);
+            return embeds.success(message, 'Reset embed color to **default**');
+          } catch (error) {
+            logger.webhook.error(error, message);
+            return embeds.deny(message, `Failed to reset embed color: ${error.message}`);
+          }
+        }
+
+        // Validate and set color
+        let color = colorInput.trim();
+        if (!color.startsWith('#')) {
+          color = '#' + color;
+        }
+
+        // Validate hex format
+        if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+          return embeds.warn(message, 'Invalid color format. Use a **hex color** like `#5865F2` or `5865F2`');
+        }
+
+        try {
+          await guildService.setEmbedColor(message.guild.id, color);
+          clearColorCache(message.guild.id);
+          return embeds.success(message, `Set embed color to **${color.toUpperCase()}**`);
+        } catch (error) {
+          logger.webhook.error(error, message);
+          return embeds.deny(message, `Failed to set embed color: ${error.message}`);
         }
       }
     }

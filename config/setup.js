@@ -72,8 +72,8 @@ module.exports = {
     error: '#f44336',
     warn: '#f29c1e',
     info: '#96968c',
+    spotify: '#1DB954',
     embed: '#96968c',
-    spotify: '#1DB954'
   },
 
   // Emojis Configuration

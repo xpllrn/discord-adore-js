@@ -10,7 +10,7 @@ module.exports = {
   description: 'Manage your personal prefix',
   syntax: 'selfprefix [subcommand] (prefix)',
   example: 'selfprefix set !',
-  permission: 'premium',
+  permission: 'premium_user',
   isGroupCommand: true,
 
   subcommands: {

@@ -28,7 +28,7 @@ module.exports = {
     description: 'Remove background from an image to make it transparent',
     syntax: 'transparent [attach image or reply to message with image]',
     example: 'transparent',
-    permission: 'premium',
+    permission: 'premium_user',
     run: async (client, message, args) => {
         let imageUrl = null;
 

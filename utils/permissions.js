@@ -2,17 +2,20 @@ const { PermissionFlagsBits } = require('discord.js');
 const { embeds } = require('../core/embeds');
 const config = require('../config/setup');
 const permsConfig = require('../config/perms.json');
-const database = require('../database');
 
 // Build permission levels from environment variables and perms.json
 const PERMISSION_LEVELS = {
-  premium: {
+  premium_user: {
     roleId: config.permissions.premiumRoleId,
-    name: 'Premium',
-    message: permsConfig.premium.customMessage || 'You need to buy **premium/boost** adore app server for this feature!'
+    name: 'Premium User',
+    message: permsConfig.premium_user?.customMessage || 'You need to be a **premium user** to use this command!'
+  },
+  premium_server: {
+    name: 'Premium Server',
+    message: permsConfig.premium_server?.customMessage || 'This server needs **premium** to use this feature!'
   },
   dev: {
-    userId: config.bot.ownerId, // Only DEV_ID can use developer commands
+    userId: config.bot.ownerId,
     name: 'Developer',
     message: permsConfig.dev.customMessage || 'This command is restricted to **developers** only!'
   }
@@ -43,34 +46,57 @@ async function hasPermissionLevel(message, level) {
     return true;
   }
 
-  // Check if it's premium level
-  if (level === 'premium') {
-    try {
-      if (!PERMISSION_LEVELS.premium?.roleId || !config.bot.devServerId) {
-        return false;
-      }
+  // Check premium_server level - server must be in premium servers list
+  if (level === 'premium_server') {
+    return await isPremiumServer(message.guild.id);
+  }
 
-      const devServer = message.client.guilds.cache.get(config.bot.devServerId);
-      if (!devServer) {
-        return false;
-      }
-
-      const member = await devServer.members.fetch(userId).catch(() => null);
-      if (member && member.roles.cache.has(PERMISSION_LEVELS.premium.roleId)) {
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      return false;
-    }
+  // Check premium_user level - user must have premium role OR be in premium users list
+  if (level === 'premium_user') {
+    return await isPremiumUser(message.client, userId);
   }
 
   return false;
 }
 
+// Check if a user has premium (via role or manually added)
+async function isPremiumUser(client, userId) {
+  const config = require('../config/setup');
+  
+  try {
+    // Check if user has premium role in dev server
+    if (PERMISSION_LEVELS.premium_user?.roleId && config.bot.devServerId) {
+      const devServer = client.guilds.cache.get(config.bot.devServerId);
+      if (devServer) {
+        const member = await devServer.members.fetch(userId).catch(() => null);
+        if (member && member.roles.cache.has(PERMISSION_LEVELS.premium_user.roleId)) {
+          return true;
+        }
+      }
+    }
+
+    // Check if user is in premium users list (manually added by dev)
+    const { getService } = require('@services');
+    const systemService = getService('system');
+    return await systemService.isPremiumUser(userId);
+  } catch (error) {
+    return false;
+  }
+}
+
+// Check if a server has premium (manually added by dev)
+async function isPremiumServer(guildId) {
+  try {
+    const { getService } = require('@services');
+    const systemService = getService('system');
+    return await systemService.isPremiumServer(guildId);
+  } catch (error) {
+    return false;
+  }
+}
+
 // Instance-based permission checking
-async function hasInstancePermission(userId, permission) {
+async function hasInstancePermission(userId) {
   try {
     const config = require('../config/setup');
 
@@ -453,6 +479,8 @@ module.exports = {
   hasInstancePermission,
   isGlobalDev,
   isServerOwner,
+  isPremiumUser,
+  isPremiumServer,
   PERMISSION_LEVELS,
 
   // Hierarchy checks

@@ -152,6 +152,7 @@ class GuildService extends BaseService {
     return {
       GuildID: guildId,
       Prefix: ',',
+      EmbedColor: null, // Custom embed color (premium feature)
       JailRoleID: null,
       JailChannelID: null,
       AFK: [],
@@ -538,6 +539,69 @@ class GuildService extends BaseService {
 
     // Escape markdown characters for display
     return prefix.replace(/[\\`*_{}[\]()#+\-.!]/g, '\\$&');
+  }
+
+  // ===== EMBED COLOR OPERATIONS (Premium Feature) =====
+
+  /**
+   * Get guild's custom embed color
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Hex color code or null for default
+   */
+  async getEmbedColor(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.EmbedColor || null;
+    } catch (error) {
+      console.error(`Error getting embed color for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set guild's custom embed color (Premium feature)
+   * @param {string} guildId - Guild ID
+   * @param {string|null} color - Hex color code (e.g., '#5865F2') or null to reset
+   * @returns {Promise<boolean>} Success status
+   */
+  async setEmbedColor(guildId, color) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    // Validate color format if provided
+    if (color !== null) {
+      // Normalize color format
+      let normalizedColor = color.trim();
+      if (!normalizedColor.startsWith('#')) {
+        normalizedColor = '#' + normalizedColor;
+      }
+      normalizedColor = normalizedColor.toUpperCase();
+
+      // Validate hex format
+      if (!/^#[0-9A-F]{6}$/.test(normalizedColor)) {
+        throw new ValidationError('Invalid color format. Use hex code like #5865F2', 'color', color);
+      }
+
+      color = normalizedColor;
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.EmbedColor = color;
+
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to set embed color for guild ${guildId}`, error);
+    }
   }
 
   // ===== BATCH OPERATIONS =====

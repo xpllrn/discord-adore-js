@@ -154,7 +154,7 @@ const commandConfig = {
   description: 'Ask adore anything',
   syntax: 'ask [question]',
   example: 'ask what is adore?',
-  permission: 'premium'
+  permission: 'premium_user'
 };
 
 module.exports = {
