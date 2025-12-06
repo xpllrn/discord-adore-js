@@ -22,15 +22,21 @@ module.exports = {
       name: 'add',
       aliases: [],
       description: 'Add or update a leave message for a channel',
-      syntax: '{guildprefix}leave add [channel] [message]',
-      parameters: ['channel', 'message'],
-      example: '{guildprefix}leave add #general Goodbye {user.name}!',
+      syntax: '{guildprefix}leave add [channel] [message] (--ping)',
+      parameters: ['channel', 'message', '--ping (optional)'],
+      example: '{guildprefix}leave add #general Goodbye {user.name}! --ping',
 
       handler: async (client, message, args, guildService) => {
         const channelInput = args[0];
-        const leavemessage = args.slice(1).join(' ');
+        let leavemessage = args.slice(1).join(' ');
 
         if (!channelInput || !leavemessage) return runHelpCommand(message, 'leave');
+
+        // Check for --ping flag at the end
+        const pingEnabled = leavemessage.trim().endsWith('--ping');
+        if (pingEnabled) {
+          leavemessage = leavemessage.slice(0, -6).trim();
+        }
 
         const channelResult = findChannel(message.guild, channelInput);
         if (!channelResult.found) {
@@ -47,9 +53,10 @@ module.exports = {
         }
 
         try {
-          await guildService.addLeaveMessage(message.guild.id, leavechannel.id, leavemessage);
+          await guildService.addLeaveMessage(message.guild.id, leavechannel.id, leavemessage, pingEnabled);
           const action = existingLeaveMessage ? 'Updated the' : 'Created a';
-          return embeds.success(message, `${action} **leave message** for ${leavechannel}`);
+          const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
+          return embeds.success(message, `${action} **leave message** for ${leavechannel}${pingStatus}`);
         } catch (error) {
           logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to set leave message: ${error.message}`);

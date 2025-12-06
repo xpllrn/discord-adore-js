@@ -182,7 +182,8 @@ async function processLeaveMessages(member) {
           EmbedVariableProcessor.process(leaveChannel, leaveConfig.message, {
             user: member.user,
             guild: member.guild,
-            channel: leaveChannel
+            channel: leaveChannel,
+            pingEnabled: leaveConfig.pingEnabled || false
           });
         } catch (error) {
           // Fallback to simple text message

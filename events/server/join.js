@@ -113,7 +113,8 @@ async function processWelcomeMessages(member) {
           EmbedVariableProcessor.process(welcomeChannel, welcomeConfig.message, {
             user: member.user,
             guild: member.guild,
-            channel: welcomeChannel
+            channel: welcomeChannel,
+            pingEnabled: welcomeConfig.pingEnabled || false
           });
         } catch (error) {
           // Fallback to simple text message

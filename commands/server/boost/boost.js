@@ -22,15 +22,21 @@ module.exports = {
       name: 'add',
       aliases: [],
       description: 'Add or update a boost message for a channel',
-      syntax: '{guildprefix}boost add [channel] [message]',
-      parameters: ['channel', 'message'],
-      example: '{guildprefix}boost add #boosts Thanks for boosting {user.mention}!',
+      syntax: '{guildprefix}boost add [channel] [message] (--ping)',
+      parameters: ['channel', 'message', '--ping (optional)'],
+      example: '{guildprefix}boost add #boosts Thanks for boosting {user.mention}! --ping',
 
       handler: async (client, message, args, guildService) => {
         const channelInput = args[0];
-        const boostmessage = args.slice(1).join(' ');
+        let boostmessage = args.slice(1).join(' ');
 
         if (!channelInput || !boostmessage) return runHelpCommand(message, 'boost');
+
+        // Check for --ping flag at the end
+        const pingEnabled = boostmessage.trim().endsWith('--ping');
+        if (pingEnabled) {
+          boostmessage = boostmessage.slice(0, -6).trim();
+        }
 
         const channelResult = findChannel(message.guild, channelInput);
         if (!channelResult.found) return runHelpCommand(message, 'boost');
@@ -45,9 +51,10 @@ module.exports = {
         }
 
         try {
-          await guildService.addBoostMessage(message.guild.id, boostchannel.id, boostmessage);
+          await guildService.addBoostMessage(message.guild.id, boostchannel.id, boostmessage, pingEnabled);
           const action = existingBoostMessage ? 'Updated the' : 'Created a';
-          return embeds.success(message, `${action} **boost message** for ${boostchannel}`);
+          const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
+          return embeds.success(message, `${action} **boost message** for ${boostchannel}${pingStatus}`);
         } catch (error) {
           logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to set boost message: ${error.message}`);

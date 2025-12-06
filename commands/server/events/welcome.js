@@ -22,15 +22,21 @@ module.exports = {
       name: 'add',
       aliases: [],
       description: 'Add or update a welcome message for a channel',
-      syntax: '{guildprefix}welcome add [channel] [message]',
-      parameters: ['channel', 'message'],
-      example: '{guildprefix}welcome add #general Welcome {user.mention}!',
+      syntax: '{guildprefix}welcome add [channel] [message] (--ping)',
+      parameters: ['channel', 'message', '--ping (optional)'],
+      example: '{guildprefix}welcome add #general Welcome {user.mention}! --ping',
 
       handler: async (client, message, args, guildService) => {
         const channelInput = args[0];
-        const welcomemessage = args.slice(1).join(' ');
+        let welcomemessage = args.slice(1).join(' ');
 
         if (!channelInput || !welcomemessage) return runHelpCommand(message, 'welcome');
+
+        // Check for --ping flag at the end
+        const pingEnabled = welcomemessage.trim().endsWith('--ping');
+        if (pingEnabled) {
+          welcomemessage = welcomemessage.slice(0, -6).trim();
+        }
 
         const channelResult = findChannel(message.guild, channelInput);
         if (!channelResult.found) {
@@ -47,9 +53,10 @@ module.exports = {
         }
 
         try {
-          await guildService.addWelcomeMessage(message.guild.id, welcomechannel.id, welcomemessage);
+          await guildService.addWelcomeMessage(message.guild.id, welcomechannel.id, welcomemessage, pingEnabled);
           const action = existingWelcomeMessage ? 'Updated the' : 'Created a';
-          return embeds.success(message, `${action} **welcome message** for ${welcomechannel}`);
+          const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
+          return embeds.success(message, `${action} **welcome message** for ${welcomechannel}${pingStatus}`);
         } catch (error) {
           logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to set welcome message: ${error.message}`);

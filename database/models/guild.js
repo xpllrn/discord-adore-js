@@ -24,9 +24,12 @@ const guildSchema = new mongoose.Schema({
     createdAt: {
       type: Date,
       default: Date.now
+    },
+    pingEnabled: {
+      type: Boolean,
+      default: false
     }
   }],
-  // Leave system (legacy fields for backward compatibility)
   // Leave system (multi-message support)
   LeaveMessages: [{
     channelId: {
@@ -41,6 +44,10 @@ const guildSchema = new mongoose.Schema({
     createdAt: {
       type: Date,
       default: Date.now
+    },
+    pingEnabled: {
+      type: Boolean,
+      default: false
     }
   }],
 
@@ -58,6 +65,10 @@ const guildSchema = new mongoose.Schema({
     createdAt: {
       type: Date,
       default: Date.now
+    },
+    pingEnabled: {
+      type: Boolean,
+      default: false
     }
   }],
   // Jail system
@@ -118,6 +129,10 @@ const guildSchema = new mongoose.Schema({
     selfDestruct: {
       type: Number,
       default: 0
+    },
+    pingEnabled: {
+      type: Boolean,
+      default: false
     }
   }],
   // Force nick
@@ -1288,6 +1303,10 @@ const guildSchema = new mongoose.Schema({
     createdAt: {
       type: Date,
       default: Date.now
+    },
+    pingEnabled: {
+      type: Boolean,
+      default: false
     }
   }],
 

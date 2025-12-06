@@ -171,7 +171,8 @@ async function processBoostMessages(member) {
           EmbedVariableProcessor.process(boostChannel, boostConfig.message, {
             user: member.user,
             guild: member.guild,
-            channel: boostChannel
+            channel: boostChannel,
+            pingEnabled: boostConfig.pingEnabled || false
           });
         } catch (error) {
           // Fallback to simple text message

@@ -415,6 +415,53 @@ module.exports = {
           return embeds.deny(message, 'Failed to claim ownership');
         }
       }
+    },
+
+    sendinterface: {
+      name: 'sendinterface',
+      aliases: ['sendpanel', 'newpanel'],
+      description: 'Send a new voice panel in the current channel',
+      syntax: '{guildprefix}voicemaster sendinterface',
+      parameters: [],
+      example: '{guildprefix}voicemaster sendinterface',
+      handler: async (client, message, args, guildService) => {
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
+        if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageChannels)) {
+          return embeds.deny(message, 'I need **Manage Channels** permission to manage voicemaster');
+        }
+
+        const voiceManager = await guildService.getVoiceManager(message.guild.id);
+        if (!voiceManager.enabled) {
+          return embeds.warn(message, '**voicemaster** is **not setup** in this server. Use `,vm setup` first.');
+        }
+
+        try {
+          // Try to delete old panel message if it exists
+          if (voiceManager.mutedChannelId) {
+            try {
+              const oldChannel = message.guild.channels.cache.get(voiceManager.mutedChannelId);
+              if (oldChannel) {
+                const messages = await oldChannel.messages.fetch({ limit: 50 });
+                const botMessages = messages.filter(m => m.author.id === client.user.id);
+                for (const [, msg] of botMessages) {
+                  try { await msg.delete(); } catch (e) { /* ignore */ }
+                }
+              }
+            } catch (error) { /* ignore - old channel might not exist */ }
+          }
+
+          // Send new panel in current channel
+          await createVoiceManagerPanel(client, message.channel);
+
+          // Update the menu channel ID in database
+          await guildService.setVoiceManager(message.guild.id, { mutedChannelId: message.channel.id });
+
+          return embeds.success(message, '**Voicemaster panel** has been **sent** to this channel.');
+        } catch (error) {
+          logger.webhook.error(error, message);
+          return embeds.deny(message, 'Failed to **send** voicemaster panel.');
+        }
+      }
     }
   },
 
@@ -433,9 +480,10 @@ module.exports = {
 
     const sub = args[0].toLowerCase();
 
-    // Setup and Reset commands - require Manage Channels permission
-    if (sub === 'setup' || sub === 'reset') {
-      const subcommand = module.exports.subcommands[sub];
+    // Setup, Reset, and SendInterface commands - require Manage Channels permission (no voice channel needed)
+    if (sub === 'setup' || sub === 'reset' || sub === 'sendinterface' || sub === 'sendpanel' || sub === 'newpanel') {
+      const subcommand = Object.values(module.exports.subcommands)
+        .find(s => s.name === sub || s.aliases.includes(sub));
       if (subcommand) {
         return subcommand.handler(client, message, args.slice(1), guildService);
       }

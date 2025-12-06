@@ -849,9 +849,10 @@ class GuildService extends BaseService {
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Channel ID
    * @param {string} message - Welcome message
+   * @param {boolean} pingEnabled - Whether to ping mentions
    * @returns {Promise<boolean>} Success status
    */
-  async addWelcomeMessage(guildId, channelId, message) {
+  async addWelcomeMessage(guildId, channelId, message, pingEnabled = false) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -879,12 +880,14 @@ class GuildService extends BaseService {
         // Update existing message
         welcomeMessages[existingIndex].message = message.trim();
         welcomeMessages[existingIndex].createdAt = new Date();
+        welcomeMessages[existingIndex].pingEnabled = pingEnabled;
       } else {
         // Add new message
         welcomeMessages.push({
           channelId,
           message: message.trim(),
-          createdAt: new Date()
+          createdAt: new Date(),
+          pingEnabled
         });
       }
 
@@ -1161,9 +1164,10 @@ class GuildService extends BaseService {
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Channel ID
    * @param {string} message - Leave message
+   * @param {boolean} pingEnabled - Whether to ping mentions
    * @returns {Promise<boolean>} Success status
    */
-  async addLeaveMessage(guildId, channelId, message) {
+  async addLeaveMessage(guildId, channelId, message, pingEnabled = false) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -1191,12 +1195,14 @@ class GuildService extends BaseService {
         // Update existing message
         leaveMessages[existingIndex].message = message.trim();
         leaveMessages[existingIndex].createdAt = new Date();
+        leaveMessages[existingIndex].pingEnabled = pingEnabled;
       } else {
         // Add new message
         leaveMessages.push({
           channelId,
           message: message.trim(),
-          createdAt: new Date()
+          createdAt: new Date(),
+          pingEnabled
         });
       }
 
@@ -1382,9 +1388,10 @@ class GuildService extends BaseService {
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Channel ID
    * @param {string} message - Boost message
+   * @param {boolean} pingEnabled - Whether to ping mentions
    * @returns {Promise<boolean>} Success status
    */
-  async addBoostMessage(guildId, channelId, message) {
+  async addBoostMessage(guildId, channelId, message, pingEnabled = false) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -1412,12 +1419,14 @@ class GuildService extends BaseService {
         // Update existing message
         boostMessages[existingIndex].message = message.trim();
         boostMessages[existingIndex].createdAt = new Date();
+        boostMessages[existingIndex].pingEnabled = pingEnabled;
       } else {
         // Add new message
         boostMessages.push({
           channelId,
           message: message.trim(),
-          createdAt: new Date()
+          createdAt: new Date(),
+          pingEnabled
         });
       }
 
