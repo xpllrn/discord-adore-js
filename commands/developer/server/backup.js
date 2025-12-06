@@ -52,6 +52,7 @@ module.exports = {
 /**
  * Handle the backup move command
  * Transfers all media from source category channels to destination category
+ * Supports cross-server transfers (source can be in a different server)
  */
 async function handleBackupMove(client, message, args) {
   const sourceCategoryId = args[0];
@@ -61,7 +62,8 @@ async function handleBackupMove(client, message, args) {
   if (!sourceCategoryId || !destCategoryId) {
     return embeds.warn(message, 
       `Please provide both **source** and **destination** category IDs\n` +
-      `\`\`\`\n,backup move [source category id] [destination category id]\`\`\``
+      `\`\`\`\n,backup move [source category id] [destination category id]\`\`\`\n` +
+      `**Note:** Source can be from another server (bot must be in both)`
     );
   }
 
@@ -70,31 +72,48 @@ async function handleBackupMove(client, message, args) {
     return embeds.warn(message, 'Please provide **valid Discord category IDs**!');
   }
 
-  // Fetch categories
-  const sourceCategory = message.guild.channels.cache.get(sourceCategoryId);
+  // Fetch source category - search across ALL servers the bot is in
+  let sourceCategory = null;
+  let sourceGuild = null;
+  
+  for (const guild of client.guilds.cache.values()) {
+    const category = guild.channels.cache.get(sourceCategoryId);
+    if (category && category.type === ChannelType.GuildCategory) {
+      sourceCategory = category;
+      sourceGuild = guild;
+      break;
+    }
+  }
+
+  // Fetch destination category - must be in the current server (where command is run)
   const destCategory = message.guild.channels.cache.get(destCategoryId);
 
   if (!sourceCategory) {
-    return embeds.warn(message, `Could not find **source category** with ID \`${sourceCategoryId}\``);
+    return embeds.warn(message, 
+      `Could not find **source category** with ID \`${sourceCategoryId}\`\n` +
+      `Make sure the bot is in the server containing this category`
+    );
   }
 
   if (!destCategory) {
-    return embeds.warn(message, `Could not find **destination category** with ID \`${destCategoryId}\``);
+    return embeds.warn(message, 
+      `Could not find **destination category** with ID \`${destCategoryId}\`\n` +
+      `Destination must be in **this server**`
+    );
   }
 
-  // Verify both are categories
-  if (sourceCategory.type !== ChannelType.GuildCategory) {
-    return embeds.warn(message, `**${sourceCategory.name}** is not a category!`);
-  }
-
+  // Verify destination is a category
   if (destCategory.type !== ChannelType.GuildCategory) {
     return embeds.warn(message, `**${destCategory.name}** is not a category!`);
   }
 
-  // Get all text channels in source category
-  const sourceChannels = message.guild.channels.cache
+  // Get all text channels in source category (from the source guild)
+  const sourceChannels = sourceGuild.channels.cache
     .filter(ch => ch.parentId === sourceCategoryId && ch.type === ChannelType.GuildText)
     .sort((a, b) => a.position - b.position);
+  
+  // Check if cross-server transfer
+  const isCrossServer = sourceGuild.id !== message.guild.id;
 
   if (sourceChannels.size === 0) {
     return embeds.warn(message, `No text channels found in **${sourceCategory.name}**`);
@@ -109,9 +128,12 @@ async function handleBackupMove(client, message, args) {
     .setColor(colors.info)
     .setTitle('📦 Backup Transfer')
     .setDescription(
+      (isCrossServer ? `**⚠️ Cross-Server Transfer**\n\n` : '') +
+      `**Source Server:** ${sourceGuild.name}\n` +
       `**Source Category:** ${sourceCategory.name}\n` +
+      `**Destination Server:** ${message.guild.name}\n` +
       `**Destination Category:** ${destCategory.name}\n\n` +
-      `**Channels to transfer (${sourceChannels.size}):**\n${channelList.slice(0, 1500)}`
+      `**Channels to transfer (${sourceChannels.size}):**\n${channelList.slice(0, 1400)}`
     )
     .setFooter({ text: 'This will fetch all media links and transfer them to the new category' });
 
@@ -120,11 +142,11 @@ async function handleBackupMove(client, message, args) {
   // Ask for confirmation
   await createConfirmation(
     message,
-    `Are you sure you want to **transfer media** from **${sourceCategory.name}** to **${destCategory.name}**?\n\n` +
+    `Are you sure you want to **transfer media** from **${sourceCategory.name}** (${sourceGuild.name}) to **${destCategory.name}** (${message.guild.name})?\n\n` +
     `This will process **${sourceChannels.size}** channels.`,
     async (interaction) => {
       await interaction.deferUpdate();
-      await startBackupTransfer(client, message, sourceCategory, destCategory, sourceChannels);
+      await startBackupTransfer(client, message, sourceCategory, destCategory, sourceChannels, sourceGuild);
     }
   );
 }
@@ -133,8 +155,9 @@ async function handleBackupMove(client, message, args) {
 /**
  * Start the backup transfer process
  */
-async function startBackupTransfer(client, message, sourceCategory, destCategory, sourceChannels) {
+async function startBackupTransfer(client, message, sourceCategory, destCategory, sourceChannels, sourceGuild) {
   const startTime = Date.now();
+  const isCrossServer = sourceGuild.id !== message.guild.id;
   
   // Create transfer status channel in destination category
   let transferChannel;
@@ -143,7 +166,7 @@ async function startBackupTransfer(client, message, sourceCategory, destCategory
       name: 'transfer',
       type: ChannelType.GuildText,
       parent: destCategory.id,
-      topic: `Media transfer from ${sourceCategory.name} | Started: ${new Date().toISOString()}`,
+      topic: `Media transfer from ${sourceCategory.name} (${sourceGuild.name}) | Started: ${new Date().toISOString()}`,
       permissionOverwrites: [
         {
           id: message.guild.id,
@@ -166,8 +189,9 @@ async function startBackupTransfer(client, message, sourceCategory, destCategory
     .setColor(colors.info)
     .setTitle('📦 Media Transfer Started')
     .setDescription(
-      `**Source:** ${sourceCategory.name}\n` +
-      `**Destination:** ${destCategory.name}\n` +
+      (isCrossServer ? `**🔄 Cross-Server Transfer**\n\n` : '') +
+      `**Source:** ${sourceGuild.name} → ${sourceCategory.name}\n` +
+      `**Destination:** ${message.guild.name} → ${destCategory.name}\n` +
       `**Total Channels:** ${sourceChannels.size}\n\n` +
       `${emojis.loading} **Initializing transfer...**`
     )
