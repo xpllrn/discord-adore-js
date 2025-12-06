@@ -328,6 +328,18 @@ module.exports = {
 
     const channel = message.channel;
 
+    // Check if this is a community-required channel before confirming
+    const guild = message.guild;
+    if (guild.features.includes('COMMUNITY')) {
+      const rulesChannelId = guild.rulesChannelId;
+      const publicUpdatesChannelId = guild.publicUpdatesChannelId;
+      
+      if (channel.id === rulesChannelId || channel.id === publicUpdatesChannelId) {
+        const channelType = channel.id === rulesChannelId ? 'Rules' : 'Community Updates';
+        return embeds.deny(message, `Cannot nuke **#${channel.name}** because it's the **${channelType}** channel required for Community servers.\n\nTo nuke this channel, first change your community settings in **Server Settings > Community > Overview**.`);
+      }
+    }
+
     // Show confirmation dialog
     await createConfirmation(
       message,
@@ -347,10 +359,32 @@ module.exports = {
 
         } catch (error) {
           logger.webhook.error(error, message);
+          
+          // Handle specific Discord API errors
+          let errorMessage = 'Failed to nuke channel.';
+          let shouldDM = false;
+          
+          if (error.code === 50074) {
+            // Community required channel
+            errorMessage = `Cannot delete **#${channel.name}** because it's required for Community servers (rules or updates channel).`;
+          } else if (error.code === 50013) {
+            // Missing permissions
+            errorMessage = `I don't have permission to delete or create channels. Please check my role permissions.`;
+            shouldDM = true;
+          } else if (error.code === 50001) {
+            // Missing access
+            errorMessage = `I don't have access to this channel.`;
+            shouldDM = true;
+          } else {
+            errorMessage = `Failed to nuke channel: ${error.message}`;
+          }
+
+          // Try to send error in a channel the bot can access
+          let errorSent = false;
           try {
             const errorChannel = message.guild.channels.cache.find(ch => 
               ch.isTextBased() && 
-              ch.permissionsFor(message.guild.members.me).has(PermissionFlagsBits.SendMessages)
+              ch.permissionsFor(message.guild.members.me)?.has(PermissionFlagsBits.SendMessages)
             );
             
             if (errorChannel) {
@@ -358,10 +392,27 @@ module.exports = {
                 author: message.author,
                 channel: errorChannel
               };
-              await embeds.deny(errorContext, `Failed to nuke channel: ${error.message}`);
+              await embeds.deny(errorContext, errorMessage);
+              errorSent = true;
             }
           } catch (sendError) {
-            // Can't send error anywhere
+            // Can't send in any channel
+          }
+
+          // If we couldn't send in any channel, DM the user
+          if (!errorSent || shouldDM) {
+            try {
+              const dmEmbed = new EmbedBuilder()
+                .setColor(config.colors.deny)
+                .setTitle('Nuke Command Failed')
+                .setDescription(errorMessage)
+                .addFields({ name: 'Server', value: message.guild.name, inline: true })
+                .setTimestamp();
+              
+              await message.author.send({ embeds: [dmEmbed] });
+            } catch (dmError) {
+              // User has DMs disabled, nothing we can do
+            }
           }
         }
       }

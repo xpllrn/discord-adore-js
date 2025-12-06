@@ -160,16 +160,20 @@ async function processSpamFilter(message) {
 
       // Send a warning message (auto-delete after 10 seconds)
       try {
+        const { safeSend } = require('../../utils/helpers');
+        
         let warningText = `${message.author}, your message was ${actionTaken} due to ${filterType}.`;
         if (actionDuration) {
           warningText += ` (Duration: **${actionDuration}**)`;
         }
 
-        const warningMsg = await message.channel.send({ content: warningText });
+        const warningMsg = await safeSend(message.channel, { content: warningText }, message.author, message.guild);
 
-        setTimeout(() => {
-          warningMsg.delete().catch(() => {});
-        }, 10000);
+        if (warningMsg) {
+          setTimeout(() => {
+            warningMsg.delete().catch(() => {});
+          }, 10000);
+        }
       } catch (sendError) {
         // Silent fail on warning message
       }

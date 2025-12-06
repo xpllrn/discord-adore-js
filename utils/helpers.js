@@ -13,9 +13,104 @@ const {
   SeparatorSpacingSize,
   MediaGalleryBuilder,
   MediaGalleryItemBuilder,
-  MessageFlags
+  MessageFlags,
+  PermissionFlagsBits
 } = require('discord.js');
 const { colors } = require('../config/setup');
+
+// ===== SAFE SEND UTILITIES =====
+
+/**
+ * Safely send a message to a channel, with fallback to DM if no permission
+ * @param {Object} channel - Discord channel to send to
+ * @param {Object} messageOptions - Message options (content, embeds, etc.)
+ * @param {Object} user - User to DM if channel send fails (optional)
+ * @param {Object} guild - Guild for context in DM (optional)
+ * @returns {Promise<Message|null>} The sent message or null if failed
+ */
+async function safeSend(channel, messageOptions, user = null, guild = null) {
+  try {
+    // Check if bot has permission to send in this channel
+    const botMember = channel.guild?.members?.me;
+    if (botMember && !channel.permissionsFor(botMember)?.has(PermissionFlagsBits.SendMessages)) {
+      // No permission, try to DM user instead
+      if (user) {
+        return await safeDM(user, messageOptions, guild, channel);
+      }
+      return null;
+    }
+
+    return await channel.send(messageOptions);
+  } catch (error) {
+    // Handle specific Discord API errors
+    if (error.code === 50013 || error.code === 50001) {
+      // Missing Permissions or Missing Access - try DM
+      if (user) {
+        return await safeDM(user, messageOptions, guild, channel);
+      }
+    }
+    // Silent fail for other errors
+    return null;
+  }
+}
+
+/**
+ * Safely DM a user with context about where the message was meant to go
+ * @param {Object} user - User to DM
+ * @param {Object} messageOptions - Original message options
+ * @param {Object} guild - Guild for context (optional)
+ * @param {Object} channel - Channel for context (optional)
+ * @returns {Promise<Message|null>} The sent DM or null if failed
+ */
+async function safeDM(user, messageOptions, guild = null, channel = null) {
+  try {
+    // Add context about where this was meant to be sent
+    const contextNote = guild 
+      ? `*I couldn't send this in ${channel ? `#${channel.name}` : 'the channel'} in **${guild.name}** due to missing permissions.*\n\n`
+      : '';
+
+    // Modify the message to include context
+    const dmOptions = { ...messageOptions };
+    
+    if (dmOptions.content) {
+      dmOptions.content = contextNote + dmOptions.content;
+    } else if (dmOptions.embeds && dmOptions.embeds.length > 0) {
+      // Add a note to the first embed's description or as content
+      dmOptions.content = contextNote.trim();
+    } else {
+      dmOptions.content = contextNote.trim();
+    }
+
+    return await user.send(dmOptions);
+  } catch (dmError) {
+    // User has DMs disabled or blocked the bot
+    return null;
+  }
+}
+
+/**
+ * Check if bot can send messages in a channel
+ * @param {Object} channel - Discord channel
+ * @returns {boolean} Whether bot can send messages
+ */
+function canSendInChannel(channel) {
+  if (!channel.guild) return true; // DM channel
+  const botMember = channel.guild.members?.me;
+  if (!botMember) return false;
+  return channel.permissionsFor(botMember)?.has(PermissionFlagsBits.SendMessages) ?? false;
+}
+
+/**
+ * Find a channel where the bot can send messages
+ * @param {Object} guild - Discord guild
+ * @returns {Object|null} A text channel where bot can send, or null
+ */
+function findSendableChannel(guild) {
+  return guild.channels.cache.find(ch => 
+    ch.isTextBased() && 
+    ch.permissionsFor(guild.members.me)?.has(PermissionFlagsBits.SendMessages)
+  ) || null;
+}
 const { embeds } = require('../core/embeds');
 const { getService } = require('@services');
 const { findUser } = require('../handlers/finder');
@@ -526,6 +621,12 @@ module.exports = {
   // Shared
   getOrdinal,
   getBotAvatarURL,
+
+  // Safe Send Utilities
+  safeSend,
+  safeDM,
+  canSendInChannel,
+  findSendableChannel,
 
   // Roleplay
   fetchWaifuGif,
