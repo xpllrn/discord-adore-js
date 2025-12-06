@@ -287,9 +287,9 @@ class CustomEmbedBuilder {
             messageOptions.components = components
         }
 
-        // If pingEnabled is set in variables, allow role mentions to ping (users already work by default)
+        // If pingEnabled is set in variables, allow role mentions to ping (users work by default)
         if (variables.pingEnabled) {
-            messageOptions.allowedMentions = { parse: ['users', 'roles'] };
+            messageOptions.allowedMentions = { parse: ['roles'] };
         }
 
         channel.send(messageOptions).then((sentMessage) => {
@@ -428,9 +428,9 @@ class EmbedVariableProcessor {
         const processedText = this.replaceVariables(textContent, variables);
         const messageOptions = { content: processedText };
         
-        // If pingEnabled, allow role and user mentions to ping
+        // If pingEnabled, allow role mentions to ping (users work by default)
         if (variables.pingEnabled) {
-            messageOptions.allowedMentions = { parse: ['users', 'roles'] };
+            messageOptions.allowedMentions = { parse: ['roles'] };
         }
         
         return channel.send(messageOptions);

@@ -390,7 +390,8 @@ async function processAutoresponder(message) {
             // Regular text response
             const messageOptions = { content: autoresponder.response };
             if (pingEnabled) {
-              messageOptions.allowedMentions = { parse: ['users', 'roles'] };
+              // Only add roles to allowedMentions - users work by default
+              messageOptions.allowedMentions = { parse: ['roles'] };
             }
             
             if (autoresponder.reply) {
