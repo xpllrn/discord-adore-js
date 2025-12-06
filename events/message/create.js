@@ -38,9 +38,6 @@ module.exports = {
     // Process autoresponders
     await processAutoresponder(message);
 
-    // Process tags
-    await processTags(message);
-
     // Process message tracking
     await processMessageTracking(message);
 

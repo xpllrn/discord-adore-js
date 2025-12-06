@@ -6886,6 +6886,25 @@ class GuildService extends BaseService {
   // ===== BOOST ROLE SYSTEM =====
 
   /**
+   * Get boost role
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<string|null>} Boost role ID or null
+   */
+  async getBoostRole(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.BoostRole || null;
+    } catch (error) {
+      console.error(`Error getting boost role for guild ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
    * Set boost role
    * @param {string} guildId - Guild ID
    * @param {string} roleId - Boost role ID
