@@ -1,7 +1,7 @@
 const { MessageFlags, SlashCommandBuilder, ApplicationIntegrationType } = require('discord.js')
 const config = require('../../config/setup')
 const { embeds } = require('../../core/embeds')
-const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed, addPaginationButtons, addFooter } = require('../../utils/embeds/helpEmbedBuilder')
+const { createParentCommandPage, createSubcommandPage, createTraditionalEmbed, addPaginationButtons, addFooter, resolveContainerColor } = require('../../utils/embeds/helpEmbedBuilder')
 const { createPagination } = require('../../core/buttons')
 
 // ============================================================================
@@ -44,6 +44,9 @@ async function showHelpShared(context, client, commandQuery) {
     // guildprefix is already set to default
   }
 
+  // Resolve guild's custom embed color (premium feature)
+  const accentColor = await resolveContainerColor(context.guild?.id);
+
   const command = client.commands.get(commandQuery) || client.commands.get(client.aliases.get(commandQuery))
 
   // Check if command is a developer command and user is not the dev
@@ -65,7 +68,7 @@ async function showHelpShared(context, client, commandQuery) {
         // Check if command has explicit subcommands object (new format)
         if (!command.subcommands) {
           // No subcommands object - fall back to traditional embed
-          const container = createTraditionalEmbed(command, guildprefix);
+          const container = createTraditionalEmbed(command, guildprefix, accentColor);
           if (isInteraction) {
             if (context.deferred || context.replied) {
               return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
@@ -90,7 +93,7 @@ async function showHelpShared(context, client, commandQuery) {
 
         if (subcommands.length === 0) {
           // Fall back to traditional embed
-          const container = createTraditionalEmbed(command, guildprefix);
+          const container = createTraditionalEmbed(command, guildprefix, accentColor);
           if (isInteraction) {
             if (context.deferred || context.replied) {
               return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
@@ -105,13 +108,13 @@ async function showHelpShared(context, client, commandQuery) {
         const pages = [];
 
         // Page 1: Parent command overview
-        const parentPage = createParentCommandPage(command, guildprefix, subcommands.length);
+        const parentPage = createParentCommandPage(command, guildprefix, subcommands.length, accentColor);
         if (parentPage) pages.push(parentPage);
 
         // Pages 2+: Individual subcommand pages
         subcommands.forEach((subcommand, index) => {
           const pageNumber = index + 2; // +2 because page 1 is parent
-          const page = createSubcommandPage(command, subcommand, pageNumber, subcommands.length + 1);
+          const page = createSubcommandPage(command, subcommand, pageNumber, subcommands.length + 1, accentColor);
           if (page) pages.push(page);
         });
 
@@ -124,8 +127,8 @@ async function showHelpShared(context, client, commandQuery) {
           // Safety check - if container is undefined, return a fallback
           if (!container || !container.components) {
             console.error(`[HELP ERROR] Page ${pageIndex} is undefined or has no components`);
-            const fallbackContainer = new (require('discord.js').ContainerBuilder)()
-              .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
+            const fallbackContainer = new (require('discord.js').ContainerBuilder)();
+            if (accentColor !== null) fallbackContainer.setAccentColor(accentColor);
             fallbackContainer.addTextDisplayComponents(
               (text) => text.setContent(`## Error\nFailed to load page ${currentPage}`)
             );
@@ -135,8 +138,8 @@ async function showHelpShared(context, client, commandQuery) {
           }
           
           // Clone the container to avoid modifying the original
-          const newContainer = new (require('discord.js').ContainerBuilder)()
-            .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
+          const newContainer = new (require('discord.js').ContainerBuilder)();
+          if (accentColor !== null) newContainer.setAccentColor(accentColor);
           
           // Copy all components from original container
           container.components.forEach(comp => {
@@ -166,7 +169,7 @@ async function showHelpShared(context, client, commandQuery) {
         // Fall back to traditional embed on error
         console.error('[HELP ERROR] Error in group command help:', error);
         console.error('[HELP ERROR] Stack:', error.stack);
-        const container = createTraditionalEmbed(command, guildprefix);
+        const container = createTraditionalEmbed(command, guildprefix, accentColor);
         if (isInteraction) {
           if (context.deferred || context.replied) {
             return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
@@ -178,7 +181,7 @@ async function showHelpShared(context, client, commandQuery) {
       }
     } else {
       // Traditional single-embed help for commands without subcommands
-      const container = createTraditionalEmbed(command, guildprefix);
+      const container = createTraditionalEmbed(command, guildprefix, accentColor);
       if (isInteraction) {
         if (context.deferred || context.replied) {
           return context.editReply({ components: [container], flags: MessageFlags.IsComponentsV2 });
@@ -279,7 +282,9 @@ module.exports = {
 
           if (matchedSubcommand) {
             // Show ONLY this subcommand's info (no pagination, no buttons)
-            const singleSubcommandEmbed = createSubcommandPage(command, matchedSubcommand, 1, 1);
+            // Resolve guild's custom embed color
+            const accentColor = await resolveContainerColor(message.guild?.id);
+            const singleSubcommandEmbed = createSubcommandPage(command, matchedSubcommand, 1, 1, accentColor);
             return message.channel.send({ components: [singleSubcommandEmbed], flags: MessageFlags.IsComponentsV2 });
           } else {
             // Subcommand not found - show error

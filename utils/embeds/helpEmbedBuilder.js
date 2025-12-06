@@ -1,16 +1,68 @@
 const { ContainerBuilder, SeparatorBuilder, SeparatorSpacingSize } = require('discord.js');
 const config = require('../../config/setup');
 
+// Cache for guild embed colors (synced with core/embeds.js)
+const colorCache = new Map();
+const COLOR_CACHE_TTL = 60000; // 1 minute
+
+/**
+ * Get guild's custom embed color with caching
+ * @param {string} guildId - Guild ID
+ * @returns {Promise<string|null>} Custom color, 'none', or null for default
+ */
+async function getGuildEmbedColor(guildId) {
+  if (!guildId) return null;
+  
+  // Check cache first
+  const cached = colorCache.get(guildId);
+  if (cached && Date.now() - cached.timestamp < COLOR_CACHE_TTL) {
+    return cached.color;
+  }
+  
+  try {
+    const { getService } = require('@services');
+    const guildService = getService('guild');
+    const color = await guildService.getEmbedColor(guildId);
+    
+    // Cache the result
+    colorCache.set(guildId, { color, timestamp: Date.now() });
+    return color;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Resolve embed color for a guild
+ * @param {string} guildId - Guild ID
+ * @returns {Promise<number|null>} Color as integer, or null for no color
+ */
+async function resolveContainerColor(guildId) {
+  const customColor = await getGuildEmbedColor(guildId);
+  
+  // 'none' means no color
+  if (customColor === 'none') return null;
+  
+  // Use custom color if set, otherwise default
+  const colorHex = customColor || config.colors.embed;
+  return parseInt(colorHex.replace('#', ''), 16);
+}
+
 /**
  * Creates the parent command overview page (page 1)
  * @param {Object} command - Command object
  * @param {String} guildPrefix - Guild's command prefix
  * @param {Number} totalSubcommands - Total number of subcommands
+ * @param {number|null} accentColor - Accent color (null for no color)
  * @returns {ContainerBuilder} - Discord container for parent command
  */
-function createParentCommandPage(command, guildPrefix, totalSubcommands) {
-  const container = new ContainerBuilder()
-    .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
+function createParentCommandPage(command, guildPrefix, totalSubcommands, accentColor = null) {
+  const container = new ContainerBuilder();
+  
+  // Only set accent color if not null
+  if (accentColor !== null) {
+    container.setAccentColor(accentColor);
+  }
 
   // Title and description
   container.addTextDisplayComponents(
@@ -116,11 +168,16 @@ function addFooter(container, currentPage, totalPages, totalEntries, moduleName)
  * @param {Object} subcommand - Subcommand data object
  * @param {Number} pageNumber - Current page number
  * @param {Number} totalPages - Total number of pages
+ * @param {number|null} accentColor - Accent color (null for no color)
  * @returns {ContainerBuilder} - Discord container for subcommand
  */
-function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
-  const container = new ContainerBuilder()
-    .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
+function createSubcommandPage(command, subcommand, pageNumber, totalPages, accentColor = null) {
+  const container = new ContainerBuilder();
+  
+  // Only set accent color if not null
+  if (accentColor !== null) {
+    container.setAccentColor(accentColor);
+  }
 
   // Title and description
   container.addTextDisplayComponents(
@@ -169,11 +226,16 @@ function createSubcommandPage(command, subcommand, pageNumber, totalPages) {
  * Creates traditional single-container help (for commands without subcommands)
  * @param {Object} command - Command object
  * @param {String} guildPrefix - Guild's command prefix
+ * @param {number|null} accentColor - Accent color (null for no color)
  * @returns {ContainerBuilder} - Discord container
  */
-function createTraditionalEmbed(command, guildPrefix) {
-  const container = new ContainerBuilder()
-    .setAccentColor(parseInt(config.colors.embed.replace('#', ''), 16));
+function createTraditionalEmbed(command, guildPrefix, accentColor = null) {
+  const container = new ContainerBuilder();
+  
+  // Only set accent color if not null
+  if (accentColor !== null) {
+    container.setAccentColor(accentColor);
+  }
 
   // Title and description
   container.addTextDisplayComponents(
@@ -229,5 +291,7 @@ module.exports = {
   createSubcommandPage,
   createTraditionalEmbed,
   addPaginationButtons,
-  addFooter
+  addFooter,
+  resolveContainerColor,
+  getGuildEmbedColor
 };
