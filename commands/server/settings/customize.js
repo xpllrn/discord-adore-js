@@ -395,6 +395,18 @@ module.exports = {
           }
         }
 
+        // Handle "none" - remove embed color entirely (no colored bar)
+        if (colorInput.toLowerCase() === 'none') {
+          try {
+            await guildService.setEmbedColor(message.guild.id, 'none');
+            clearColorCache(message.guild.id);
+            return embeds.success(message, 'Removed embed color (no color bar)');
+          } catch (error) {
+            logger.webhook.error(error, message);
+            return embeds.deny(message, `Failed to remove embed color: ${error.message}`);
+          }
+        }
+
         // Validate and set color
         let color = colorInput.trim();
         if (!color.startsWith('#')) {

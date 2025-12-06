@@ -1599,13 +1599,13 @@ const guildSchema = new mongoose.Schema({
   // Custom Embed Color (Premium feature)
   EmbedColor: {
     type: String,
-    default: null, // Hex color code (e.g., '#5865F2')
+    default: null, // Hex color code (e.g., '#5865F2') or 'none' for no color
     validate: {
       validator: function(v) {
-        if (v === null) return true;
+        if (v === null || v === 'none') return true;
         return /^#[0-9A-Fa-f]{6}$/.test(v);
       },
-      message: 'EmbedColor must be a valid hex color code (e.g., #5865F2)'
+      message: 'EmbedColor must be a valid hex color code (e.g., #5865F2) or "none"'
     }
   }
 }, {

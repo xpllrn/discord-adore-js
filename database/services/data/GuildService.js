@@ -565,7 +565,7 @@ class GuildService extends BaseService {
   /**
    * Set guild's custom embed color (Premium feature)
    * @param {string} guildId - Guild ID
-   * @param {string|null} color - Hex color code (e.g., '#5865F2') or null to reset
+   * @param {string|null} color - Hex color code (e.g., '#5865F2'), 'none' for no color, or null to reset
    * @returns {Promise<boolean>} Success status
    */
   async setEmbedColor(guildId, color) {
@@ -574,7 +574,7 @@ class GuildService extends BaseService {
     }
 
     // Validate color format if provided
-    if (color !== null) {
+    if (color !== null && color !== 'none') {
       // Normalize color format
       let normalizedColor = color.trim();
       if (!normalizedColor.startsWith('#')) {

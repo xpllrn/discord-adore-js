@@ -77,13 +77,17 @@ async function safeSendEmbed(channel, options, user) {
  * Uses custom color if set, otherwise falls back to default
  * @param {Object} context - Message or interaction context
  * @param {string} defaultColor - Default color to use
- * @returns {Promise<string>} Color to use
+ * @returns {Promise<string|null>} Color to use, or null for no color
  */
 async function resolveEmbedColor(context, defaultColor) {
     const guildId = context.guild?.id || context.guildId;
     if (!guildId) return defaultColor;
     
     const customColor = await getGuildEmbedColor(guildId);
+    
+    // "none" means no color at all
+    if (customColor === 'none') return null;
+    
     return customColor || defaultColor;
 }
 
@@ -156,12 +160,16 @@ const embeds = {
         const user = context.user || context.author;
         const isInteraction = !!context.user;
         
-        // Get custom color for this guild
+        // Get custom color for this guild (null = no color)
         const color = await resolveEmbedColor(context, colors.info);
 
         const embed = new EmbedBuilder()
-            .setColor(color)
             .setDescription(`<@${user.id}>: ${text}`)
+        
+        // Only set color if not null (null = no color bar)
+        if (color !== null) {
+            embed.setColor(color);
+        }
 
         if (isInteraction) {
             if (context.deferred || context.replied) {
