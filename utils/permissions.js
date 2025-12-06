@@ -280,8 +280,14 @@ async function checkFakePermission(message, permissionName) {
     // Check if any of the user's roles have this fake permission
     for (const role of message.member.roles.cache.values()) {
       const rolePerms = guildData.FakePermissions[role.id];
-      if (rolePerms && rolePerms.permissions && rolePerms.permissions.includes(permissionKey)) {
-        return true;
+      if (rolePerms && rolePerms.permissions) {
+        // Administrator fake perm grants all permissions (like real Discord admin)
+        if (rolePerms.permissions.includes('administrator')) {
+          return true;
+        }
+        if (rolePerms.permissions.includes(permissionKey)) {
+          return true;
+        }
       }
     }
 

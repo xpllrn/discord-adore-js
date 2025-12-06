@@ -174,7 +174,7 @@ module.exports = {
         }
 
         if (!boostRole.editable) {
-          return embeds.deny(message, 'I do not have permission to manage that role');
+          return embeds.deny(message, 'I do **not have permission** to manage that role');
         }
 
         await guildService.setBoostRole(message.guild.id, boostRole.id);

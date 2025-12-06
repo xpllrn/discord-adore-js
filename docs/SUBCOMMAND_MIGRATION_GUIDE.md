@@ -134,13 +134,16 @@ handler: async (client, message, args, guildService) => {
 
 - [x] `commands/server/automation/alias.js`
 - [x] `commands/server/automation/autoreact.js`
-- [x] `commands/server/automation/message.js`
+- [x] `commands/server/automation/autoresponder.js`
+- [x] `commands/server/automation/bumpreminder.js`
+- [x] `commands/server/automation/tag.js`
 - [x] `commands/server/features/ticket.js`
 - [x] `commands/server/features/voicemaster.js`
 - [x] `commands/server/features/starboard.js`
 - [x] `commands/server/features/giveaways.js`
 - [x] `commands/server/features/confession.js`
 - [x] `commands/server/features/count.js`
+- [x] `commands/server/features/stickymessage.js`
 - [x] `commands/moderation/automod/filter.js`
 - [x] `commands/moderation/ban/hardban.js`
 - [x] `commands/moderation/history/history.js`
@@ -149,9 +152,11 @@ handler: async (client, message, args, guildService) => {
 - [x] `commands/server/events/welcome.js`
 - [x] `commands/server/events/leave.js`
 - [x] `commands/server/levels/levels.js`
-- [ ] `commands/server/protection/antiraid.js`
-- [ ] `commands/server/protection/antinuke.js`
-- [ ] `commands/server/protection/fakepermissions.js`
+- [x] `commands/server/protection/antiraid.js`
+- [x] `commands/server/protection/antinuke.js`
+- [x] `commands/server/protection/fakepermissions.js`
+- [x] `commands/server/protection/restrictcommand.js`
+- [x] `commands/server/protection/enablecommand.js`
 - [x] `commands/server/members/forcenick.js`
 - [x] `commands/server/settings/settings.js`
 - [x] `commands/server/settings/customize.js`
@@ -167,9 +172,15 @@ handler: async (client, message, args, guildService) => {
 - [x] `commands/music/lastfm/fm.js`
 - [x] `commands/utility/tools/note.js`
 - [x] `commands/utility/tools/remind.js`
+- [x] `commands/utility/misc/sprint.js`
 - [x] `commands/premium/selfprefix.js`
 - [x] `commands/profiles/expressions/emoji.js`
 - [x] `commands/profiles/expressions/sticker.js`
+- [x] `commands/profiles/expressions/stealsticker.js`
 - [x] `commands/fun/random/blacktea.js`
 - [x] `commands/core/prefix.js`
 - [x] `commands/adore bio/about.js`
+- [x] `commands/developer/server/clear.js`
+- [x] `commands/developer/discord/economy.js`
+- [x] `commands/developer/discord/fetch.js`
+- [x] `commands/developer/discord/blacklist.js`
