@@ -13,60 +13,85 @@ module.exports = {
   run: async (client, message, args) => {
 
     try {
-      let targetMember = message.member;
+      // Collect all target members
+      const targetMembers = [];
 
-      // If user provided an argument, find the member
-      if (args[0]) {
-        const userResult = await findUser(message.guild, args[0], client);
-
-        if (!userResult.found) {
-          return embeds.warn(message, userResult.error);
+      if (args.length === 0) {
+        // No args, use message author
+        targetMembers.push(message.member);
+      } else {
+        // Find all mentioned members
+        for (const arg of args) {
+          const userResult = await findUser(message.guild, arg, client);
+          if (userResult.found && !userResult.isGlobal) {
+            const member = userResult.user;
+            // Avoid duplicates
+            if (!targetMembers.some(m => m.id === member.id)) {
+              targetMembers.push(member);
+            }
+          }
         }
 
-        // For server avatar, we need a guild member, not a global user
-        if (userResult.isGlobal) {
-          return embeds.warn(message, 'User is not in this server');
+        // If no valid members found, show error
+        if (targetMembers.length === 0) {
+          return embeds.warn(message, 'No valid server members found');
         }
-
-        targetMember = userResult.user;
       }
 
       // Build container with display components
       const container = new ContainerBuilder()
         .setAccentColor(parseInt(colors.embed.replace('#', ''), 16));
 
-      // Title
-      container.addTextDisplayComponents(
-        (text) => text.setContent(`**${targetMember.user.username}'s Server Avatar**`)
-      );
+      // Single member - original behavior with download buttons
+      if (targetMembers.length === 1) {
+        const targetMember = targetMembers[0];
 
-      // Image
-      container.addMediaGalleryComponents((gallery) =>
-        gallery.addItems(
-          (item) => item
-            .setURL(targetMember.displayAvatarURL({ size: 4096, extension: 'png' }))
-            .setDescription(`${targetMember.user.username}'s server avatar`)
-        )
-      );
+        container.addTextDisplayComponents(
+          (text) => text.setContent(`**${targetMember.user.username}'s Server Avatar**`)
+        );
 
-      // Separator and buttons
-      container.addSeparatorComponents((separator) => separator);
-      container.addActionRowComponents((actionRow) =>
-        actionRow.setComponents(
-          new ButtonBuilder()
-            .setStyle(ButtonStyle.Link)
-            .setLabel('WEBP')
-            .setURL(targetMember.displayAvatarURL({ size: 4096, extension: 'webp' })),
-          new ButtonBuilder()
-            .setStyle(ButtonStyle.Link)
-            .setLabel('PNG')
-            .setURL(targetMember.displayAvatarURL({ size: 4096, extension: 'png' })),
-          new ButtonBuilder()
-            .setStyle(ButtonStyle.Link)
-            .setLabel('JPG')
-            .setURL(targetMember.displayAvatarURL({ size: 4096, extension: 'jpg' }))
-        )
-      );
+        container.addMediaGalleryComponents((gallery) =>
+          gallery.addItems(
+            (item) => item
+              .setURL(targetMember.displayAvatarURL({ size: 4096, extension: 'png' }))
+              .setDescription(`${targetMember.user.username}'s server avatar`)
+          )
+        );
+
+        container.addSeparatorComponents((separator) => separator);
+        container.addActionRowComponents((actionRow) =>
+          actionRow.setComponents(
+            new ButtonBuilder()
+              .setStyle(ButtonStyle.Link)
+              .setLabel('WEBP')
+              .setURL(targetMember.displayAvatarURL({ size: 4096, extension: 'webp' })),
+            new ButtonBuilder()
+              .setStyle(ButtonStyle.Link)
+              .setLabel('PNG')
+              .setURL(targetMember.displayAvatarURL({ size: 4096, extension: 'png' })),
+            new ButtonBuilder()
+              .setStyle(ButtonStyle.Link)
+              .setLabel('JPG')
+              .setURL(targetMember.displayAvatarURL({ size: 4096, extension: 'jpg' }))
+          )
+        );
+      } else {
+        // Multiple members - gallery view
+        container.addTextDisplayComponents(
+          (text) => text.setContent(`**Server Avatars (${targetMembers.length} users)**`)
+        );
+
+        container.addMediaGalleryComponents((gallery) => {
+          for (const member of targetMembers) {
+            gallery.addItems(
+              (item) => item
+                .setURL(member.displayAvatarURL({ size: 4096, extension: 'png' }))
+                .setDescription(`${member.user.username}'s server avatar`)
+            );
+          }
+          return gallery;
+        });
+      }
 
       return message.channel.send({
         components: [container],
