@@ -182,6 +182,36 @@ module.exports = {
       }
     },
 
+    'award view': {
+      name: 'award view',
+      aliases: ['awardview'],
+      description: 'View the current boost award role',
+      syntax: '{guildprefix}boost award view',
+      parameters: [],
+      example: '{guildprefix}boost award view',
+
+      handler: async (client, message, args, guildService) => {
+        const boostRoleId = await guildService.getBoostRole(message.guild.id);
+        if (!boostRoleId) {
+          return embeds.warn(message, 'No **boost award role** has been set');
+        }
+
+        const boostRole = message.guild.roles.cache.get(boostRoleId);
+        if (!boostRole) {
+          await guildService.removeBoostRole(message.guild.id);
+          return embeds.warn(message, 'The configured boost award role no longer exists and has been removed');
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(config.colors.embed)
+          .setTitle('Boost Award Role')
+          .setDescription(`Current boost award role: ${boostRole}\n\nMembers who boost the server will automatically receive this role.`)
+          .setFooter({ text: 'Use "boost award none" to remove' });
+
+        return message.channel.send({ embeds: [embed] });
+      }
+    },
+
     list: {
       name: 'list',
       aliases: [],
@@ -222,6 +252,16 @@ module.exports = {
     const sub = args[0]?.toLowerCase();
     if (!sub) return runHelpCommand(message, 'boost');
 
+    // Check for two-word subcommands first (e.g., "award view")
+    const twoWordSub = args.slice(0, 2).join(' ').toLowerCase();
+    const twoWordSubcommand = Object.values(module.exports.subcommands)
+      .find(s => s.name === twoWordSub || s.aliases.includes(twoWordSub));
+
+    if (twoWordSubcommand) {
+      return twoWordSubcommand.handler(client, message, args.slice(2), guildService);
+    }
+
+    // Check for single-word subcommands
     const subcommand = Object.values(module.exports.subcommands)
       .find(s => s.name === sub || s.aliases.includes(sub));
 

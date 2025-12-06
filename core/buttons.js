@@ -373,10 +373,10 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                 }
 
                 if (interaction.customId === 'confirm_approve') {
-                    await interaction.deferUpdate();
-
                     if (onApprove) {
                         await onApprove(interaction, sentMessage);
+                    } else {
+                        await interaction.deferUpdate();
                     }
 
                     collector.stop();
