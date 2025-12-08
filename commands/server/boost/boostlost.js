@@ -31,6 +31,7 @@ module.exports = {
 
 // Handle boost lost subcommand
 async function handleBoostLost(client, message) {
+  const guildService = getService('guild');
   try {
     // Get recent boost removals
     const recentBoostRemoves = await guildService.getRecentBoostRemoves(message.guild.id, 20);
@@ -199,6 +200,7 @@ async function handleBoostLost(client, message) {
 
 // Handle boost new subcommand
 async function handleBoostNew(client, message) {
+  const guildService = getService('guild');
   try {
     // Get recent boost additions
     const recentBoostAdds = await guildService.getRecentBoostAdds(message.guild.id, 20);

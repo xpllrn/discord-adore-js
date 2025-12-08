@@ -279,7 +279,11 @@ async function checkCommandPermission(message, permission) {
       return true;
 
     case 'premium':
-      return await checkPermissionLevel(message, 'premium');
+    case 'premium_user':
+      return await checkPermissionLevel(message, 'premium_user');
+
+    case 'premium_server':
+      return await checkPermissionLevel(message, 'premium_server');
 
     case 'dev':
       // Dev permissions are silently ignored (no error message)

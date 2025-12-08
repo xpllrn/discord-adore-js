@@ -650,9 +650,17 @@ module.exports = {
 
               const disabledButtons = createButtons(true);
               try {
-                await shareMessage.edit({ components: [disabledButtons] });
+                // Fetch the message fresh to avoid ChannelNotCached error
+                const channel = await client.channels.fetch(shareMessage.channelId).catch(() => null);
+                if (channel) {
+                  const freshMessage = await channel.messages.fetch(shareMessage.id).catch(() => null);
+                  if (freshMessage) {
+                    await freshMessage.edit({ components: [disabledButtons] });
+                  }
+                }
               } catch (editError) {
-                if (editError.code !== 10008) {
+                // Ignore errors - message may have been deleted or channel not accessible
+                if (editError.code !== 10008 && editError.code !== 10003) {
                   logger.webhook.error(editError, message);
                 }
               }
@@ -778,6 +786,9 @@ module.exports = {
           `Are you sure you want to **delete** your booster role **${roleName}**? This action cannot be undone.`,
           async (interaction) => {
             try {
+              // Defer the interaction first to allow editReply
+              await interaction.deferUpdate();
+              
               const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
 
               if (discordRole) {
@@ -797,7 +808,11 @@ module.exports = {
             } catch (error) {
               logger.webhook.error(error, message);
               const errorEmbed = embeds.createDeny(message, 'Failed to remove booster role. Please check my permissions or try again.');
-              await interaction.editReply({ embeds: [errorEmbed], components: [] });
+              try {
+                await interaction.editReply({ embeds: [errorEmbed], components: [] });
+              } catch (replyError) {
+                // Interaction may have already been handled
+              }
             }
           }
         );

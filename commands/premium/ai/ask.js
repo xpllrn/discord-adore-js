@@ -16,8 +16,18 @@ try {
   botOverview = 'adore is a personal helper to answer all questions.';
 }
 
-// Helper function to get AI response
-async function getAIResponse(question, contextText) {
+// Rate limit handling
+const rateLimitState = {
+  lastRequest: 0,
+  minDelay: 1000, // Minimum 1 second between requests
+  retryAfter: 0
+};
+
+// Sleep helper
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to get AI response with retry logic
+async function getAIResponse(question, contextText, retries = 3) {
   const systemPrompt = `You are Adore, a friendly, chill and helpful assistant who talks like a normal human. You can answer any kind of question: tech, bot-related, personal curiosity, general knowledge, anything. You are not restricted to bot topics.
 
 STYLE RULES:
@@ -42,28 +52,56 @@ ${contextText}
 User Question:
 ${question}`;
 
-  const response = await axios.post(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-    {
-      contents: [{
-        parts: [{
-          text: systemPrompt
-        }]
-      }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 200,
-      }
-    },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': process.env.GEMINI_API_KEY
-      }
-    }
-  );
+  // Enforce minimum delay between requests
+  const now = Date.now();
+  const timeSinceLastRequest = now - rateLimitState.lastRequest;
+  const waitTime = Math.max(rateLimitState.minDelay - timeSinceLastRequest, rateLimitState.retryAfter - now);
+  
+  if (waitTime > 0) {
+    await sleep(waitTime);
+  }
 
-  return response.data.candidates[0].content.parts[0].text;
+  try {
+    rateLimitState.lastRequest = Date.now();
+    
+    const response = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+      {
+        contents: [{
+          parts: [{
+            text: systemPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 200,
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': process.env.GEMINI_API_KEY
+        },
+        timeout: 30000
+      }
+    );
+
+    // Reset retry delay on success
+    rateLimitState.retryAfter = 0;
+    return response.data.candidates[0].content.parts[0].text;
+  } catch (error) {
+    if (error.response?.status === 429 && retries > 0) {
+      // Get retry delay from header or use exponential backoff
+      const retryAfter = parseInt(error.response.headers['retry-after']) || (4 - retries) * 2;
+      rateLimitState.retryAfter = Date.now() + (retryAfter * 1000);
+      
+      console.log(`Rate limited, retrying in ${retryAfter}s... (${retries} retries left)`);
+      await sleep(retryAfter * 1000);
+      
+      return getAIResponse(question, contextText, retries - 1);
+    }
+    throw error;
+  }
 }
 
 // SHARED LOGIC: Process ask command

@@ -109,6 +109,25 @@ module.exports = {
             }
           }
 
+          // Check permission level for slash commands (premium_user, premium_server, dev)
+          if (command.permission) {
+            const { hasPermissionLevel, PERMISSION_LEVELS } = require('../../utils/permissions');
+            // Create a fake message object for permission checking
+            const fakeMessage = {
+              author: interaction.user,
+              member: interaction.member,
+              guild: interaction.guild,
+              channel: interaction.channel
+            };
+            
+            const hasPermission = await hasPermissionLevel(fakeMessage, command.permission);
+            if (!hasPermission) {
+              const permLevel = PERMISSION_LEVELS[command.permission];
+              const errorMsg = permLevel?.message || 'You do not have permission to use this command!';
+              return interaction.reply({ content: `❌ ${errorMsg}`, ephemeral: true });
+            }
+          }
+
           await command.execute(interaction);
         } catch (error) {
           console.error(`Error executing slash command ${interaction.commandName}:`, error);

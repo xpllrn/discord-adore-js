@@ -52,8 +52,13 @@ async function dmMissingPerms(user, channel, guild) {
 // Helper to safely send messages (handles missing permissions)
 async function safeSendEmbed(channel, options, user) {
     try {
+        // Check if channel exists and has guild
+        if (!channel || !channel.guild) {
+            return null;
+        }
+        
         // Check if bot has permission to send in this channel
-        const botMember = channel.guild?.members?.me;
+        const botMember = channel.guild.members?.me;
         if (botMember && !channel.permissionsFor(botMember)?.has(PermissionFlagsBits.SendMessages)) {
             // DM the user about missing permissions
             await dmMissingPerms(user, channel, channel.guild);
@@ -64,7 +69,9 @@ async function safeSendEmbed(channel, options, user) {
         // Handle Missing Permissions (50013) or Missing Access (50001)
         if (error.code === 50013 || error.code === 50001) {
             // DM the user about missing permissions
-            await dmMissingPerms(user, channel, channel.guild);
+            if (channel && channel.guild) {
+                await dmMissingPerms(user, channel, channel.guild);
+            }
             return null;
         }
         // Re-throw other errors
