@@ -373,10 +373,11 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                 }
 
                 if (interaction.customId === 'confirm_approve') {
+                    // Always defer the interaction first so callbacks can use editReply
+                    await interaction.deferUpdate();
+                    
                     if (onApprove) {
                         await onApprove(interaction, sentMessage);
-                    } else {
-                        await interaction.deferUpdate();
                     }
 
                     collector.stop();
