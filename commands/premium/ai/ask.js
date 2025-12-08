@@ -192,7 +192,8 @@ const commandConfig = {
   description: 'Ask adore anything',
   syntax: 'ask [question]',
   example: 'ask what is adore?',
-  permission: 'premium_user'
+  permission: 'premium_user',
+  disabled: true // Temporarily disabled due to API rate limits
 };
 
 module.exports = {

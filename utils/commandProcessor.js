@@ -119,6 +119,11 @@ async function processCommand(message, isEdit = false) {
 
   if (!command) return;
 
+  // Check if command is globally disabled by developer
+  if (command.disabled) {
+    return embeds.deny(message, `The \`${command.name}\` command is currently **disabled**`);
+  }
+
   // Check if command is disabled or restricted
   const commandAccessResult = await checkCommandAccess(message, command, guildData);
   if (!commandAccessResult.allowed) {
