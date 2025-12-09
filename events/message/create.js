@@ -70,11 +70,36 @@ async function processSpamFilter(message) {
     }
 
     if (filterData) {
-      const { type, action, threshold, messageCount, mentionCount, duration } = filterData;
+      const { type, action, threshold, messageCount, mentionCount, duration, spamMessages } = filterData;
 
-      // Delete the spam message
+      // Delete all spam messages (bulk delete if possible)
       try {
-        await message.delete();
+        if (spamMessages && spamMessages.length > 0) {
+          // Group messages by channel for efficient deletion
+          const messagesByChannel = new Map();
+          for (const msg of spamMessages) {
+            if (!messagesByChannel.has(msg.channelId)) {
+              messagesByChannel.set(msg.channelId, []);
+            }
+            messagesByChannel.get(msg.channelId).push(msg.messageId);
+          }
+
+          // Bulk delete messages per channel
+          for (const [channelId, messageIds] of messagesByChannel) {
+            const channel = message.guild.channels.cache.get(channelId);
+            if (channel) {
+              if (messageIds.length > 1) {
+                await channel.bulkDelete(messageIds).catch(() => {});
+              } else {
+                const msg = await channel.messages.fetch(messageIds[0]).catch(() => null);
+                if (msg) await msg.delete().catch(() => {});
+              }
+            }
+          }
+        } else {
+          // Fallback: delete just the current message
+          await message.delete();
+        }
       } catch (deleteError) {
         // Message might already be deleted or bot lacks permissions
       }

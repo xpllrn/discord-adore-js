@@ -2,7 +2,7 @@ const { getService } = require('../database/services');
 const logger = require('./logger');
 
 // Store message history per user per guild
-// Structure: Map<guildId, Map<userId, Array<timestamp>>>
+// Structure: Map<guildId, Map<userId, Array<{timestamp, messageId, channelId}>>>
 const messageHistory = new Map();
 
 // Store mention count per message
@@ -78,22 +78,31 @@ async function checkSpamFilter(message) {
     const userHistory = guildHistory.get(userId);
 
     // Remove messages outside the time window
-    const recentMessages = userHistory.filter(timestamp => now - timestamp < SPAM_WINDOW);
+    const recentMessages = userHistory.filter(entry => now - entry.timestamp < SPAM_WINDOW);
 
-    // Add current message
-    recentMessages.push(now);
+    // Add current message with ID for bulk deletion
+    recentMessages.push({
+      timestamp: now,
+      messageId: message.id,
+      channelId: message.channel.id
+    });
 
     // Update history
     guildHistory.set(userId, recentMessages);
 
     // Check if spam threshold exceeded
     if (recentMessages.length >= threshold) {
+      // Return all spam message IDs for bulk deletion
       return {
         type: 'spam',
         action: spamFilter.action || 'delete', // delete, mute, jail
         duration: spamFilter.duration || null, // for mute action
         threshold: threshold,
-        messageCount: recentMessages.length
+        messageCount: recentMessages.length,
+        spamMessages: recentMessages.map(entry => ({
+          messageId: entry.messageId,
+          channelId: entry.channelId
+        }))
       };
     }
 
@@ -202,7 +211,7 @@ function cleanupHistory() {
   // Clean spam history
   for (const [guildId, guildHistory] of messageHistory.entries()) {
     for (const [userId, userHistory] of guildHistory.entries()) {
-      const recentMessages = userHistory.filter(timestamp => now - timestamp < SPAM_WINDOW);
+      const recentMessages = userHistory.filter(entry => now - entry.timestamp < SPAM_WINDOW);
 
       if (recentMessages.length === 0) {
         guildHistory.delete(userId);
