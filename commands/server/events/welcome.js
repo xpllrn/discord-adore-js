@@ -22,9 +22,9 @@ module.exports = {
       name: 'add',
       aliases: [],
       description: 'Add or update a welcome message for a channel',
-      syntax: '{guildprefix}welcome add [channel] [message] (--ping)',
-      parameters: ['channel', 'message', '--ping (optional)'],
-      example: '{guildprefix}welcome add #general Welcome {user.mention}! --ping',
+      syntax: '{guildprefix}welcome add [channel] [message] (--ping) (--self_destruct <seconds>)',
+      parameters: ['channel', 'message', '--ping (optional)', '--self_destruct <seconds> (optional)'],
+      example: '{guildprefix}welcome add #general Welcome {user.mention}! --ping --self_destruct 5',
 
       handler: async (client, message, args, guildService) => {
         const channelInput = args[0];
@@ -32,11 +32,23 @@ module.exports = {
 
         if (!channelInput || !welcomemessage) return runHelpCommand(message, 'welcome');
 
-        // Check for --ping flag at the end
-        const pingEnabled = welcomemessage.trim().endsWith('--ping');
-        if (pingEnabled) {
-          welcomemessage = welcomemessage.slice(0, -6).trim();
+        // Parse options from the message
+        const optionRegex = /--(ping|self_destruct)\s*(\d+)?/g;
+        let pingEnabled = false;
+        let selfDestruct = 0;
+        let match;
+
+        while ((match = optionRegex.exec(welcomemessage)) !== null) {
+          switch (match[1]) {
+            case 'ping': pingEnabled = true; break;
+            case 'self_destruct': selfDestruct = parseInt(match[2]) || 5; break;
+          }
         }
+
+        // Remove options from message
+        welcomemessage = welcomemessage.replace(/--(ping|self_destruct)\s*(\d+)?/g, '').trim();
+
+        if (!welcomemessage) return runHelpCommand(message, 'welcome');
 
         const channelResult = findChannel(message.guild, channelInput);
         if (!channelResult.found) {
@@ -53,10 +65,13 @@ module.exports = {
         }
 
         try {
-          await guildService.addWelcomeMessage(message.guild.id, welcomechannel.id, welcomemessage, pingEnabled);
+          await guildService.addWelcomeMessage(message.guild.id, welcomechannel.id, welcomemessage, pingEnabled, selfDestruct);
           const action = existingWelcomeMessage ? 'Updated the' : 'Created a';
-          const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
-          return embeds.success(message, `${action} **welcome message** for ${welcomechannel}${pingStatus}`);
+          const options = [];
+          if (pingEnabled) options.push('ping enabled');
+          if (selfDestruct > 0) options.push(`self-destruct in ${selfDestruct}s`);
+          const optionsStatus = options.length > 0 ? ` with **${options.join('**, **')}**` : '';
+          return embeds.success(message, `${action} **welcome message** for ${welcomechannel}${optionsStatus}`);
         } catch (error) {
           logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to set welcome message: ${error.message}`);

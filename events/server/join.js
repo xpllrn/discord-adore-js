@@ -114,7 +114,8 @@ async function processWelcomeMessages(member) {
             user: member.user,
             guild: member.guild,
             channel: welcomeChannel,
-            pingEnabled: welcomeConfig.pingEnabled || false
+            pingEnabled: welcomeConfig.pingEnabled || false,
+            selfDestruct: welcomeConfig.selfDestruct || 0
           });
         } catch (error) {
           // Fallback to simple text message

@@ -914,9 +914,10 @@ class GuildService extends BaseService {
    * @param {string} channelId - Channel ID
    * @param {string} message - Welcome message
    * @param {boolean} pingEnabled - Whether to ping mentions
+   * @param {number} selfDestruct - Seconds before ping message auto-deletes (0 = no delete)
    * @returns {Promise<boolean>} Success status
    */
-  async addWelcomeMessage(guildId, channelId, message, pingEnabled = false) {
+  async addWelcomeMessage(guildId, channelId, message, pingEnabled = false, selfDestruct = 0) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -945,13 +946,15 @@ class GuildService extends BaseService {
         welcomeMessages[existingIndex].message = message.trim();
         welcomeMessages[existingIndex].createdAt = new Date();
         welcomeMessages[existingIndex].pingEnabled = pingEnabled;
+        welcomeMessages[existingIndex].selfDestruct = selfDestruct;
       } else {
         // Add new message
         welcomeMessages.push({
           channelId,
           message: message.trim(),
           createdAt: new Date(),
-          pingEnabled
+          pingEnabled,
+          selfDestruct
         });
       }
 
@@ -1232,9 +1235,10 @@ class GuildService extends BaseService {
    * @param {string} channelId - Channel ID
    * @param {string} message - Leave message
    * @param {boolean} pingEnabled - Whether to ping mentions
+   * @param {number} selfDestruct - Seconds before ping message auto-deletes (0 = no delete)
    * @returns {Promise<boolean>} Success status
    */
-  async addLeaveMessage(guildId, channelId, message, pingEnabled = false) {
+  async addLeaveMessage(guildId, channelId, message, pingEnabled = false, selfDestruct = 0) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -1263,13 +1267,15 @@ class GuildService extends BaseService {
         leaveMessages[existingIndex].message = message.trim();
         leaveMessages[existingIndex].createdAt = new Date();
         leaveMessages[existingIndex].pingEnabled = pingEnabled;
+        leaveMessages[existingIndex].selfDestruct = selfDestruct;
       } else {
         // Add new message
         leaveMessages.push({
           channelId,
           message: message.trim(),
           createdAt: new Date(),
-          pingEnabled
+          pingEnabled,
+          selfDestruct
         });
       }
 

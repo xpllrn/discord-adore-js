@@ -22,9 +22,9 @@ module.exports = {
       name: 'add',
       aliases: [],
       description: 'Add or update a leave message for a channel',
-      syntax: '{guildprefix}leave add [channel] [message] (--ping)',
-      parameters: ['channel', 'message', '--ping (optional)'],
-      example: '{guildprefix}leave add #general Goodbye {user.name}! --ping',
+      syntax: '{guildprefix}leave add [channel] [message] (--ping) (--self_destruct <seconds>)',
+      parameters: ['channel', 'message', '--ping (optional)', '--self_destruct <seconds> (optional)'],
+      example: '{guildprefix}leave add #general Goodbye {user.name}! --ping --self_destruct 5',
 
       handler: async (client, message, args, guildService) => {
         const channelInput = args[0];
@@ -32,11 +32,23 @@ module.exports = {
 
         if (!channelInput || !leavemessage) return runHelpCommand(message, 'leave');
 
-        // Check for --ping flag at the end
-        const pingEnabled = leavemessage.trim().endsWith('--ping');
-        if (pingEnabled) {
-          leavemessage = leavemessage.slice(0, -6).trim();
+        // Parse options from the message
+        const optionRegex = /--(ping|self_destruct)\s*(\d+)?/g;
+        let pingEnabled = false;
+        let selfDestruct = 0;
+        let match;
+
+        while ((match = optionRegex.exec(leavemessage)) !== null) {
+          switch (match[1]) {
+            case 'ping': pingEnabled = true; break;
+            case 'self_destruct': selfDestruct = parseInt(match[2]) || 5; break;
+          }
         }
+
+        // Remove options from message
+        leavemessage = leavemessage.replace(/--(ping|self_destruct)\s*(\d+)?/g, '').trim();
+
+        if (!leavemessage) return runHelpCommand(message, 'leave');
 
         const channelResult = findChannel(message.guild, channelInput);
         if (!channelResult.found) {
@@ -53,10 +65,13 @@ module.exports = {
         }
 
         try {
-          await guildService.addLeaveMessage(message.guild.id, leavechannel.id, leavemessage, pingEnabled);
+          await guildService.addLeaveMessage(message.guild.id, leavechannel.id, leavemessage, pingEnabled, selfDestruct);
           const action = existingLeaveMessage ? 'Updated the' : 'Created a';
-          const pingStatus = pingEnabled ? ' with **ping enabled**' : '';
-          return embeds.success(message, `${action} **leave message** for ${leavechannel}${pingStatus}`);
+          const options = [];
+          if (pingEnabled) options.push('ping enabled');
+          if (selfDestruct > 0) options.push(`self-destruct in ${selfDestruct}s`);
+          const optionsStatus = options.length > 0 ? ` with **${options.join('**, **')}**` : '';
+          return embeds.success(message, `${action} **leave message** for ${leavechannel}${optionsStatus}`);
         } catch (error) {
           logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to set leave message: ${error.message}`);

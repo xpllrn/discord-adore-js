@@ -293,6 +293,13 @@ class CustomEmbedBuilder {
         }
 
         channel.send(messageOptions).then((sentMessage) => {
+            // Self-destruct if enabled (delete message after X seconds)
+            if (variables.selfDestruct > 0) {
+                setTimeout(() => {
+                    sentMessage.delete().catch(() => {});
+                }, variables.selfDestruct * 1000);
+            }
+
             // Check if there are any welcome buttons to set up timeout for
             const hasWelcomeButtons = Buttons.some(button =>
                 button.data && button.data.custom_id && button.data.custom_id.startsWith('welcome_')
@@ -433,7 +440,15 @@ class EmbedVariableProcessor {
             messageOptions.allowedMentions = { parse: ['roles'] };
         }
         
-        return channel.send(messageOptions);
+        return channel.send(messageOptions).then((sentMessage) => {
+            // Self-destruct if enabled
+            if (variables.selfDestruct > 0) {
+                setTimeout(() => {
+                    sentMessage.delete().catch(() => {});
+                }, variables.selfDestruct * 1000);
+            }
+            return sentMessage;
+        });
     }
 
     static replaceVariables(content, variables = {}) {
