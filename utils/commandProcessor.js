@@ -119,37 +119,43 @@ async function processCommand(message, isEdit = false) {
 
   if (!command) return;
 
-  // Check if command is globally disabled by developer
-  if (command.disabled) {
+  // Check if user is a developer - bypasses EVERYTHING
+  const { isGlobalDev } = require('./permissions');
+  const isDev = isGlobalDev(message.author.id);
+
+  // Check if command is globally disabled by developer (devs bypass this)
+  if (command.disabled && !isDev) {
     return embeds.deny(message, `The \`${command.name}\` command is currently **disabled**`);
   }
 
-  // Check if command is disabled or restricted
-  const commandAccessResult = await checkCommandAccess(message, command, guildData);
-  if (!commandAccessResult.allowed) {
-    if (commandAccessResult.message) {
-      return embeds.deny(message, commandAccessResult.message);
+  // Check if command is disabled or restricted (devs bypass this)
+  if (!isDev) {
+    const commandAccessResult = await checkCommandAccess(message, command, guildData);
+    if (!commandAccessResult.allowed) {
+      if (commandAccessResult.message) {
+        return embeds.deny(message, commandAccessResult.message);
+      }
+      return; // Silently ignore
     }
-    return; // Silently ignore
   }
 
   try {
-    // Check if user is blacklisted (skip for blacklist command itself)
-    if (command.name !== 'blacklist') {
+    // Check if user is blacklisted (devs bypass this, also skip for blacklist command itself)
+    if (command.name !== 'blacklist' && !isDev) {
       const isBlacklisted = await checkUserBlacklist(message.author.id);
       if (isBlacklisted) {
         return; // Silently ignore blacklisted users
       }
     }
 
-    // Check command permissions
-    if (command.permission) {
+    // Check command permissions (devs bypass this)
+    if (command.permission && !isDev) {
       const hasPermission = await checkCommandPermission(message, command.permission);
       if (!hasPermission) return; // Return after permission check (dev silently ignored, others get error message)
     }
 
-    // Handle cooldowns
-    if (!isEdit) { // Don't apply cooldowns to edited messages
+    // Handle cooldowns (devs bypass this)
+    if (!isEdit && !isDev) { // Don't apply cooldowns to edited messages or devs
       const cooldownResult = handleCooldown(message, command);
       if (cooldownResult) {
         return embeds.cooldown(message, cooldownResult);
@@ -437,6 +443,12 @@ async function checkUserBlacklist(userId) {
  * @returns {Object} { allowed: boolean, message: string|null }
  */
 async function checkCommandAccess(message, command, guildData) {
+  // Developer bypasses all restrictions
+  const { isGlobalDev } = require('./permissions');
+  if (isGlobalDev(message.author.id)) {
+    return { allowed: true };
+  }
+
   // Server owner bypasses all restrictions
   if (message.guild.ownerId === message.author.id) {
     return { allowed: true };

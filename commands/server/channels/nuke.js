@@ -346,8 +346,7 @@ module.exports = {
       `Are you sure you want to **nuke** <#${channel.id}>? This will delete and recreate the channel.`,
       async (interaction, confirmMessage) => {
         try {
-          // Defer the update first since we're about to delete the channel
-          await interaction.deferUpdate();
+          // Note: interaction is already deferred by createConfirmation
 
           const newChannel = await nukeChannel(channel, message, guildService);
           
