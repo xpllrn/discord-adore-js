@@ -154,21 +154,14 @@ async function processPingOnJoin(member) {
           continue;
         }
 
-        // Check if bot has permission to send messages
-        if (!pojChannel.permissionsFor(member.guild.members.me)?.has(['SendMessages'])) {
+        // Check if bot has permission to send and delete messages
+        if (!pojChannel.permissionsFor(member.guild.members.me)?.has(['SendMessages', 'ManageMessages'])) {
           continue;
         }
 
-        // Send ping message
+        // Send ping message and delete immediately
         const sentMessage = await pojChannel.send(`${member}`);
-
-        // Self-destruct if enabled
-        const selfDestructTime = parseInt(pojConfig.selfDestruct);
-        if (selfDestructTime > 0) {
-          setTimeout(() => {
-            sentMessage.delete().catch(() => {});
-          }, selfDestructTime * 1000);
-        }
+        await sentMessage.delete().catch(() => {});
       } catch (error) {
         // Silent fail for individual ping on join
       }

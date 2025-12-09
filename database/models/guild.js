@@ -40,10 +40,6 @@ const guildSchema = new mongoose.Schema({
       type: String,
       required: true
     },
-    selfDestruct: {
-      type: Number,
-      default: 0
-    },
     createdAt: {
       type: Date,
       default: Date.now

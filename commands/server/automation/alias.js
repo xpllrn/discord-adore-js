@@ -221,19 +221,19 @@ module.exports = {
           await createConfirmation(
             message,
             'Are you sure that you want to **reset all aliases**?',
-            async (interaction) => {
+            async (interaction, sentMessage) => {
               try {
                 const freshGuildData = await guildService.ensureGuildData(message.guild.id);
                 freshGuildData.Aliases = [];
                 await guildService.set(message.guild.id, freshGuildData);
                 
-                await interaction.update({
+                await sentMessage.edit({
                   embeds: [embeds.success(message, 'Cleared **all aliases** for **commands**').embeds[0]],
                   components: []
                 });
               } catch (error) {
                 logger.webhook.error(error, message);
-                await interaction.update({
+                await sentMessage.edit({
                   embeds: [embeds.deny(message, 'Failed to **reset aliases**').embeds[0]],
                   components: []
                 });

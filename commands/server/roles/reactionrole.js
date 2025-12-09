@@ -218,10 +218,10 @@ module.exports = {
         await createConfirmation(
           message,
           'Are you sure you want to **remove all reaction roles**?',
-          async (interaction) => {
+          async (interaction, sentMessage) => {
             await guildService.clearAllReactionRoles(message.guild.id);
             const successEmbed = embeds.createSuccess(message, 'Removed all reaction roles');
-            await interaction.update({ embeds: [successEmbed], components: [] });
+            await sentMessage.edit({ embeds: [successEmbed], components: [] });
           }
         );
       }
@@ -255,7 +255,7 @@ module.exports = {
         await createConfirmation(
           message,
           `Are you sure you want to **remove all ${messageReactionRoles.length} reaction roles** from this message?`,
-          async (interaction) => {
+          async (interaction, sentMessage) => {
             for (const rr of messageReactionRoles) {
               await guildService.removeReactionRole(message.guild.id, messageId, rr.reaction);
             }
@@ -274,7 +274,7 @@ module.exports = {
             } catch (error) { }
 
             const successEmbed = embeds.createSuccess(message, `Removed all reaction roles from [\`${messageId}\`](https://discord.com/channels/${message.guild.id}/${channelId}/${messageId})`);
-            await interaction.update({ embeds: [successEmbed], components: [] });
+            await sentMessage.edit({ embeds: [successEmbed], components: [] });
           }
         );
       }

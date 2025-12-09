@@ -90,17 +90,17 @@ module.exports = {
         await createConfirmation(
           message,
           `Are you **sure** you want to delete <@&${role.id}> role?`,
-          async (interaction) => {
+          async (interaction, sentMessage) => {
             try {
               const roleName = role.name;
               await role.delete(`Role deleted by ${message.author.tag}`);
               
-              await interaction.update({
+              await sentMessage.edit({
                 embeds: [embeds.createSuccess(message, `Deleted role **${roleName}**`)],
                 components: []
               });
             } catch (error) {
-              await interaction.update({
+              await sentMessage.edit({
                 embeds: [embeds.createDeny(message, 'Failed to **delete role**. Please check my permissions.')],
                 components: []
               });
@@ -655,8 +655,15 @@ async function handleBulkRole(client, message, args, type) {
     return embeds.deny(message, `A bulk role operation is already in progress for this server. Please wait for it to complete.`);
   }
 
-  // Fetch all members
-  await message.guild.members.fetch();
+  // Fetch all members with timeout handling
+  try {
+    await message.guild.members.fetch({ time: 120000 });
+  } catch (error) {
+    if (error.code === 'GuildMembersTimeout') {
+      return embeds.deny(message, 'Failed to fetch server members. The server may be too large or Discord is experiencing issues. Please try again later.');
+    }
+    throw error;
+  }
 
   let targetMembers;
   let typeLabel;
@@ -685,11 +692,11 @@ async function handleBulkRole(client, message, args, type) {
   await createConfirmation(
     message,
     `Are you **sure** you want to add ${role} to **${targetMembers.size}** ${typeLabel}?\n\nThis may take a while for large servers.`,
-    async (interaction) => {
+    async (interaction, sentMessage) => {
       roleOperationLocks.set(lockKey, true);
 
       try {
-        await interaction.update({
+        await sentMessage.edit({
           embeds: [embeds.createInfo(message, `Adding ${role} to **${targetMembers.size}** ${typeLabel}... This may take a while.`)],
           components: []
         });

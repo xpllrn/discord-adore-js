@@ -283,7 +283,7 @@ async function endSprint(client, message) {
           .setColor(config.colors.success)
           .setDescription(`${config.emojis.success} ${message.author}: Reading sprint has been **ended**!`);
         
-        await interaction.update({ embeds: [successEmbed], components: [] });
+        await confirmMessage.edit({ embeds: [successEmbed], components: [] });
       }
     );
 
@@ -396,7 +396,7 @@ async function leaveSprint(client, message) {
           .setColor(config.colors.success)
           .setDescription(`${config.emojis.success} ${message.author}: You have left the reading sprint!`);
         
-        await interaction.update({ embeds: [successEmbed], components: [] });
+        await confirmMessage.edit({ embeds: [successEmbed], components: [] });
       }
     );
 

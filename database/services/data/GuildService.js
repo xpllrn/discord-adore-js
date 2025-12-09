@@ -1351,10 +1351,9 @@ class GuildService extends BaseService {
    * Add ping on join channel
    * @param {string} guildId - Guild ID
    * @param {string} channelId - Channel ID
-   * @param {number} selfDestruct - Seconds before ping auto-deletes (0 = no delete)
    * @returns {Promise<boolean>} Success status
    */
-  async addPingOnJoin(guildId, channelId, selfDestruct = 0) {
+  async addPingOnJoin(guildId, channelId) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -1370,12 +1369,11 @@ class GuildService extends BaseService {
       const existingIndex = pojChannels.findIndex(p => p.channelId === channelId);
 
       if (existingIndex !== -1) {
-        pojChannels[existingIndex].selfDestruct = selfDestruct;
+        // Already exists, just update timestamp
         pojChannels[existingIndex].createdAt = new Date();
       } else {
         pojChannels.push({
           channelId,
-          selfDestruct,
           createdAt: new Date()
         });
       }

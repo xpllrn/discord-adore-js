@@ -323,7 +323,7 @@ async function handleLogout(message, spotifyService, guildprefix) {
           .setColor(config.colors.success)
           .setDescription(`${config.emojis.success} ${message.author}: Your **Spotify** account has been **unlinked**!`);
 
-        await interaction.update({ embeds: [successEmbed], components: [] });
+        await confirmMessage.edit({ embeds: [successEmbed], components: [] });
       }
     );
 

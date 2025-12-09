@@ -10,9 +10,9 @@ const { runHelpCommand } = require('../../../utils/commandProcessor');
 module.exports = {
   name: "poj",
   aliases: ['pingonjoin'],
-  description: `Ping new members in specified channels when they join`,
+  description: `Ping new members in specified channels when they join (ping is deleted immediately)`,
   syntax: 'poj [subcommand] (parameters)',
-  example: 'poj add #general --self_destruct 5',
+  example: 'poj add #general',
   permission: "manage_guild",
   isGroupCommand: true,
 
@@ -21,18 +21,13 @@ module.exports = {
       name: 'add',
       aliases: [],
       description: 'Add a channel to ping new members in',
-      syntax: '{guildprefix}poj add [channel] (--self_destruct <seconds>)',
-      parameters: ['channel', '--self_destruct <seconds> (optional)'],
-      example: '{guildprefix}poj add #general --self_destruct 5',
+      syntax: '{guildprefix}poj add [channel]',
+      parameters: ['channel'],
+      example: '{guildprefix}poj add #general',
 
       handler: async (client, message, args, guildService) => {
         const channelInput = args[0];
         if (!channelInput) return runHelpCommand(message, 'poj');
-
-        // Parse self_destruct option
-        const fullArgs = args.join(' ');
-        const selfDestructMatch = fullArgs.match(/--self_destruct\s*(\d+)/);
-        const selfDestruct = selfDestructMatch ? parseInt(selfDestructMatch[1]) || 5 : 0;
 
         const channelResult = findChannel(message.guild, channelInput);
         if (!channelResult.found) {
@@ -49,10 +44,9 @@ module.exports = {
         }
 
         try {
-          await guildService.addPingOnJoin(message.guild.id, pojChannel.id, selfDestruct);
+          await guildService.addPingOnJoin(message.guild.id, pojChannel.id);
           const action = existingPoj ? 'Updated' : 'Added';
-          const options = selfDestruct > 0 ? ` with **self-destruct in ${selfDestruct}s**` : '';
-          return embeds.success(message, `${action} **ping on join** for ${pojChannel}${options}`);
+          return embeds.success(message, `${action} **ping on join** for ${pojChannel}`);
         } catch (error) {
           logger.webhook.error(error, message);
           return embeds.deny(message, `Failed to set ping on join: ${error.message}`);
@@ -115,8 +109,7 @@ module.exports = {
           const channel = message.guild.channels.cache.get(p.channelId);
           const channelName = channel ? `<#${channel.id}>` : `Unknown Channel (${p.channelId})`;
           const messageNumber = (index + 1).toString().padStart(2, '0');
-          const selfDestruct = p.selfDestruct > 0 ? ` (${p.selfDestruct}s)` : '';
-          return `\`${messageNumber}\` ${channelName}${selfDestruct}`;
+          return `\`${messageNumber}\` ${channelName}`;
         }).join('\n');
 
         const embed = new EmbedBuilder()

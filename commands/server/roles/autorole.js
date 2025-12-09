@@ -147,10 +147,10 @@ module.exports = {
         await createConfirmation(
           message,
           'Are you sure you want to **remove all auto roles**?',
-          async (interaction) => {
+          async (interaction, sentMessage) => {
             await guildService.clearAllAutoRoles(message.guild.id);
             const successEmbed = embeds.createSuccess(message, 'Removed all auto roles');
-            await interaction.update({ embeds: [successEmbed], components: [] });
+            await sentMessage.edit({ embeds: [successEmbed], components: [] });
           }
         );
       }
