@@ -33,6 +33,9 @@ module.exports = {
       // Process welcome messages for all configured channels
       await processWelcomeMessages(member);
 
+      // Process ping on join for all configured channels
+      await processPingOnJoin(member);
+
     } catch (error) {
       // Silent fail for join event
     }
@@ -127,6 +130,51 @@ async function processWelcomeMessages(member) {
     }
   } catch (error) {
     // Silent fail for welcome system
+  }
+}
+
+async function processPingOnJoin(member) {
+  try {
+    const guildService = getService('guild');
+    
+    // Get ping on join channels
+    const pojChannels = await guildService.getPingOnJoinChannels(member.guild.id) || [];
+
+    if (pojChannels.length === 0) {
+      return; // No ping on join configured
+    }
+
+    // Process each ping on join channel
+    for (const pojConfig of pojChannels) {
+      try {
+        const pojChannel = member.guild.channels.cache.get(pojConfig.channelId);
+        if (!pojChannel) {
+          // Channel no longer exists, remove from config
+          await guildService.removePingOnJoin(member.guild.id, pojConfig.channelId);
+          continue;
+        }
+
+        // Check if bot has permission to send messages
+        if (!pojChannel.permissionsFor(member.guild.members.me)?.has(['SendMessages'])) {
+          continue;
+        }
+
+        // Send ping message
+        const sentMessage = await pojChannel.send(`${member}`);
+
+        // Self-destruct if enabled
+        const selfDestructTime = parseInt(pojConfig.selfDestruct);
+        if (selfDestructTime > 0) {
+          setTimeout(() => {
+            sentMessage.delete().catch(() => {});
+          }, selfDestructTime * 1000);
+        }
+      } catch (error) {
+        // Silent fail for individual ping on join
+      }
+    }
+  } catch (error) {
+    // Silent fail for ping on join system
   }
 }
 

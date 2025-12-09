@@ -28,6 +28,25 @@ const guildSchema = new mongoose.Schema({
     pingEnabled: {
       type: Boolean,
       default: false
+    },
+    selfDestruct: {
+      type: Number,
+      default: 0
+    }
+  }],
+  // Ping on Join system (multi-channel support)
+  PingOnJoin: [{
+    channelId: {
+      type: String,
+      required: true
+    },
+    selfDestruct: {
+      type: Number,
+      default: 0
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
     }
   }],
   // Leave system (multi-message support)

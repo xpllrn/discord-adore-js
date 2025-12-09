@@ -1326,6 +1326,130 @@ class GuildService extends BaseService {
     }
   }
 
+  // ===== PING ON JOIN SYSTEM =====
+
+  /**
+   * Get all ping on join channels
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object[]>} Array of ping on join configs
+   */
+  async getPingOnJoinChannels(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      return guildData.PingOnJoin || [];
+    } catch (error) {
+      console.error(`Error getting ping on join channels for guild ${guildId}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Add ping on join channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @param {number} selfDestruct - Seconds before ping auto-deletes (0 = no delete)
+   * @returns {Promise<boolean>} Success status
+   */
+  async addPingOnJoin(guildId, channelId, selfDestruct = 0) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const pojChannels = guildData.PingOnJoin || [];
+
+      const existingIndex = pojChannels.findIndex(p => p.channelId === channelId);
+
+      if (existingIndex !== -1) {
+        pojChannels[existingIndex].selfDestruct = selfDestruct;
+        pojChannels[existingIndex].createdAt = new Date();
+      } else {
+        pojChannels.push({
+          channelId,
+          selfDestruct,
+          createdAt: new Date()
+        });
+      }
+
+      guildData.PingOnJoin = pojChannels;
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to add ping on join for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Remove ping on join channel
+   * @param {string} guildId - Guild ID
+   * @param {string} channelId - Channel ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async removePingOnJoin(guildId, channelId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    if (!channelId) {
+      throw new ValidationError('Channel ID is required', 'channelId', channelId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      const pojChannels = guildData.PingOnJoin || [];
+      const initialLength = pojChannels.length;
+
+      guildData.PingOnJoin = pojChannels.filter(p => p.channelId !== channelId);
+
+      if (guildData.PingOnJoin.length < initialLength) {
+        await this.set(guildId, guildData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to remove ping on join for guild ${guildId}`, error);
+    }
+  }
+
+  /**
+   * Clear all ping on join channels
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<boolean>} Success status
+   */
+  async clearPingOnJoin(guildId) {
+    if (!guildId) {
+      throw new ValidationError('Guild ID is required', 'guildId', guildId);
+    }
+
+    try {
+      const guildData = await this.ensureGuildData(guildId);
+      guildData.PingOnJoin = [];
+      await this.set(guildId, guildData);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new DatabaseWriteError(`Failed to clear ping on join for guild ${guildId}`, error);
+    }
+  }
+
   // ===== BOOST SYSTEM =====
 
   /**
