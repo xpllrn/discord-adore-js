@@ -105,7 +105,7 @@ module.exports = {
       // Footer
       container.addSeparatorComponents((separator) => separator);
       container.addTextDisplayComponents((text) =>
-        text.setContent(`-# **Server ID**: ${guild.id}`)
+        text.setContent(`-# **Server ID**: ${guild.id} • **Owner ID**: ${owner.id}`)
       );
 
       // Send with Components V2 flag

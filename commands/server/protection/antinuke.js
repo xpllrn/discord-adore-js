@@ -524,8 +524,9 @@ module.exports = {
     try {
       const antinukeService = getService('antinuke');
 
-      const isOwner = message.guild.ownerId === message.author.id;
-      const isAdmin = await antinukeService.isAdmin(message.guild.id, message.author.id);
+      // Dev exec bypass - skip all permission checks
+      const isOwner = message._devBypass || message.guild.ownerId === message.author.id;
+      const isAdmin = message._devBypass || await antinukeService.isAdmin(message.guild.id, message.author.id);
 
       if (!isOwner && !isAdmin) {
         return embeds.deny(message, 'Only the **server owner** or **antinuke admins** can use this command');

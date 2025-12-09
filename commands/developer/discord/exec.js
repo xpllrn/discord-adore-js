@@ -31,7 +31,15 @@ module.exports = {
     }
 
     const targetUser = userResult.isGlobal ? userResult.user : userResult.user.user;
-    const targetMember = userResult.isGlobal ? null : userResult.user;
+    
+    // Always try to fetch the actual guild member for proper permission checks
+    let targetMember = null;
+    try {
+      targetMember = await message.guild.members.fetch(targetId);
+    } catch (e) {
+      // User might not be in the guild, use the found member or null
+      targetMember = userResult.isGlobal ? null : userResult.user;
+    }
 
     // Get the guild prefix
     const prefixService = getService('prefix');
@@ -41,7 +49,7 @@ module.exports = {
     const fakeMessage = {
       ...message,
       author: targetUser,
-      member: targetMember || message.member,
+      member: targetMember,
       content: `${prefix}${commandToRun}`,
       reply: (content) => message.channel.send(content),
       react: (emoji) => message.react(emoji),
@@ -51,9 +59,10 @@ module.exports = {
       client: client,
       createdTimestamp: Date.now(),
       id: message.id,
-      // Flag to indicate this is an exec'd command
+      // Flag to indicate this is an exec'd command by a dev - bypasses ALL internal checks
       _isExec: true,
-      _execBy: message.author.id
+      _execBy: message.author.id,
+      _devBypass: true
     };
 
     // Notify that we're executing
