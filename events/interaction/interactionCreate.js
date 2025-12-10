@@ -643,10 +643,75 @@ async function handleTicketDelete(interaction) {
     const guild = interaction.guild;
     const user = interaction.user;
 
+    // Validate channelId
+    if (!channelId || !/^\d{17,19}$/.test(channelId)) {
+      const fakeMessage = {
+        author: { id: interaction.user.id },
+        guild: { id: guild.id },
+        channel: {
+          send: async (options) => {
+            options.flags = MessageFlags.Ephemeral;
+            return await interaction.reply(options);
+          }
+        }
+      };
+      return embeds.deny(fakeMessage, 'Invalid ticket channel ID.');
+    }
+
     // Get ticket data using service layer
     const guildService = getService('guild');
     const ticket = await guildService.getTicket(guild.id, channelId);
+    
+    // If no ticket in database but we're in a channel, allow deletion anyway
+    // This handles cases where ticket was created but not properly saved
     if (!ticket) {
+      // Check if the current channel matches the channelId - if so, allow deletion
+      if (interaction.channel.id === channelId) {
+        // Proceed with deletion even without database record
+        const ticketSystem = await guildService.getTicketSystem(guild.id);
+        const hasAdminPerms = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+        const hasSupportRole = ticketSystem.supportRoleId && interaction.member.roles.cache.has(ticketSystem.supportRoleId);
+
+        if (!hasAdminPerms && !hasSupportRole) {
+          const fakeMessage = {
+            author: { id: interaction.user.id },
+            guild: { id: guild.id },
+            channel: {
+              send: async (options) => {
+                options.flags = MessageFlags.Ephemeral;
+                return await interaction.reply(options);
+              }
+            }
+          };
+          return embeds.deny(fakeMessage, 'You don\'t have permission to delete this ticket. Only administrators and support staff can delete tickets.');
+        }
+
+        // Show confirmation for orphaned ticket
+        const fakeMessage = {
+          author: { id: interaction.user.id },
+          guild: { id: guild.id },
+          channel: {
+            send: async (options) => {
+              const confirmButtons = new ActionRowBuilder()
+                .addComponents(
+                  new ButtonBuilder()
+                    .setCustomId(`confirm_delete_${channelId}`)
+                    .setLabel('Delete')
+                    .setStyle(ButtonStyle.Danger),
+                  new ButtonBuilder()
+                    .setCustomId(`cancel_delete_${channelId}`)
+                    .setLabel('Cancel')
+                    .setStyle(ButtonStyle.Secondary)
+                );
+              options.components = [confirmButtons];
+              options.flags = MessageFlags.Ephemeral;
+              return await interaction.reply(options);
+            }
+          }
+        };
+        return embeds.warn(fakeMessage, 'Are you sure you want to **permanently delete** this ticket?');
+      }
+
       // Create a fake message object for embeds.deny
       const fakeMessage = {
         author: { id: interaction.user.id },
@@ -755,12 +820,29 @@ async function handleConfirmDelete(interaction) {
     const guildService = getService('guild');
     await guildService.removeTicket(interaction.guild.id, channelId);
 
+    // Get the channel to delete - use channelId from customId
+    const channelToDelete = interaction.guild.channels.cache.get(channelId);
+    
+    if (!channelToDelete) {
+      // Channel might already be deleted or not found
+      console.error(`Channel ${channelId} not found for deletion`);
+      return;
+    }
+
     // Delete the channel after a short delay to ensure the response is sent
     setTimeout(async () => {
       try {
-        await interaction.channel.delete();
+        await channelToDelete.delete('Ticket deleted by staff');
       } catch (deleteError) {
         console.error('Error deleting channel:', deleteError);
+        // Try to notify in the channel if it still exists
+        try {
+          if (channelToDelete.isTextBased()) {
+            await channelToDelete.send('❌ Failed to delete this channel. Please check bot permissions (Manage Channels).');
+          }
+        } catch (e) {
+          // Channel might be gone or no permission
+        }
       }
     }, 1000);
 
