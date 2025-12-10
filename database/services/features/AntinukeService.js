@@ -25,9 +25,36 @@ class AntinukeService {
   async getSettings(guildId) {
     const guildService = this.getGuildService();
     const guildData = await guildService.ensureGuildData(guildId);
+    const defaults = this.getDefaultSettings();
     
     if (!guildData.Antinuke) {
-      guildData.Antinuke = this.getDefaultSettings();
+      guildData.Antinuke = defaults;
+      await guildService.set(guildId, guildData);
+      return guildData.Antinuke;
+    }
+    
+    // Merge missing properties from defaults (handles old data structures)
+    let needsSave = false;
+    
+    // Ensure all top-level properties exist
+    for (const key of Object.keys(defaults)) {
+      if (guildData.Antinuke[key] === undefined) {
+        guildData.Antinuke[key] = defaults[key];
+        needsSave = true;
+      }
+    }
+    
+    // Ensure all modules exist
+    if (guildData.Antinuke.modules) {
+      for (const moduleName of Object.keys(defaults.modules)) {
+        if (!guildData.Antinuke.modules[moduleName]) {
+          guildData.Antinuke.modules[moduleName] = defaults.modules[moduleName];
+          needsSave = true;
+        }
+      }
+    }
+    
+    if (needsSave) {
       await guildService.set(guildId, guildData);
     }
     
