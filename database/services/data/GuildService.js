@@ -5303,7 +5303,7 @@ class GuildService extends BaseService {
    * @param {string} createdBy - User ID who created the config
    * @returns {Promise<boolean>} Success status
    */
-  async setLoggingChannel(guildId, channelId, webhookUrl, logTypes, createdBy) {
+  async setLoggingChannel(guildId, channelId, webhookUrl, logTypes, createdBy, threadId = null) {
     if (!guildId) {
       throw new ValidationError('Guild ID is required', 'guildId', guildId);
     }
@@ -5341,7 +5341,8 @@ class GuildService extends BaseService {
         logTypes,
         enabled: true,
         createdAt: new Date(),
-        createdBy: createdBy || null
+        createdBy: createdBy || null,
+        threadId: threadId || null
       };
 
       if (existingIndex !== -1) {

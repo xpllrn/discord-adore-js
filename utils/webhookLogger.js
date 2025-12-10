@@ -100,6 +100,12 @@ class WebhookLogger {
             if (files && files.length > 0) {
               messageOptions.files = files;
             }
+
+            // Add threadId if configured (for forum channel threads)
+            if (config.threadId) {
+              messageOptions.threadId = config.threadId;
+            }
+
             await webhook.send(messageOptions);
           } catch (error) {
             // If webhook was deleted (404 error), try to recreate it
