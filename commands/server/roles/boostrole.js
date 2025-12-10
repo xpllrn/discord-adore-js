@@ -786,9 +786,7 @@ module.exports = {
           `Are you sure you want to **delete** your booster role **${roleName}**? This action cannot be undone.`,
           async (interaction) => {
             try {
-              // Defer the interaction first to allow editReply
-              await interaction.deferUpdate();
-              
+              // Note: interaction is already deferred by createConfirmation
               const discordRole = message.guild.roles.cache.get(boosterRole.roleId);
 
               if (discordRole) {

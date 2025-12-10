@@ -45,7 +45,15 @@ async function nukeChannel(channel, message, guildService, customMessage = null)
   const countingData = await guildService.getCounting(message.guild.id);
 
   // Delete the channel
-  await channel.delete(`Nuked by ${message.author.tag}`);
+  try {
+    await channel.delete(`Nuked by ${message.author.tag}`);
+  } catch (error) {
+    // Channel already deleted (10003) or doesn't exist
+    if (error.code === 10003) {
+      throw new Error('Channel no longer exists - it may have already been deleted.');
+    }
+    throw error;
+  }
 
   // Create new channel with same settings
   const newChannel = await message.guild.channels.create({
@@ -363,7 +371,10 @@ module.exports = {
           let errorMessage = 'Failed to nuke channel.';
           let shouldDM = false;
           
-          if (error.code === 50074) {
+          if (error.code === 10003 || error.message?.includes('no longer exists')) {
+            // Channel already deleted
+            errorMessage = `Channel **#${channel.name}** no longer exists - it may have already been nuked or deleted.`;
+          } else if (error.code === 50074) {
             // Community required channel
             errorMessage = `Cannot delete **#${channel.name}** because it's required for Community servers (rules or updates channel).`;
           } else if (error.code === 50013) {

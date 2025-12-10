@@ -115,6 +115,11 @@ async function createPagination(message, items, formatPage, itemsPerPage = 10, t
                 return;
             }
 
+            // Check if interaction was already handled (e.g., double-click)
+            if (interaction.replied || interaction.deferred) {
+                return;
+            }
+
             if (interaction.user.id !== user.id) {
                 const warnEmbed = new EmbedBuilder()
                     .setColor(colors.warn)
@@ -361,6 +366,11 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                     return;
                 }
 
+                // Check if interaction was already handled (e.g., double-click)
+                if (interaction.replied || interaction.deferred) {
+                    return;
+                }
+
                 if (interaction.user.id !== user.id) {
                     const warnEmbed = new EmbedBuilder()
                         .setColor(colors.warn)
@@ -373,6 +383,11 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                 }
 
                 if (interaction.customId === 'confirm_approve') {
+                    // Check if interaction was already handled (e.g., double-click)
+                    if (interaction.replied || interaction.deferred) {
+                        return;
+                    }
+                    
                     // Always defer the interaction first so callbacks can use editReply
                     await interaction.deferUpdate();
                     
@@ -384,6 +399,11 @@ async function createConfirmation(message, confirmationText, onApprove, onDeclin
                     resolve('approved');
 
                 } else if (interaction.customId === 'confirm_decline') {
+                    // Check if interaction was already handled (e.g., double-click)
+                    if (interaction.replied || interaction.deferred) {
+                        return;
+                    }
+                    
                     try {
                         await interaction.deferUpdate();
                         if (isInteraction) {

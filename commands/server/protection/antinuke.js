@@ -155,7 +155,7 @@ module.exports = {
         const settings = await antinukeService.getSettings(message.guild.id);
 
         const formatModule = (module) => {
-          if (!module.enabled) return emojis.error;
+          if (!module || !module.enabled) return emojis.error;
           const parts = [emojis.success];
           if (module.limit !== undefined) parts.push(`Limit: ${module.limit}`);
           if (module.punishment) parts.push(`Do: ${module.punishment}`);

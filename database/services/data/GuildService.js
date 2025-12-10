@@ -290,6 +290,27 @@ class GuildService extends BaseService {
   }
 
   /**
+   * Get guild data without creating it if it doesn't exist (READ-ONLY)
+   * Use this for read operations that should NOT create new guild documents
+   * @param {string} guildId - Guild ID
+   * @returns {Promise<Object|null>} Guild data or null if not found
+   */
+  async getGuildDataReadOnly(guildId) {
+    if (!guildId) {
+      return null;
+    }
+
+    try {
+      // Use the standard get() method which handles cache properly
+      // This will return null if the guild doesn't exist - that's expected
+      return await this.get(guildId);
+    } catch (error) {
+      console.error(`Error reading guild data for ${guildId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
    * Ensure guild data exists with default values
    * @param {string} guildId - Guild ID
    * @returns {Promise<Object>} Guild data
@@ -7686,8 +7707,8 @@ class GuildService extends BaseService {
         { upsert: true }
       );
 
-      // Invalidate cache
-      await this.delete(guildId);
+      // Invalidate cache (NOT delete - that would delete the entire guild document!)
+      this.invalidateCache(guildId);
 
       return webhookData;
     } catch (error) {
@@ -7765,8 +7786,8 @@ class GuildService extends BaseService {
         { $set: { 'Webhooks.$.lastUsed': new Date() } }
       );
 
-      // Invalidate cache
-      await this.delete(guildId);
+      // Invalidate cache (NOT delete - that would delete the entire guild document!)
+      this.invalidateCache(guildId);
     } catch (error) {
       console.error(`Error updating webhook last used:`, error);
     }
@@ -7786,8 +7807,8 @@ class GuildService extends BaseService {
         { $pull: { Webhooks: { webhookId: webhookId } } }
       );
 
-      // Invalidate cache
-      await this.delete(guildId);
+      // Invalidate cache (NOT delete - that would delete the entire guild document!)
+      this.invalidateCache(guildId);
       return true;
     } catch (error) {
       console.error(`Error deleting webhook:`, error);
@@ -9266,8 +9287,9 @@ class GuildService extends BaseService {
     }
 
     try {
-      const guildData = await this.ensureGuildData(guildId);
-      return guildData.StickyMessages || [];
+      // Use read-only method - don't create guild data just to list sticky messages
+      const guildData = await this.getGuildDataReadOnly(guildId);
+      return guildData?.StickyMessages || [];
     } catch (error) {
       console.error(`Error getting sticky messages for guild ${guildId}:`, error.message);
       return [];
@@ -9290,7 +9312,10 @@ class GuildService extends BaseService {
     }
 
     try {
-      const guildData = await this.ensureGuildData(guildId);
+      // Use read-only method - don't create guild data just to check for sticky messages
+      const guildData = await this.getGuildDataReadOnly(guildId);
+      if (!guildData) return null;
+      
       const stickyMessages = guildData.StickyMessages || [];
       return stickyMessages.find(sm => sm.channelId === channelId) || null;
     } catch (error) {
