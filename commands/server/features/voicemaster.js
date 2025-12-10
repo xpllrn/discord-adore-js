@@ -417,6 +417,48 @@ module.exports = {
       }
     },
 
+    category: {
+      name: 'category',
+      aliases: [],
+      description: 'Set the category where new voice channels will be created',
+      syntax: '{guildprefix}voicemaster category [category_id]',
+      parameters: ['category_id'],
+      example: '{guildprefix}voicemaster category 1234567890123456789',
+      handler: async (client, message, args, guildService) => {
+        if (!await hasDiscordPermission(message, PermissionFlagsBits.ManageChannels, 'Manage Channels')) return;
+        if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageChannels)) {
+          return embeds.deny(message, 'I need **Manage Channels** permission to manage voicemaster');
+        }
+
+        const voiceManager = await guildService.getVoiceManager(message.guild.id);
+        if (!voiceManager.enabled) {
+          return embeds.warn(message, '**voicemaster** is **not setup** in this server. Use `,vm setup` first.');
+        }
+
+        const categoryId = args[0];
+        if (!categoryId) {
+          return embeds.warn(message, 'Please provide a category ID: `,vm category 1234567890123456789`');
+        }
+
+        const category = message.guild.channels.cache.get(categoryId);
+        if (!category) {
+          return embeds.warn(message, 'Could not find a category with that ID');
+        }
+
+        if (category.type !== ChannelType.GuildCategory) {
+          return embeds.warn(message, 'The provided ID is not a **category** channel');
+        }
+
+        try {
+          await guildService.setVoiceManager(message.guild.id, { categoryId: category.id });
+          return embeds.success(message, `Voice channels will now be created in **${category.name}**`);
+        } catch (error) {
+          logger.webhook.error(error, message);
+          return embeds.deny(message, 'Failed to update the category');
+        }
+      }
+    },
+
     sendinterface: {
       name: 'sendinterface',
       aliases: ['sendpanel', 'newpanel'],
@@ -480,8 +522,8 @@ module.exports = {
 
     const sub = args[0].toLowerCase();
 
-    // Setup, Reset, and SendInterface commands - require Manage Channels permission (no voice channel needed)
-    if (sub === 'setup' || sub === 'reset' || sub === 'sendinterface' || sub === 'sendpanel' || sub === 'newpanel') {
+    // Setup, Reset, Category, and SendInterface commands - require Manage Channels permission (no voice channel needed)
+    if (sub === 'setup' || sub === 'reset' || sub === 'category' || sub === 'sendinterface' || sub === 'sendpanel' || sub === 'newpanel') {
       const subcommand = Object.values(module.exports.subcommands)
         .find(s => s.name === sub || s.aliases.includes(sub));
       if (subcommand) {
