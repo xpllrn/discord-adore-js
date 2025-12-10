@@ -99,7 +99,7 @@ async function checkIfKicked(member) {
 async function handleAntinukeCheck(member, executor) {
   try {
     const antinukeService = getService('antinuke');
-    const check = await antinukeService.checkAction(member.guild.id, executor.id, 'kick');
+    const check = await antinukeService.checkAction(member.guild.id, executor.id, 'kick', member.guild);
     
     if (check.blocked) {
       const settings = await antinukeService.getSettings(member.guild.id);

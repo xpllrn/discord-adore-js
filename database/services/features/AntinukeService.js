@@ -338,13 +338,14 @@ class AntinukeService {
   }
 
   /**
-   * Track action and check if limit exceeded
+   * Track action and return recent actions within timeframe
    * @param {string} guildId - Guild ID
    * @param {string} userId - User ID
    * @param {string} actionType - Action type (role, kick, ban, etc.)
-   * @returns {boolean} True if limit exceeded
+   * @param {number} timeframe - Timeframe in ms to consider (default 10000)
+   * @returns {Array} Array of action timestamps within timeframe
    */
-  trackAction(guildId, userId, actionType) {
+  trackAction(guildId, userId, actionType, timeframe = 10000) {
     const key = `${guildId}-${userId}-${actionType}`;
     const now = Date.now();
     
@@ -355,11 +356,13 @@ class AntinukeService {
     const actions = this.actionTracking.get(key);
     actions.push(now);
 
-    // Clean up old actions (older than 1 minute)
-    const filtered = actions.filter(time => now - time < 60000);
+    // Clean up old actions using the module's timeframe (with some buffer)
+    const cleanupTime = Math.max(timeframe * 2, 60000); // At least 1 minute or 2x timeframe
+    const filtered = actions.filter(time => now - time < cleanupTime);
     this.actionTracking.set(key, filtered);
 
-    return filtered;
+    // Return only actions within the actual timeframe for checking
+    return filtered.filter(time => now - time < timeframe);
   }
 
   /**
@@ -367,9 +370,10 @@ class AntinukeService {
    * @param {string} guildId - Guild ID
    * @param {string} userId - User ID
    * @param {string} actionType - Action type
+   * @param {Object} guild - Discord guild object (optional, for owner check)
    * @returns {Promise<Object>} { blocked: boolean, reason: string }
    */
-  async checkAction(guildId, userId, actionType) {
+  async checkAction(guildId, userId, actionType, guild = null) {
     const settings = await this.getSettings(guildId);
 
     // If antinuke not enabled, allow
@@ -377,8 +381,18 @@ class AntinukeService {
       return { blocked: false };
     }
 
+    // If server owner, always allow
+    if (guild && guild.ownerId === userId) {
+      return { blocked: false };
+    }
+
     // If whitelisted, allow
     if (await this.isWhitelisted(guildId, userId)) {
+      return { blocked: false };
+    }
+
+    // If antinuke admin, allow
+    if (await this.isAdmin(guildId, userId)) {
       return { blocked: false };
     }
 
@@ -388,15 +402,11 @@ class AntinukeService {
       return { blocked: false };
     }
 
-    // Track action
-    const actions = this.trackAction(guildId, userId, actionType);
-
-    // Filter actions within timeframe
-    const now = Date.now();
-    const recentActions = actions.filter(time => now - time < module.timeframe);
+    // Track action and get recent actions within module's timeframe
+    const actions = this.trackAction(guildId, userId, actionType, module.timeframe);
 
     // Check if limit exceeded
-    if (recentActions.length > module.limit) {
+    if (actions.length > module.limit) {
       return {
         blocked: true,
         reason: `Exceeded ${actionType} limit (${module.limit} actions in ${module.timeframe / 1000}s)`

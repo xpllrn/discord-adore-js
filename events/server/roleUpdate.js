@@ -203,8 +203,18 @@ async function checkDangerousPermissions(oldRole, newRole, executor) {
       return;
     }
 
+    // Server owner is always allowed
+    if (newRole.guild.ownerId === executor.id) {
+      return;
+    }
+
     // Check if executor is whitelisted
     if (await antinukeService.isWhitelisted(newRole.guild.id, executor.id)) {
+      return;
+    }
+
+    // Check if executor is antinuke admin
+    if (await antinukeService.isAdmin(newRole.guild.id, executor.id)) {
       return;
     }
 

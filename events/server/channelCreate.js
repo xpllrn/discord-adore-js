@@ -30,7 +30,7 @@ module.exports = {
       if (executor && !executor.bot) {
         try {
           const antinukeService = getService('antinuke');
-          const check = await antinukeService.checkAction(channel.guild.id, executor.id, 'channel');
+          const check = await antinukeService.checkAction(channel.guild.id, executor.id, 'channel', channel.guild);
           
           if (check.blocked) {
             const settings = await antinukeService.getSettings(channel.guild.id);
