@@ -1228,9 +1228,161 @@ async function handleButtonRole(interaction) {
     // Find the button role configuration
     const buttonRole = buttonRoles.find(br => br.buttonId === interaction.customId);
     if (!buttonRole) {
+      // Button is no longer configured - delete it from the message
+      try {
+        const targetMessage = interaction.message;
+        const isV2Message = targetMessage.flags?.has('IsComponentsV2');
+        
+        if (isV2Message) {
+          // V2 message - rebuild container without this button
+          const { ContainerBuilder, ButtonBuilder: V2ButtonBuilder } = require('discord.js');
+          
+          let components = [...targetMessage.components];
+          let containerIndex = -1;
+          
+          for (let i = components.length - 1; i >= 0; i--) {
+            if (components[i].components && Array.isArray(components[i].components)) {
+              containerIndex = i;
+              break;
+            }
+          }
+          
+          if (containerIndex !== -1) {
+            const existingContainer = components[containerIndex];
+            const newContainer = new ContainerBuilder();
+            
+            if (existingContainer.data?.accent_color) {
+              newContainer.setAccentColor(existingContainer.data.accent_color);
+            }
+            
+            const allButtons = [];
+            
+            if (existingContainer.components && Array.isArray(existingContainer.components)) {
+              for (const comp of existingContainer.components) {
+                if (comp.type === 1) {
+                  if (comp.components && Array.isArray(comp.components)) {
+                    for (const btnData of comp.components) {
+                      if (btnData.type === 2) {
+                        const customId = btnData['custom_id'] || btnData.customId;
+                        // Skip the button that was clicked (the unconfigured one)
+                        if (customId === interaction.customId) continue;
+                        
+                        const btn = new V2ButtonBuilder();
+                        if (customId) btn.setCustomId(customId);
+                        else if (btnData.url) btn.setURL(btnData.url);
+                        if (btnData.style) btn.setStyle(btnData.style);
+                        if (btnData.label) btn.setLabel(btnData.label);
+                        if (btnData.emoji) {
+                          const emojiValue = typeof btnData.emoji === 'object' ? btnData.emoji.name : btnData.emoji;
+                          if (emojiValue) btn.setEmoji(emojiValue);
+                        }
+                        if (btnData.disabled) btn.setDisabled(btnData.disabled);
+                        allButtons.push(btn);
+                      }
+                    }
+                  }
+                  continue;
+                }
+                
+                // Copy other component types
+                try {
+                  if (comp.type === 14) {
+                    newContainer.addSeparatorComponents((separator) => {
+                      if (comp.divider !== undefined) separator.setDivider(comp.divider);
+                      if (comp.spacing !== undefined) separator.setSpacing(comp.spacing);
+                      return separator;
+                    });
+                  } else if (comp.type === 10) {
+                    newContainer.addTextDisplayComponents((text) => text.setContent(comp.content || ''));
+                  } else if (comp.type === 9) {
+                    newContainer.addSectionComponents((section) => {
+                      if (comp.components && Array.isArray(comp.components)) {
+                        const textDisplays = comp.components
+                          .filter(c => c.type === 10)
+                          .map(c => (text) => text.setContent(c.content || ''));
+                        if (textDisplays.length > 0) {
+                          section.addTextDisplayComponents(...textDisplays);
+                        }
+                      }
+                      if (comp.accessory) {
+                        if (comp.accessory.type === 11) {
+                          const thumbnailUrl = comp.accessory.media?.url || comp.accessory.url;
+                          if (thumbnailUrl) {
+                            section.setThumbnailAccessory((thumbnail) => {
+                              thumbnail.setURL(thumbnailUrl);
+                              if (comp.accessory.description) thumbnail.setDescription(comp.accessory.description);
+                              if (comp.accessory.spoiler !== undefined) thumbnail.setSpoiler(comp.accessory.spoiler);
+                              return thumbnail;
+                            });
+                          }
+                        } else if (comp.accessory.type === 2) {
+                          section.setButtonAccessory((btn) => {
+                            if (comp.accessory.custom_id) btn.setCustomId(comp.accessory.custom_id);
+                            if (comp.accessory.label) btn.setLabel(comp.accessory.label);
+                            if (comp.accessory.style) btn.setStyle(comp.accessory.style);
+                            if (comp.accessory.emoji) btn.setEmoji(comp.accessory.emoji);
+                            if (comp.accessory.url) btn.setURL(comp.accessory.url);
+                            if (comp.accessory.disabled) btn.setDisabled(comp.accessory.disabled);
+                            return btn;
+                          });
+                        }
+                      }
+                      return section;
+                    });
+                  } else if (comp.type === 12) {
+                    newContainer.addMediaGalleryComponents((gallery) => {
+                      if (comp.items && Array.isArray(comp.items)) {
+                        const items = comp.items.map(item => (mediaItem) => {
+                          const url = item.media?.url || item.url;
+                          if (url) mediaItem.setURL(url);
+                          if (item.description) mediaItem.setDescription(item.description);
+                          if (item.spoiler !== undefined) mediaItem.setSpoiler(item.spoiler);
+                          return mediaItem;
+                        });
+                        gallery.addItems(...items);
+                      }
+                      return gallery;
+                    });
+                  }
+                } catch (err) {
+                  console.error('Error copying component:', err);
+                }
+              }
+            }
+            
+            // Add remaining buttons back
+            for (let i = 0; i < allButtons.length; i += 5) {
+              const buttonSlice = allButtons.slice(i, i + 5);
+              newContainer.addActionRowComponents((actionRow) =>
+                actionRow.setComponents(...buttonSlice)
+              );
+            }
+            
+            components[containerIndex] = newContainer;
+            await targetMessage.edit({ 
+              components: components,
+              flags: MessageFlags.IsComponentsV2
+            });
+          }
+        } else {
+          // Regular message - remove the button
+          let components = targetMessage.components || [];
+          components = components.map(row => {
+            const newComponents = row.components.filter(component => 
+              component.customId !== interaction.customId
+            );
+            return ActionRowBuilder.from(row).setComponents(newComponents);
+          }).filter(row => row.components.length > 0);
+
+          await targetMessage.edit({ components: components });
+        }
+      } catch (deleteError) {
+        console.error('Error deleting unconfigured button:', deleteError);
+      }
+      
       const embed = embeds.createDeny(
         { author: { id: interaction.user.id } },
-        'This button role is no longer configured.'
+        'This button role is no longer configured. The button has been removed.'
       );
       return await interaction.editReply({ embeds: [embed] });
     }
