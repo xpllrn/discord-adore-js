@@ -26,13 +26,13 @@ async function hasPermissionLevel(message, level) {
   const userId = message.author.id;
   const config = require('../config/setup');
 
-  // Check if it's the dev level - ONLY bot owner (DEV_ID) can use developer commands
+  // Check if it's the dev level - bot owners (DEV_ID) can use developer commands
   if (level === 'dev') {
-    return userId === config.bot.ownerId;
+    return config.bot.ownerIds?.includes(userId) || userId === config.bot.ownerId;
   }
 
-  // For other permission levels (like premium), check normally
-  if (userId === config.bot.ownerId) {
+  // Bot owners bypass all permission checks
+  if (config.bot.ownerIds?.includes(userId) || userId === config.bot.ownerId) {
     return true;
   }
 
@@ -356,10 +356,11 @@ async function hasMultipleDiscordPermissions(message, permissions, permissionNam
   return true;
 }
 
-// Check if user is the global dev (DEV_ID)
+// Check if user is a global dev (DEV_ID - supports multiple IDs)
 function isGlobalDev(userId) {
   const config = require('../config/setup');
-  return userId === config.bot.ownerId;
+  // Check against all owner IDs
+  return config.bot.ownerIds?.includes(userId) || userId === config.bot.ownerId;
 }
 
 // Check if user is the server owner
