@@ -12,12 +12,22 @@ module.exports = {
       // Skip bots for voice manager functionality
       if (newState.member.user.bot) return;
 
+      // Skip if services aren't ready yet (bot still initializing)
+      if (!client.cacheReady) return;
+
       // Log voice state changes (after bot check)
       await logVoiceStateChange(oldState, newState);
 
       const guild = newState.guild;
       const member = newState.member;
-      const guildService = getService('guild');
+      
+      // Get guild service (safe now that we checked cacheReady)
+      let guildService;
+      try {
+        guildService = getService('guild');
+      } catch {
+        return; // Service not ready, skip this event
+      }
 
       // Handle voice leveling system (before voice manager)
       await handleVoiceLeveling(oldState, newState, guild, member, guildService);
